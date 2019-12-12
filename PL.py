@@ -346,8 +346,8 @@ class Exists(Formula):
 
     def denot(self, m, g):
         """
-        The denotation of an existentially quantified formula Exists(Var(x), phi) is true iff phi is true under all
-        x-alternatives of g.
+        The denotation of an existentially quantified formula Exists(Var(x), phi) is true
+        iff phi is true under at least one x-alternative of g.
         """
         xalts = [{**g, **{str(self.v.v):a}} for a in m.d]  # compute the x-alternatives (variant assignments)
         # print("iff f.a. d ∈ D: [[" + repr(self.phi) + "]]d = 1")
@@ -387,8 +387,8 @@ class Forall(Formula):
 
     def denot(self, m, g):
         """
-        The denotation of an existentially quantified formula Exists(Var(x), phi) is true iff phi is true under all
-        x-alternatives of g.
+        The denotation of an existentially quantified formula Exists(Var(x), phi) is true iff
+        phi is true under all x-alternatives of g.
         """
         xalts = [{**g, **{str(self.v.v):a}} for a in m.d]  # x-alternatives (variant assignments)
         # print("iff f.a. d ∈ D: [[" + repr(self.phi) + "]]d = 1")
@@ -426,7 +426,7 @@ def cart_prod(s,n):
     return res
 
 
-var = [Var("x"), Var("y"), Var("z"), Var("u"), Var("v"), Var("w")]  # the variables of the language
+var = [Var("x"), Var("y"), Var("z"), Var("u"), Var("v"), Var("w")]  # the individual variables of the language
 
 
 class Model:
