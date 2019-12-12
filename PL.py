@@ -346,7 +346,7 @@ class Exists(Formula):
 
     def denot(self, m, g):
         """
-        The denotation of an existentially quantified formula Exists(Var(x), phi) is true
+        The denotation of an existentially quantified formula Exists(x, phi) is true
         iff phi is true under at least one x-alternative of g.
         """
         xalts = [{**g, **{str(self.v.v):a}} for a in m.d]  # compute the x-alternatives (variant assignments)
@@ -387,7 +387,7 @@ class Forall(Formula):
 
     def denot(self, m, g):
         """
-        The denotation of an existentially quantified formula Exists(Var(x), phi) is true iff
+        The denotation of universally quantified formula Forall(x, phi) is true iff
         phi is true under all x-alternatives of g.
         """
         xalts = [{**g, **{str(self.v.v):a}} for a in m.d]  # x-alternatives (variant assignments)
