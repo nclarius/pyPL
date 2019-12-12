@@ -454,12 +454,12 @@ class Model:
 
 
 if __name__ == "__main__":
-    testset = ['a', 'b']
-    print(cart_prod(testset, 0))
-    print(cart_prod(testset, 1))
-    print(cart_prod(testset, 2))
-    print(cart_prod(testset, 3))
-    print()
+    # testset = ['a', 'b']
+    # print(cart_prod(testset, 0))
+    # print(cart_prod(testset, 1))
+    # print(cart_prod(testset, 2))
+    # print(cart_prod(testset, 3))
+    # print()
 
     ##########
     # Examples
