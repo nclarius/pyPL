@@ -416,6 +416,8 @@ def cart_prod(a,n):
     @return: A^n
     @rtype: list[tuple]
     """
+    if n == 0:
+        return []
     res = [[x] for x in a]
     for i in range(n-1):
         res = [t+[x] for t in res for x in a]
