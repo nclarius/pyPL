@@ -479,62 +479,27 @@ if __name__ == "__main__":
     # for g in m.gs:
     #     print(g)
     print("g = " + repr(g))
-
-    e01 = Var("x")
-    e02 = Const("j")
-    e03 = Pred("love")
-    e04 = Atm("love", (Const("j"), Const("m")))
-    e05 = Atm("love", (Var("x"), Const("m")))
-    e06 = Exists(Var("x"), Atm("love", (Const("j"), Var("x"))))
-    e07 = Forall(Var("x"), Atm("love", (Const("j"), Var("x"))))
-    e08 = Conj(Atm("love", (Const("m"), Const("s"))), Atm("love", (Const("s"), Const("m"))))
-    e09 = Forall(Var("x"), Imp(Atm("love", (Const("s"), Var("x"))), Atm("woman", (Var("x"),))))
-    e10 = Neg(Exists(Var("x"), Atm("love", (Var("x"), Var("x")))))
-    e11 = Neg(Forall(Var("x"), Atm("love", (Var("x"), Var("x")))))
-    e12 = Forall(Var("x"), Imp(Atm("woman", (Var("x"), )),
+    
+    es = {
+     1: Var("x"),
+     2: Const("j"),
+     3: Pred("love"),
+     4: Atm("love", (Const("j"), Const("m"))),
+     5: Atm("love", (Var("x"), Const("m"))),
+     6: Exists(Var("x"), Atm("love", (Const("j"), Var("x")))),
+     7: Forall(Var("x"), Atm("love", (Const("j"), Var("x")))),
+     8: Conj(Atm("love", (Const("m"), Const("s"))), Atm("love", (Const("s"), Const("m")))),
+     9: Forall(Var("x"), Imp(Atm("love", (Const("s"), Var("x"))), Atm("woman", (Var("x"),)))),
+    10: Neg(Exists(Var("x"), Atm("love", (Var("x"), Var("x"))))),
+    11: Neg(Forall(Var("x"), Atm("love", (Var("x"), Var("x"))))),
+    12: Forall(Var("x"), Imp(Atm("woman", (Var("x"), )),
                                   Exists(Var("y"), Conj(Atm("man", (Var("y"), )),
                                       Atm("love", (Var("x"), Var("y")))))))
+    }
 
-    print()
-    print(e01)
-    print(e01.denot(m, g))
-    print()
-    print(e02)
-    print(e02.denot(m, g))
-    print()
-    print(e03)
-    print(e03.denot(m, g))
-    print()
-    print(e03)
-    print(e03.denot(m, g))
-    print()
-    print()
-    print(e04)
-    print(e04.denot(m, g))
-    print()
-    print(e05)
-    print(e05.denot(m, g))
-    print()
-    print(e05)
-    print(e05.denotm(m))
-    print()
-    print(e06)
-    print(e06.denot(m, g))
-    print()
-    print(e07)
-    print(e07.denot(m, g))
-    print()
-    print(e08)
-    print(e08.denot(m, g))
-    print()
-    print(e09)
-    print(e09.denot(m, g))
-    print()
-    print(e10)
-    print(e10.denot(m, g))
-    print()
-    print(e11)
-    print(e11.denot(m, g))
-    print()
-    print(e12)
-    print(e12.denot(m, g))
+    for key, e in es.items():
+        print()
+        print(e)
+        print(e.denot(m,g))
+        if key in [5]:
+            print(e.denotm(m))
