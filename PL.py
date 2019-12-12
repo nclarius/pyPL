@@ -404,24 +404,21 @@ class Forall(Formula):
         return True  # if no counter witness has been found, the universal statement is true
 
 
-def cart_prod(s,n):
+def cart_prod(a,n):
     """
-    Compute the n-fold cartesian product of a set s.
-    S x ... x S (n times)
+    Compute the n-fold cartesian product of a list A.
+    A x ... x A (n times)
 
-    @param s: the set to form the cartesian product of
-    @type s: set
+    @param a: the list to form the cartesian product of
+    @type a: list
     @param n: the arity of the cartesian product
     @type n: int
-    @return: S^n
-    @rtype: set[tuple]
+    @return: A^n
+    @rtype: list[tuple]
     """
-    if n == 0:
-        res = []
-    else:
-        res = [[s] for s in s]
-        for i in range(n-1):
-            res = [t+[a] for t in res for a in s]
+    res = [[x] for x in a]
+    for i in range(n-1):
+        res = [t+[x] for t in res for x in a]
     res = [tuple(el) for el in res]
     return res
 
@@ -455,12 +452,12 @@ class Model:
 
 
 if __name__ == "__main__":
-    # testset = ['a', 'b']
-    # print(cart_prod(testset, 0))
-    # print(cart_prod(testset, 1))
-    # print(cart_prod(testset, 2))
-    # print(cart_prod(testset, 3))
-    # print()
+    testset = ['a', 'b']
+    print(cart_prod(testset, 0))
+    print(cart_prod(testset, 1))
+    print(cart_prod(testset, 2))
+    print(cart_prod(testset, 3))
+    print()
 
     ##########
     # Examples
