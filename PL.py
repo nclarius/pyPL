@@ -90,7 +90,7 @@ class Var(Term):
 
     def subst(self, v, a):
         if self.v == v:
-            return Var(a)
+            return Var(repr(a))
         else:
             return self
 
