@@ -494,7 +494,13 @@ if __name__ == "__main__":
     11: Neg(Forall(Var("x"), Atm("love", (Var("x"), Var("x"))))),
     12: Forall(Var("x"), Imp(Atm("woman", (Var("x"), )),
                                   Exists(Var("y"), Conj(Atm("man", (Var("y"), )),
-                                      Atm("love", (Var("x"), Var("y")))))))
+                                      Atm("love", (Var("x"), Var("y"))))))),
+    13: Forall(Var("x"), Forall(Var("y"), Forall(Var("z"), Imp(
+                                                     Conj(Conj(Atm("love", (Var("x"), Var("y"))),
+                                                          Atm("love", (Var("y"), Var("z")))),
+                                                          Neg(Atm("love", (Var("y"), Var("x"))))),
+                                                     Atm("jealous", (Var("x"), Var("z"), Var("y")))
+                                                     ))))
     }
 
     for key, e in es.items():
