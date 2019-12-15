@@ -669,7 +669,8 @@ class Model:
                "D = {" + ", ".join([repr(d) for d in self.d]) + "}\n" \
                "F = {\n" + ", \n".join(["     " + repr(key) + " ↦ " +
                                         (repr(val) if isinstance(val, str) else
-                                         (", ".join([repr(key2) + " ↦ " + repr(val2) for key2, val2 in val.items()])
+                                         (", ".join(["(" + repr(key2) + " ↦ " + repr(val2) + ")"
+                                                     for key2, val2 in val.items()])
                                           if isinstance(val, dict) else
                                           ("{" +
                                            ", ".join(["(" + ", ".join([repr(t) for t in s]) + ")" for s in val]) +
