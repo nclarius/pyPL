@@ -9,7 +9,8 @@ class Expr:
     """
     Well-formed expressions of predicate logic.
 
-    @method freevar: the set of the free variable occurrences in the expression
+    @method freevars: the set of the free variable occurrences in the expression
+    @method boundvars: the set of bound variable occurrences in the expression
     @method subst: substitution of a term for a variable in the expression
     @method denot: denotation of the expression relative to a model m and assignment g
     """
@@ -65,7 +66,7 @@ class Term(Expr):
 
     def denot(self, m, g):
         """
-        @rtype: D
+        @rtype: str
         """
         pass
 
@@ -74,7 +75,7 @@ class Const(Term):
     """
     Individual constants.
 
-    @attr c: the constant symbol
+    @attr c: the constant name
     @type c: str
     """
 
@@ -104,7 +105,12 @@ class Var(Term):
     """
     Individual variables.
 
-    @attr v: the variable symbol
+    When dealing with free and bound variables,
+    it is necessary to reference the variables by their name (self.v)
+    rather than the variable objects themselves (self)
+    in order for variables with the same name to be identified, as desired in the theory.
+
+    @attr v: the variable name
     @type v: str
     """
     def __init__(self, v):
@@ -136,7 +142,7 @@ class Pred(Expr):
     """
     Predicate.
 
-    @attr p: the predicate symbol
+    @attr p: the predicate name
     @type p: str
     """
     def __init__(self, p):
@@ -167,6 +173,7 @@ class Formula(Expr):
     Formulas.
 
     @method denotm: the truth value of a formula relative to a model m (without reference to a particular assignment)
+    @type denotm: bool
     """
 
     def denot(self, m, g):
@@ -180,7 +187,7 @@ class Formula(Expr):
         A formula is true in a model m iff it is true in m under all assignment functions.
 
         @param m: a model
-        @type m: model
+        @type m: Model
         @return: the truth value of self in m
         @rtype: bool
         """
