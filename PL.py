@@ -608,18 +608,22 @@ if __name__ == "__main__":
                                                           Atm("love", (Var("y"), Var("z")))),
                                                           Neg(Atm("love", (Var("y"), Var("x"))))),
                                                      Atm("jealous", (Var("x"), Var("z"), Var("y")))
-                                                     ))))  # true
+                                                     )))),  # true
+    14: Conj(Exists(Var("x"), Atm("love", (Var("x"), Var("x")))), Atm("woman", (Var("x"), )))
     }
 
-    for key, e in e1.items():
+    for nr, e in e1.items():
         print()
         print(e)
         # evaluate expressions 1-4 relative to m1 and g1
-        if key <= 4:
+        if 1 <= nr <= 4:
             print(e.denot(m1, g1))
         # evaluate expressions 4-13 relative to m1
-        if key >= 4:
+        if 4 <= nr <= 13:
             print(e.denot_(m1))
+        if nr == 14:
+            print(e.freevars())
+            print(e.boundvars())
 
     print("\n---------------------------------\n")
 
@@ -652,12 +656,12 @@ if __name__ == "__main__":
            # false, since Mary reads a book
     }
 
-    for key, e in e2.items():
+    for nr, e in e2.items():
         print()
         print(e)
         # evaluate expressions 1-4 relative to m2 and g2
-        if key <= 4:
+        if nr <= 4:
             print(e.denot(m2, g2))
         # evaluate expressions 4-6 relative to m2
-        if key >= 4:
+        if nr >= 4:
             print(e.denot_(m2))
