@@ -668,10 +668,12 @@ class Model:
         return "Model M = (D,F) with\n" \
                "D = {" + ", ".join([repr(d) for d in self.d]) + "}\n" \
                "F = {\n" + ", \n".join(["     " + repr(key) + " ↦ " +
-                                        (repr(val) if isinstance(val, str) or isinstance(val, dict) else
-                                        ("{" +
-                                         ", ".join(["(" + ", ".join([repr(t) for t in s]) + ")" for s in val]) +
-                                         "}"))
+                                        (repr(val) if isinstance(val, str) else
+                                         (", ".join([repr(key2) + " ↦ " + repr(val2) for key2, val2 in val.items()])
+                                          if isinstance(val, dict) else
+                                          ("{" +
+                                           ", ".join(["(" + ", ".join([repr(t) for t in s]) + ")" for s in val]) +
+                                           "}")))
                                         for (key, val) in self.f.items()]) +\
                "\n    }"
 
@@ -687,29 +689,6 @@ if __name__ == "__main__":
     ##########
     # Examples
     ##########
-    
-    d3 = {"Mary", "Peter", "Susan", "Jane"}
-    f3 = {"m": "Mary", "s": "Susan", "j": "Jane",
-          "mother": {("Mary", ): "Susan", ("Peter", ): "Susan", ("Susan", ): "Jane"}}
-    m3 = Model(d3, f3)
-    g3 = {"x": "Susan", "y": "Mary", "z": "Peter"}
-    
-    print(m3)
-    print("g = " + repr(g3))
-    
-    e3 = {
-        1: FuncTerm(Func("mother"), (Const("m"), )),  # Susan
-        2: FuncTerm(Func("mother"), (FuncTerm(Func("mother"), (Const("m"),)), )),  # Jane
-        3: Eq(FuncTerm(Func("mother"), (Const("m"), )), Const("s")),  # true
-        4: Neg(Eq(Var("x"), Const("m")))  # true
-    }
-
-    for nr, e in e3.items():
-        print()
-        print(e)
-        print(e.denot(m3, g3))
-
-    print("\n---------------------------------\n")
 
     d1 = {"Mary", "John", "Susan"}
     f1 = {"m": "Mary", "j": "John", "s": "Susan",
@@ -799,3 +778,26 @@ if __name__ == "__main__":
         # evaluate expressions 4-6 relative to m2
         if nr >= 4:
             print(e.denot_(m2))
+
+    print("\n---------------------------------\n")
+
+    d3 = {"Mary", "Peter", "Susan", "Jane"}
+    f3 = {"m": "Mary", "s": "Susan", "j": "Jane",
+          "mother": {("Mary",): "Susan", ("Peter",): "Susan", ("Susan",): "Jane"}}
+    m3 = Model(d3, f3)
+    g3 = {"x": "Susan", "y": "Mary", "z": "Peter"}
+
+    print(m3)
+    print("g = " + repr(g3))
+
+    e3 = {
+        1: FuncTerm(Func("mother"), (Const("m"),)),  # Susan
+        2: FuncTerm(Func("mother"), (FuncTerm(Func("mother"), (Const("m"),)),)),  # Jane
+        3: Eq(FuncTerm(Func("mother"), (Const("m"),)), Const("s")),  # true
+        4: Neg(Eq(Var("x"), Const("m")))  # true
+    }
+
+    for nr, e in e3.items():
+        print()
+        print(e)
+        print(e.denot(m3, g3))
