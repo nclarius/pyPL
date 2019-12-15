@@ -1,5 +1,5 @@
 """
-Simple predicate logic interpreter.
+Simple interpreter for first-order logic with function symbols and equality.
 Works only on models with finite domains (obviously) and languages with a finite set of individual variables.
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>
 """
@@ -7,7 +7,7 @@ Works only on models with finite domains (obviously) and languages with a finite
 
 class Expr:
     """
-    Well-formed expressions of predicate logic.
+    Well-formed expression of predicate logic.
 
     @method freevars: the set of the free variable occurrences in the expression
     @method boundvars: the set of bound variable occurrences in the expression
@@ -61,7 +61,7 @@ class Expr:
 
 class Term(Expr):
     """
-    Terms (constants, variables).
+    Term (constants, variables).
     """
 
     def denot(self, m, g):
@@ -73,7 +73,8 @@ class Term(Expr):
 
 class Const(Term):
     """
-    Individual constants.
+    Individual constant.
+    j, m, ... c1, c2, ...
 
     @attr c: the constant name
     @type c: str
@@ -103,7 +104,8 @@ class Const(Term):
 
 class Var(Term):
     """
-    Individual variables.
+    Individual variable.
+    x, y, z, u, v, w, x1, x2, ...
 
     When dealing with free and bound variables,
     it is necessary to reference the variables by their name (self.v)
@@ -138,6 +140,72 @@ class Var(Term):
         return g[self.v]
 
 
+class Func(Expr):
+    """
+    Function symbol.
+    f, h, ...
+
+    @attr f: the function name
+    @type f: str
+    """
+
+    def __init__(self, f):
+        self.f = f
+
+    def __repr__(self):
+        return self.f
+
+    def freevars(self):
+        return {}
+
+    def boundvars(self):
+        return {}
+
+    def subst(self, v, a):
+        return self
+
+    def denot(self, m, g):
+        """
+        The denotation of a constant is that individual that the assignment function g assigns it.
+        """
+        return m.f[self.f]
+
+
+class FuncTerm(Term):
+    """
+    Function symbol applied to an appropriate number of terms.
+    f(m), h(x,t), ...
+
+    @attr f: the function symbol
+    @type f: Func
+    @attr terms: the term tuple to apply the function symbol to
+    @type terms: tuple[Term]
+    """
+
+    def __init__(self, f, terms):
+        self.f = f
+        self.terms = terms
+
+    def __repr__(self):
+        return repr(self.f) + "(" + ", ".join([repr(t) for t in self.terms]) + ")"
+
+    def freevars(self):
+        return set().union(*[t.freevars() for t in self.terms])
+
+    def boundvars(self):
+        return set().union(*[t.boundvars() for t in self.terms])
+
+    def subst(self, v, a):
+        return FuncTerm(self.f, map(lambda t: t.subst(v, a), self.terms))
+
+    def denot(self, m, g):
+        """
+        The denotation of a function symbol applied to an appropriate number of terms is the individual that the
+        interpretation function f assigns to the application.
+        """
+        return m.f[self.f.f][tuple([t.denot(m, g) for t in self.terms])]
+
+
 class Pred(Expr):
     """
     Predicate.
@@ -170,7 +238,7 @@ class Pred(Expr):
 
 class Formula(Expr):
     """
-    Formulas.
+    Formula.
 
     @method denotm: the truth value of a formula relative to a model m (without reference to a particular assignment)
     @type denotm: bool
@@ -202,6 +270,40 @@ class Formula(Expr):
         return True
 
 
+class Eq(Formula):
+    """
+    Equality between terms.
+    t_1 = t_2
+
+    @attr t1: the left equality term
+    @type t1: Term
+    @attr t2: the right equality term
+    @type t2: Term
+    """
+
+    def __init__(self, t1, t2):
+        self.t1 = t1
+        self.t2 = t2
+
+    def __repr__(self):
+        return repr(self.t1) + "=" + repr(self.t2)
+
+    def freevars(self):
+        return self.t1.freevars().union(self.t2.freevars())
+
+    def boundvars(self):
+        return self.t1.boundvars().union(self.t2.boundvars())
+
+    def subst(self, v, a):
+        return Eq(self.t1.subst(v, a), self.t2.subst(v, a))
+
+    def denot(self, m, g):
+        """
+        The denotation of an equality t1 = t2 is true iff t1 and t2 denote the same individual.
+        """
+        return self.t1.denot(m, g) == self.t2.denot(m, g)
+
+
 class Atm(Formula):
     """
     Atomic formula (predicate symbol applied to a number of terms).
@@ -215,7 +317,7 @@ class Atm(Formula):
     Atm('P', t_1).
 
     @attr pred: the predicate symbol
-    @type pred: str
+    @type pred: Pred
     @attr terms: the terms to apply the predicate symbol to
     @type terms: tuple[Term]
     """
@@ -224,7 +326,7 @@ class Atm(Formula):
         self.terms = terms
 
     def __repr__(self):
-        return self.pred + "(" + ",".join([repr(t) for t in self.terms]) + ")"
+        return repr(self.pred) + "(" + ",".join([repr(t) for t in self.terms]) + ")"
 
     def freevars(self):
         return set().union(*[t.freevars() for t in self.terms])
@@ -242,7 +344,7 @@ class Atm(Formula):
         """
         # print("iff <" + ",".join([("" if isinstance(t, Var) else "[[") + repr(t) + ("" if isinstance(t, Var) else "]]") for t in terms]) + "> ∈ F(" + self.pred + ")")
         # print("iff <" + ",".join([str(t.denot()) for t in terms]) + "> ∈ " + str(f[self.pred]))
-        return tuple([t.denot(m,g) for t in self.terms]) in m.f[self.pred]
+        return tuple([t.denot(m,g) for t in self.terms]) in self.pred.denot(m, g)
 
 
 class Neg(Formula):
@@ -257,6 +359,8 @@ class Neg(Formula):
         self.phi = phi
 
     def __repr__(self):
+        if isinstance(self.phi, Eq):
+            return repr(self.phi.t1) + "≠" + repr(self.phi.t2)
         return "¬" + repr(self.phi)
 
     def freevars(self):
@@ -564,7 +668,7 @@ class Model:
         return "Model M = (D,F) with\n" \
                "D = {" + ", ".join([repr(d) for d in self.d]) + "}\n" \
                "F = {\n" + ", \n".join(["     " + repr(key) + " ↦ " +
-                                        (repr(val) if isinstance(val, str) else
+                                        (repr(val) if isinstance(val, str) or isinstance(val, dict) else
                                         ("{" +
                                          ", ".join(["(" + ", ".join([repr(t) for t in s]) + ")" for s in val]) +
                                          "}"))
@@ -583,6 +687,29 @@ if __name__ == "__main__":
     ##########
     # Examples
     ##########
+    
+    d3 = {"Mary", "Peter", "Susan", "Jane"}
+    f3 = {"m": "Mary", "s": "Susan", "j": "Jane",
+          "mother": {("Mary", ): "Susan", ("Peter", ): "Susan", ("Susan", ): "Jane"}}
+    m3 = Model(d3, f3)
+    g3 = {"x": "Susan", "y": "Mary", "z": "Peter"}
+    
+    print(m3)
+    print("g = " + repr(g3))
+    
+    e3 = {
+        1: FuncTerm(Func("mother"), (Const("m"), )),  # Susan
+        2: FuncTerm(Func("mother"), (FuncTerm(Func("mother"), (Const("m"),)), )),  # Jane
+        3: Eq(FuncTerm(Func("mother"), (Const("m"), )), Const("s")),  # true
+        4: Neg(Eq(Var("x"), Const("m")))  # true
+    }
+
+    for nr, e in e3.items():
+        print()
+        print(e)
+        print(e.denot(m3, g3))
+
+    print("\n---------------------------------\n")
 
     d1 = {"Mary", "John", "Susan"}
     f1 = {"m": "Mary", "j": "John", "s": "Susan",
@@ -599,24 +726,24 @@ if __name__ == "__main__":
      1: Var("x"),  # Susan
      2: Const("j"),  # John
      3: Pred("love"),  # {(J,M), (M,S), (S,M), (S,S)}
-     4: Atm("love", (Var("x"), Const("m"))),  # true under g, false in m
-     5: Atm("love", (Const("j"), Const("m"))),  # true
-     6: Exists(Var("x"), Atm("love", (Const("j"), Var("x")))),  # true
-     7: Forall(Var("x"), Atm("love", (Const("j"), Var("x")))),  # false
-     8: Conj(Atm("love", (Const("m"), Const("s"))), Atm("love", (Const("s"), Const("m")))),  # true
-     9: Forall(Var("x"), Imp(Atm("love", (Const("s"), Var("x"))), Atm("woman", (Var("x"),)))),  # true
-    10: Neg(Exists(Var("x"), Atm("love", (Var("x"), Var("x"))))),  # false
-    11: Neg(Forall(Var("x"), Atm("love", (Var("x"), Var("x"))))),  # true
-    12: Forall(Var("x"), Imp(Atm("woman", (Var("x"), )),
-                                  Exists(Var("y"), Conj(Atm("man", (Var("y"), )),
-                                      Atm("love", (Var("x"), Var("y"))))))),  # false
+     4: Atm(Pred("love"), (Var("x"), Const("m"))),  # true under g, false in m
+     5: Atm(Pred("love"), (Const("j"), Const("m"))),  # true
+     6: Exists(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # true
+     7: Forall(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # false
+     8: Conj(Atm(Pred("love"), (Const("m"), Const("s"))), Atm(Pred("love"), (Const("s"), Const("m")))),  # true
+     9: Forall(Var("x"), Imp(Atm(Pred("love"), (Const("s"), Var("x"))), Atm(Pred("woman"), (Var("x"),)))),  # true
+    10: Neg(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # false
+    11: Neg(Forall(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # true
+    12: Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"), )),
+                                  Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"), )),
+                                      Atm(Pred("love"), (Var("x"), Var("y"))))))),  # false
     13: Forall(Var("x"), Forall(Var("y"), Forall(Var("z"), Imp(
-                                                     Conj(Conj(Atm("love", (Var("x"), Var("y"))),
-                                                          Atm("love", (Var("y"), Var("z")))),
-                                                          Neg(Atm("love", (Var("y"), Var("x"))))),
-                                                     Atm("jealous", (Var("x"), Var("z"), Var("y")))
+                                                     Conj(Conj(Atm(Pred("love"), (Var("x"), Var("y"))),
+                                                          Atm(Pred("love"), (Var("y"), Var("z")))),
+                                                          Neg(Atm(Pred("love"), (Var("y"), Var("x"))))),
+                                                     Atm(Pred("jealous"), (Var("x"), Var("z"), Var("y")))
                                                      )))),  # true
-    14: Conj(Exists(Var("x"), Atm("love", (Var("x"), Var("x")))), Atm("woman", (Var("x"), )))
+    14: Conj(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x")))), Atm(Pred("woman"), (Var("x"), )))
     }
 
     for nr, e in e1.items():
@@ -650,16 +777,16 @@ if __name__ == "__main__":
         1: Var("x"),  # Jane
         2: Const("m"),  # Mary
         3: Pred("read"),  # {(Mary, MMiL)}
-        4: Atm("book", (Var("x"), )),  # false, since Jane is not a book
-        5: Forall(Var("y"), Imp(Atm("student", (Var("y"), )),
+        4: Atm(Pred("book"), (Var("x"), )),  # false, since Jane is not a book
+        5: Forall(Var("y"), Imp(Atm(Pred("student"), (Var("y"), )),
                                 Exists(Var("x"),
-                                       Conj(Atm("book", (Var("x"), )),
-                                            Atm("read", (Var("y"), Var("z"))))))),
+                                       Conj(Atm(Pred("book"), (Var("x"), )),
+                                            Atm(Pred("read"), (Var("y"), Var("z"))))))),
            # false, since Mary doesn't read a book
-        6: Neg(Exists(Var("y"), Conj(Atm("student", (Var("y"), )),
+        6: Neg(Exists(Var("y"), Conj(Atm(Pred("student"), (Var("y"), )),
                                      Exists(Var("x"),
-                                            Conj(Atm("book", (Var("x"), )),
-                                                 Atm("read", (Var("y"), (Var("z")))))))))
+                                            Conj(Atm(Pred("book"), (Var("x"), )),
+                                                 Atm(Pred("read"), (Var("y"), (Var("z")))))))))
            # false, since Mary reads a book
     }
 
