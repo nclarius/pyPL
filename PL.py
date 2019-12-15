@@ -9,9 +9,28 @@ class Expr:
     """
     Well-formed expressions of predicate logic.
 
-    @method subst: substitution of a term for a variable in a formula
+    @method freevar: the set of the free variable occurrences in the expression
+    @method subst: substitution of a term for a variable in the expression
     @method denot: denotation of the expression relative to a model m and assignment g
     """
+
+    def freevars(self):
+        """
+        The set of the free variable occurrences in the expression.
+
+        @return: the set of the free variable occurrences in the expression
+        @rtype: set[str]
+        """
+        pass
+
+    def boundvars(self):
+        """
+        The set of the bound variable occurrences in the expression.
+
+        @return: the set of the bound variable occurrences in the expression
+        @rtype: set[str]
+        """
+        pass
 
     def subst(self, v, a):
         """
@@ -65,6 +84,12 @@ class Const(Term):
     def __repr__(self):
         return self.c
 
+    def freevars(self):
+        return {}
+
+    def boundvars(self):
+        return {}
+
     def subst(self, v, a):
         return self
 
@@ -87,6 +112,12 @@ class Var(Term):
 
     def __repr__(self):
         return self.v
+
+    def freevars(self):
+        return {self.v}
+
+    def boundvars(self):
+        return {}
 
     def subst(self, v, a):
         if self.v == v:
@@ -114,6 +145,12 @@ class Pred(Expr):
     def __repr__(self):
         return self.p
 
+    def freevars(self):
+        return {}
+
+    def boundvars(self):
+        return {}
+
     def subst(self, v, a):
         return self
 
@@ -138,7 +175,7 @@ class Formula(Expr):
         """
         pass
 
-    def denotm(self, m):
+    def denot_(self, m):
         """The truth value of a formula relative to a model m (without reference to a particular assignment).
         A formula is true in a model m iff it is true in m under all assignment functions.
 
@@ -147,6 +184,10 @@ class Formula(Expr):
         @return: the truth value of self in m
         @rtype: bool
         """
+        # if the formula is closed, spare yourself the quantification over all assignment functions and pick an
+        # arbitrary assignment (here: the first)
+        if not self.freevars():
+            return self.denot(m, m.gs[0])
         for g in m.gs:
             if not self.denot(m, g):
                 print("counter assignment: g = " + repr(g))
@@ -159,6 +200,13 @@ class Atm(Formula):
     Atomic formula (predicate symbol applied to a number of terms).
     P(t_1, ..., t_n)
 
+    Note that 1-place predications have to be specified as
+    Atm('P', (t_1, ))
+    rather than
+    Atm('P', (t_1))
+    or
+    Atm('P', t_1).
+
     @attr pred: the predicate symbol
     @type pred: str
     @attr terms: the terms to apply the predicate symbol to
@@ -170,6 +218,12 @@ class Atm(Formula):
 
     def __repr__(self):
         return self.pred + "(" + ",".join([repr(t) for t in self.terms]) + ")"
+
+    def freevars(self):
+        return set().union(*[t.freevars() for t in self.terms])
+
+    def boundvars(self):
+        return set().union(*[t.boundvars() for t in self.terms])
 
     def subst(self, v, a):
         return Atm(self.pred, map(lambda t: t.subst(v, a), self.terms))
@@ -197,6 +251,12 @@ class Neg(Formula):
 
     def __repr__(self):
         return "¬" + repr(self.phi)
+
+    def freevars(self):
+        return self.phi.freevars()
+
+    def boundvars(self):
+        return self.phi.boundvars()
 
     def subst(self, v, a):
         return Neg(self.phi.subst(v, a))
@@ -226,6 +286,12 @@ class Conj(Formula):
     def __repr__(self):
         return "(" + repr(self.phi) + "∧" + repr(self.psi) + ")"
 
+    def freevars(self):
+        return self.phi.freevars().union(self.psi.freevars())
+
+    def boundvars(self):
+        return self.phi.boundvars().union(self.psi.boundvars())
+
     def subst(self, v, a):
         return Conj(self.phi.subst(v, a), self.psi.subst(v, a))
 
@@ -253,6 +319,12 @@ class Disj(Formula):
 
     def __repr__(self):
         return "(" + repr(self.phi) + "∨" + repr(self.psi) + ")"
+
+    def freevars(self):
+        return self.phi.freevars().union(self.psi.freevars())
+
+    def boundvars(self):
+        return self.phi.boundvars().union(self.psi.boundvars())
 
     def subst(self, v, a):
         return Disj(self.phi.subst(v, a), self.psi.subst(v, a))
@@ -282,6 +354,12 @@ class Imp(Formula):
     def __repr__(self):
         return "(" + repr(self.phi) + "→" + repr(self.psi) + ")"
 
+    def freevars(self):
+        return self.phi.freevars().union(self.psi.freevars())
+
+    def boundvars(self):
+        return self.phi.boundvars().union(self.psi.boundvars())
+
     def subst(self, v, a):
         return Imp(self.phi.subst(v, a), self.psi.subst(v, a))
 
@@ -309,6 +387,12 @@ class Biimp(Formula):
 
     def __repr__(self):
         return "(" + repr(self.phi) + "↔" + repr(self.psi) + ")"
+
+    def freevars(self):
+        return self.phi.freevars().union(self.psi.freevars())
+
+    def boundvars(self):
+        return self.phi.boundvars().union(self.psi.boundvars())
 
     def subst(self, v, a):
         return Biimp(self.phi.subst(v, a), self.psi.subst(v, a))
@@ -338,6 +422,12 @@ class Exists(Formula):
     def __repr__(self):
         return "∃" + repr(self.v) + repr(self.phi)
 
+    def freevars(self):
+        return self.phi.freevars().difference({self.v.v})
+
+    def boundvars(self):
+        return self.phi.boundvars().union({self.v.v})
+
     def subst(self, v, a):
         if v == self.v:
             return self
@@ -349,7 +439,9 @@ class Exists(Formula):
         The denotation of an existentially quantified formula Exists(x, phi) is true
         iff phi is true under at least one x-alternative of g.
         """
-        xalts = [{**g, **{str(self.v.v):a}} for a in m.d]  # compute the x-alternatives (variant assignments)
+        # for efficiency, restrict the domain of g to the variables that actually occur in the formula
+        g_ = {v: g[v] for v in g if v in {self.v.v}.union(self.phi.freevars(), self.phi.boundvars())}
+        xalts = [{**g_, str(self.v.v): d} for d in m.d]  # compute the x-alternatives (variant assignments)
         # print("iff f.a. d ∈ D: [[" + repr(self.phi) + "]]d = 1")
         for h in xalts:  # quantify over the x-alternatives
             # print("checking g(" + self.v + ") = " + j[self.v] + " ...")
@@ -379,6 +471,12 @@ class Forall(Formula):
     def __repr__(self):
         return "∀" + repr(self.v) + repr(self.phi)
 
+    def freevars(self):
+        return self.phi.freevars().difference({self.v.v})
+
+    def boundvars(self):
+        return self.phi.boundvars().union({self.v.v})
+
     def subst(self, v, a):
         if v == self.v:
             return self
@@ -390,7 +488,9 @@ class Forall(Formula):
         The denotation of universally quantified formula Forall(x, phi) is true iff
         phi is true under all x-alternatives of g.
         """
-        xalts = [{**g, **{str(self.v.v):a}} for a in m.d]  # x-alternatives (variant assignments)
+        # for efficiency, restrict the domain of g to the variables that actually occur in the formula
+        g_ = {v: g[v] for v in g if v in {self.v.v}.union(self.phi.freevars(), self.phi.boundvars())}
+        xalts = [{**g_, str(self.v.v): d} for d in m.d]  # x-alternatives (variant assignments)
         # print("iff f.a. d ∈ D: [[" + repr(self.phi) + "]]d = 1")
         # quantify over the x-alternatives
         for h in xalts:
@@ -425,7 +525,7 @@ def cart_prod(a,n):
     return res
 
 
-var = [Var("x"), Var("y"), Var("z"), Var("u"), Var("v"), Var("w")]  # the individual variables of the language
+vars = [Var("x"), Var("y"), Var("z")]  # the individual variables of the language
 
 
 class Model:
@@ -444,13 +544,25 @@ class Model:
     @attr f: the interpretation function assigning denotations to the non-logical symbols
     @type f: dict[str,str]
     @type gs: the assignment functions associated with the model
-    @type gs: list[dict[str,str]]
+    @type gs: list[Assmnt]
     """
+
     def __init__(self, d, f):
         self.d = d
         self.f = f
-        varprod = cart_prod(d, len(var))
-        self.gs = [{str(v):a for (v,a) in zip(var, p)} for p in varprod]
+        varprod = cart_prod(d, len(vars))
+        self.gs = [{str(v):a for (v,a) in zip(vars, p)} for p in varprod]
+
+    def __repr__(self):
+        return "Model M = (D,F) with\n" \
+               "D = {" + ", ".join([repr(d) for d in self.d]) + "}\n" \
+               "F = {\n" + ", \n".join(["     " + repr(key) + " ↦ " +
+                                        (repr(val) if isinstance(val, str) else
+                                        ("{" +
+                                         ", ".join(["(" + ", ".join([repr(t) for t in s]) + ")" for s in val]) +
+                                         "}"))
+                                        for (key, val) in self.f.items()]) +\
+               "\n    }"
 
 
 if __name__ == "__main__":
@@ -465,47 +577,87 @@ if __name__ == "__main__":
     # Examples
     ##########
 
-    d = {"Mary", "John", "Susan"}
-    f = {"m": "Mary", "j": "John", "s": "Susan",
+    d1 = {"Mary", "John", "Susan"}
+    f1 = {"m": "Mary", "j": "John", "s": "Susan",
          "woman": {("Mary",), ("Susan",)}, "man": {("John",)},
          "love": {("John", "Mary"), ("Mary", "Susan"), ("Susan", "Mary"), ("Susan", "Susan")},
          "jealous": {("John", "Susan", "Mary")}}
-    m = Model(d, f)
-    g = m.gs[30]
+    m1 = Model(d1, f1)
+    g1 = m1.gs[5]
 
-    print("M = (D,F) where")
-    print("D = " + repr(d))
-    print("F = " + repr(f))
-    # for g in m.gs:
-    #     print(g)
-    print("g = " + repr(g))
+    print(m1)
+    print("g = " + repr(g1))
     
-    es = {
-     1: Var("x"),
-     2: Const("j"),
-     3: Pred("love"),
-     4: Atm("love", (Const("j"), Const("m"))),
-     5: Atm("love", (Var("x"), Const("m"))),
-     6: Exists(Var("x"), Atm("love", (Const("j"), Var("x")))),
-     7: Forall(Var("x"), Atm("love", (Const("j"), Var("x")))),
-     8: Conj(Atm("love", (Const("m"), Const("s"))), Atm("love", (Const("s"), Const("m")))),
-     9: Forall(Var("x"), Imp(Atm("love", (Const("s"), Var("x"))), Atm("woman", (Var("x"),)))),
-    10: Neg(Exists(Var("x"), Atm("love", (Var("x"), Var("x"))))),
-    11: Neg(Forall(Var("x"), Atm("love", (Var("x"), Var("x"))))),
+    e1 = {
+     1: Var("x"),  # Susan
+     2: Const("j"),  # John
+     3: Pred("love"),  # {(J,M), (M,S), (S,M), (S,S)}
+     4: Atm("love", (Var("x"), Const("m"))),  # true under g, false in m
+     5: Atm("love", (Const("j"), Const("m"))),  # true
+     6: Exists(Var("x"), Atm("love", (Const("j"), Var("x")))),  # true
+     7: Forall(Var("x"), Atm("love", (Const("j"), Var("x")))),  # false
+     8: Conj(Atm("love", (Const("m"), Const("s"))), Atm("love", (Const("s"), Const("m")))),  # true
+     9: Forall(Var("x"), Imp(Atm("love", (Const("s"), Var("x"))), Atm("woman", (Var("x"),)))),  # true
+    10: Neg(Exists(Var("x"), Atm("love", (Var("x"), Var("x"))))),  # false
+    11: Neg(Forall(Var("x"), Atm("love", (Var("x"), Var("x"))))),  # true
     12: Forall(Var("x"), Imp(Atm("woman", (Var("x"), )),
                                   Exists(Var("y"), Conj(Atm("man", (Var("y"), )),
-                                      Atm("love", (Var("x"), Var("y"))))))),
+                                      Atm("love", (Var("x"), Var("y"))))))),  # false
     13: Forall(Var("x"), Forall(Var("y"), Forall(Var("z"), Imp(
                                                      Conj(Conj(Atm("love", (Var("x"), Var("y"))),
                                                           Atm("love", (Var("y"), Var("z")))),
                                                           Neg(Atm("love", (Var("y"), Var("x"))))),
                                                      Atm("jealous", (Var("x"), Var("z"), Var("y")))
-                                                     ))))
+                                                     ))))  # true
     }
 
-    for key, e in es.items():
+    for key, e in e1.items():
         print()
         print(e)
-        print(e.denot(m,g))
-        if key in [5]:
-            print(e.denotm(m))
+        # evaluate expressions 1-4 relative to m1 and g1
+        if key <= 4:
+            print(e.denot(m1, g1))
+        # evaluate expressions 4-13 relative to m1
+        if key >= 4:
+            print(e.denot_(m1))
+
+    print("\n---------------------------------\n")
+
+    d2 = {"Mary", "Jane", "MMiL"}
+    f2 = {"m": "mary",
+          "student": {("Mary", ), ("Jane", )},
+          "book": {("MMiL", )},
+          "read": {("Mary", "MMiL")}
+    }
+    m2 = Model(d2, f2)
+    g2 = {"x": "Jane", "y": "Mary"}
+
+    print(m2)
+    print("g = " + repr(g2))
+
+    e2 = {
+        1: Var("x"),  # Jane
+        2: Const("m"),  # Mary
+        3: Pred("read"),  # {(Mary, MMiL)}
+        4: Atm("book", (Var("x"), )),  # false, since Jane is not a book
+        5: Forall(Var("y"), Imp(Atm("student", (Var("y"), )),
+                                Exists(Var("x"),
+                                       Conj(Atm("book", (Var("x"), )),
+                                            Atm("read", (Var("y"), Var("z"))))))),
+           # false, since Mary doesn't read a book
+        6: Neg(Exists(Var("y"), Conj(Atm("student", (Var("y"), )),
+                                     Exists(Var("x"),
+                                            Conj(Atm("book", (Var("x"), )),
+                                                 Atm("read", (Var("y"), (Var("z")))))))))
+           # false, since Mary reads a book
+    }
+
+    for key, e in e2.items():
+        print()
+        print(e)
+        # evaluate expressions 1-4 relative to m2 and g2
+        if key <= 4:
+            print(e.denot(m2, g2))
+        # evaluate expressions 4-6 relative to m2
+        if key >= 4:
+            print(e.denot_(m2))
