@@ -7,13 +7,13 @@ Known issues:
 - No interactive mode; source code has to be edited in order to set up input.
 - Entering formulas is cumbersome.
 - Entering singleton tuples is cumbersome.
-- indent has to be reset manually after each evaluation.
+- depth has to be reset manually after each evaluation.
 - Name of model, domain, interpr. func. and variable assignment is not systematically recognized,
   instead always 'M', 'D', 'F', 'g' used in printout.
 """
 
 verbose = False  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
-indent = 0  # keep track of the level of depth of quantification (don't change this)
+depth = 0  # keep track of the level of depth of quantification (don't change this)
 
 
 class Expr:
@@ -118,14 +118,13 @@ class Var(Term):
     Individual variable.
     x, y, z, u, v, w, x1, x2, ...
 
-    When dealing with free and bound variables,
-    it is necessary to reference the variables by their name (self.v)
-    rather than the variable objects themselves (self)
-    in order for variables with the same name to be identified, as desired in the theory.
-
     @attr v: the variable name
     @type v: str
     """
+    # NB: When dealing with variable occurrences in the further processing,
+    # it will be  necessary to reference the variables by their name (self.v)
+    # rather than the variable objects themselves (self)
+    # in order for different variable occurrences with the same name to be identified, as desired in the theory.
     def __init__(self, v):
         self.v = v
 
@@ -270,15 +269,16 @@ class Formula(Expr):
         pass
 
     def denot_(self, m):
-        """The truth value of a formula relative to a model m (without reference to a particular assignment).
-        A formula is true in a model m iff it is true in m under all assignment functions.
+        """
+        The truth value of a formula relative to a model M (without reference to a particular assignment).
+        A formula is true in a model M iff it is true in M under all assignment functions g.
 
         @param m: a model
         @type m: Model
         @return: the truth value of self in m
         @rtype: bool
         """
-        global indent
+        global depth
         # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
         m.gs_ = [{v: g[v] for v in g if v in self.freevars().union(self.boundvars())} for g in m.gs]
         if not self.freevars():  # if the formula is closed,
@@ -286,19 +286,19 @@ class Formula(Expr):
             # (here: the first)
             return self.denot(m, m.gs_[0])
         for g in m.gs_:  # otherwise, check the denotation for all assignment functions
-            indent += 1
+            depth += 1
             if verbose:
-                print((indent * " ") + "checking g = " + repr(g) + "...")
+                print((depth * " ") + "checking g = " + repr(g) + "...")
             witness = self.denot(m, g)
             if witness:
                 if verbose:
-                    print((indent * 2 * " ") + "✓")
-                indent -= 1
+                    print((depth * 2 * " ") + "✓")
+                depth -= 1
             else:
                 if verbose:
-                    print((indent * 2 * " ") + "✗")
-                    print((indent * " ") + "counter assignment: g = " + repr(g))
-                indent -= 1
+                    print((depth * 2 * " ") + "✗")
+                    print((depth * " ") + "counter assignment: g = " + repr(g))
+                depth -= 1
                 return False
         return True
 
@@ -412,7 +412,7 @@ class Neg(Formula):
 
 class Conj(Formula):
     """
-    Conjunciton.
+    Conjunction.
     (φ∧ψ)
 
     @attr phi: the left conjunct
@@ -576,28 +576,28 @@ class Exists(Formula):
         The denotation of an existentially quantified formula Exists(x, phi) is true
         iff phi is true under at least one x-alternative of g.
         """
-        global indent
+        global depth
+        depth += 1
         # quantify over the individuals in the domain
-        indent += 1
         for d in m.d:
-            # compute the x-alternative (take g and overwrite the value for v with d)
-            h = {**g, self.v.v: d}
-            # check whether the current indiv. under consideration makes phi true
+            # compute the x-alternative g' (unpack g and overwrite the value for v with d)
+            g_ = {**g, self.v.v: d}
+            # check whether the current indiv. d under consideration makes phi true
             if verbose:
-                print((indent * 2 * " ") + "checking " + repr(self.v) + " ↦ " + repr(d) + "...")
-            witness = self.phi.denot(m, h)
+                print((depth * 2 * " ") + "checking " + repr(self.v) + " ↦ " + repr(d) + "...")
+            witness = self.phi.denot(m, g_)
             # if yes, we found a witness, the existential statement is true, and we can stop checking
             if witness:
                 if verbose:
-                    print((indent * 2 * " ") + "✓")
-                    print((indent * 2 * " ") + "witness: g" + (indent * "'") + "(" + repr(self.v) + ") = " + repr(d))
-                indent -= 1
+                    print((depth * 2 * " ") + "✓")
+                    print((depth * 2 * " ") + "witness: g" + (depth * "'") + "(" + repr(self.v) + ") = " + repr(d))
+                depth -= 1
                 return True
             if not witness:
                 if verbose:
-                    print((indent * 2 * " ") + "✗")
+                    print((depth * 2 * " ") + "✗")
         # if no witness has been found, the existential statement is false
-        indent -= 1
+        depth -= 1
         return False
 
 
@@ -635,28 +635,28 @@ class Forall(Formula):
         The denotation of universally quantified formula Forall(x, phi) is true iff
         phi is true under all x-alternatives of g.
         """
-        global indent
-        indent += 1
+        global depth
+        depth += 1
         # quantify over the individuals in the domain
         for d in m.d:
-            # compute the x-alternative (take g and overwrite the value for v with d)
-            h = {**g, self.v.v: d}
-            # check whether the current indiv. under consideration makes phi true
+            # compute the x-alternative g' (unpack g and overwrite the value for v with d)
+            g_ = {**g, self.v.v: d}
+            # check whether the current indiv. d under consideration makes phi true
             if verbose:
-                print((indent * 2 * " ") + "checking " + repr(self.v) + " ↦ " + repr(d) + "...")
-            witness = self.phi.denot(m, h)
+                print((depth * 2 * " ") + "checking " + repr(self.v) + " ↦ " + repr(d) + "...")
+            witness = self.phi.denot(m, g_)
             if witness:
                 if verbose:
-                 print((indent * 2 * " ") + "✓")
+                 print((depth * 2 * " ") + "✓")
             # if not, we found a counter witness, the universal statement is false, and we can stop checking
             else:
                 if verbose:
-                    print((indent * 2 * " ") + "✗")
-                    print((indent * 2 * " ") + "counter witness: g" + (indent * "'") + "(" + repr(self.v) + ") = " + repr(d))
-                indent -= 1
+                    print((depth * 2 * " ") + "✗")
+                    print((depth * 2 * " ") + "counter witness: g" + (depth * "'") + "(" + repr(self.v) + ") = " + repr(d))
+                depth -= 1
                 return False
         # if no counter witness has been found, the universal statement is true
-        indent -= 1
+        depth -= 1
         return True
 
 
@@ -768,12 +768,12 @@ if __name__ == "__main__":
         print(e)
         if nr <= 3:
             print(e.denot(m1, g1))
-            indent = 0
+            depth = 0
             print(e.denot(m1, h1))
-            indent = 0
+            depth = 0
         if nr > 3:
             print(e.denot_(m1))
-            indent = 0
+            depth = 0
 
     # Example 2: MMiL
     #############################
@@ -816,11 +816,11 @@ if __name__ == "__main__":
         # evaluate expressions 1-4 relative to m2 and g2
         if nr <= 4:
             print(e.denot(m2, g2))
-            indent = 0
+            depth = 0
         # evaluate expressions 4-6 relative to m2
         if nr >= 4:
             print(e.denot_(m2))
-            indent = 0
+            depth = 0
             
     # Example 3: love #1 (ExSh 9 Ex. 1)
     #############################
@@ -861,10 +861,10 @@ if __name__ == "__main__":
         print(e)
         if nr in [1, 2, 4, 5, 7, 8, 9]:
             print(e.denot(m3, g3))
-            indent = 0
+            depth = 0
         elif nr in [3, 6, 10]:
             print(e.denot(m3, h3))
-            indent = 0
+            depth = 0
 
     # Example 4: love #2
     #############################
@@ -915,10 +915,10 @@ if __name__ == "__main__":
         print(e)
         if 1 <= nr <= 4:
             print(e.denot(m4, g4))
-            indent = 0
+            depth = 0
         if 4 <= nr <= 16:
             print(e.denot_(m4))
-            indent = 0
+            depth = 0
         # if nr == 14:
         #     print(e.freevars())
         #     print(e.boundvars())
@@ -948,7 +948,7 @@ if __name__ == "__main__":
         print()
         print(e)
         print(e.denot(m5, g5))
-        indent = 0
+        depth = 0
 
     #############################
     print("\n---------------------------------\n")
