@@ -264,8 +264,8 @@ class Formula(Expr):
     Formula.
     φ, ψ, ...
 
-    @method denotm: the truth value of a formula relative to a model m (without reference to a particular assignment)
-    @type denotm: bool
+    @method denot_: the truth value of a formula relative to a model m (without reference to a particular assignment)
+    @type denot_: bool
     """
 
     def denot(self, m, g):
