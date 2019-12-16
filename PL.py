@@ -1527,7 +1527,8 @@ if __name__ == "__main__":
     # print(cart_prod(testset, 3))
     # print()
 
-    # Example 1: tupperware boxes and lids
+
+    # Example 1: tupperware boxes, lids and a bunny
     ############################
     print("\n---------------------------------\n")
     ############################
@@ -1570,6 +1571,7 @@ if __name__ == "__main__":
             print(e.denot_(m1))
             depth = 0
 
+
     # Example 2: MMiL
     #############################
     print("\n---------------------------------\n")
@@ -1597,7 +1599,7 @@ if __name__ == "__main__":
                                 Exists(Var("x"),
                                        Conj(Atm(Pred("book"), (Var("x"), )),
                                             Atm(Pred("read"), (Var("y"), Var("z"))))))),
-           # false, since Mary doesn't read a book
+           # false, since Jane doesn't read a book
         7: Neg(Exists(Var("y"), Conj(Atm(Pred("student"), (Var("y"), )),
                                      Exists(Var("x"),
                                             Conj(Atm(Pred("book"), (Var("x"), )),
@@ -1616,6 +1618,7 @@ if __name__ == "__main__":
         if nr >= 4:
             print(e.denot_(m2))
             depth = 0
+
 
     # Example 3: love #1 (ExSh 9 Ex. 1)
     #############################
@@ -1660,6 +1663,7 @@ if __name__ == "__main__":
         elif nr in [3, 6, 10]:
             print(e.denot(m3, h3))
             depth = 0
+
 
     # Example 4: love #2
     #############################
@@ -1718,409 +1722,6 @@ if __name__ == "__main__":
         #     print(e.freevars())
         #     print(e.boundvars())
 
-    # Example 5: term equality and function symbols
-    #############################
-    print("\n---------------------------------\n")
-    #############################
-
-    d5 = {"Mary", "Peter", "Susan", "Jane"}
-    f5 = {"m": "Mary", "s": "Susan", "j": "Jane",
-          "mother": {("Mary",): "Susan", ("Peter",): "Susan", ("Susan",): "Jane"}}
-    m5 = Model(d5, f5)
-    g5 = {"x": "Susan", "y": "Mary", "z": "Peter"}
-
-    print(m5)
-    print("g = " + repr(g5))
-
-    e5 = {
-        1: FuncTerm(Func("mother"), (Const("m"),)),  # Susan
-        2: FuncTerm(Func("mother"), (FuncTerm(Func("mother"), (Const("m"),)),)),  # Jane
-        3: Eq(FuncTerm(Func("mother"), (Const("m"),)), Const("s")),  # true
-        4: Neg(Eq(Var("x"), Const("m")))  # true
-    }
-
-    for nr, e in e5.items():
-        print()
-        print(e)
-        print(e.denot(m5, g5))
-        depth = 0
-
-    #############################
-    print("\n---------------------------------\n")
-    #############################
-
-    # print(cart_prod(testset, 2))
-    # print(cart_prod(testset, 3))
-    # print()
-
-    # Example 1: tupperware boxes and lids
-    ############################
-    print("\n---------------------------------\n")
-    ############################
-
-    d1 = {"roundbox", "roundlid", "rectbox", "rectlid", "bunny"}
-    f1 = {"b1": "roundbox", "b2": "rectbox", "f": "bunny",
-          "box": {("roundbox", ), ("rectbox", )},
-          "lid": {("roundlid", ), ("rectlid", )},
-          "fit": {("roundlid", "roundbox"), ("rectlid", "rectbox")}
-    }
-    m1 = Model(d1, f1)
-    g1 = {"x": "roundbox", "y": "bunny"}
-    h1 = {"x": "bunny", "y": "rectbox"}
-
-    print(m1)
-    print("g1: " + repr(g1))
-    print("h1: " + repr(h1))
-
-    e1 = {
-        1: Var("x"),
-        2: Const("f"),
-        3: Atm(Pred("box"), (Var("x"), )),
-        4: Forall(Var("x"), Imp(Atm(Pred("box"), (Var("x"), )),
-                                Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"), )),
-                                                      Atm(Pred("fit"), (Var("y"), Var("x"))))))),
-        5: Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"), )),
-                                 Forall(Var("x"), Imp(Atm(Pred("box"), (Var("x"), )),
-                                                      Atm(Pred("fit"), (Var("y"), Var("x")))))))
-    }
-
-    for nr, e in e1.items():
-        print()
-        print(e)
-        if nr <= 3:
-            print(e.denot(m1, g1))
-            depth = 0
-            print(e.denot(m1, h1))
-            depth = 0
-        if nr > 3:
-            print(e.denot_(m1))
-            depth = 0
-
-    # # Example 2: MMiL
-    # #############################
-    # print("\n---------------------------------\n")
-    # ############################
-    #
-    # d2 = {"Mary", "Jane", "MMiL"}
-    # f2 = {"m": "Mary",
-    #       "student": {("Mary", ), ("Jane", )},
-    #       "book": {("MMiL", )},
-    #       "read": {("Mary", "MMiL")}
-    # }
-    # m2 = Model(d2, f2)
-    # g2 = {"x": "Jane", "y": "Mary"}
-    #
-    # print(m2)
-    # print("g = " + repr(g2))
-    #
-    # e2 = {
-    #     1: Var("x"),  # Jane
-    #     2: Const("m"),  # Mary
-    #     3: Pred("read"),  # {(Mary, MMiL)}
-    #     4: Atm(Pred("book"), (Var("x"), )),  # false, since Jane is not a book
-    #     5: Exists(Var("x"), Conj(Atm(Pred("book"), (Var("x"),)), Atm(Pred("read"), (Const("m"), Var("x"))))),  # true
-    #     6: Forall(Var("y"), Imp(Atm(Pred("student"), (Var("y"), )),
-    #                             Exists(Var("x"),
-    #                                    Conj(Atm(Pred("book"), (Var("x"), )),
-    #                                         Atm(Pred("read"), (Var("y"), Var("z"))))))),
-    #        # false, since Mary doesn't read a book
-    #     7: Neg(Exists(Var("y"), Conj(Atm(Pred("student"), (Var("y"), )),
-    #                                  Exists(Var("x"),
-    #                                         Conj(Atm(Pred("book"), (Var("x"), )),
-    #                                              Atm(Pred("read"), (Var("y"), (Var("z")))))))))
-    #        # false, since Mary reads a book
-    # }
-    #
-    # for nr, e in e2.items():
-    #     print()
-    #     print(e)
-    #     # evaluate expressions 1-4 relative to m2 and g2
-    #     if nr <= 4:
-    #         print(e.denot(m2, g2))
-    #         depth = 0
-    #     # evaluate expressions 4-6 relative to m2
-    #     if nr >= 4:
-    #         print(e.denot_(m2))
-    #         depth = 0
-    #
-    # # Example 3: love #1 (ExSh 9 Ex. 1)
-    # #############################
-    # print("\n---------------------------------\n")
-    # #############################
-    #
-    # d3 = {"Mary", "John", "Peter"}
-    # f3 = {"j": "Peter", "p": "John",
-    #       "woman": {("Mary",)},
-    #       "man": {("John", ), ("Peter", )},
-    #       "love": {("Mary", "John"), ("John", "Mary"), ("John", "John"), ("Peter", "Mary"), ("Peter", "John")},
-    #       "jealous": {("Peter", "John", "Mary"), ("Peter", "Mary", "John")}}
-    # m3 = Model(d3, f3)
-    # g3 = {"x": "Mary", "y": "Mary", "z": "Peter"}
-    # h3 = {"x": "John", "y": "Peter", "z": "John"}
-    #
-    # print(m3)
-    # print("g = " + repr(g3))
-    # print("h = " + repr(h3))
-    #
-    # e3 = {
-    #     1: Const("p"),
-    #     2: Var("y"),
-    #     3: Var("y"),
-    #     4: Atm(Pred("love"), (Const("p"), Const("j"))),
-    #     5: Atm(Pred("love"), (Var("y"), Var("z"))),
-    #     6: Atm(Pred("love"), (Var("y"), Var("z"))),
-    #     7: Exists(Var("x"), Neg(Atm(Pred("love"), (Const("j"), Var("x"))))),
-    #     8: Forall(Var("x"), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y"))))),
-    #     9: Neg(Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
-    #                                  Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
-    #                                                        Atm(Pred("love"), (Var("x"), Var("y"))))
-    #                                         ))))
-    # }
-    #
-    # for nr, e in e3.items():
-    #     print()
-    #     print(e)
-    #     if nr in [1, 2, 4, 5, 7, 8, 9]:
-    #         print(e.denot(m3, g3))
-    #         depth = 0
-    #     elif nr in [3, 6, 10]:
-    #         print(e.denot(m3, h3))
-    #         depth = 0
-    #
-    # # Example 4: love #2
-    # #############################
-    # print("\n---------------------------------\n")
-    # #############################
-    #
-    # d4 = {"Mary", "John", "Susan"}
-    # f4 = {"m": "Mary", "j": "John", "s": "Susan",
-    #       "rain": {},
-    #       "sun": {()},
-    #       "woman": {("Mary",), ("Susan",)}, "man": {("John",)},
-    #       "love": {("John", "Mary"), ("Mary", "Susan"), ("Susan", "Mary"), ("Susan", "Susan")},
-    #       "jealous": {("John", "Susan", "Mary")}}
-    # m4 = Model(d4, f4)
-    # g4 = m4.gs[5]
-    #
-    # print(m4)
-    # print("g = " + repr(g4))
-    #
-    # e4 = {
-    #     1: Var("x"),  # Susan
-    #     2: Const("j"),  # John
-    #     3: Pred("love"),  # {(J,M), (M,S), (S,M), (S,S)}
-    #     4: Atm(Pred("love"), (Var("x"), Const("m"))),  # true under g, false in m
-    #     5: Atm(Pred("love"), (Const("j"), Const("m"))),  # true
-    #     6: Exists(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # true
-    #     7: Forall(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # false
-    #     8: Conj(Atm(Pred("love"), (Const("m"), Const("s"))), Atm(Pred("love"), (Const("s"), Const("m")))),  # true
-    #     9: Forall(Var("x"), Imp(Atm(Pred("love"), (Const("s"), Var("x"))), Atm(Pred("woman"), (Var("x"),)))),  # true
-    #     10: Neg(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # false
-    #     11: Neg(Forall(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # true
-    #     12: Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
-    #                              Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
-    #                                                    Atm(Pred("love"), (Var("x"), Var("y"))))))),  # false
-    #     13: Forall(Var("x"), Forall(Var("y"), Forall(Var("z"), Imp(
-    #         Conj(Conj(Atm(Pred("love"), (Var("x"), Var("y"))),
-    #                   Atm(Pred("love"), (Var("y"), Var("z")))),
-    #              Neg(Atm(Pred("love"), (Var("y"), Var("x"))))),
-    #         Atm(Pred("jealous"), (Var("x"), Var("z"), Var("y")))
-    #     )))),  # true
-    #     14: Conj(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x")))), Atm(Pred("woman"), (Var("x"),))),
-    #     15: Atm(Pred("rain"), ()),
-    #     16: Atm(Pred("sun"), ())
-    # }
-    #
-    # for nr, e in e4.items():
-    #     print()
-    #     print(e)
-    #     if 1 <= nr <= 4:
-    #         print(e.denot(m4, g4))
-    #         depth = 0
-    #     if 4 <= nr <= 16:
-    #         print(e.denot_(m4))
-    #         depth = 0
-    #     # if nr == 14:
-    #     #     print(e.freevars())
-    #     #     print(e.boundvars())
-    #
-    # # Example 5: term equality and function symbols
-    # #############################
-    # print("\n---------------------------------\n")
-    # #############################
-    #
-    # d5 = {"Mary", "Peter", "Susan", "Jane"}
-    # f5 = {"m": "Mary", "s": "Susan", "j": "Jane",
-    #       "mother": {("Mary",): "Susan", ("Peter",): "Susan", ("Susan",): "Jane"}}
-    # m5 = Model(d5, f5)
-    # g5 = {"x": "Susan", "y": "Mary", "z": "Peter"}
-    #
-    # print(m5)
-    # print("g = " + repr(g5))
-    #
-    # e5 = {
-    #     1: FuncTerm(Func("mother"), (Const("m"),)),  # Susan
-    #     2: FuncTerm(Func("mother"), (FuncTerm(Func("mother"), (Const("m"),)),)),  # Jane
-    #     3: Eq(FuncTerm(Func("mother"), (Const("m"),)), Const("s")),  # true
-    #     4: Neg(Eq(Var("x"), Const("m")))  # true
-    # }
-    #
-    # for nr, e in e5.items():
-    #     print()
-    #     print(e)
-    #     print(e.denot(m5, g5))
-    #     depth = 0
-    #
-    # #############################
-    # print("\n---------------------------------\n")
-    # #############################
-    # Example 2: MMiL
-    #############################
-    print("\n---------------------------------\n")
-    ############################
-
-    d2 = {"Mary", "Jane", "MMiL"}
-    f2 = {"m": "Mary",
-          "student": {("Mary", ), ("Jane", )},
-          "book": {("MMiL", )},
-          "read": {("Mary", "MMiL")}
-    }
-    m2 = Model(d2, f2)
-    g2 = {"x": "Jane", "y": "Mary"}
-
-    print(m2)
-    print("g = " + repr(g2))
-
-    e2 = {
-        1: Var("x"),  # Jane
-        2: Const("m"),  # Mary
-        3: Pred("read"),  # {(Mary, MMiL)}
-        4: Atm(Pred("book"), (Var("x"), )),  # false, since Jane is not a book
-        5: Exists(Var("x"), Conj(Atm(Pred("book"), (Var("x"),)), Atm(Pred("read"), (Const("m"), Var("x"))))),  # true
-        6: Forall(Var("y"), Imp(Atm(Pred("student"), (Var("y"), )),
-                                Exists(Var("x"),
-                                       Conj(Atm(Pred("book"), (Var("x"), )),
-                                            Atm(Pred("read"), (Var("y"), Var("z"))))))),
-           # false, since Mary doesn't read a book
-        7: Neg(Exists(Var("y"), Conj(Atm(Pred("student"), (Var("y"), )),
-                                     Exists(Var("x"),
-                                            Conj(Atm(Pred("book"), (Var("x"), )),
-                                                 Atm(Pred("read"), (Var("y"), (Var("z")))))))))
-           # false, since Mary reads a book
-    }
-
-    for nr, e in e2.items():
-        print()
-        print(e)
-        # evaluate expressions 1-4 relative to m2 and g2
-        if nr <= 4:
-            print(e.denot(m2, g2))
-            depth = 0
-        # evaluate expressions 4-6 relative to m2
-        if nr >= 4:
-            print(e.denot_(m2))
-            depth = 0
-
-    # Example 3: love #1 (ExSh 9 Ex. 1)
-    #############################
-    print("\n---------------------------------\n")
-    #############################
-
-    d3 = {"Mary", "John", "Peter"}
-    f3 = {"j": "Peter", "p": "John",
-          "woman": {("Mary",)},
-          "man": {("John", ), ("Peter", )},
-          "love": {("Mary", "John"), ("John", "Mary"), ("John", "John"), ("Peter", "Mary"), ("Peter", "John")},
-          "jealous": {("Peter", "John", "Mary"), ("Peter", "Mary", "John")}}
-    m3 = Model(d3, f3)
-    g3 = {"x": "Mary", "y": "Mary", "z": "Peter"}
-    h3 = {"x": "John", "y": "Peter", "z": "John"}
-
-    print(m3)
-    print("g = " + repr(g3))
-    print("h = " + repr(h3))
-
-    e3 = {
-        1: Const("p"),
-        2: Var("y"),
-        3: Var("y"),
-        4: Atm(Pred("love"), (Const("p"), Const("j"))),
-        5: Atm(Pred("love"), (Var("y"), Var("z"))),
-        6: Atm(Pred("love"), (Var("y"), Var("z"))),
-        7: Exists(Var("x"), Neg(Atm(Pred("love"), (Const("j"), Var("x"))))),
-        8: Forall(Var("x"), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y"))))),
-        9: Neg(Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
-                                     Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
-                                                           Atm(Pred("love"), (Var("x"), Var("y"))))
-                                            ))))
-    }
-
-    for nr, e in e3.items():
-        print()
-        print(e)
-        if nr in [1, 2, 4, 5, 7, 8, 9]:
-            print(e.denot(m3, g3))
-            depth = 0
-        elif nr in [3, 6, 10]:
-            print(e.denot(m3, h3))
-            depth = 0
-
-    # Example 4: love #2
-    #############################
-    print("\n---------------------------------\n")
-    #############################
-
-    d4 = {"Mary", "John", "Susan"}
-    f4 = {"m": "Mary", "j": "John", "s": "Susan",
-          "rain": {},
-          "sun": {()},
-          "woman": {("Mary",), ("Susan",)}, "man": {("John",)},
-          "love": {("John", "Mary"), ("Mary", "Susan"), ("Susan", "Mary"), ("Susan", "Susan")},
-          "jealous": {("John", "Susan", "Mary")}}
-    m4 = Model(d4, f4)
-    g4 = m4.gs[5]
-
-    print(m4)
-    print("g = " + repr(g4))
-
-    e4 = {
-        1: Var("x"),  # Susan
-        2: Const("j"),  # John
-        3: Pred("love"),  # {(J,M), (M,S), (S,M), (S,S)}
-        4: Atm(Pred("love"), (Var("x"), Const("m"))),  # true under g, false in m
-        5: Atm(Pred("love"), (Const("j"), Const("m"))),  # true
-        6: Exists(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # true
-        7: Forall(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # false
-        8: Conj(Atm(Pred("love"), (Const("m"), Const("s"))), Atm(Pred("love"), (Const("s"), Const("m")))),  # true
-        9: Forall(Var("x"), Imp(Atm(Pred("love"), (Const("s"), Var("x"))), Atm(Pred("woman"), (Var("x"),)))),  # true
-        10: Neg(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # false
-        11: Neg(Forall(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # true
-        12: Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
-                                 Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
-                                                       Atm(Pred("love"), (Var("x"), Var("y"))))))),  # false
-        13: Forall(Var("x"), Forall(Var("y"), Forall(Var("z"), Imp(
-            Conj(Conj(Atm(Pred("love"), (Var("x"), Var("y"))),
-                      Atm(Pred("love"), (Var("y"), Var("z")))),
-                 Neg(Atm(Pred("love"), (Var("y"), Var("x"))))),
-            Atm(Pred("jealous"), (Var("x"), Var("z"), Var("y")))
-        )))),  # true
-        14: Conj(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x")))), Atm(Pred("woman"), (Var("x"),))),
-        15: Atm(Pred("rain"), ()),
-        16: Atm(Pred("sun"), ())
-    }
-
-    for nr, e in e4.items():
-        print()
-        print(e)
-        if 1 <= nr <= 4:
-            print(e.denot(m4, g4))
-            depth = 0
-        if 4 <= nr <= 16:
-            print(e.denot_(m4))
-            depth = 0
-        # if nr == 14:
-        #     print(e.freevars())
-        #     print(e.boundvars())
 
     # Example 5: term equality and function symbols
     #############################
