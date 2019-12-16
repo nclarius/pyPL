@@ -74,7 +74,7 @@ class Term(Expr):
 class Const(Term):
     """
     Individual constant.
-    j, m, ... c1, c2, ...
+    a, b, c, c1, c2, ...
 
     @attr c: the constant name
     @type c: str
@@ -176,6 +176,13 @@ class FuncTerm(Term):
     Function symbol applied to an appropriate number of terms.
     f(m), h(x,t), ...
 
+    Note that 1-place function applications have to be specified as
+    Atm('f', (t1, ))
+    rather than
+    Atm('f', (t))
+    or
+    Atm('f', t1).
+
     @attr f: the function symbol
     @type f: Func
     @attr terms: the term tuple to apply the function symbol to
@@ -209,6 +216,7 @@ class FuncTerm(Term):
 class Pred(Expr):
     """
     Predicate.
+    P, Q, ...
 
     @attr p: the predicate name
     @type p: str
@@ -259,11 +267,13 @@ class Formula(Expr):
         @return: the truth value of self in m
         @rtype: bool
         """
-        # if the formula is closed, spare yourself the quantification over all assignment functions and pick an
-        # arbitrary assignment (here: the first)
-        if not self.freevars():
-            return self.denot(m, m.gs[0])
-        for g in m.gs:
+        # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
+        m.gs_ = [{v: g[v] for v in g if v in self.freevars().union(self.boundvars())} for g in m.gs]
+        if not self.freevars():  # if the formula is closed,
+            # spare yourself the quantification over all assignment functions and pick an arbitrary assignment
+            # (here: the first)
+            return self.denot(m, m.gs_[0])
+        for g in m.gs_:  # otherwise, check the denotation for all assignment functions
             if not self.denot(m, g):
                 print("counter assignment: g = " + repr(g))
                 return False
@@ -273,7 +283,7 @@ class Formula(Expr):
 class Eq(Formula):
     """
     Equality between terms.
-    t_1 = t_2
+    t1 = t2
 
     @attr t1: the left equality term
     @type t1: Term
@@ -307,14 +317,14 @@ class Eq(Formula):
 class Atm(Formula):
     """
     Atomic formula (predicate symbol applied to a number of terms).
-    P(t_1, ..., t_n)
+    P(t1, ..., tn)
 
     Note that 1-place predications have to be specified as
-    Atm('P', (t_1, ))
+    Atm('P', (t1, ))
     rather than
-    Atm('P', (t_1))
+    Atm('P', (t))
     or
-    Atm('P', t_1).
+    Atm('P', t1).
 
     @attr pred: the predicate symbol
     @type pred: Pred
@@ -543,12 +553,10 @@ class Exists(Formula):
         The denotation of an existentially quantified formula Exists(x, phi) is true
         iff phi is true under at least one x-alternative of g.
         """
-        # for efficiency, restrict the domain of g to the variables that actually occur in the formula
-        g_ = {v: g[v] for v in g if v in {self.v.v}.union(self.phi.freevars(), self.phi.boundvars())}
         # quantify over the individuals in the domain
         for d in m.d:
-            # compute the x-alternative to g
-            h = {**g_, self.v.v: d}
+            # compute the x-alternative (take g and overwrite the value for v with d)
+            h = {**g, self.v.v: d}
             # check whether the current indiv. under consideration makes phi true
             witness = self.phi.denot(m, h)
             # if yes, we found a witness, the existential statement is true, and we can stop checking
@@ -593,12 +601,10 @@ class Forall(Formula):
         The denotation of universally quantified formula Forall(x, phi) is true iff
         phi is true under all x-alternatives of g.
         """
-        # for efficiency, restrict the domain of g to the variables that actually occur in the formula
-        g_ = {v: g[v] for v in g if v in {self.v.v}.union(self.phi.freevars(), self.phi.boundvars())}
         # quantify over the individuals in the domain
         for d in m.d:
-            # compute the x-alternative to g
-            h = {**g_, self.v.v: d}
+            # compute the x-alternative (take g and overwrite the value for v with d)
+            h = {**g, self.v.v: d}
             # check whether the current indiv. under consideration makes phi true
             witness = self.phi.denot(m, h)
             # if not, we found a counter witness, the universal statement is false, and we can stop checking
