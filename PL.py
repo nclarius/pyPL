@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Simple interpreter for first-order logic with function symbols and equality.
 Works only on models with finite domains (obviously) and languages with a finite set of individual variables.
@@ -7,12 +8,14 @@ Known issues:
 - No interactive mode; source code has to be edited in order to set up input.
 - Entering expressions is cumbersome.
 - Entering singleton tuples is cumbersome.
-- depth has to be reset manually after each evaluation.
+- depth has to be reset manually after each call of denot.
+- Efficiency: assignment functions are initialized once per model;
+  the domain is not restricted expression-wise to those variables that actually occur in the expression.
 - Name of model, domain, interpr. func. and variable assignment is not systematically recognized,
   instead always 'M', 'D', 'F', 'g' used in printout.
 """
 
-verbose = False  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
+verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 depth = 0  # keep track of the level of depth of quantification (don't change this)
 
 
@@ -280,15 +283,19 @@ class Formula(Expr):
         """
         global depth
         # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
-        m.gs_ = [{v: g[v] for v in g if v in self.freevars().union(self.boundvars())} for g in m.gs]
+        var_occs = self.freevars().union(self.boundvars())
+        gs_ = [{v: g[v] for v in g if v in var_occs} for g in m.gs]
+        m.gs_ = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]
+
         if not self.freevars():  # if the formula is closed,
             # spare yourself the quantification over all assignment functions and pick an arbitrary assignment
             # (here: the first)
             return self.denot(m, m.gs_[0])
+
         for g in m.gs_:  # otherwise, check the denotation for all assignment functions
             depth += 1
             if verbose:
-                print((depth * " ") + "checking g = " + repr(g) + "...")
+                print((depth * " ") + "checking g = " + repr(g) + " ...")
             witness = self.denot(m, g)
             if witness:
                 if verbose:
@@ -319,7 +326,7 @@ class Eq(Formula):
         self.t2 = t2
 
     def __repr__(self):
-        return repr(self.t1) + "=" + repr(self.t2)
+        return repr(self.t1) + " = " + repr(self.t2)
 
     def freevars(self):
         return self.t1.freevars().union(self.t2.freevars())
@@ -425,7 +432,7 @@ class Conj(Formula):
         self.psi = psi
 
     def __repr__(self):
-        return "(" + repr(self.phi) + "∧" + repr(self.psi) + ")"
+        return "(" + repr(self.phi) + " ∧ " + repr(self.psi) + ")"
 
     def freevars(self):
         return self.phi.freevars().union(self.psi.freevars())
@@ -458,7 +465,7 @@ class Disj(Formula):
         self.psi = psi
 
     def __repr__(self):
-        return "(" + repr(self.phi) + "∨" + repr(self.psi) + ")"
+        return "(" + repr(self.phi) + " ∨ " + repr(self.psi) + ")"
 
     def freevars(self):
         return self.phi.freevars().union(self.psi.freevars())
@@ -491,7 +498,7 @@ class Imp(Formula):
         self.psi = psi
 
     def __repr__(self):
-        return "(" + repr(self.phi) + "→" + repr(self.psi) + ")"
+        return "(" + repr(self.phi) + " → " + repr(self.psi) + ")"
 
     def freevars(self):
         return self.phi.freevars().union(self.psi.freevars())
@@ -524,7 +531,7 @@ class Biimp(Formula):
         self.psi = psi
 
     def __repr__(self):
-        return "(" + repr(self.phi) + "↔" + repr(self.psi) + ")"
+        return "(" + repr(self.phi) + " ↔ " + repr(self.psi) + ")"
 
     def freevars(self):
         return self.phi.freevars().union(self.psi.freevars())
@@ -557,7 +564,7 @@ class Exists(Formula):
         self.phi = phi
 
     def __repr__(self):
-        return "∃" + repr(self.v) + repr(self.phi)
+        return "∃" + repr(self.v) + (" " if isinstance(self.phi, Atm) else "") + repr(self.phi)
 
     def freevars(self):
         return self.phi.freevars().difference({self.v.v})
@@ -584,7 +591,7 @@ class Exists(Formula):
             g_ = {**g, self.v.v: d}
             # check whether the current indiv. d under consideration makes phi true
             if verbose:
-                print((depth * 2 * " ") + "checking " + repr(self.v) + " ↦ " + repr(d) + "...")
+                print((depth * 2 * " ") + "checking g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + " ...")
             witness = self.phi.denot(m, g_)
             # if yes, we found a witness, the existential statement is true, and we can stop checking
             if witness:
@@ -616,7 +623,7 @@ class Forall(Formula):
         self.phi = phi
 
     def __repr__(self):
-        return "∀" + repr(self.v) + repr(self.phi)
+        return "∀" + repr(self.v) + (" " if isinstance(self.phi, Atm) else "") + repr(self.phi)
 
     def freevars(self):
         return self.phi.freevars().difference({self.v.v})
@@ -643,11 +650,11 @@ class Forall(Formula):
             g_ = {**g, self.v.v: d}
             # check whether the current indiv. d under consideration makes phi true
             if verbose:
-                print((depth * 2 * " ") + "checking " + repr(self.v) + " ↦ " + repr(d) + "...")
+                print((depth * 2 * " ") + "checking g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + " ...")
             witness = self.phi.denot(m, g_)
             if witness:
                 if verbose:
-                 print((depth * 2 * " ") + "✓")
+                    print((depth * 2 * " ") + "✓")
             # if not, we found a counter witness, the universal statement is false, and we can stop checking
             else:
                 if verbose:
@@ -738,7 +745,7 @@ if __name__ == "__main__":
     ############################
 
     d1 = {"roundbox", "roundlid", "rectbox", "rectlid", "bunny"}
-    f1 = {"b1": "roundbox", "b2": "rectbox", "felix": "bunny",
+    f1 = {"b1": "roundbox", "b2": "rectbox", "f": "bunny",
           "box": {("roundbox", ), ("rectbox", )},
           "lid": {("roundlid", ), ("rectlid", )},
           "fit": {("roundlid", "roundbox"), ("rectlid", "rectbox")}
@@ -753,7 +760,7 @@ if __name__ == "__main__":
 
     e1 = {
         1: Var("x"),
-        2: Const("felix"),
+        2: Const("f"),
         3: Atm(Pred("box"), (Var("x"), )),
         4: Forall(Var("x"), Imp(Atm(Pred("box"), (Var("x"), )),
                                 Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"), )),
@@ -899,7 +906,7 @@ if __name__ == "__main__":
         12: Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
                                  Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
                                                        Atm(Pred("love"), (Var("x"), Var("y"))))))),  # false
-        14: Forall(Var("x"), Forall(Var("y"), Forall(Var("z"), Imp(
+        13: Forall(Var("x"), Forall(Var("y"), Forall(Var("z"), Imp(
             Conj(Conj(Atm(Pred("love"), (Var("x"), Var("y"))),
                       Atm(Pred("love"), (Var("y"), Var("z")))),
                  Neg(Atm(Pred("love"), (Var("y"), Var("x"))))),
