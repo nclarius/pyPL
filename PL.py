@@ -15,7 +15,7 @@ Known issues:
   instead always 'M', 'D', 'F', 'g' used in printout.
 """
 
-verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
+verbose = False  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 depth = 0  # keep track of the level of depth of quantification (don't change this)
 
 
