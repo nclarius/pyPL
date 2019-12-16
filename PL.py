@@ -22,6 +22,7 @@ depth = 0  # keep track of the level of depth of quantification (don't change th
 class Expr:
     """
     Well-formed expression of predicate logic.
+    α, β, ...
 
     @method freevars: the set of the free variable occurrences in the expression
     @method boundvars: the set of bound variable occurrences in the expression
@@ -75,7 +76,8 @@ class Expr:
 
 class Term(Expr):
     """
-    Term (constants, variables).
+    Term (constant, variable).
+    t1, t2, ...
     """
 
     def denot(self, m, g):
@@ -260,6 +262,7 @@ class Pred(Expr):
 class Formula(Expr):
     """
     Formula.
+    φ, ψ, ...
 
     @method denotm: the truth value of a formula relative to a model m (without reference to a particular assignment)
     @type denotm: bool
