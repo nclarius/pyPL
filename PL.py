@@ -2,7 +2,17 @@
 Simple interpreter for first-order logic with function symbols and equality.
 Works only on models with finite domains (obviously) and languages with a finite set of individual variables.
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>
+
+Known issues:
+- Entering formulas is cumbersome.
+- Entering singleton tuples is cumbersome.
+- indent has to be reset manually after each evaluation.
+- Name of model, domain, interpr. func. and variable assignment is not systematically recognized,
+  instead always 'M', 'D', 'F', 'g' used in printout.
 """
+
+verbose = False  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
+indent = 0  # keep track of the level of depth of quantification (don't change this)
 
 
 class Expr:
@@ -267,6 +277,7 @@ class Formula(Expr):
         @return: the truth value of self in m
         @rtype: bool
         """
+        global indent
         # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
         m.gs_ = [{v: g[v] for v in g if v in self.freevars().union(self.boundvars())} for g in m.gs]
         if not self.freevars():  # if the formula is closed,
@@ -274,8 +285,19 @@ class Formula(Expr):
             # (here: the first)
             return self.denot(m, m.gs_[0])
         for g in m.gs_:  # otherwise, check the denotation for all assignment functions
-            if not self.denot(m, g):
-                print("counter assignment: g = " + repr(g))
+            indent += 1
+            if verbose:
+                print((indent * " ") + "checking g = " + repr(g) + "...")
+            witness = self.denot(m, g)
+            if witness:
+                if verbose:
+                    print((indent * 2 * " ") + "✓")
+                indent -= 1
+            else:
+                if verbose:
+                    print((indent * 2 * " ") + "✗")
+                    print((indent * " ") + "counter assignment: g = " + repr(g))
+                indent -= 1
                 return False
         return True
 
@@ -516,7 +538,7 @@ class Biimp(Formula):
         """
         The denotation of an biimplicational formula Biimp(phi,psi) is true iff phi and psi have the same truth value.
         """
-        return (self.phi.denot(m,g) and self.psi.denot(m,g)) or (not self.phi.denot(m,g) and not self.psi.denot(m,g))
+        return self.phi.denot(m,g) == self.psi.denot(m,g)
 
 
 class Exists(Formula):
@@ -553,17 +575,28 @@ class Exists(Formula):
         The denotation of an existentially quantified formula Exists(x, phi) is true
         iff phi is true under at least one x-alternative of g.
         """
+        global indent
         # quantify over the individuals in the domain
+        indent += 1
         for d in m.d:
             # compute the x-alternative (take g and overwrite the value for v with d)
             h = {**g, self.v.v: d}
             # check whether the current indiv. under consideration makes phi true
+            if verbose:
+                print((indent * 2 * " ") + "checking " + repr(self.v) + " ↦ " + repr(d) + "...")
             witness = self.phi.denot(m, h)
             # if yes, we found a witness, the existential statement is true, and we can stop checking
             if witness:
-                print("witness: g'(" + repr(self.v) + ") = " + repr(d))
+                if verbose:
+                    print((indent * 2 * " ") + "✓")
+                    print((indent * 2 * " ") + "witness: g" + (indent * "'") + "(" + repr(self.v) + ") = " + repr(d))
+                indent -= 1
                 return True
+            if not witness:
+                if verbose:
+                    print((indent * 2 * " ") + "✗")
         # if no witness has been found, the existential statement is false
+        indent -= 1
         return False
 
 
@@ -576,7 +609,7 @@ class Forall(Formula):
     @type v: Var
     @attr phi: the formula to be quantified
     @type phi: Formula
-    """
+    """    
     def __init__(self, v, phi):
         self.v = v
         self.phi = phi
@@ -601,17 +634,28 @@ class Forall(Formula):
         The denotation of universally quantified formula Forall(x, phi) is true iff
         phi is true under all x-alternatives of g.
         """
+        global indent
+        indent += 1
         # quantify over the individuals in the domain
         for d in m.d:
             # compute the x-alternative (take g and overwrite the value for v with d)
             h = {**g, self.v.v: d}
             # check whether the current indiv. under consideration makes phi true
+            if verbose:
+                print((indent * 2 * " ") + "checking " + repr(self.v) + " ↦ " + repr(d) + "...")
             witness = self.phi.denot(m, h)
+            if witness:
+                if verbose:
+                 print((indent * 2 * " ") + "✓")
             # if not, we found a counter witness, the universal statement is false, and we can stop checking
-            if not witness:
-                print("counter witness: g'(" + repr(self.v) + ") = " + repr(d))
+            else:
+                if verbose:
+                    print((indent * 2 * " ") + "✗")
+                    print((indent * 2 * " ") + "counter witness: g" + (indent * "'") + "(" + repr(self.v) + ") = " + repr(d))
+                indent -= 1
                 return False
         # if no counter witness has been found, the universal statement is true
+        indent -= 1
         return True
 
 
@@ -723,9 +767,12 @@ if __name__ == "__main__":
         print(e)
         if nr <= 3:
             print(e.denot(m1, g1))
+            indent = 0
             print(e.denot(m1, h1))
+            indent = 0
         if nr > 3:
             print(e.denot_(m1))
+            indent = 0
 
     # Example 2: MMiL
     #############################
@@ -768,29 +815,75 @@ if __name__ == "__main__":
         # evaluate expressions 1-4 relative to m2 and g2
         if nr <= 4:
             print(e.denot(m2, g2))
+            indent = 0
         # evaluate expressions 4-6 relative to m2
         if nr >= 4:
             print(e.denot_(m2))
-
-    # Example 3: love
+            indent = 0
+            
+    # Example 3: love #1 (ExSh 9 Ex. 1)
     #############################
     print("\n---------------------------------\n")
     #############################
 
-    d3 = {"Mary", "John", "Susan"}
-    f3 = {"m": "Mary", "j": "John", "s": "Susan",
+    d3 = {"Mary", "John", "Peter"}
+    f3 = {"j": "Peter", "p": "John",
+          "woman": {("Mary",)},
+          "man": {("John", ), ("Peter", )},
+          "love": {("Mary", "John"), ("John", "Mary"), ("John", "John"), ("Peter", "Mary"), ("Peter", "John")},
+          "jealous": {("Peter", "John", "Mary"), ("Peter", "Mary", "John")}}
+    m3 = Model(d3, f3)
+    g3 = {"x": "Mary", "y": "Mary", "z": "Peter"}
+    h3 = {"x": "John", "y": "Peter", "z": "John"}
+
+    print(m3)
+    print("g = " + repr(g3))
+    print("h = " + repr(h3))
+
+    e3 = {
+        1: Const("p"),
+        2: Var("y"),
+        3: Var("y"),
+        4: Atm(Pred("love"), (Const("p"), Const("j"))),
+        5: Atm(Pred("love"), (Var("y"), Var("z"))),
+        6: Atm(Pred("love"), (Var("y"), Var("z"))),
+        7: Exists(Var("x"), Neg(Atm(Pred("love"), (Const("j"), Var("x"))))),
+        8: Forall(Var("x"), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y"))))),
+        9: Neg(Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
+                                     Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
+                                                           Atm(Pred("love"), (Var("x"), Var("y"))))
+                                            ))))
+    }
+
+    for nr, e in e3.items():
+        print()
+        print(e)
+        if nr in [1, 2, 4, 5, 7, 8, 9]:
+            print(e.denot(m3, g3))
+            indent = 0
+        elif nr in [3, 6, 10]:
+            print(e.denot(m3, h3))
+            indent = 0
+
+    # Example 4: love #2
+    #############################
+    print("\n---------------------------------\n")
+    #############################
+
+    d4 = {"Mary", "John", "Susan"}
+    f4 = {"m": "Mary", "j": "John", "s": "Susan",
           "rain": {},
           "sun": {()},
           "woman": {("Mary",), ("Susan",)}, "man": {("John",)},
           "love": {("John", "Mary"), ("Mary", "Susan"), ("Susan", "Mary"), ("Susan", "Susan")},
           "jealous": {("John", "Susan", "Mary")}}
-    m3 = Model(d3, f3)
-    g3 = m3.gs[5]
+    m4 = Model(d4, f4)
+    g4 = m4.gs[5]
 
-    print(m3)
-    print("g = " + repr(g3))
+    print(m4)
+    print("g = " + repr(g4))
 
-    e3 = {
+    e4 = {
         1: Var("x"),  # Susan
         2: Const("j"),  # John
         3: Pred("love"),  # {(J,M), (M,S), (S,M), (S,S)}
@@ -801,11 +894,11 @@ if __name__ == "__main__":
         8: Conj(Atm(Pred("love"), (Const("m"), Const("s"))), Atm(Pred("love"), (Const("s"), Const("m")))),  # true
         9: Forall(Var("x"), Imp(Atm(Pred("love"), (Const("s"), Var("x"))), Atm(Pred("woman"), (Var("x"),)))),  # true
         10: Neg(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # false
-        13: Neg(Forall(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # true
+        11: Neg(Forall(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # true
         12: Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
                                  Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
                                                        Atm(Pred("love"), (Var("x"), Var("y"))))))),  # false
-        13: Forall(Var("x"), Forall(Var("y"), Forall(Var("z"), Imp(
+        14: Forall(Var("x"), Forall(Var("y"), Forall(Var("z"), Imp(
             Conj(Conj(Atm(Pred("love"), (Var("x"), Var("y"))),
                       Atm(Pred("love"), (Var("y"), Var("z")))),
                  Neg(Atm(Pred("love"), (Var("y"), Var("x"))))),
@@ -816,42 +909,45 @@ if __name__ == "__main__":
         16: Atm(Pred("sun"), ())
     }
 
-    for nr, e in e3.items():
+    for nr, e in e4.items():
         print()
         print(e)
         if 1 <= nr <= 4:
-            print(e.denot(m3, g3))
+            print(e.denot(m4, g4))
+            indent = 0
         if 4 <= nr <= 16:
-            print(e.denot_(m3))
+            print(e.denot_(m4))
+            indent = 0
         # if nr == 14:
         #     print(e.freevars())
         #     print(e.boundvars())
 
-    # Example 4: term equality and function symbols
+    # Example 5: term equality and function symbols
     #############################
     print("\n---------------------------------\n")
     #############################
 
-    d4 = {"Mary", "Peter", "Susan", "Jane"}
-    f4 = {"m": "Mary", "s": "Susan", "j": "Jane",
+    d5 = {"Mary", "Peter", "Susan", "Jane"}
+    f5 = {"m": "Mary", "s": "Susan", "j": "Jane",
           "mother": {("Mary",): "Susan", ("Peter",): "Susan", ("Susan",): "Jane"}}
-    m4 = Model(d4, f4)
-    g4 = {"x": "Susan", "y": "Mary", "z": "Peter"}
+    m5 = Model(d5, f5)
+    g5 = {"x": "Susan", "y": "Mary", "z": "Peter"}
 
-    print(m4)
-    print("g = " + repr(g4))
+    print(m5)
+    print("g = " + repr(g5))
 
-    e4 = {
+    e5 = {
         1: FuncTerm(Func("mother"), (Const("m"),)),  # Susan
         2: FuncTerm(Func("mother"), (FuncTerm(Func("mother"), (Const("m"),)),)),  # Jane
         3: Eq(FuncTerm(Func("mother"), (Const("m"),)), Const("s")),  # true
         4: Neg(Eq(Var("x"), Const("m")))  # true
     }
 
-    for nr, e in e4.items():
+    for nr, e in e5.items():
         print()
         print(e)
-        print(e.denot(m4, g4))
+        print(e.denot(m5, g5))
+        indent = 0
 
     #############################
     print("\n---------------------------------\n")
