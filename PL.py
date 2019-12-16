@@ -1,18 +1,31 @@
 # -*- coding: utf-8 -*-
 """
-Simple interpreter for first-order logic with function symbols and equality.
-Works only on models with finite domains (obviously) and languages with a finite set of individual variables.
+Simple interpreter for first-order logic.
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>
+
+Features:
+- specification of expressions in a language of FOL
+  - accepts languages with with 0-place predicates, function symbols and term equality
+- specification of models of FOL with domain, interpretation function and assignment functions
+- evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
+  relative to models and assignment functions
+
+Restrictions:
+  - works only on models with finite domains (obviously)
+  - works only on languages with a finite set of individual variables
 
 Known issues:
 - No interactive mode; source code has to be edited in order to set up input.
 - Entering expressions is cumbersome.
 - Entering singleton tuples is cumbersome.
 - depth has to be reset manually after each call of denot.
-- Efficiency: assignment functions are initialized once per model;
+- Efficiency: Assignment functions are initialized once per model;
   the domain is not restricted expression-wise to those variables that actually occur in the expression.
 - Name of model, domain, interpr. func. and variable assignment is not systematically recognized,
   instead always 'M', 'D', 'F', 'g' used in printout.
+
+Future plans:
+- Print out the detailed computation steps.
 """
 
 verbose = False  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
@@ -126,7 +139,7 @@ class Var(Term):
     @type v: str
     """
     # NB: When dealing with variable occurrences in the further processing,
-    # it will be  necessary to reference the variables by their name (self.v)
+    # it will be necessary to reference the variables by their name (self.v)
     # rather than the variable objects themselves (self)
     # in order for different variable occurrences with the same name to be identified, as desired in the theory.
     def __init__(self, v):
