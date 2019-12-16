@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Simple interpreter for first-order logic.
+Simple first-order logic interpreter.
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>
 
 Features:
@@ -15,11 +15,11 @@ Restrictions:
  - works only on languages with a finite set of individual variables
 
 Known issues:
- - Name of model, domain, interpr. func. and variable assignment is not systematically recognized,
-   instead always 'M', 'D', 'F', 'g' used in printout.
- - efficiency: Assignment functions are initialized once per model;
+ - name of model, domain, interpr. func. and variable assignment is not systematically recognized,
+   instead always 'M', 'D', 'F', 'g' used in printout
+ - efficiency: assignment functions are initialized once per model;
    the domain is not restricted expression-wise to those variables that actually occur in the expression.
- - depth has to be reset manually after each call of denot.
+ - depth has to be reset manually after each call of denot
 
 Wish list:
  - print out detailed derivation rather than just final result of evaluation, possibly with LaTeX mode
@@ -711,9 +711,9 @@ vars = [Var("x"), Var("y"), Var("z")]  # the individual variables of the languag
 
 class Model:
     """
-    A model with domain and interpretation function.
+    A model with domain, interpretation function and a set of assignment functions.
 
-    - The domain D is a set of objects, specified as strings:
+    - The domain D is a set of individuals, specified as strings:
        D = {'a', 'b', 'c', ...}
 
     - The interpretation function F is a dictionary with
@@ -722,10 +722,10 @@ class Model:
 
        {'c': 'a', 'P': {('a', ), ('b', )}, 'f': {('c1',): 'a', ('c2',): 'b'}}
 
-        - The denotation of individual constants has to be specified as a string:
+        - The denotation of individual constants is a member (string) of D:
            'c': 'a'
 
-        - The denotation of predicates has to be specified as a set of tuples of members (strings) of D:
+        - The denotation of predicates is a set of tuples of members (strings) of D:
            'P': {('a', ), ('b', )}
            'R': {('a', 'b'), ('b', 'c')}
 
@@ -740,9 +740,18 @@ class Model:
              'Q': {()}      iff the proposition expressed by 'Q' is true
              'Q': {}        iff the proposition expressed by 'Q' false
 
-        - The denotation of function symbols has to be specified as a dictionary with tuples as keys:
+        - The denotation of function symbols is a dictionary with
+          - tuples of members of D as keys and
+          - members of D as values
            'f': {('c1',): 'a', ('c2',): 'b'}
            'h': {('c1', 'c2'): 'a'}
+
+    - An assignment function g is a dictionary with
+      - variables (specified as strings) as keys and
+      - members of D (specified as strings) as values
+       {'x': 'a', 'y': 'b', 'z': 'c'}
+
+    ---------
 
     @attr d: the domain of discourse
     @type d: set[str]
