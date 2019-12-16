@@ -4,7 +4,7 @@ Works only on models with finite domains (obviously) and languages with a finite
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>
 
 Known issues:
-- No interactive mode; source code as to be edited to set up examples.
+- No interactive mode; source code has to be edited in order to set up input.
 - Entering formulas is cumbersome.
 - Entering singleton tuples is cumbersome.
 - indent has to be reset manually after each evaluation.
