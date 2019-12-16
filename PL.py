@@ -5,7 +5,7 @@ Works only on models with finite domains (obviously) and languages with a finite
 
 Known issues:
 - No interactive mode; source code has to be edited in order to set up input.
-- Entering formulas is cumbersome.
+- Entering expressions is cumbersome.
 - Entering singleton tuples is cumbersome.
 - depth has to be reset manually after each evaluation.
 - Name of model, domain, interpr. func. and variable assignment is not systematically recognized,
@@ -706,8 +706,8 @@ class Model:
     def __init__(self, d, f):
         self.d = d
         self.f = f
-        varprod = cart_prod(list(d), len(vars))
-        self.gs = [{str(v): a for (v, a) in zip(vars, p)} for p in varprod]
+        dprod = cart_prod(list(d), len(vars))  # all ways of forming sets of |vars| long combinations of elements from D
+        self.gs = [{str(v): a for (v, a) in zip(vars, distr)} for distr in dprod]
 
     def __repr__(self):
         return "Model M = (D,F) with\n" \
