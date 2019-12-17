@@ -17,8 +17,8 @@ Restrictions:
 Known issues:
  - name of model, domain, interpr. func. and variable assignment is not systematically recognized,
    instead always 'M', 'D', 'F', 'g' used in printout
- - efficiency: assignment functions are initialized once per model;
-   the domain is not restricted expression-wise to those variables that actually occur in the expression.
+ - efficiency: assignment functions have to be specified on all variables of the language;
+   the domain is not restricted expression-wise to those variables that actually occur in the expression
  - depth has to be reset manually after each call of denot
 
 Wish list:
@@ -605,8 +605,8 @@ class Exists(Formula):
         depth += 1
         # quantify over the individuals in the domain
         for d in m.d:
-            # compute the x-alternative g' (unpack g and overwrite the value for v with d)
-            g_ = {**g, self.v.v: d}
+            # compute the x-alternative g'
+            g_ = {**g, self.v.v: d}  # unpack g and overwrite the dictionary value for v with d
             # check whether the current indiv. d under consideration makes phi true
             if verbose:
                 print((depth * 2 * " ") + "checking g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + " ...")
@@ -664,8 +664,8 @@ class Forall(Formula):
         depth += 1
         # quantify over the individuals in the domain
         for d in m.d:
-            # compute the x-alternative g' (unpack g and overwrite the value for v with d)
-            g_ = {**g, self.v.v: d}
+            # compute the x-alternative g'
+            g_ = {**g, self.v.v: d}  # unpack g and overwrite the dictionary value for v with d
             # check whether the current indiv. d under consideration makes phi true
             if verbose:
                 print((depth * 2 * " ") + "checking g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + " ...")
@@ -845,7 +845,7 @@ if __name__ == "__main__":
           "read": {("Mary", "MMiL")}
     }
     m2 = Model(d2, f2)
-    g2 = {"x": "Jane", "y": "Mary"}
+    g2 = {"x": "Jane", "y": "Mary", "z": "MMiL"}
 
     print(m2)
     print("g = " + repr(g2))
@@ -871,14 +871,8 @@ if __name__ == "__main__":
     for nr, e in e2.items():
         print()
         print(e)
-        # evaluate expressions 1-4 relative to m2 and g2
-        if nr <= 4:
-            print(e.denot(m2, g2))
-            depth = 0
-        # evaluate expressions 4-6 relative to m2
-        if nr >= 4:
-            print(e.denot_(m2))
-            depth = 0
+        print(e.denot(m2, g2))
+        depth = 0
 
     # Example 3: love #1 (ExSh 9 Ex. 1)
     #############################
@@ -957,12 +951,11 @@ if __name__ == "__main__":
         12: Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
                                  Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
                                                        Atm(Pred("love"), (Var("x"), Var("y"))))))),  # false
-        13: Forall(Var("x"), Forall(Var("y"), Forall(Var("z"), Imp(
+        13: Imp(
             Conj(Conj(Atm(Pred("love"), (Var("x"), Var("y"))),
                       Atm(Pred("love"), (Var("y"), Var("z")))),
                  Neg(Atm(Pred("love"), (Var("y"), Var("x"))))),
-            Atm(Pred("jealous"), (Var("x"), Var("z"), Var("y")))
-        )))),  # true
+            Atm(Pred("jealous"), (Var("x"), Var("z"), Var("y")))),  # true
         14: Conj(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x")))), Atm(Pred("woman"), (Var("x"),))),
         15: Atm(Pred("rain"), ()),
         16: Atm(Pred("sun"), ())
