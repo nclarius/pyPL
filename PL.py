@@ -18,7 +18,7 @@ Restrictions:
 
 Known issues:
  - name of model, domain, interpr. func. and variable assignment is not systematically recognized,
-   instead always 'M', 'D', 'F', 'g' used in printout
+   instead always 'M', 'D', 'F', 'g', 'w' used in printout
  - efficiency: assignment functions have to be specified on all variables of the language;
    the domain is not restricted expression-wise to those variables that actually occur in the expression
  - depth has to be reset manually after each call of denot
@@ -820,7 +820,8 @@ class Poss(Formula):
         for w_ in neighbors:
             depth += 1
             # check whether phi is true in w
-            print((depth * "  ") + "checking w" + (depth * "'") + " = " + repr(w_) + " ...")
+            if verbose:
+                print((depth * "  ") + "checking w" + (depth * "'") + " = " + repr(w_) + " ...")
             witness = self.phi.denot(m, g, w_)
             # if yes, we found a witnessing neighbor, the possibility statement is true, and we can stop checking
             if witness:
@@ -880,7 +881,8 @@ class Nec(Formula):
         for w_ in neighbors:
             depth += 1
             # check whether phi is true in w
-            print((depth * "  ") + "checking w" + (depth * "'") + " = " + repr(w_) + " ...")
+            if verbose:
+                print((depth * "  ") + "checking w" + (depth * "'") + " = " + repr(w_) + " ...")
             witness = self.phi.denot(m, g, w_)
             if witness:
                 if verbose:
