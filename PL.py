@@ -31,7 +31,7 @@ Wish list:
    - interactive mode/API instead of need to edit source code in order to set up input
 """
 
-verbose = False  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
+verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
 
 class Expr:
@@ -320,8 +320,11 @@ class Formula(Expr):
         global depth
         # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
         var_occs = self.freevars().union(self.boundvars())
-        gs_ = [{v: g[v] for v in g if v in var_occs} for g in m.gs]
-        m.gs_ = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]  # filter out duplicate assignment functions
+        gs_ = m.gs
+        if isinstance(m, VarModalModel):
+            gs_ = m.gs[w]
+        gs__ = [{v: g[v] for v in g if v in var_occs} for g in gs_]
+        m.gs_ = [dict(tpl) for tpl in {tuple(g.items()) for g in gs__}]  # filter out now duplicate assignment functions
 
         if not self.freevars():  # if the formula is closed,
             # spare yourself the quantification over all assignment functions and pick an arbitrary assignment
@@ -392,11 +395,12 @@ class Formula(Expr):
         @return: the truth value of self in m under g
         @rtype: bool
         """
+        # todo doesn't work for modal models with varying domain yet (due different structure of assignment functions)
         global depth
         # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
         var_occs = self.freevars().union(self.boundvars())
         gs_ = [{v: g[v] for v in g if v in var_occs} for g in m.gs]
-        m.gs_ = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]  # filter out duplicate assignment functions
+        m.gs_ = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]  # filter out now duplicate assignment functions
 
         if not self.freevars():  # if the formula is closed,
             # spare yourself the quantification over all assignment functions and pick an arbitrary assignment
@@ -696,14 +700,17 @@ class Exists(Formula):
         """
         global depth
         depth += 1
+        d_ = m.d
+        if isinstance(m, VarModalModel):
+            d_ = m.d[w]
         # quantify over the individuals in the domain
-        for d in m.d:
+        for d in d_:
             # compute the x-alternative g'
             g_ = {**g, self.v.v: d}  # unpack g and overwrite the dictionary value for v with d
             # check whether the current indiv. d under consideration makes phi true
             if verbose:
                 print((depth * 2 * " ") + "checking g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + " ...")
-            witness = self.phi.denot(m, g_)
+            witness = self.phi.denot(m, g_, w)
             # if yes, we found a witness, the existential statement is true, and we can stop checking
             if witness:
                 if verbose:
@@ -755,14 +762,17 @@ class Forall(Formula):
         """
         global depth
         depth += 1
+        d_ = m.d
+        if isinstance(w, VarModalModel):
+            d_ = m.d[w]
         # quantify over the individuals in the domain
-        for d in m.d:
+        for d in d_:
             # compute the x-alternative g'
             g_ = {**g, self.v.v: d}  # unpack g and overwrite the dictionary value for v with d
             # check whether the current indiv. d under consideration makes phi true
             if verbose:
                 print((depth * 2 * " ") + "checking g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + " ...")
-            witness = self.phi.denot(m, g_)
+            witness = self.phi.denot(m, g_, w)
             if witness:
                 if verbose:
                     print((depth * 2 * " ") + "✓")
@@ -1056,6 +1066,7 @@ class ConstModalModel(ModalModel):
     @attr f: the interpretation function
     @type f: dict[str,dict[str,Any]]
     """
+    # todo doesnt work yet (assignment function)
     def __init__(self, w, r, d, f):
         self.w = w
         self.r = r
@@ -1127,8 +1138,8 @@ class VarModalModel(ModalModel):
         self.r = r
         self.d = d
         self.f = f
-        dprod = cart_prod(list(d), len(vars))  # all ways of forming sets of |vars| long combinations of elements from D
-        self.gs = [{str(v): a for (v, a) in zip(vars, distr)} for distr in dprod]
+        dprods = {w: cart_prod(list(self.d[w]), len(vars)) for w in self.w}  # all ways of forming sets of |vars| long combinations of elements from D
+        self.gs = {w: [{str(v): a for (v, a) in zip(vars, distr)} for distr in dprods[w]] for w in self.w}
 
     def __repr__(self):
         return "Model M = (W,R,D,F) with\n" \
@@ -1406,6 +1417,38 @@ if __name__ == "__main__":
         # depth = 0
         print(e.denotW(m6, g6))
         depth = 0
+
+    # Example 6: modal logic with varying domain
+    #############################
+    print("\n---------------------------------\n")
+    #############################
+
+    w7 = {"w1", "w2"}
+    r7 = {("w1", "w1"), ("w1", "w2"), ("w2", "w2"), ("w2", "w2")}
+    d7 = {"w1": {"a"},
+          "w2": {"a", "b"}}
+    f7 = {"w1": {"P": {("a",)}},
+          "w2": {"P": {("b",)}}}
+    m7 = VarModalModel(w7, r7, d7, f7)
+
+    print(m7)
+    print(m7.gs)
+
+    e7 = {
+        1: Exists(Var("x"), Exists(Var("y"), Neg(Eq(Var("x"), Var("y")))))
+    }
+
+    for nr, e in e7.items():
+        print()
+        print(e)
+        print(e.denot(m7, m7.gs["w1"][0], "w1"))
+        depth = 0
+        print(e.denot(m7, m7.gs["w2"][0], "w2"))
+        depth = 0
+        # print(e.denotG(m7))
+        # print(e.denotW(m7, g7))
+        # print(e.denotGW(m7))
+        # depth = 0
 
     #############################
     print("\n---------------------------------\n")
