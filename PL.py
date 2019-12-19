@@ -31,7 +31,7 @@ Wish list:
    - interactive mode/API instead of need to edit source code in order to set up input
 """
 
-verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
+verbose = False  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
 
 class Expr:
