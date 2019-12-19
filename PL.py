@@ -31,7 +31,7 @@ Wish list:
    - interactive mode/API instead of need to edit source code in order to set up input
 """
 
-verbose = False  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
+verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
 
 class Expr:
@@ -160,7 +160,7 @@ class Var(Term):
         return {self.v}
 
     def boundvars(self):
-        return {}
+        return set()
 
     def subst(self, v, a):
         if self.v == v:
@@ -320,21 +320,21 @@ class Formula(Expr):
         global depth
         # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
         var_occs = self.freevars().union(self.boundvars())
-        gs_ = m.gs
+        gs__ = m.gs
         if isinstance(m, VarModalModel):
-            gs_ = m.gs[w]
-        gs__ = [{v: g[v] for v in g if v in var_occs} for g in gs_]
-        m.gs_ = [dict(tpl) for tpl in {tuple(g.items()) for g in gs__}]  # filter out now duplicate assignment functions
+            gs__ = m.gs[w]
+        gs_ = [{v: g[v] for v in g if v in var_occs} for g in gs__]
+        gs = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]  # filter out now duplicate assignment functions
 
         if not self.freevars():  # if the formula is closed,
             # spare yourself the quantification over all assignment functions and pick an arbitrary assignment
             # (here: the first)
-            return self.denot(m, m.gs_[0])
+            return self.denot(m, gs[0], w)
 
-        for g in m.gs_:  # otherwise, check the denotation for all assignment functions
+        for g in gs:  # otherwise, check the denotation for all assignment functions
             depth += 1
             if verbose:
-                print((depth * " ") + "checking g = " + repr(g) + " ...")
+                print((depth * " ") + "checking g := " + repr(g) + " ...")
             witness = self.denot(m, g, w)
             if witness:
                 if verbose:
@@ -343,7 +343,7 @@ class Formula(Expr):
             else:
                 if verbose:
                     print((depth * 2 * " ") + "✗")
-                    print((depth * " ") + "counter assignment: g = " + repr(g))
+                    print((depth * " ") + "counter assignment: g := " + repr(g))
                 depth -= 1
                 return False
         return True
@@ -361,15 +361,15 @@ class Formula(Expr):
         @rtype: bool
         """
         global depth
-        # # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
-        # var_occs = self.freevars().union(self.boundvars())
-        # gs_ = [{v: g[v] for v in g if v in var_occs} for g in m.gs]
-        # m.gs_ = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]  # filter out duplicate assignment functions
+        # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
+        var_occs = self.freevars().union(self.boundvars())
+        gs_ = [{v: g[v] for v in g if v in var_occs} for g in m.gs]
+        m.gs_ = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]  # filter out duplicate assignment functions
 
         for w in m.w:
             depth += 1
             if verbose:
-                print((depth * "  ") + "checking w = " + repr(w) + " ...")
+                print((depth * "  ") + "checking w := " + repr(w) + " ...")
             witness = self.denot(m, g, w)
             if witness:
                 if verbose:
@@ -378,7 +378,7 @@ class Formula(Expr):
             else:
                 if verbose:
                     print((depth * 2 * " ") + "✗")
-                    print((depth * " ") + "counter world: w = " + repr(w))
+                    print((depth * " ") + "counter world: w := " + repr(w))
                 depth -= 1
                 return False
         return True
@@ -397,21 +397,12 @@ class Formula(Expr):
         """
         # todo doesn't work for modal models with varying domain yet (due different structure of assignment functions)
         global depth
-        # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
-        var_occs = self.freevars().union(self.boundvars())
-        gs_ = [{v: g[v] for v in g if v in var_occs} for g in m.gs]
-        m.gs_ = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]  # filter out now duplicate assignment functions
 
-        if not self.freevars():  # if the formula is closed,
-            # spare yourself the quantification over all assignment functions and pick an arbitrary assignment
-            # (here: the first)
-            return self.denot(m, m.gs_[0])
-
-        for g in m.gs_:  # otherwise, check the denotation for all assignment functions
+        for w in m.w:
             depth += 1
             if verbose:
-                print((depth * " ") + "checking g = " + repr(g) + " ...")
-            witness = self.denotW(m, g)
+                print((depth * " ") + "checking w := " + repr(w) + " ...")
+            witness = self.denotG(m, w)
             if witness:
                 if verbose:
                     print((depth * 2 * " ") + "✓")
@@ -419,7 +410,7 @@ class Formula(Expr):
             else:
                 if verbose:
                     print((depth * 2 * " ") + "✗")
-                    print((depth * " ") + "counter assignment: g = " + repr(g))
+                    print((depth * " ") + "counter world: w := " + repr(w))
                 depth -= 1
                 return False
         return True
@@ -715,7 +706,7 @@ class Exists(Formula):
             if witness:
                 if verbose:
                     print((depth * 2 * " ") + "✓")
-                    print((depth * 2 * " ") + "witness: g" + (depth * "'") + "(" + repr(self.v) + ") = " + repr(d))
+                    print((depth * 2 * " ") + "witness: g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d))
                 depth -= 1
                 return True
             if not witness:
@@ -780,7 +771,7 @@ class Forall(Formula):
             else:
                 if verbose:
                     print((depth * 2 * " ") + "✗")
-                    print((depth * 2 * " ") + "counter witness: g" + (depth * "'") + "(" + repr(self.v) + ") = " + repr(d))
+                    print((depth * 2 * " ") + "counter witness: g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d))
                 depth -= 1
                 return False
         # if no counter witness has been found, the universal statement is true
@@ -831,13 +822,13 @@ class Poss(Formula):
             depth += 1
             # check whether phi is true in w
             if verbose:
-                print((depth * "  ") + "checking w" + (depth * "'") + " = " + repr(w_) + " ...")
+                print((depth * "  ") + "checking w" + (depth * "'") + " := " + repr(w_) + " ...")
             witness = self.phi.denot(m, g, w_)
             # if yes, we found a witnessing neighbor, the possibility statement is true, and we can stop checking
             if witness:
                 if verbose:
                     print((depth * 2 * " ") + "✓")
-                    print((depth * 2 * " ") + "neighbor: w" + (depth * "'") + " = " + repr(w_))
+                    print((depth * 2 * " ") + "neighbor: w" + (depth * "'") + " := " + repr(w_))
                 depth -= 1
                 return True
             if not witness:
@@ -892,7 +883,7 @@ class Nec(Formula):
             depth += 1
             # check whether phi is true in w
             if verbose:
-                print((depth * "  ") + "checking w" + (depth * "'") + " = " + repr(w_) + " ...")
+                print((depth * "  ") + "checking w" + (depth * "'") + " := " + repr(w_) + " ...")
             witness = self.phi.denot(m, g, w_)
             if witness:
                 if verbose:
@@ -902,7 +893,7 @@ class Nec(Formula):
             else:
                 if verbose:
                     print((depth * 2 * " ") + "✗")
-                    print((depth * 2 * " ") + "counter neighbor: w" + (depth * "'") + " = " + repr(w_))
+                    print((depth * 2 * " ") + "counter neighbor: w" + (depth * "'") + " := " + repr(w_))
                 depth -= 1
                 return False
         # if no counter neighbor has been found, the necessity statement is true
@@ -1520,8 +1511,8 @@ if __name__ == "__main__":
 
     e6 = {
         1: Poss(Nec(Eq(Var("x"), Var("x")))),
-        3: Nec(Disj(Atm(Pred("P"), tuple()), Neg(Atm(Pred("P"), tuple())))),
-        2: Disj(Nec(Atm(Pred("P"), tuple())), Nec(Neg(Atm(Pred("P"), tuple()))))
+        2: Nec(Disj(Atm(Pred("P"), tuple()), Neg(Atm(Pred("P"), tuple())))),
+        3: Disj(Nec(Atm(Pred("P"), tuple())), Nec(Neg(Atm(Pred("P"), tuple()))))
     }
 
     for nr, e in e6.items():
@@ -1756,7 +1747,9 @@ if __name__ == "__main__":
         depth = 0
         # print(e.denotG(m7))
         # print(e.denotW(m7, g7))
-        # print(e.denotGW(m7))
+        print()
+        print("[[" + repr(e) + "]]^M7 =")
+        print(e.denotGW(m7))
         # depth = 0
 
     #############################
