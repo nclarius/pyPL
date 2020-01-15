@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Simple modal first-order logic interpreter.
+A naive model checker for modal first-order logic.
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>
 
 Features:
@@ -9,7 +9,7 @@ Features:
  - specification of models of FOL with domain, interpretation function and assignment functions
    - accepts models without possible worlds, modal models with constant domains and modal models with varying domains
  - evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
-   relative to models, assignment functions and possible worlds
+   relative to models, variable assignments and possible worlds
 
 Restrictions:
  - works only on models with finite domains (obviously)
@@ -31,7 +31,7 @@ Wish list:
    - interactive mode/API instead of need to edit source code in order to set up input
 """
 
-verbose = False  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
+verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
 
 class Expr:
@@ -700,19 +700,31 @@ class Exists(Formula):
             g_ = {**g, self.v.v: d}  # unpack g and overwrite the dictionary value for v with d
             # check whether the current indiv. d under consideration makes phi true
             if verbose:
-                print((depth * 2 * " ") + "checking g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + " ...")
+                # print((depth * 2 * " ") + "checking g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + " ...")
+                print((depth * 2 * " ") + "Let g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + ".")
+                print(((depth+1) * 2 * " ") + "[[" + repr(self.phi) + "]]^M,g" + (depth * "'") + " =")
             witness = self.phi.denot(m, g_, w)
             # if yes, we found a witness, the existential statement is true, and we can stop checking
             if witness:
                 if verbose:
-                    print((depth * 2 * " ") + "✓")
-                    print((depth * 2 * " ") + "witness: g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d))
+                    print(((depth+1) * 2 * " ") + "1")
+                    # print(((depth+1) * 2 * " ") + "✓")
+                    # print(((depth+1) * 2 * " ") + "witness: g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d))
+                if verbose:
+                    print((depth * 2 * " ") + "Since with g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) +
+                          " ex. g" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,g" + (depth * "'") + " = 1,")
+                    print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,g" + ((depth-1) * "'") + " = 1.")
                 depth -= 1
                 return True
             if not witness:
                 if verbose:
-                    print((depth * 2 * " ") + "✗")
-        # if no witness has been found, the existential statement is false
+                    print(((depth+1) * 2 * " ") + "0")
+                    # print(((depth+1) * 2 * " ") + "✗")
+        # if no witness has been found, the existential statement is true
+        if verbose:
+            print((depth * 2 * " ") + "Since " +
+                  "ex. no g" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,g" + (depth * "'") + " = 1,")
+            print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,g" + ((depth-1) * "'") + " = 0.")
         depth -= 1
         return False
 
@@ -762,19 +774,31 @@ class Forall(Formula):
             g_ = {**g, self.v.v: d}  # unpack g and overwrite the dictionary value for v with d
             # check whether the current indiv. d under consideration makes phi true
             if verbose:
-                print((depth * 2 * " ") + "checking g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + " ...")
+                # print((depth * 2 * " ") + "checking g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + " ...")
+                print((depth * 2 * " ") + "Let g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + ".")
+                print(((depth+1) * 2 * " ") + "[[" + repr(self.phi) + "]]^M,g" + (depth * "'") + " =")
             witness = self.phi.denot(m, g_, w)
             if witness:
                 if verbose:
-                    print((depth * 2 * " ") + "✓")
+                    print(((depth+1) * 2 * " ") + "1")
+                    # print(((depth+1) * 2 * " ") + "✓")
             # if not, we found a counter witness, the universal statement is false, and we can stop checking
             else:
                 if verbose:
-                    print((depth * 2 * " ") + "✗")
-                    print((depth * 2 * " ") + "counter witness: g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d))
+                    print(((depth+1) * 2 * " ") + "0")
+                    # print(((depth+1) * 2 * " ") + "✗")
+                    # print(((depth+1) * 2 * " ") + "counter witness: g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d))
                 depth -= 1
+                if verbose:
+                    print((depth * 2 * " ") + "Since with g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) +
+                          " ex. g" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,g" + (depth * "'") + " = 0,")
+                    print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,g" + ((depth-1) * "'") + " = 0.")
                 return False
         # if no counter witness has been found, the universal statement is true
+        if verbose:
+            print((depth * 2 * " ") + "Since " +
+                  "f.a. g" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,g" + (depth * "'") + " = 1,")
+            print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,g" + ((depth-1) * "'") + " = 1.")
         depth -= 1
         return True
 
@@ -1273,113 +1297,6 @@ if __name__ == "__main__":
     print("g = " + repr(g3))
     print("h = " + repr(h3))
 
-    # Example 1: tupperware boxes, lids and a bunny
-    ############################
-    print("\n---------------------------------\n")
-    ############################
-
-    d1 = {"roundbox", "roundlid", "rectbox", "rectlid", "bunny"}
-    f1 = {"b1": "roundbox", "b2": "rectbox", "f": "bunny",
-          "box": {("roundbox", ), ("rectbox", )},
-          "lid": {("roundlid", ), ("rectlid", )},
-          "fit": {("roundlid", "roundbox"), ("rectlid", "rectbox")}
-    }
-    m1 = PredModel(d1, f1)
-    g1 = {"x": "roundbox", "y": "bunny"}
-    h1 = {"x": "bunny", "y": "rectbox"}
-
-    print(m1)
-    print("g1: " + repr(g1))
-    print("h1: " + repr(h1))
-
-    e1 = {
-        1: Var("x"),
-        2: Const("f"),
-        3: Atm(Pred("box"), (Var("x"), )),
-        4: Forall(Var("x"), Imp(Atm(Pred("box"), (Var("x"), )),
-                                Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"), )),
-                                                      Atm(Pred("fit"), (Var("y"), Var("x"))))))),
-        5: Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"), )),
-                                 Forall(Var("x"), Imp(Atm(Pred("box"), (Var("x"), )),
-                                                      Atm(Pred("fit"), (Var("y"), Var("x")))))))
-    }
-
-    for nr, e in e1.items():
-        if nr <= 3:
-            print()
-            print("[[" + repr(e) + "]]^M1,g1 =")
-            print(e.denot(m1, g1))
-            depth = 0
-            print()
-            print("[[" + repr(e) + "]]^M1,h1 =")
-            print(e.denot(m1, h1))
-            depth = 0
-        if nr > 3:
-            print()
-            print("[[" + repr(e) + "]]^M1 =")
-            print(e.denotG(m1))
-            depth = 0
-
-    # Example 2: MMiL
-    #############################
-    print("\n---------------------------------\n")
-    ############################
-
-    d2 = {"Mary", "Jane", "MMiL"}
-    f2 = {"m": "Mary",
-          "student": {("Mary", ), ("Jane", )},
-          "book": {("MMiL", )},
-          "read": {("Mary", "MMiL")}
-    }
-    m2 = PredModel(d2, f2)
-    g2 = {"x": "Jane", "y": "Mary", "z": "MMiL"}
-
-    print(m2)
-    print("g = " + repr(g2))
-
-    e2 = {
-        1: Var("x"),  # Jane
-        2: Const("m"),  # Mary
-        3: Pred("read"),  # {(Mary, MMiL)}
-        4: Atm(Pred("book"), (Var("x"), )),  # false, since Jane is not a book
-        5: Exists(Var("x"), Conj(Atm(Pred("book"), (Var("x"),)), Atm(Pred("read"), (Const("m"), Var("x"))))),  # true
-        6: Forall(Var("y"), Imp(Atm(Pred("student"), (Var("y"), )),
-                                Exists(Var("x"),
-                                       Conj(Atm(Pred("book"), (Var("x"), )),
-                                            Atm(Pred("read"), (Var("y"), Var("z"))))))),
-           # false, since Jane doesn't read a book
-        7: Neg(Exists(Var("y"), Conj(Atm(Pred("student"), (Var("y"), )),
-                                     Exists(Var("x"),
-                                            Conj(Atm(Pred("book"), (Var("x"), )),
-                                                 Atm(Pred("read"), (Var("y"), (Var("z")))))))))
-           # false, since Mary reads a book
-    }
-
-    for nr, e in e2.items():
-        print()
-        print("[[" + repr(e) + "]]^M2,g2 =")
-        print(e.denot(m2, g2))
-        depth = 0
-
-    # Example 3: love #1 (ExSh 9 Ex. 1)
-    #############################
-    print("\n---------------------------------\n")
-    #############################
-
-    d3 = {"Mary", "John", "Peter"}
-    f3 = {"j": "Peter", "p": "John",
-          "woman": {("Mary",)},
-          "man": {("John", ), ("Peter", )},
-          "love": {("Mary", "John"), ("John", "Mary"), ("John", "John"), ("Peter", "Mary"), ("Peter", "John")},
-          "jealous": {("Peter", "John", "Mary"), ("Peter", "Mary", "John")}}
-    m3 = PredModel(d3, f3)
-    g3 = {"x": "Mary", "y": "Mary", "z": "Peter"}
-    h3 = {"x": "John", "y": "Peter", "z": "John"}
-
-    print(m3)
-    print("g = " + repr(g3))
-    print("h = " + repr(h3))
-
     e3 = {
         1: Const("p"),
         2: Var("y"),
@@ -1392,7 +1309,8 @@ if __name__ == "__main__":
         9: Neg(Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
                                      Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
                                                            Atm(Pred("love"), (Var("x"), Var("y"))))
-                                            ))))
+                                            )))),
+        10: Neg(Exists(Var("y"), Exists(Var("z"), Atm(Pred("jealous"), (Const("j"), Var("y"), Var("z"))))))
     }
 
     for nr, e in e3.items():
@@ -1528,7 +1446,7 @@ if __name__ == "__main__":
         print(e.denotW(m6, g6))
         depth = 0
 
-    # Example 6: modal logic with varying domain
+    # Example 7: modal logic with varying domain
     #############################
     print("\n---------------------------------\n")
     #############################
@@ -1562,195 +1480,18 @@ if __name__ == "__main__":
         # print(e.denotGW(m7))
         # depth = 0
 
+    # Example 8: compute set of variable assignments
     #############################
     print("\n---------------------------------\n")
     #############################
 
+    d = ["a", "b", "c", "d"]
+    vs = ["x", "y", "z"]
+    dprod = cart_prod(list(d), len(vs))  # all ways of forming sets of |vs| long combinations of elements from D
+    gs = [{str(v): a for (v, a) in zip(vs, distr)}for distr in dprod]
 
-    e3 = {
-        1: Const("p"),
-        2: Var("y"),
-        3: Var("y"),
-        4: Atm(Pred("love"), (Const("p"), Const("j"))),
-        5: Atm(Pred("love"), (Var("y"), Var("z"))),
-        6: Atm(Pred("love"), (Var("y"), Var("z"))),
-        7: Exists(Var("x"), Neg(Atm(Pred("love"), (Const("j"), Var("x"))))),
-        8: Forall(Var("x"), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y"))))),
-        9: Neg(Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
-                                     Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
-                                                           Atm(Pred("love"), (Var("x"), Var("y"))))
-                                            ))))
-    }
-
-    for nr, e in e3.items():
-        # print(e)
-        if nr in [1, 2, 4, 5, 7, 8, 9]:
-            print()
-            print("[[" + repr(e) + "]]^M3,g3 =")
-            print(e.denot(m3, g3))
-            depth = 0
-        elif nr in [3, 6, 10]:
-            print()
-            print("[[" + repr(e) + "]]^M3,h3 =")
-            print(e.denot(m3, h3))
-            depth = 0
-
-    # Example 4: love #2
-    #############################
-    print("\n---------------------------------\n")
-    #############################
-
-    d4 = {"Mary", "John", "Susan"}
-    f4 = {"m": "Mary", "j": "John", "s": "Susan",
-          "rain": {},
-          "sun": {()},
-          "woman": {("Mary",), ("Susan",)}, "man": {("John",)},
-          "love": {("John", "Mary"), ("Mary", "Susan"), ("Susan", "Mary"), ("Susan", "Susan")},
-          "jealous": {("John", "Susan", "Mary")}}
-    m4 = PredModel(d4, f4)
-    g4 = m4.gs[5]
-
-    print(m4)
-    print("g = " + repr(g4))
-
-    e4 = {
-        1: Var("x"),  # Susan
-        2: Const("j"),  # John
-        3: Pred("love"),  # {(J,M), (M,S), (S,M), (S,S)}
-        4: Atm(Pred("love"), (Var("x"), Const("m"))),  # true under g, false in m
-        5: Atm(Pred("love"), (Const("j"), Const("m"))),  # true
-        6: Exists(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # true
-        7: Forall(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # false
-        8: Conj(Atm(Pred("love"), (Const("m"), Const("s"))), Atm(Pred("love"), (Const("s"), Const("m")))),  # true
-        9: Forall(Var("x"), Imp(Atm(Pred("love"), (Const("s"), Var("x"))), Atm(Pred("woman"), (Var("x"),)))),  # true
-        10: Neg(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # false
-        11: Neg(Forall(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # true
-        12: Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
-                                 Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
-                                                       Atm(Pred("love"), (Var("x"), Var("y"))))))),  # false
-        13: Imp(
-            Conj(Conj(Atm(Pred("love"), (Var("x"), Var("y"))),
-                      Atm(Pred("love"), (Var("y"), Var("z")))),
-                 Neg(Atm(Pred("love"), (Var("y"), Var("x"))))),
-            Atm(Pred("jealous"), (Var("x"), Var("z"), Var("y")))),  # true
-        14: Conj(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x")))), Atm(Pred("woman"), (Var("x"),))),
-        15: Atm(Pred("rain"), ()),
-        16: Atm(Pred("sun"), ())
-    }
-
-    for nr, e in e4.items():
-        if 1 <= nr <= 4:
-            print()
-            print("[[" + repr(e) + "]]^M4,g4 =")
-            print(e.denot(m4, g4))
-            depth = 0
-        if 4 <= nr <= 16:
-            print()
-            print("[[" + repr(e) + "]]^M4 =")
-            print(e.denotG(m4))
-            depth = 0
-        # if nr == 14:
-        #     print(e.freevars())
-        #     print(e.boundvars())
-
-    # Example 5: term equality and function symbols
-    #############################
-    print("\n---------------------------------\n")
-    #############################
-
-    d5 = {"Mary", "Peter", "Susan", "Jane"}
-    f5 = {"m": "Mary", "s": "Susan", "j": "Jane",
-          "mother": {("Mary",): "Susan", ("Peter",): "Susan", ("Susan",): "Jane"}}
-    m5 = PredModel(d5, f5)
-    g5 = {"x": "Susan", "y": "Mary", "z": "Peter"}
-
-    print(m5)
-    print("g = " + repr(g5))
-
-    e5 = {
-        1: FuncTerm(Func("mother"), (Const("m"),)),  # Susan
-        2: FuncTerm(Func("mother"), (FuncTerm(Func("mother"), (Const("m"),)),)),  # Jane
-        3: Eq(FuncTerm(Func("mother"), (Const("m"),)), Const("s")),  # true
-        4: Neg(Eq(Var("x"), Const("m")))  # true
-    }
-
-    for nr, e in e5.items():
-        print()
-        print("[[" + repr(e) + "]]^M5,g5 =")
-        print(e.denot(m5, g5))
-        depth = 0
-
-    # Example 6: modal logic with constant domain
-    #############################
-    print("\n---------------------------------\n")
-    #############################
-
-    w6 = {"w1", "w2"}
-    r6 = {("w1", "w1"), ("w1", "w2"), ("w2", "w2"), ("w2", "w2")}
-    d6 = {"a"}
-    f6 = {"w1": {"P": {()}},
-          "w2": {"P": set()}}
-    m6 = ConstModalModel(w6, r6, d6, f6)
-    g6 = m6.gs[0]
-    
-    print(m6)
-    print(g6)
-
-    e6 = {
-        1: Poss(Nec(Eq(Var("x"), Var("x")))),
-        3: Nec(Disj(Atm(Pred("P"), tuple()), Neg(Atm(Pred("P"), tuple())))),
-        2: Disj(Nec(Atm(Pred("P"), tuple())), Nec(Neg(Atm(Pred("P"), tuple()))))
-    }
-    
-    for nr, e in e6.items():
-        # print()
-        # print("[[" + repr(e) + "]]^M6,g6,w1 =")
-        # print(e.denot(m6, g6, "w1"))
-        # depth = 0
-        # print()
-        # print("[[" + repr(e) + "]]^M6,g6,w2 =")
-        # print(e.denot(m6, g6, "w2"))
-        # depth = 0
-        print()
-        print("[[" + repr(e) + "]]^M6,g6 =")
-        print(e.denotW(m6, g6))
-        depth = 0
-
-    # Example 6: modal logic with varying domain
-    #############################
-    print("\n---------------------------------\n")
-    #############################
-
-    w7 = {"w1", "w2"}
-    r7 = {("w1", "w1"), ("w1", "w2"), ("w2", "w2"), ("w2", "w2")}
-    d7 = {"w1": {"a"},
-          "w2": {"a", "b"}}
-    f7 = {"w1": {"P": {("a",)}},
-          "w2": {"P": {("b",)}}}
-    m7 = VarModalModel(w7, r7, d7, f7)
-
-    print(m7)
-    # print(m7.gs)
-
-    e7 = {
-        1: Exists(Var("x"), Exists(Var("y"), Neg(Eq(Var("x"), Var("y")))))
-    }
-
-    for nr, e in e7.items():
-        print()
-        print("[[" + repr(e) + "]]^M7,w1 =")
-        print(e.denot(m7, m7.gs["w1"][0], "w1"))
-        depth = 0
-        print()
-        print("[[" + repr(e) + "]]^M7,w2 =")
-        print(e.denot(m7, m7.gs["w2"][0], "w2"))
-        depth = 0
-        # print(e.denotG(m7))
-        # print(e.denotW(m7, g7))
-        print()
-        print("[[" + repr(e) + "]]^M7 =")
-        print(e.denotGW(m7))
-        # depth = 0
+    for nr, g in enumerate(gs):
+        print("g" + str(nr+1) + ": " + str(g))
 
     #############################
     print("\n---------------------------------\n")
