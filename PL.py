@@ -6,7 +6,7 @@ A naive model checker for modal first-order logic.
 Features:
  - specification of expressions in a language of FOL
    - accepts languages with with 0-place predicates, function symbols, term equality and modal operators ◻, ◇
- - specification of models of FOL with domain, interpretation function and assignment functions
+ - specification of models of FOL with domain, interpretation function and variable assignments
    - accepts models without possible worlds, modal models with constant domains and modal models with varying domains
  - evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
    relative to models, variable assignments and possible worlds
@@ -17,7 +17,7 @@ Restrictions:
  - can't infer universal validity, logical inference etc., only truth in a given model
 
 Known issues:
- - name of model, domain, interpr. func. and variable assignment is not systematically recognized,
+ - name of model, domain, interpr. func., variable assignment and world is not systematically recognized,
    instead always 'M', 'D', 'F', 'g', 'w' used in printout
  - efficiency: assignment functions have to be specified on all variables of the language;
    the domain is not restricted expression-wise to those variables that actually occur in the expression
@@ -29,6 +29,7 @@ Wish list:
    - expression parser instead of the cumbersome PNF specification
    - a better way of dealing with singleton tuples
    - interactive mode/API instead of need to edit source code in order to set up input
+ - model generation?
 """
 
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
@@ -63,15 +64,15 @@ class Expr:
         """
         pass
 
-    def subst(self, v, a):
+    def subst(self, v, t):
         """
-        Substitute all occurrences of the variable v for the term a in self.
+        Substitute all occurrences of the variable v for the term t in self.
 
         @param v: the variable to be substituted
         @type v: Var
         @param a: the term to substitute
         @type a: Term
-        @return: the result of substituting all occurrences of the variable v for the term a in self
+        @return: the result of substituting all occurrences of the variable v for the term t in self
         @rtype Expr
         """
         pass
@@ -125,7 +126,7 @@ class Const(Term):
     def boundvars(self):
         return {}
 
-    def subst(self, v, a):
+    def subst(self, v, t):
         return self
 
     def denot(self, m, g, w=None):
@@ -162,7 +163,7 @@ class Var(Term):
     def boundvars(self):
         return set()
 
-    def subst(self, v, a):
+    def subst(self, v, t):
         if self.v == v:
             return Var(repr(a))
         else:
@@ -196,7 +197,7 @@ class Func(Expr):
     def boundvars(self):
         return {}
 
-    def subst(self, v, a):
+    def subst(self, v, t):
         return self
 
     def denot(self, m, g, w=None):
@@ -240,8 +241,8 @@ class FuncTerm(Term):
     def boundvars(self):
         return set().union(*[t.boundvars() for t in self.terms])
 
-    def subst(self, v, a):
-        return FuncTerm(self.f, map(lambda t: t.subst(v, a), self.terms))
+    def subst(self, v, t):
+        return FuncTerm(self.f, map(lambda t: t.subst(v, t), self.terms))
 
     def denot(self, m, g, w=None):
         """
@@ -274,7 +275,7 @@ class Pred(Expr):
     def boundvars(self):
         return {}
 
-    def subst(self, v, a):
+    def subst(self, v, t):
         return self
 
     def denot(self, m, g, w=None):
@@ -318,8 +319,8 @@ class Formula(Expr):
         @rtype: bool
         """
         global depth
-        # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
-        var_occs = self.freevars().union(self.boundvars())
+        # for efficiency, restrict the domain of the assignment functions o the vars that actually occur in the formula
+        var_occs = self.freevars() | self.boundvars()
         gs__ = m.gs
         if isinstance(m, VarModalModel):
             gs__ = m.gs[w]
@@ -362,7 +363,7 @@ class Formula(Expr):
         """
         global depth
         # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
-        var_occs = self.freevars().union(self.boundvars())
+        var_occs = self.freevars() | self.boundvars()
         gs_ = [{v: g[v] for v in g if v in var_occs} for g in m.gs]
         m.gs_ = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]  # filter out duplicate assignment functions
 
@@ -416,6 +417,95 @@ class Formula(Expr):
         return True
 
 
+class Verum(Formula):
+    """
+    Verum.
+    ⊤
+    """
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return "⊤"
+
+    def freevars(self):
+        return set()
+
+    def boundvars(self):
+        return set()
+
+    def subst(self, v, t):
+        return self
+
+    def denot(self, m, g, w=None):
+        """
+        The denotation of the verum is always true.
+        """
+        return True
+
+
+class Falsum(Formula):
+    """
+    Falsum.
+    ⊥
+    """
+
+    def __init__(self):
+        pass
+
+    def __repr__(self):
+        return "⊥"
+
+    def freevars(self):
+        return set()
+
+    def boundvars(self):
+        return set()
+
+    def subst(self, v, t):
+        return self
+
+    def denot(self, m, g, w=None):
+        """
+        The denotation of the falsum is always false.
+        """
+        return False
+
+
+class Prop(Formula):
+    """
+    Propositional variable.
+    p, q, ...
+
+    @attr p: the propositional variable
+    @type p: str
+    """
+
+    def __init__(self, p):
+        self.p = p
+
+    def __repr__(self):
+        return self.p
+
+    def freevars(self):
+        return set()
+
+    def boundvars(self):
+        return set()
+
+    def subst(self, v, t):
+        return self
+
+    def denot(self, m, g, w=None):
+        """
+        The denotation of a propositional variable is the truth value the interpretation function f assigns it.
+        """
+        f = m.f
+        if isinstance(m, VarModalModel):
+            f = m.f[w]
+        return f[self.p]
+
+
 class Eq(Formula):
     """
     Equality between terms.
@@ -435,13 +525,13 @@ class Eq(Formula):
         return repr(self.t1) + " = " + repr(self.t2)
 
     def freevars(self):
-        return self.t1.freevars().union(self.t2.freevars())
+        return self.t1.freevars() | self.t2.freevars()
 
     def boundvars(self):
-        return self.t1.boundvars().union(self.t2.boundvars())
+        return self.t1.boundvars() | self.t2.boundvars()
 
-    def subst(self, v, a):
-        return Eq(self.t1.subst(v, a), self.t2.subst(v, a))
+    def subst(self, v, t):
+        return Eq(self.t1.subst(v, t), self.t2.subst(v, t))
 
     def denot(self, m, g, w=None):
         """
@@ -480,8 +570,8 @@ class Atm(Formula):
     def boundvars(self):
         return set().union(*[t.boundvars() for t in self.terms])
 
-    def subst(self, v, a):
-        return Atm(self.pred, map(lambda t: t.subst(v, a), self.terms))
+    def subst(self, v, t):
+        return Atm(self.pred, map(lambda t: t.subst(v, t), self.terms))
 
     def denot(self, m, g, w=None):
         """
@@ -513,8 +603,8 @@ class Neg(Formula):
     def boundvars(self):
         return self.phi.boundvars()
 
-    def subst(self, v, a):
-        return Neg(self.phi.subst(v, a))
+    def subst(self, v, t):
+        return Neg(self.phi.subst(v, t))
 
     def denot(self, m, g, w=None):
         """
@@ -541,13 +631,13 @@ class Conj(Formula):
         return "(" + repr(self.phi) + " ∧ " + repr(self.psi) + ")"
 
     def freevars(self):
-        return self.phi.freevars().union(self.psi.freevars())
+        return self.phi.freevars() | self.psi.freevars()
 
     def boundvars(self):
-        return self.phi.boundvars().union(self.psi.boundvars())
+        return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, v, a):
-        return Conj(self.phi.subst(v, a), self.psi.subst(v, a))
+    def subst(self, v, t):
+        return Conj(self.phi.subst(v, t), self.psi.subst(v, t))
 
     def denot(self, m, g, w=None):
         """
@@ -574,13 +664,13 @@ class Disj(Formula):
         return "(" + repr(self.phi) + " ∨ " + repr(self.psi) + ")"
 
     def freevars(self):
-        return self.phi.freevars().union(self.psi.freevars())
+        return self.phi.freevars() | self.psi.freevars()
 
     def boundvars(self):
-        return self.phi.boundvars().union(self.psi.boundvars())
+        return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, v, a):
-        return Disj(self.phi.subst(v, a), self.psi.subst(v, a))
+    def subst(self, v, t):
+        return Disj(self.phi.subst(v, t), self.psi.subst(v, t))
 
     def denot(self, m, g, w=None):
         """
@@ -607,13 +697,13 @@ class Imp(Formula):
         return "(" + repr(self.phi) + " → " + repr(self.psi) + ")"
 
     def freevars(self):
-        return self.phi.freevars().union(self.psi.freevars())
+        return self.phi.freevars() | self.psi.freevars()
 
     def boundvars(self):
-        return self.phi.boundvars().union(self.psi.boundvars())
+        return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, v, a):
-        return Imp(self.phi.subst(v, a), self.psi.subst(v, a))
+    def subst(self, v, t):
+        return Imp(self.phi.subst(v, t), self.psi.subst(v, t))
 
     def denot(self, m, g, w=None):
         """
@@ -640,13 +730,13 @@ class Biimp(Formula):
         return "(" + repr(self.phi) + " ↔ " + repr(self.psi) + ")"
 
     def freevars(self):
-        return self.phi.freevars().union(self.psi.freevars())
+        return self.phi.freevars() | self.psi.freevars()
 
     def boundvars(self):
-        return self.phi.boundvars().union(self.psi.boundvars())
+        return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, v, a):
-        return Biimp(self.phi.subst(v, a), self.psi.subst(v, a))
+    def subst(self, v, t):
+        return Biimp(self.phi.subst(v, t), self.psi.subst(v, t))
 
     def denot(self, m, g, w=None):
         """
@@ -673,16 +763,16 @@ class Exists(Formula):
         return "∃" + repr(self.v) + (" " if isinstance(self.phi, Atm) else "") + repr(self.phi)
 
     def freevars(self):
-        return self.phi.freevars().difference({self.v.v})
+        return self.phi.freevars() - {self.v.v}
 
     def boundvars(self):
-        return self.phi.boundvars().union({self.v.v})
+        return self.phi.boundvars() | {self.v.v}
 
-    def subst(self, v, a):
+    def subst(self, v, t):
         if v == self.v:
             return self
         else:
-            return self.phi.subst(v, a)
+            return self.phi.subst(v, t)
 
     def denot(self, m, g, w=None):
         """
@@ -720,7 +810,7 @@ class Exists(Formula):
                 if verbose:
                     print(((depth+1) * 2 * " ") + "0")
                     # print(((depth+1) * 2 * " ") + "✗")
-        # if no witness has been found, the existential statement is true
+        # if no witness has been found, the existential statement is false
         if verbose:
             print((depth * 2 * " ") + "Since " +
                   "ex. no g" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,g" + (depth * "'") + " = 1,")
@@ -747,16 +837,16 @@ class Forall(Formula):
         return "∀" + repr(self.v) + (" " if isinstance(self.phi, Atm) else "") + repr(self.phi)
 
     def freevars(self):
-        return self.phi.freevars().difference({self.v.v})
+        return self.phi.freevars() - {self.v.v}
 
     def boundvars(self):
-        return self.phi.boundvars().union({self.v.v})
+        return self.phi.boundvars() | {self.v.v}
 
-    def subst(self, v, a):
+    def subst(self, v, t):
         if v == self.v:
             return self
         else:
-            return self.phi.subst(v, a)
+            return self.phi.subst(v, t)
 
     def denot(self, m, g, w=None):
         """
@@ -817,8 +907,8 @@ class Poss(Formula):
     def __repr__(self):
         return "◇" + repr(self.phi)
 
-    def subst(self, v, a):
-        return Poss(self.phi.subst(v, a))
+    def subst(self, v, t):
+        return Poss(self.phi.subst(v, t))
 
     def freevars(self):
         return self.phi.freevars()
@@ -879,8 +969,8 @@ class Nec(Formula):
     def __repr__(self):
         return "◻" + repr(self.phi)
 
-    def subst(self, v, a):
-        return Poss(self.phi.subst(v, a))
+    def subst(self, v, t):
+        return Poss(self.phi.subst(v, t))
 
     def freevars(self):
         return self.phi.freevars()
@@ -1120,7 +1210,7 @@ class VarModalModel(ModalModel):
       - W = set of possible worlds
       - R = the accessibility relation, a binary relation on W
       - D = an assignment of possible worlds to domains of discourse
-      - F = interpretation function assigning to each member of w and each non-logical symbol a denotation
+      - F = interpretation function assigning to each member of W and each non-logical symbol a denotation
     and a set of assignment functions gs.
 
     - The set of possible worlds W is a set of possible worlds, specified as strings:
