@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-A naive model checker for modal first-order logic.
+A naive model checker for classical first-order logic with an extension to modal first-order logic.
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>
 
 Features:
