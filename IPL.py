@@ -5,7 +5,7 @@ A naive model checker for intuitionistic first-order logic with Kripke semantics
 
 Features:
  - specification of expressions in a language of FOL
-   - accepts languages with with propositional variables, 0-place predicates, function symbols and term equality
+   - accepts languages with with propositional variables, zero-place predicates, function symbols and term equality
    - propositional logic may be imitated by means of zero-place predicates in place of propositional variables
  - specification of Kripke models of IFOL with states, domain, interpretation function and variable assignments
  - evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
