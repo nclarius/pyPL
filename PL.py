@@ -18,7 +18,7 @@ Features:
    relative to models, variable assignments and possible worlds
 
 Restrictions:
- - works only on models with finite domains (obviously)
+ - works only on models with finite domains
  - works only on languages with a finite set of individual variables
  - can't infer universal validity, logical inference etc., only truth in a given model
 
