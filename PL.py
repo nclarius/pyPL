@@ -5,7 +5,8 @@ A naive model checker for classical first-order logic with an extension to modal
 
 Features:
  - specification of expressions in a language of FOL
-   - accepts languages with with 0-place predicates, function symbols, term equality and modal operators ◻, ◇
+   - accepts languages with with zero-place predicates, function symbols, term equality and modal operators ◻, ◇
+   - propositional logic may be imitated via zero-place predicates in place of propositional variables
  - specification of models of FOL with domain, interpretation function and variable assignments
    - accepts models without possible worlds, modal models with constant domains and modal models with varying domains
  - evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
