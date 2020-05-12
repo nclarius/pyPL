@@ -3,12 +3,6 @@
 A naive model checker for classical first-order logic with an extension to modal first-order logic.
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>
 
-Usage notes:
-- This tool is not equipped with an interactive user interface. 
-  Formulas, models and the denotations to be computed have to be specified in the source code.
-  Follow the examples in the main block and the documentations of the classes and methods.
-  After specifying your input in the code, execute this script in a terminal to see the output.
-
 Features:
  - specification of expressions in a language of FOL
    - accepts languages with with 0-place predicates, function symbols, term equality and modal operators ◻, ◇
@@ -36,6 +30,12 @@ Wish list:
    - a better way of dealing with singleton tuples
    - interactive mode/API instead of need to edit source code in order to set up input
  - model generation?
+
+Usage notes:
+- This tool is not equipped with an interactive user interface. 
+  Formulas, models and the denotations to be computed have to be specified in the source code.
+  Follow the examples in the main block and the documentations of the classes and methods.
+  After specifying your input in the code, execute this script in a terminal to see the output.
 """
 
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
