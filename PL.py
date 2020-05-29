@@ -55,12 +55,12 @@ A number of examples are already set up.
 Follow the existing examples and the documentations of the classes and methods to code your specifications.
 
 If you would like to understand what's going on under the hood:
+Simply ignore anything that looks completely unfamiliar to you (such as 'w'/modal stuff, function symbols, etc.).
 The interesting part for you are the 'denot' methods in each of the expression classes.
 Inspect the code and compare how the formal definitions can be translated into working code almost 1:1,
 and try to follow how the implementation behaves, especially in the loop logic for the quantifiers.
 A recommendation is to set breakpoints and step through an evaluation process symbol by symbol
 to see how a denotation is computed recursively in line with the inductive definitions.
-Simply ignore anything that looks completely unfamiliar to you (such as 'w'/modal stuff, function symbols, etc.).
 
 After specifying your input and turning off help mode, execute this script in a terminal to view the output.
 """
