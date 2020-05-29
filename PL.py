@@ -1,45 +1,46 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# A naive model checker for classical first-order logic with an extension to modal first-order logic.
+# © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>
+#
+# Features:
+# ---------
+#  - specification of expressions in a language of FOL
+#    - accepts languages with with zero-place predicates, function symbols, term equality and modal operators ◻, ◇
+#    - propositional logic may be imitated by means of zero-place predicates in place of propositional variables
+#  - specification of models of FOL with domain, interpretation function and variable assignments
+#    - accepts models without possible worlds, modal models with constant domains and modal models with varying domains
+#  - evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
+#    relative to models, variable assignments and possible worlds
+#
+# Restrictions:
+# -------------
+#  - works only on models with finite domains
+#  - works only on languages with a finite set of individual variables
+#  - can't infer universal validity, logical inference etc., only truth in a given model
+#
+# Known issues:
+# -------------
+#  - name of model, domain, interpr. func., variable assignment and world is not systematically recognized,
+#    instead always 'M', 'D', 'I', 'v', 'w' used in printout
+#  - efficiency: assignment functions have to be specified on all variables of the language;
+#    the domain is not restricted expression-wise to those variables that actually occur in the expression
+#  - depth has to be reset manually after each call of denot
+#
+# Wish list:
+# ----------
+#  - print out detailed derivation rather than just final result of evaluation, possibly with LaTeX mode
+#  - more user-friendly input:
+#    - expression parser instead of the cumbersome PNF specification
+#    - a better way of dealing with singleton tuples
+#    - interactive mode/API instead of need to edit source code in order to set up input
+#  - model generation?
+
 """
-A naive model checker for classical first-order logic with an extension to modal first-order logic.
-© Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>
-
-Features:
----------
- - specification of expressions in a language of FOL
-   - accepts languages with with zero-place predicates, function symbols, term equality and modal operators ◻, ◇
-   - propositional logic may be imitated by means of zero-place predicates in place of propositional variables
- - specification of models of FOL with domain, interpretation function and variable assignments
-   - accepts models without possible worlds, modal models with constant domains and modal models with varying domains
- - evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
-   relative to models, variable assignments and possible worlds
-
-Restrictions:
--------------
- - works only on models with finite domains
- - works only on languages with a finite set of individual variables
- - can't infer universal validity, logical inference etc., only truth in a given model
-
-Known issues:
--------------
- - name of model, domain, interpr. func., variable assignment and world is not systematically recognized,
-   instead always 'M', 'D', 'I', 'v', 'w' used in printout
- - efficiency: assignment functions have to be specified on all variables of the language;
-   the domain is not restricted expression-wise to those variables that actually occur in the expression
- - depth has to be reset manually after each call of denot
-
-Wish list:
-----------
- - print out detailed derivation rather than just final result of evaluation, possibly with LaTeX mode
- - more user-friendly input:
-   - expression parser instead of the cumbersome PNF specification
-   - a better way of dealing with singleton tuples
-   - interactive mode/API instead of need to edit source code in order to set up input
- - model generation?
+This is pyPL, a naive model checker for classical first-order logic.
 
 Usage notes:
-------------
 - This tool is intended for didactical purposes. It is not efficient or designed for real-life applications.
 - The interesting part for you are the 'denot' methods in each of the expression classes.
   Inspect the code and compare how the formal definitions can be translated into working code almost 1:1,
@@ -47,23 +48,19 @@ Usage notes:
   A recommendation is to set breakpoints and step through an evaluation process symbol by symbol.
   Simply ignore anything that looks completely unfamiliar to you (such as 'w'/modal stuff, function symbols, etc.).
 - This tool is not equipped with an interactive user interface; input has to be specified in the source code.
-  Models and formulas to compute denotations for are defined in the function 'compute' (bottom of this file).
-  You can select which models to include in the output by modifying the variable 'output' (top of this file).
-  You can switch verbose mode (printing out intermediate steps) by setting the variable 'verbose' (top of this file).
+  Models and formulas to compute denotations for are defined in the function 'compute' (bottom of source code).
+  You can select which models to include in the output by modifying the variable 'output' (top of source file).
+  You can switch verbose mode (printing out intermediate steps) by setting the variable 'verbose' (top of source code).
   Follow the examples in the main block and the documentations of the classes and methods to code your specifications.
-  After specifying your input in the code, execute this script in a terminal to view the output.
-- Notes on notation:
-  - 'm' (aka 'a') stands for the model/structure,
-  - 'd' (aka 'm') for the domain of discourse,
-  - 'i' (aka 'f') for the interpretation function,
-  - 'v' (aka 'g') for the variable assignment function,
-  - 'w' for the possible world.
+  To turn off help mode and switch to printing output, set the varible 'help' (top of source code) to 'False'.
+  After specifying your input and turning off help mode, execute this script in a terminal to view the output.
 """
 
 
 # settings
 output = [1, 2, 3, 4, 5, 6, 7]  # set here which models to compute (see definitions in function 'compute')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
+help = True  # set this to False if you would like to start printing the output instead of the help information
 
 from typing import List, Dict, Set, Tuple
 
@@ -97,14 +94,14 @@ class Expr:
         """
         pass
 
-    def subst(self, u, t, a):
+    def subst(self, u, t):
         """
         Substitute all occurrences of the variable u for the term t in self.
 
         @param u: the variable to be substituted
         @type u: Var
-        @param a: the term to substitute
-        @type a: Term
+        @param t: the term to substitute
+        @type t: Term
         @return: the result of substituting all occurrences of the variable v for the term t in self
         @rtype Expr
         """
@@ -1090,11 +1087,11 @@ class PredModel(Model):
       - D = domain of discourse
       - I = interpretation function assigning a denotation to each non-logical symbol
 
-    - The domain D is a set of individuals, specified as strinvs:
+    - The domain D is a set of individuals, specified as strings:
        D = {'a', 'b', 'c', ...}
 
     - The interpretation function F is a dictionary with
-      - non-logical symbols (specified as strinvs) as keys and
+      - non-logical symbols (specified as strings) as keys and
       - members/subsets/functions of D as values
 
        {'c': 'a', 'P': {('a', ), ('b', )}, 'f': {('c1',): 'a', ('c2',): 'b'}}
@@ -1102,7 +1099,7 @@ class PredModel(Model):
         - The denotation of individual constants is a member (string) of D:
            'c': 'a'
 
-        - The denotation of predicates is a set of tuples of members (strinvs) of D:
+        - The denotation of predicates is a set of tuples of members (strings) of D:
            'P': {('a', ), ('b', )}
            'R': {('a', 'b'), ('b', 'c')}
 
@@ -1124,8 +1121,8 @@ class PredModel(Model):
            'h': {('c1', 'c2'): 'a'}
 
     - An assignment function g is a dictionary with
-      - variables (specified as strinvs) as keys and
-      - members of D (specified as strinvs) as values
+      - variables (specified as strings) as keys and
+      - members of D (specified as strings) as values
        {'x': 'a', 'y': 'b', 'z': 'c'}
 
     ---------
@@ -1182,13 +1179,13 @@ class ConstModalModel(ModalModel):
       - I = interpretation function assigning to each member of w and each non-logical symbol a denotation
     and a set of assignment functions vs.
 
-    - The set of possible worlds W is a set of possible worlds, specified as strinvs:
+    - The set of possible worlds W is a set of possible worlds, specified as strings:
        W = {'w1', 'w2', ...}
 
     - The accessibility relation W is a set of tuples of possible worlds:
       R = {('w1', 'w2'), ('w2', 'w2'), ...}
 
-    - The domain D is a set of individuals, specified as strinvs:
+    - The domain D is a set of individuals, specified as strings:
       D = {'a', 'b', 'c', ...}
 
     - The interpretation function F is a dictionary with
@@ -1246,14 +1243,14 @@ class VarModalModel(ModalModel):
       - I = interpretation function assigning to each member of W and each non-logical symbol a denotation
     and a set of assignment functions vs.
 
-    - The set of possible worlds W is a set of possible worlds, specified as strinvs:
+    - The set of possible worlds W is a set of possible worlds, specified as strings:
        W = {'w1', 'w2', ...}
 
     - The accessibility relation W is a set of tuples of possible worlds:
       R = {('w1', 'w2'), ('w2', 'w2'), ...}
 
     - The domain D is a a dictionary with
-      - possible worlds (specified as strinvs) as keys and
+      - possible worlds (specified as strings) as keys and
       - domains (see Model.D) as values
       D = {'w1': {'a', 'b', 'c'}, 'w2': {'b'}, ...}
 
@@ -1623,4 +1620,7 @@ def compute(output):
 
 
 if __name__ == "__main__":
-    compute(output)
+    if help:
+        print(__doc__)
+    else:
+        compute(output)
