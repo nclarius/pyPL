@@ -7,6 +7,7 @@
 # Disclaimer:
 # -----------
 # This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.
+# I am be happy to learn about any bugs or improvement suggestions.
 #
 # Features:
 # ---------
@@ -31,7 +32,7 @@
 #  - efficiency: assignment functions have to be specified on all variables of the language;
 #    the domain is not restricted expression-wise to those variables that actually occur in the expression
 #  - depth has to be reset manually after each call of denot
-#  - global variables
+#  - global variables are bad
 #
 # Wish list:
 # ----------
@@ -43,7 +44,7 @@
 #  - model generation?
 
 """
-This is pyPL, a naive model checker for classical first-order logic.
+This is pyPL, a simple model checker for classical first-order logic.
 
 Usage notes:
 ------------
@@ -54,6 +55,7 @@ A number of examples are already set up.
   Follow the existing examples and the documentations of the classes and methods to get an idea.
 - You can select which models to include in the output by editing the variable 'active' (near top of source code).
 - You can select whether or not to print out intermediate steps by editing the variable 'verbose' (same place).
+After specifying your input in the source code, execute this script in a terminal to view the output.
 
 If you would like to understand what's going on under the hood:
 The interesting part for you are the 'denot' methods in each of the expression classes.
@@ -70,7 +72,7 @@ Notes on notation:
 - 'I' = interpretation function (aka 'F')
 - 'v' = variable assignment function (aka 'g')
 
-After specifying your input in the source code, execute this script in a terminal to view the output.
+Have fun!
 """
 
 
