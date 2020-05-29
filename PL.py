@@ -826,8 +826,8 @@ class Exists(Formula):
 
     def denot(self, m, v, w=None) -> bool:
         """
-        The denotation of an existentially quantified formula Exists(x, phi) is true
-        iff phi is true under at least one x-alternative of g.
+        The denotation of an existentially quantified formula Exists(u, phi) is true
+        iff phi is true under at least one x-variant of v.
         """
         global depth
         depth += 1
@@ -838,7 +838,7 @@ class Exists(Formula):
         # quantify over the individuals in the domain
         for d in sorted(d_):
 
-            # compute the x-alternative v'
+            # compute the x-variant v'
             v_ = {**v, self.u.u: d}  # unpack v and overwrite the value for u with d
 
             # check whether the current indiv. d under consideration makes phi true
@@ -894,8 +894,8 @@ class Forall(Formula):
 
     def denot(self, m, v, w=None) -> bool:
         """
-        The denotation of universally quantified formula Forall(x, phi) is true iff
-        phi is true under all x-alternatives of g.
+        The denotation of universally quantified formula Forall(u, phi) is true iff
+        phi is true under all x-variants of v.
         """
         global depth
         depth += 1
@@ -906,7 +906,7 @@ class Forall(Formula):
         # quantify over the individuals in the domain
         for d in sorted(d_):
 
-            # compute the x-alternative v'
+            # compute the x-variant v'
             v_ = {**v, self.u.u: d}  # unpack v and overwrite the value for u with d
 
             # check whether the current indiv. d under consideration makes phi true
