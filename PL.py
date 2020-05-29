@@ -835,13 +835,13 @@ class Exists(Formula):
         if isinstance(m, VarModalModel):
             d_ = m.d[w]
 
-        # quantify over the individuals in the domain
+        # iterate through the individuals in the domain
         for d in sorted(d_):
 
-            # compute the x-variant v'
-            v_ = {**v, self.u.u: d}  # unpack v and overwrite the value for u with d
+            # compute the x-variant v' with the individual d
+            v_ = {**v, self.u.u: d}  # unpack v and overwrite the value for the u with d
 
-            # check whether the current indiv. d under consideration makes phi true
+            # check whether the current x-variant under consideration makes phi true
             if verbose:
                 print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) + " ...")
             witness = self.phi.denot(m, v_, w)
@@ -904,13 +904,13 @@ class Forall(Formula):
         if isinstance(w, VarModalModel):
             d_ = m.d[w]
 
-        # quantify over the individuals in the domain
+        # iterate through the individuals in the domain
         for d in sorted(d_):
 
-            # compute the x-variant v'
+            # compute the x-variant v' with the individual d
             v_ = {**v, self.u.u: d}  # unpack v and overwrite the value for u with d
 
-            # check whether the current indiv. d under consideration makes phi true
+            # check whether the current x-variant under consideration makes phi true
             if verbose:
                 print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) + " ...")
             witness = self.phi.denot(m, v_, w)
