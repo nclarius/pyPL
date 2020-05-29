@@ -4,6 +4,10 @@
 # A naive model checker for classical first-order logic with an extension to modal first-order logic.
 # © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>
 #
+# Disclaimer:
+# -----------
+# This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.
+#
 # Features:
 # ---------
 #  - specification of expressions in a language of FOL
@@ -42,14 +46,6 @@ This is pyPL, a naive model checker for classical first-order logic.
 
 Usage notes:
 ------------
-This tool is intended for didactical purposes. It is not efficient or designed for real-life applications.
-
-The interesting part for you are the 'denot' methods in each of the expression classes.
-Inspect the code and compare how the formal definitions can be translated into working code almost 1:1,
-and try to follow how the implementation behaves, especially in the loop logic for the quantifiers.
-A recommendation is to set breakpoints and step through an evaluation process symbol by symbol to see what's going on.
-Simply ignore anything that looks completely unfamiliar to you (such as 'w'/modal stuff, function symbols, etc.).
-
 This tool is not equipped with an interactive user interface; input has to be specified in the source code.
 A number of examples are already set up.
 - Models and formulas to compute denotations for are defined in the function 'compute' (bottom of source code).
@@ -57,6 +53,15 @@ A number of examples are already set up.
 - You can switch verbose mode (print out intermediate steps) by setting the variable 'verbose' (top of source code).
 - To turn off help mode and switch to printing output, set the varible 'help' (top of source code) to 'False'.
 Follow the existing examples and the documentations of the classes and methods to code your specifications.
+
+If you would like to understand what's going on under the hood:
+The interesting part for you are the 'denot' methods in each of the expression classes.
+Inspect the code and compare how the formal definitions can be translated into working code almost 1:1,
+and try to follow how the implementation behaves, especially in the loop logic for the quantifiers.
+A recommendation is to set breakpoints and step through an evaluation process symbol by symbol
+to see how a denotation is computed recursively in line with the inductive definitions.
+Simply ignore anything that looks completely unfamiliar to you (such as 'w'/modal stuff, function symbols, etc.).
+
 After specifying your input and turning off help mode, execute this script in a terminal to view the output.
 """
 
