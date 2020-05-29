@@ -46,7 +46,7 @@ This tool is intended for didactical purposes. It is not efficient or designed f
 
 The interesting part for you are the 'denot' methods in each of the expression classes.
 Inspect the code and compare how the formal definitions can be translated into working code almost 1:1,
-and try to see how the implementation behaves, especially in the loop logic for the quantifiers.
+and try to follow how the implementation behaves, especially in the loop logic for the quantifiers.
 A recommendation is to set breakpoints and step through an evaluation process symbol by symbol to see what's going on.
 Simply ignore anything that looks completely unfamiliar to you (such as 'w'/modal stuff, function symbols, etc.).
 
