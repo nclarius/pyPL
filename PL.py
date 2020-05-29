@@ -1,9 +1,12 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
 """
 A naive model checker for classical first-order logic with an extension to modal first-order logic.
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>
 
 Features:
+---------
  - specification of expressions in a language of FOL
    - accepts languages with with zero-place predicates, function symbols, term equality and modal operators ◻, ◇
    - propositional logic may be imitated by means of zero-place predicates in place of propositional variables
@@ -13,11 +16,13 @@ Features:
    relative to models, variable assignments and possible worlds
 
 Restrictions:
+-------------
  - works only on models with finite domains
  - works only on languages with a finite set of individual variables
  - can't infer universal validity, logical inference etc., only truth in a given model
 
 Known issues:
+-------------
  - name of model, domain, interpr. func., variable assignment and world is not systematically recognized,
    instead always 'M', 'D', 'F', 'g', 'w' used in printout
  - efficiency: assignment functions have to be specified on all variables of the language;
@@ -25,6 +30,7 @@ Known issues:
  - depth has to be reset manually after each call of denot
 
 Wish list:
+----------
  - print out detailed derivation rather than just final result of evaluation, possibly with LaTeX mode
  - more user-friendly input:
    - expression parser instead of the cumbersome PNF specification
@@ -33,13 +39,34 @@ Wish list:
  - model generation?
 
 Usage notes:
-- This tool is not equipped with an interactive user interface. 
-  Formulas, models and the denotations to be computed have to be specified in the source code.
-  Follow the examples in the main block and the documentations of the classes and methods.
-  After specifying your input in the code, execute this script in a terminal to see the output.
+------------
+- This tool is intended for didactical purposes. It is not efficient or designed for real-life applications.
+- The interesting part for you are the 'denot' methods in each of the expression classes.
+  Inspect the code and compare how the formal definitions can be translated into working code almost 1:1,
+  and try to see how the implementation behaves especially in the loop logic for the quantifiers.
+  A recommendation is to set breakpoints and step through an evaluation process symbol by symbol.
+  Simply ignore anything that looks completely unfamiliar to you (such as 'w'/modal stuff, function symbols, etc.).
+- This tool is not equipped with an interactive user interface.
+  Models and denotations of formulas to be computed have to be specified in the source code.
+  Models and formulas are defined in the function 'compute' (bottom of this file).
+  You can select which models to include in the output by modifying the variable 'output' (top of this file).
+  You can switch verbose mode (printing out intermediate steps) by setting the variable 'verbose' (top of this file).
+  Follow the examples in the main block and the documentations of the classes and methods to code your specifications.
+  After specifying your input in the code, execute this script in a terminal to view the output.
+- Notes on notation:
+  - 'm' (aka 'a') stands for the model/structure,
+  - 'd' (aka 'm') for the domain of discourse,
+  - 'i' (aka 'f') for the interpretation function,
+  - 'v' (aka 'g') for the variable assignment function,
+  - 'w' for the possible world.
 """
 
+
+# settings
+output = [1, 2, 3, 4, 5, 6, 7]  # set here which models to compute (see definitions in function 'compute')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
+
+from typing import List, Dict, Set, Tuple
 
 
 class Expr:
@@ -53,7 +80,7 @@ class Expr:
     @method denot: denotation of the expression relative to a model m and assignment g
     """
 
-    def freevars(self):
+    def freevars(self) -> Set[str]:
         """
         The set of the free variable occurrences in the expression.
 
@@ -62,7 +89,7 @@ class Expr:
         """
         pass
 
-    def boundvars(self):
+    def boundvars(self) -> Set[str]:
         """
         The set of the bound variable occurrences in the expression.
 
@@ -71,12 +98,12 @@ class Expr:
         """
         pass
 
-    def subst(self, v, t):
+    def subst(self, u, t, a):
         """
-        Substitute all occurrences of the variable v for the term t in self.
+        Substitute all occurrences of the variable u for the term t in self.
 
-        @param v: the variable to be substituted
-        @type v: Var
+        @param u: the variable to be substituted
+        @type u: Var
         @param a: the term to substitute
         @type a: Term
         @return: the result of substituting all occurrences of the variable v for the term t in self
@@ -84,14 +111,14 @@ class Expr:
         """
         pass
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None):
         """
         Compute the denotation of the expression relative to a model m and assignment g.
 
         @param m: the model to evaluate the formula against
         @type m: Model
-        @param g: the assignment to evaluate the formula against
-        @type g: dict[str,str]
+        @param v: the assignment to evaluate the formula against
+        @type v: dict[str,str]
         @param w: the possible world to evaluate the formula against
         @type w: str
         @return: the denotation of the expression relative to the model m and assignment g
@@ -105,7 +132,7 @@ class Term(Expr):
     t1, t2, ...
     """
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> str:
         """
         @rtype: str
         """
@@ -127,23 +154,23 @@ class Const(Term):
     def __repr__(self):
         return self.c
 
-    def freevars(self):
-        return {}
+    def freevars(self) -> Set[str]:
+        return set()
 
-    def boundvars(self):
-        return {}
+    def boundvars(self) -> Set[str]:
+        return set()
 
-    def subst(self, v, t):
+    def subst(self, u, t) -> Term:
         return self
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> str:
         """
         The denotation of a constant is that individual that the interpretation function f assigns it.
         """
-        f = m.f
+        i = m.i
         if isinstance(m, ModalModel):
-            f = m.f[w]
-        return f[self.c]
+            i = m.i[w]
+        return i[self.c]
 
 
 class Var(Term):
@@ -151,36 +178,36 @@ class Var(Term):
     Individual variable.
     x, y, z, u, v, w, x1, x2, ...
 
-    @attr v: the variable name
-    @type v: str
+    @attr u: the variable name
+    @type u: str
     """
     # NB: When dealing with variable occurrences in the further processing,
     # it will be necessary to reference the variables by their name (self.v)
     # rather than the variable objects themselves (self)
     # in order for different variable occurrences with the same name to be identified, as desired in the theory.
-    def __init__(self, v):
-        self.v = v
+    def __init__(self, u):
+        self.u = u
 
     def __repr__(self):
-        return self.v
+        return self.u
 
-    def freevars(self):
-        return {self.v}
+    def freevars(self) -> Set[str]:
+        return {self.u}
 
-    def boundvars(self):
+    def boundvars(self) -> Set[str]:
         return set()
 
-    def subst(self, v, t):
-        if self.v == v:
-            return Var(repr(a))
+    def subst(self, u, t) -> Term:
+        if self.u == u:
+            return Var(repr(t))
         else:
             return self
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> str:
         """
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
-        return g[self.v]
+        return v[self.u]
 
 
 class Func(Expr):
@@ -198,23 +225,23 @@ class Func(Expr):
     def __repr__(self):
         return self.f
 
-    def freevars(self):
-        return {}
+    def freevars(self) -> Set[str]:
+        return set()
 
-    def boundvars(self):
-        return {}
+    def boundvars(self) -> Set[str]:
+        return set()
 
-    def subst(self, v, t):
+    def subst(self, u, t) -> Term:
         return self
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> str:
         """
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
-        f = m.f
+        i = m.i
         if isinstance(m, ModalModel):
-            f = m.f[w]
-        return f[self.f]
+            i = m.i[w]
+        return i[self.i]
 
 
 class FuncTerm(Term):
@@ -242,24 +269,24 @@ class FuncTerm(Term):
     def __repr__(self):
         return repr(self.f) + "(" + ", ".join([repr(t) for t in self.terms]) + ")"
 
-    def freevars(self):
+    def freevars(self) -> Set[str]:
         return set().union(*[t.freevars() for t in self.terms])
 
-    def boundvars(self):
+    def boundvars(self) -> Set[str]:
         return set().union(*[t.boundvars() for t in self.terms])
 
-    def subst(self, v, t):
-        return FuncTerm(self.f, map(lambda t: t.subst(v, t), self.terms))
+    def subst(self, u, t) -> Term:
+        return FuncTerm(self.f, map(lambda t: t.subst(u, t), self.terms))
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> str:
         """
         The denotation of a function symbol applied to an appropriate number of terms is that individual that the
         interpretation function f assigns to the application.
         """
-        f = m.f
+        i = m.i
         if isinstance(m, ModalModel):
-            f = m.f[w]
-        return f[self.f.f][tuple([t.denot(m, g, w) for t in self.terms])]
+            i = m.i[w]
+        return i[self.f.f][tuple([t.denot(m, v, w) for t in self.terms])]
 
 
 class Pred(Expr):
@@ -276,24 +303,24 @@ class Pred(Expr):
     def __repr__(self):
         return self.p
 
-    def freevars(self):
-        return {}
+    def freevars(self) -> Set[str]:
+        return set()
 
-    def boundvars(self):
-        return {}
+    def boundvars(self) -> Set[str]:
+        return set()
 
-    def subst(self, v, t):
+    def subst(self, u, t) -> Expr:
         return self
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> Set[Tuple[str]]:
         """
         The denotation of a predicate is the set of ordered tuples of individuals that the interpretation function f
         assigns it.
         """
-        f = m.f
+        i = m.i
         if isinstance(m, ModalModel):
-            f = m.f[w]
-        return f[self.p]
+            i = m.i[w]
+        return i[self.p]
 
 
 depth = 0  # keep track of the level of nesting
@@ -304,16 +331,16 @@ class Formula(Expr):
     Formula.
     φ, ψ, ...
 
-    @method denotG: the truth value of a formula relative to a model m (without reference to a particular assignment)
+    @method denotV: the truth value of a formula relative to a model m (without reference to a particular assignment)
     """
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> bool:
         """
         @rtype: bool
         """
         pass
 
-    def denotG(self, m, w=None):
+    def denotV(self, m, w=None) -> bool:
         """
         The truth value of a formula relative to a model M (without reference to a particular assignment).
         A formula is true in a model M iff it is true in M under all assignment functions g.
@@ -328,22 +355,22 @@ class Formula(Expr):
         global depth
         # for efficiency, restrict the domain of the assignment functions o the vars that actually occur in the formula
         var_occs = self.freevars() | self.boundvars()
-        gs__ = m.gs
+        vs__ = m.vs
         if isinstance(m, VarModalModel):
-            gs__ = m.gs[w]
-        gs_ = [{v: g[v] for v in g if v in var_occs} for g in gs__]
-        gs = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]  # filter out now duplicate assignment functions
+            vs__ = m.vs[w]
+        vs_ = [{u: v[u] for u in v if u in var_occs} for v in vs__]
+        vs = [dict(tpl) for tpl in {tuple(v.items()) for v in vs_}]  # filter out now duplicate assignment functions
 
         if not self.freevars():  # if the formula is closed,
             # spare yourself the quantification over all assignment functions and pick an arbitrary assignment
             # (here: the first)
-            return self.denot(m, gs[0], w)
+            return self.denot(m, vs[0], w)
 
-        for g in gs:  # otherwise, check the denotation for all assignment functions
+        for v in vs:  # otherwise, check the denotation for all assignment functions
             depth += 1
             if verbose:
-                print((depth * " ") + "checking g := " + repr(g) + " ...")
-            witness = self.denot(m, g, w)
+                print((depth * " ") + "checking v := " + repr(v) + " ...")
+            witness = self.denot(m, v, w)
             if witness:
                 if verbose:
                     print((depth * 2 * " ") + "✓")
@@ -351,12 +378,12 @@ class Formula(Expr):
             else:
                 if verbose:
                     print((depth * 2 * " ") + "✗")
-                    print((depth * " ") + "counter assignment: g := " + repr(g))
+                    print((depth * " ") + "counter assignment: v := " + repr(v))
                 depth -= 1
                 return False
         return True
 
-    def denotW(self, m, g):
+    def denotW(self, m, v) -> bool:
         """
         The truth value of a formula relative to a model M and assmnt. g (without reference to a particular world).
         A formula is true in a model M iff it is true in M and g in all possible worlds w.
@@ -364,21 +391,21 @@ class Formula(Expr):
         @param m: a model
         @type m: ModalModel
         @attr g: an assignment function
-        @type g: dict[str,str]
+        @type v: dict[str,str]
         @return: the truth value of self in m under g
         @rtype: bool
         """
         global depth
         # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
         var_occs = self.freevars() | self.boundvars()
-        gs_ = [{v: g[v] for v in g if v in var_occs} for g in m.gs]
-        m.gs_ = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]  # filter out duplicate assignment functions
+        vs_ = [{u: v[u] for u in v if u in var_occs} for v in m.vs]
+        m.vs_ = [dict(tpl) for tpl in {tuple(v.items()) for v in vs_}]  # filter out duplicate assignment functions
 
         for w in m.w:
             depth += 1
             if verbose:
                 print((depth * "  ") + "checking w := " + repr(w) + " ...")
-            witness = self.denot(m, g, w)
+            witness = self.denot(m, v, w)
             if witness:
                 if verbose:
                     print((depth * 2 * " ") + "✓")
@@ -391,7 +418,7 @@ class Formula(Expr):
                 return False
         return True
 
-    def denotGW(self, m):
+    def denotVW(self, m) -> bool:
         """
         The truth value of a formula relative to a model M (without reference to a particular assignment and world).
         A formula is true in a model M iff it is true in M and g under all assignments g and all possible worlds w.
@@ -399,7 +426,7 @@ class Formula(Expr):
         @param m: a model
         @type m: ModalModel
         @attr g: an assignment function
-        @type g: dict[str,str]
+        @type v: dict[str,str]
         @return: the truth value of self in m under g
         @rtype: bool
         """
@@ -410,7 +437,7 @@ class Formula(Expr):
             depth += 1
             if verbose:
                 print((depth * " ") + "checking w := " + repr(w) + " ...")
-            witness = self.denotG(m, w)
+            witness = self.denotV(m, w)
             if witness:
                 if verbose:
                     print((depth * 2 * " ") + "✓")
@@ -435,16 +462,16 @@ class Verum(Formula):
     def __repr__(self):
         return "⊤"
 
-    def freevars(self):
+    def freevars(self) -> Set[str]:
         return set()
 
-    def boundvars(self):
+    def boundvars(self) -> Set[str]:
         return set()
 
-    def subst(self, v, t):
+    def subst(self, u, t) -> Formula:
         return self
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> bool:
         """
         The denotation of the verum is always true.
         """
@@ -463,16 +490,16 @@ class Falsum(Formula):
     def __repr__(self):
         return "⊥"
 
-    def freevars(self):
+    def freevars(self) -> Set[str]:
         return set()
 
-    def boundvars(self):
+    def boundvars(self) -> Set[str]:
         return set()
 
-    def subst(self, v, t):
+    def subst(self, u, t) -> Formula:
         return self
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> bool:
         """
         The denotation of the falsum is always false.
         """
@@ -494,23 +521,23 @@ class Prop(Formula):
     def __repr__(self):
         return self.p
 
-    def freevars(self):
+    def freevars(self) -> Set[str]:
         return set()
 
-    def boundvars(self):
+    def boundvars(self) -> Set[str]:
         return set()
 
-    def subst(self, v, t):
+    def subst(self, u, t) -> Formula:
         return self
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> bool:
         """
         The denotation of a propositional variable is the truth value the interpretation function f assigns it.
         """
-        f = m.f
+        i = m.i
         if isinstance(m, VarModalModel):
-            f = m.f[w]
-        return f[self.p]
+            i = m.i[w]
+        return i[self.p]
 
 
 class Eq(Formula):
@@ -531,20 +558,20 @@ class Eq(Formula):
     def __repr__(self):
         return repr(self.t1) + " = " + repr(self.t2)
 
-    def freevars(self):
+    def freevars(self) -> Set[str]:
         return self.t1.freevars() | self.t2.freevars()
 
-    def boundvars(self):
+    def boundvars(self) -> Set[str]:
         return self.t1.boundvars() | self.t2.boundvars()
 
-    def subst(self, v, t):
-        return Eq(self.t1.subst(v, t), self.t2.subst(v, t))
+    def subst(self, u, t) -> Formula:
+        return Eq(self.t1.subst(u, t), self.t2.subst(u, t))
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> bool:
         """
         The denotation of a term equality t1 = t2 is true iff t1 and t2 denote the same individual.
         """
-        return self.t1.denot(m, g, w) == self.t2.denot(m, g, w)
+        return self.t1.denot(m, v, w) == self.t2.denot(m, v, w)
 
 
 class Atm(Formula):
@@ -571,21 +598,21 @@ class Atm(Formula):
     def __repr__(self):
         return repr(self.pred) + "(" + ",".join([repr(t) for t in self.terms]) + ")"
 
-    def freevars(self):
+    def freevars(self) -> Set[str]:
         return set().union(*[t.freevars() for t in self.terms])
 
-    def boundvars(self):
+    def boundvars(self) -> Set[str]:
         return set().union(*[t.boundvars() for t in self.terms])
 
-    def subst(self, v, t):
-        return Atm(self.pred, map(lambda t: t.subst(v, t), self.terms))
+    def subst(self, u, t) -> Formula:
+        return Atm(self.pred, map(lambda t: t.subst(u, t), self.terms))
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> bool:
         """
         The denotation of an atomic predication P(t1, ..., tn) is true iff the tuple of the denotation of the terms is
         an element of the interpretation of the predicate.
         """
-        return tuple([t.denot(m, g, w) for t in self.terms]) in self.pred.denot(m, g, w)
+        return tuple([t.denot(m, v, w) for t in self.terms]) in self.pred.denot(m, v, w)
 
 
 class Neg(Formula):
@@ -604,20 +631,20 @@ class Neg(Formula):
             return repr(self.phi.t1) + "≠" + repr(self.phi.t2)
         return "¬" + repr(self.phi)
 
-    def freevars(self):
+    def freevars(self) -> Set[str]:
         return self.phi.freevars()
 
-    def boundvars(self):
+    def boundvars(self) -> Set[str]:
         return self.phi.boundvars()
 
-    def subst(self, v, t):
-        return Neg(self.phi.subst(v, t))
+    def subst(self, u, t) -> Formula:
+        return Neg(self.phi.subst(u, t))
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> bool:
         """
         The denotation of a negated formula Neg(phi) is true iff phi is false.
         """
-        return not self.phi.denot(m, g, w)
+        return not self.phi.denot(m, v, w)
 
 
 class Conj(Formula):
@@ -637,20 +664,20 @@ class Conj(Formula):
     def __repr__(self):
         return "(" + repr(self.phi) + " ∧ " + repr(self.psi) + ")"
 
-    def freevars(self):
+    def freevars(self) -> Set[str]:
         return self.phi.freevars() | self.psi.freevars()
 
-    def boundvars(self):
+    def boundvars(self) -> Set[str]:
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, v, t):
-        return Conj(self.phi.subst(v, t), self.psi.subst(v, t))
+    def subst(self, u, t) -> Formula:
+        return Conj(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> bool:
         """
         The denotation of a conjoined formula Con(phi,psi) is true iff phi is true and psi is true.
         """
-        return self.phi.denot(m, g, w) and self.psi.denot(m, g, w)
+        return self.phi.denot(m, v, w) and self.psi.denot(m, v, w)
 
 
 class Disj(Formula):
@@ -670,20 +697,20 @@ class Disj(Formula):
     def __repr__(self):
         return "(" + repr(self.phi) + " ∨ " + repr(self.psi) + ")"
 
-    def freevars(self):
+    def freevars(self) -> Set[str]:
         return self.phi.freevars() | self.psi.freevars()
 
-    def boundvars(self):
+    def boundvars(self) -> Set[str]:
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, v, t):
-        return Disj(self.phi.subst(v, t), self.psi.subst(v, t))
+    def subst(self, u, t) -> Formula:
+        return Disj(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> bool:
         """
         The denotation of a conjoined formula Disj(phi,psi) is true iff phi is true or psi is true.
         """
-        return self.phi.denot(m, g, w) or self.psi.denot(m, g, w)
+        return self.phi.denot(m, v, w) or self.psi.denot(m, v, w)
 
 
 class Imp(Formula):
@@ -703,20 +730,20 @@ class Imp(Formula):
     def __repr__(self):
         return "(" + repr(self.phi) + " → " + repr(self.psi) + ")"
 
-    def freevars(self):
+    def freevars(self) -> Set[str]:
         return self.phi.freevars() | self.psi.freevars()
 
-    def boundvars(self):
+    def boundvars(self) -> Set[str]:
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, v, t):
-        return Imp(self.phi.subst(v, t), self.psi.subst(v, t))
+    def subst(self, u, t) -> Formula:
+        return Imp(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> bool:
         """
         The denotation of an implicational formula Imp(phi,psi) is true iff phi is false or psi is true.
         """
-        return not self.phi.denot(m, g, w) or self.psi.denot(m, g, w)
+        return not self.phi.denot(m, v, w) or self.psi.denot(m, v, w)
 
 
 class Biimp(Formula):
@@ -736,20 +763,20 @@ class Biimp(Formula):
     def __repr__(self):
         return "(" + repr(self.phi) + " ↔ " + repr(self.psi) + ")"
 
-    def freevars(self):
+    def freevars(self) -> Set[str]:
         return self.phi.freevars() | self.psi.freevars()
 
-    def boundvars(self):
+    def boundvars(self) -> Set[str]:
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, v, t):
-        return Biimp(self.phi.subst(v, t), self.psi.subst(v, t))
+    def subst(self, u, t) -> Formula:
+        return Biimp(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> bool:
         """
         The denotation of an biimplicational formula Biimp(phi,psi) is true iff phi and psi have the same truth value.
         """
-        return self.phi.denot(m, g, w) == self.psi.denot(m, g, w)
+        return self.phi.denot(m, v, w) == self.psi.denot(m, v, w)
 
 
 class Exists(Formula):
@@ -757,31 +784,31 @@ class Exists(Formula):
     Existential quantification.
     ∃xφ
 
-    @attr v: the binding variable
-    @type v: Var
+    @attr u: the binding variable
+    @type u: Var
     @attr phi: the formula to be quantified
     @type phi: Formula
     """
-    def __init__(self, v, phi):
-        self.v = v
+    def __init__(self, u, phi):
+        self.u = u
         self.phi = phi
 
     def __repr__(self):
-        return "∃" + repr(self.v) + (" " if isinstance(self.phi, Atm) else "") + repr(self.phi)
+        return "∃" + repr(self.u) + (" " if isinstance(self.phi, Atm) else "") + repr(self.phi)
 
-    def freevars(self):
-        return self.phi.freevars() - {self.v.v}
+    def freevars(self) -> Set[str]:
+        return self.phi.freevars() - {self.u.u}
 
-    def boundvars(self):
-        return self.phi.boundvars() | {self.v.v}
+    def boundvars(self) -> Set[str]:
+        return self.phi.boundvars() | {self.u.u}
 
-    def subst(self, v, t):
-        if v == self.v:
+    def subst(self, u, t) -> Formula:
+        if u == self.u:
             return self
         else:
-            return self.phi.subst(v, t)
+            return self.phi.subst(u, t)
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> bool:
         """
         The denotation of an existentially quantified formula Exists(x, phi) is true
         iff phi is true under at least one x-alternative of g.
@@ -794,23 +821,23 @@ class Exists(Formula):
         # quantify over the individuals in the domain
         for d in d_:
             # compute the x-alternative g'
-            g_ = {**g, self.v.v: d}  # unpack g and overwrite the dictionary value for v with d
+            v_ = {**v, self.u.u: d}  # unpack g and overwrite the dictionary value for v with d
             # check whether the current indiv. d under consideration makes phi true
             if verbose:
-                # print((depth * 2 * " ") + "checking g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + " ...")
-                print((depth * 2 * " ") + "Let g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + ".")
-                print(((depth+1) * 2 * " ") + "[[" + repr(self.phi) + "]]^M,g" + (depth * "'") + " =")
-            witness = self.phi.denot(m, g_, w)
+                # print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) + " ...")
+                print((depth * 2 * " ") + "Let v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) + ".")
+                print(((depth+1) * 2 * " ") + "[[" + repr(self.phi) + "]]^M,v" + (depth * "'") + " =")
+            witness = self.phi.denot(m, v_, w)
             # if yes, we found a witness, the existential statement is true, and we can stop checking
             if witness:
                 if verbose:
                     print(((depth+1) * 2 * " ") + "1")
                     # print(((depth+1) * 2 * " ") + "✓")
-                    # print(((depth+1) * 2 * " ") + "witness: g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d))
+                    # print(((depth+1) * 2 * " ") + "witness: v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d))
                 if verbose:
-                    print((depth * 2 * " ") + "Since with g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) +
-                          " ex. g" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,g" + (depth * "'") + " = 1,")
-                    print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,g" + ((depth-1) * "'") + " = 1.")
+                    print((depth * 2 * " ") + "Since with v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) +
+                          " ex. g" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,v" + (depth * "'") + " = 1,")
+                    print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,v" + ((depth-1) * "'") + " = 1.")
                 depth -= 1
                 return True
             if not witness:
@@ -820,8 +847,8 @@ class Exists(Formula):
         # if no witness has been found, the existential statement is false
         if verbose:
             print((depth * 2 * " ") + "Since " +
-                  "ex. no g" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,g" + (depth * "'") + " = 1,")
-            print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,g" + ((depth-1) * "'") + " = 0.")
+                  "ex. no v" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,v" + (depth * "'") + " = 1,")
+            print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,v" + ((depth-1) * "'") + " = 0.")
         depth -= 1
         return False
 
@@ -831,31 +858,31 @@ class Forall(Formula):
     Universal quantification.
     ∀xφ
 
-    @attr v: the binding variable
-    @type v: Var
+    @attr u: the binding variable
+    @type u: Var
     @attr phi: the formula to be quantified
     @type phi: Formula
-    """    
-    def __init__(self, v, phi):
-        self.v = v
+    """
+    def __init__(self, u, phi):
+        self.u = u
         self.phi = phi
 
     def __repr__(self):
-        return "∀" + repr(self.v) + (" " if isinstance(self.phi, Atm) else "") + repr(self.phi)
+        return "∀" + repr(self.u) + (" " if isinstance(self.phi, Atm) else "") + repr(self.phi)
 
-    def freevars(self):
-        return self.phi.freevars() - {self.v.v}
+    def freevars(self) -> Set[str]:
+        return self.phi.freevars() - {self.u.u}
 
-    def boundvars(self):
-        return self.phi.boundvars() | {self.v.v}
+    def boundvars(self) -> Set[str]:
+        return self.phi.boundvars() | {self.u.u}
 
-    def subst(self, v, t):
-        if v == self.v:
+    def subst(self, u, t) -> Formula:
+        if u == self.u:
             return self
         else:
-            return self.phi.subst(v, t)
+            return self.phi.subst(u, t)
 
-    def denot(self, m, g, w=None):
+    def denot(self, m, v, w=None) -> bool:
         """
         The denotation of universally quantified formula Forall(x, phi) is true iff
         phi is true under all x-alternatives of g.
@@ -868,13 +895,13 @@ class Forall(Formula):
         # quantify over the individuals in the domain
         for d in d_:
             # compute the x-alternative g'
-            g_ = {**g, self.v.v: d}  # unpack g and overwrite the dictionary value for v with d
+            v_ = {**v, self.u.u: d}  # unpack g and overwrite the dictionary value for v with d
             # check whether the current indiv. d under consideration makes phi true
             if verbose:
-                # print((depth * 2 * " ") + "checking g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + " ...")
-                print((depth * 2 * " ") + "Let g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + ".")
-                print(((depth+1) * 2 * " ") + "[[" + repr(self.phi) + "]]^M,g" + (depth * "'") + " =")
-            witness = self.phi.denot(m, g_, w)
+                # print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) + " ...")
+                print((depth * 2 * " ") + "Let v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) + ".")
+                print(((depth+1) * 2 * " ") + "[[" + repr(self.phi) + "]]^M,v" + (depth * "'") + " =")
+            witness = self.phi.denot(m, v_, w)
             if witness:
                 if verbose:
                     print(((depth+1) * 2 * " ") + "1")
@@ -884,18 +911,18 @@ class Forall(Formula):
                 if verbose:
                     print(((depth+1) * 2 * " ") + "0")
                     # print(((depth+1) * 2 * " ") + "✗")
-                    # print(((depth+1) * 2 * " ") + "counter witness: g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d))
+                    # print(((depth+1) * 2 * " ") + "counter witness: v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d))
                 depth -= 1
                 if verbose:
-                    print((depth * 2 * " ") + "Since with g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) +
-                          " ex. g" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,g" + (depth * "'") + " = 0,")
-                    print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,g" + ((depth-1) * "'") + " = 0.")
+                    print((depth * 2 * " ") + "Since with v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) +
+                          " ex. v" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,v" + (depth * "'") + " = 0,")
+                    print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,v" + ((depth-1) * "'") + " = 0.")
                 return False
         # if no counter witness has been found, the universal statement is true
         if verbose:
             print((depth * 2 * " ") + "Since " +
-                  "f.a. g" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,g" + (depth * "'") + " = 1,")
-            print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,g" + ((depth-1) * "'") + " = 1.")
+                  "f.a. v" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,v" + (depth * "'") + " = 1,")
+            print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,v" + ((depth-1) * "'") + " = 1.")
         depth -= 1
         return True
 
@@ -914,24 +941,24 @@ class Poss(Formula):
     def __repr__(self):
         return "◇" + repr(self.phi)
 
-    def subst(self, v, t):
-        return Poss(self.phi.subst(v, t))
+    def subst(self, u, t) -> Formula:
+        return Poss(self.phi.subst(u, t))
 
-    def freevars(self):
+    def freevars(self) -> Set[str]:
         return self.phi.freevars()
 
-    def boundvars(self):
+    def boundvars(self) -> Set[str]:
         return self.phi.boundvars()
 
-    def denot(self, m, g, w):
+    def denot(self, m, v, w) -> bool:
         """
         The denotation of a possiblity formula is true iff
         phi is true at at least one world accessible from w.
 
         @param m: the model to evaluate the formula in
         @type m: ModalModel
-        @param g: the assignment function to evaluate the formula in
-        @type g: dict[str,str]
+        @param v: the assignment function to evaluate the formula in
+        @type v: dict[str,str]
         @param w: the world to evaluate the formula in
         @type w: str
         @return: the denotation of Poss(phi)
@@ -944,7 +971,7 @@ class Poss(Formula):
             # check whether phi is true in w
             if verbose:
                 print((depth * "  ") + "checking w" + (depth * "'") + " := " + repr(w_) + " ...")
-            witness = self.phi.denot(m, g, w_)
+            witness = self.phi.denot(m, v, w_)
             # if yes, we found a witnessing neighbor, the possibility statement is true, and we can stop checking
             if witness:
                 if verbose:
@@ -976,16 +1003,16 @@ class Nec(Formula):
     def __repr__(self):
         return "◻" + repr(self.phi)
 
-    def subst(self, v, t):
-        return Poss(self.phi.subst(v, t))
+    def subst(self, u, t) -> Formula:
+        return Poss(self.phi.subst(u, t))
 
-    def freevars(self):
+    def freevars(self) -> Set[str]:
         return self.phi.freevars()
 
-    def boundvars(self):
+    def boundvars(self) -> Set[str]:
         return self.phi.boundvars()
 
-    def denot(self, m, g, w):
+    def denot(self, m, v, w) -> bool:
         """
         The denotation of a necessity formula is true iff
         phi is true at all worlds accessible from w.
@@ -994,8 +1021,8 @@ class Nec(Formula):
         @type m: ModalModel
         @param w: the world to evaluate the formula in
         @type w: str
-        @param g: the assignment function to evaluate the formula in
-        @type g: dict[str,str]
+        @param v: the assignment function to evaluate the formula in
+        @type v: dict[str,str]
         """
         global depth
         # iterate over all possible worlds w' which are accessible from w
@@ -1005,7 +1032,7 @@ class Nec(Formula):
             # check whether phi is true in w
             if verbose:
                 print((depth * "  ") + "checking w" + (depth * "'") + " := " + repr(w_) + " ...")
-            witness = self.phi.denot(m, g, w_)
+            witness = self.phi.denot(m, v, w_)
             if witness:
                 if verbose:
                     print((depth * 2 * " ") + "✓")
@@ -1051,7 +1078,7 @@ class Model:
     A modal of (modal) predicate logic.
 
     @attr d: the domain of discourse
-    @attr f: an interpretation function
+    @attr i: an interpretation function
     """
     pass
 
@@ -1060,15 +1087,15 @@ class PredModel(Model):
     """
     A model of predicate logic with domain, interpretation function and a set of assignment functions.
 
-    A Model is a pair <D, F> with
+    A Model M is a pair <D, I> with
       - D = domain of discourse
-      - F = interpretation function assigning a denotation to each non-logical symbol
+      - I = interpretation function assigning a denotation to each non-logical symbol
 
-    - The domain D is a set of individuals, specified as strings:
+    - The domain D is a set of individuals, specified as strinvs:
        D = {'a', 'b', 'c', ...}
 
     - The interpretation function F is a dictionary with
-      - non-logical symbols (specified as strings) as keys and
+      - non-logical symbols (specified as strinvs) as keys and
       - members/subsets/functions of D as values
 
        {'c': 'a', 'P': {('a', ), ('b', )}, 'f': {('c1',): 'a', ('c2',): 'b'}}
@@ -1076,7 +1103,7 @@ class PredModel(Model):
         - The denotation of individual constants is a member (string) of D:
            'c': 'a'
 
-        - The denotation of predicates is a set of tuples of members (strings) of D:
+        - The denotation of predicates is a set of tuples of members (strinvs) of D:
            'P': {('a', ), ('b', )}
            'R': {('a', 'b'), ('b', 'c')}
 
@@ -1098,30 +1125,30 @@ class PredModel(Model):
            'h': {('c1', 'c2'): 'a'}
 
     - An assignment function g is a dictionary with
-      - variables (specified as strings) as keys and
-      - members of D (specified as strings) as values
+      - variables (specified as strinvs) as keys and
+      - members of D (specified as strinvs) as values
        {'x': 'a', 'y': 'b', 'z': 'c'}
 
     ---------
 
     @attr d: the domain of discourse
     @type d: set[str]
-    @attr f: the interpretation function assigning denotations to the non-logical symbols
-    @type f: dict[str,Any]
-    @type gs: the assignment functions associated with the model
-    @type gs: list[dict[str,str]]]
+    @attr i: the interpretation function assigning denotations to the non-logical symbols
+    @type i: dict[str,Any]
+    @type vs: the assignment functions associated with the model
+    @type vs: list[dict[str,str]]]
     """
 
-    def __init__(self, d, f):
+    def __init__(self, d, i):
         self.d = d
-        self.f = f
+        self.i =i
         dprod = cart_prod(list(d), len(vars))  # all ways of forming sets of |vars| long combinations of elements from D
-        self.gs = [{str(v): a for (v, a) in zip(vars, distr)} for distr in dprod]
+        self.vs = [{str(v): a for (v, a) in zip(vars, distr)} for distr in dprod]
 
     def __repr__(self):
-        return "Model M = (D,F) with\n" \
+        return "Model M = (D,I) with\n" \
                "D = {" + ", ".join([repr(d) for d in self.d]) + "}\n" \
-               "F = {\n" + ", \n".join(["     " + repr(key) + " ↦ " +
+               "I = {\n" + ", \n".join(["     " + repr(key) + " ↦ " +
                                         (repr(val) if isinstance(val, str) else
                                          (", ".join(["(" + repr(key2) + " ↦ " + repr(val2) + ")"
                                                      for key2, val2 in val.items()])
@@ -1129,7 +1156,7 @@ class PredModel(Model):
                                           ("{" +
                                            ", ".join(["(" + ", ".join([repr(t) for t in s]) + ")" for s in val]) +
                                            "}")))
-                                        for (key, val) in self.f.items()]) +\
+                                        for (key, val) in self.i.items()]) +\
                "\n    }"
 
 
@@ -1149,21 +1176,21 @@ class ConstModalModel(ModalModel):
     """
     A model of modal predicate logic with constant domain.
 
-    A ConstModalModel is a quadrupel <W,R,D,F> with
+    A ConstModalModel M is a quadrupel <W,R,D,F> with
       - W = set of possible worlds
       - R = the accessibility relation, a binary relation on W
       - D = domain of discourse
-      - F = interpretation function assigning to each member of w and each non-logical symbol a denotation
-    and a set of assignment functions gs.
+      - I = interpretation function assigning to each member of w and each non-logical symbol a denotation
+    and a set of assignment functions vs.
 
-    - The set of possible worlds W is a set of possible worlds, specified as strings:
+    - The set of possible worlds W is a set of possible worlds, specified as strinvs:
        W = {'w1', 'w2', ...}
 
     - The accessibility relation W is a set of tuples of possible worlds:
       R = {('w1', 'w2'), ('w2', 'w2'), ...}
 
-    - The domain D is a set of individuals, specified as strings:
-       D = {'a', 'b', 'c', ...}
+    - The domain D is a set of individuals, specified as strinvs:
+      D = {'a', 'b', 'c', ...}
 
     - The interpretation function F is a dictionary with
       - possible worlds as keys and
@@ -1175,37 +1202,37 @@ class ConstModalModel(ModalModel):
     @type r: set[tuple[str,str]]
     @attr d: the domain of discourse
     @type d: set[str]
-    @attr f: the interpretation function
-    @type f: dict[str,dict[str,Any]]
+    @attr i: the interpretation function
+    @type i: dict[str,dict[str,Any]]
     """
     # todo doesnt work yet (assignment function)
     def __init__(self, w, r, d, f):
         self.w = w
         self.r = r
         self.d = d
-        self.f = f
+        self.i = f
         dprod = cart_prod(list(d), len(vars))  # all ways of forming sets of |vars| long combinations of elements from D
-        self.gs = [{str(v): a for (v, a) in zip(vars, distr)} for distr in dprod]
+        self.vs = [{str(v): a for (v, a) in zip(vars, distr)} for distr in dprod]
 
     def __repr__(self):
-        return "Model M = (W,R,D,F) with\n" \
+        return "Model M = (W,R,D,I) with\n" \
                "W = {" + ", ".join([repr(w) for w in self.w]) + "}\n"\
                "R = {" + ", ".join([repr(r) for r in self.r]) + "}\n"\
                "D = {" + ", ".join([repr(d) for d in self.d]) + "}\n" \
-               "F = {\n" +\
+               "I = {\n" +\
                     " \n".join(["    " + repr(w) + " ↦ \n" + \
                         ", \n".join(
-                        ["           " + repr(keyF) + " ↦ " +
-                         (repr(valF) if isinstance(valF, str) else
-                          (", ".join(["(" + repr(keyF2) + " ↦ " + repr(valF2) + ")"
-                                      for keyF2, valF2 in valF.items()])
-                           if isinstance(valF, dict) else
+                        ["           " + repr(keyI) + " ↦ " +
+                         (repr(valI) if isinstance(valI, str) else
+                          (", ".join(["(" + repr(keyI2) + " ↦ " + repr(valI2) + ")"
+                                      for keyI2, valI2 in valI.items()])
+                           if isinstance(valI, dict) else
                            ("{" +
-                            ", ".join(["(" + ", ".join([repr(t) for t in s]) + ")" for s in valF]) +
+                            ", ".join(["(" + ", ".join([repr(t) for t in s]) + ")" for s in valI]) +
                             "}")))
-                        for (keyF, valF) in self.f[w].items()]) + \
+                        for (keyI, valI) in self.i[w].items()]) + \
                         "\n    "
-                    for (w, fw) in self.f.items()]) +\
+                    for (w, fw) in self.i.items()]) +\
                     "}"
 
 
@@ -1213,23 +1240,23 @@ class VarModalModel(ModalModel):
     """
     A model of modal predicate logic with varying domains.
 
-    A ConstModalModel is a quadrupel <W,R,D,F> with
+    A VarModalModel M is a quadrupel <W,R,D,I> with
       - W = set of possible worlds
       - R = the accessibility relation, a binary relation on W
       - D = an assignment of possible worlds to domains of discourse
-      - F = interpretation function assigning to each member of W and each non-logical symbol a denotation
-    and a set of assignment functions gs.
+      - I = interpretation function assigning to each member of W and each non-logical symbol a denotation
+    and a set of assignment functions vs.
 
-    - The set of possible worlds W is a set of possible worlds, specified as strings:
+    - The set of possible worlds W is a set of possible worlds, specified as strinvs:
        W = {'w1', 'w2', ...}
 
     - The accessibility relation W is a set of tuples of possible worlds:
       R = {('w1', 'w2'), ('w2', 'w2'), ...}
 
     - The domain D is a a dictionary with
-      - possible worlds (specified as strings) as keys and
+      - possible worlds (specified as strinvs) as keys and
       - domains (see Model.D) as values
-       D = {'w1': {'a', 'b', 'c'}, 'w2': {'b'}, ...}
+      D = {'w1': {'a', 'b', 'c'}, 'w2': {'b'}, ...}
 
     - The interpretation function F is a dictionary with
       - possible worlds as keys and
@@ -1241,17 +1268,17 @@ class VarModalModel(ModalModel):
     @type r: set[tuple[str,str]]
     @attr d: the mapping of worlds to domains of discourse
     @type d: dict[str,set[str]]
-    @attr f: the interpretation function
-    @type f: dict[str,dict[str,Any]]
+    @attr i: the interpretation function
+    @type i: dict[str,dict[str,Any]]
     """
 
-    def __init__(self, w, r, d, f):
+    def __init__(self, w, r, d, i):
         self.w = w
         self.r = r
         self.d = d
-        self.f = f
+        self.i = i
         dprods = {w: cart_prod(list(self.d[w]), len(vars)) for w in self.w}  # all ways of forming sets of |vars| long combinations of elements from D
-        self.gs = {w: [{str(v): a for (v, a) in zip(vars, distr)} for distr in dprods[w]] for w in self.w}
+        self.vs = {w: [{str(v): a for (v, a) in zip(vars, distr)} for distr in dprods[w]] for w in self.w}
 
     def __repr__(self):
         return "Model M = (W,R,D,F) with\n" \
@@ -1262,334 +1289,339 @@ class VarModalModel(ModalModel):
                             ", ".join([repr(d) for d in self.d[w]]) + "}"
                     for w in self.w]) +\
                     "}\n" \
-               "F = {\n" + \
+               "I = {\n" + \
                     ", \n".join(["    " + repr(w) + " ↦ " +\
                             ", \n".join(
-                                ["         " + repr(keyF) + " ↦ " +
-                                 (repr(valF) if isinstance(valF, str) else
-                                  (", ".join(["(" + repr(keyF2) + " ↦ " + repr(valF2) + ")"
-                                              for keyF2, valF2 in valF.items()])
-                                   if isinstance(valF, dict) else
+                                ["         " + repr(keyI) + " ↦ " +
+                                 (repr(valI) if isinstance(valI, str) else
+                                  (", ".join(["(" + repr(keyI2) + " ↦ " + repr(valI2) + ")"
+                                              for keyI2, valI2 in valI.items()])
+                                   if isinstance(valI, dict) else
                                    ("{" +
-                                    ", ".join(["(" + ", ".join([repr(t) for t in s]) + ")" for s in valF]) +
+                                    ", ".join(["(" + ", ".join([repr(t) for t in s]) + ")" for s in valI]) +
                                     "}")))
-                                 for (keyF, valF) in self.f[w].items()]) + \
+                                 for (keyI, valI) in self.i[w].items()]) + \
                             "\n    }"
-                            for (w, fw) in self.f.items()]) + \
+                            for (w, fw) in self.i.items()]) + \
                     "}"
 
 
-if __name__ == "__main__":
-    # testset = ['a', 'b']
-    # print(cart_prod(testset, 0))
-    # print(cart_prod(testset, 1))
-    # print(cart_prod(testset, 2))
-    # print(cart_prod(testset, 3))
-    # print()
+def compute(output):
+    """
+    Define models and formulas to compute denotations for here.
+    @param output: the models activated for computation
+    @type output: list[int]
+    """
+    global depth
+
 
     # Example 1: tupperware boxes, lids and a bunny
-    ############################
-    print("\n---------------------------------\n")
-    ############################
+    if 1 in output:
+        ############################
+        print("\n---------------------------------\n")
+        ############################
 
-    d1 = {"roundbox", "roundlid", "rectbox", "rectlid", "bunny"}
-    f1 = {"b1": "roundbox", "b2": "rectbox", "f": "bunny",
-          "box": {("roundbox", ), ("rectbox", )},
-          "lid": {("roundlid", ), ("rectlid", )},
-          "fit": {("roundlid", "roundbox"), ("rectlid", "rectbox")}
-    }
-    m1 = PredModel(d1, f1)
-    g1 = {"x": "roundbox", "y": "bunny"}
-    h1 = {"x": "bunny", "y": "rectbox"}
+        d1 = {"roundbox", "roundlid", "rectbox", "rectlid", "bunny"}
+        i1 = {"b1": "roundbox", "b2": "rectbox", "f": "bunny",
+              "box": {("roundbox", ), ("rectbox", )},
+              "lid": {("roundlid", ), ("rectlid", )},
+              "fit": {("roundlid", "roundbox"), ("rectlid", "rectbox")}
+        }
+        m1 = PredModel(d1, i1)
+        v1 = {"x": "roundbox", "y": "bunny"}
+        vv1 = {"x": "bunny", "y": "rectbox"}
 
-    print(m1)
-    print("g1: " + repr(g1))
-    print("h1: " + repr(h1))
+        print(m1)
+        print("v1 = " + repr(v1))
+        print("v'1 = " + repr(vv1))
 
-    e1 = {
-        1: Var("x"),
-        2: Const("f"),
-        3: Atm(Pred("box"), (Var("x"), )),
-        4: Forall(Var("x"), Imp(Atm(Pred("box"), (Var("x"), )),
-                                Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"), )),
-                                                      Atm(Pred("fit"), (Var("y"), Var("x"))))))),
-        5: Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"), )),
-                                 Forall(Var("x"), Imp(Atm(Pred("box"), (Var("x"), )),
-                                                      Atm(Pred("fit"), (Var("y"), Var("x")))))))
-    }
+        e1 = {
+            1: Var("x"),
+            2: Const("f"),
+            3: Atm(Pred("box"), (Var("x"), )),
+            4: Forall(Var("x"), Imp(Atm(Pred("box"), (Var("x"), )),
+                                    Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"), )),
+                                                          Atm(Pred("fit"), (Var("y"), Var("x"))))))),
+            5: Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"), )),
+                                     Forall(Var("x"), Imp(Atm(Pred("box"), (Var("x"), )),
+                                                          Atm(Pred("fit"), (Var("y"), Var("x")))))))
+        }
 
-    for nr, e in e1.items():
-        if nr <= 3:
-            print()
-            print("[[" + repr(e) + "]]^M1,g1 =")
-            print(e.denot(m1, g1))
-            depth = 0
-            print()
-            print("[[" + repr(e) + "]]^M1,h1 =")
-            print(e.denot(m1, h1))
-            depth = 0
-        if nr > 3:
-            print()
-            print("[[" + repr(e) + "]]^M1 =")
-            print(e.denotG(m1))
-            depth = 0
+        for nr, e in e1.items():
+            if nr <= 3:
+                print()
+                print("[[" + repr(e) + "]]^M1,v1 =")
+                print(e.denot(m1, v1))
+                depth = 0
+                print()
+                print("[[" + repr(e) + "]]^M1,v'1 =")
+                print(e.denot(m1, vv1))
+                depth = 0
+            if nr > 3:
+                print()
+                print("[[" + repr(e) + "]]^M1 =")
+                print(e.denotV(m1))
+                depth = 0
+
 
     # Example 2: MMiL
-    #############################
-    print("\n---------------------------------\n")
-    ############################
+    if 2 in output:
+        #############################
+        print("\n---------------------------------\n")
+        ############################
 
-    d2 = {"Mary", "Jane", "MMiL"}
-    f2 = {"m": "Mary",
-          "student": {("Mary", ), ("Jane", )},
-          "book": {("MMiL", )},
-          "read": {("Mary", "MMiL")}
-    }
-    m2 = PredModel(d2, f2)
-    g2 = {"x": "Jane", "y": "Mary", "z": "MMiL"}
+        d2 = {"Mary", "Jane", "MMiL"}
+        i2 = {"m": "Mary",
+              "student": {("Mary", ), ("Jane", )},
+              "book": {("MMiL", )},
+              "read": {("Mary", "MMiL")}
+        }
+        m2 = PredModel(d2, i2)
+        v2 = {"x": "Jane", "y": "Mary", "z": "MMiL"}
 
-    print(m2)
-    print("g = " + repr(g2))
+        print(m2)
+        print("v = " + repr(v2))
 
-    e2 = {
-        1: Var("x"),  # Jane
-        2: Const("m"),  # Mary
-        3: Pred("read"),  # {(Mary, MMiL)}
-        4: Atm(Pred("book"), (Var("x"), )),  # false, since Jane is not a book
-        5: Exists(Var("x"), Conj(Atm(Pred("book"), (Var("x"),)), Atm(Pred("read"), (Const("m"), Var("x"))))),  # true
-        6: Forall(Var("y"), Imp(Atm(Pred("student"), (Var("y"), )),
-                                Exists(Var("x"),
-                                       Conj(Atm(Pred("book"), (Var("x"), )),
-                                            Atm(Pred("read"), (Var("y"), Var("z"))))))),
-           # false, since Jane doesn't read a book
-        7: Neg(Exists(Var("y"), Conj(Atm(Pred("student"), (Var("y"), )),
-                                     Exists(Var("x"),
-                                            Conj(Atm(Pred("book"), (Var("x"), )),
-                                                 Atm(Pred("read"), (Var("y"), (Var("z")))))))))
-           # false, since Mary reads a book
-    }
+        e2 = {
+            1: Var("x"),  # Jane
+            2: Const("m"),  # Mary
+            3: Pred("read"),  # {(Mary, MMiL)}
+            4: Atm(Pred("book"), (Var("x"), )),  # false, since Jane is not a book
+            5: Exists(Var("x"), Conj(Atm(Pred("book"), (Var("x"),)), Atm(Pred("read"), (Const("m"), Var("x"))))),  # true
+            6: Forall(Var("y"), Imp(Atm(Pred("student"), (Var("y"), )),
+                                    Exists(Var("x"),
+                                           Conj(Atm(Pred("book"), (Var("x"), )),
+                                                Atm(Pred("read"), (Var("y"), Var("z"))))))),
+               # false, since Jane doesn't read a book
+            7: Neg(Exists(Var("y"), Conj(Atm(Pred("student"), (Var("y"), )),
+                                         Exists(Var("x"),
+                                                Conj(Atm(Pred("book"), (Var("x"), )),
+                                                     Atm(Pred("read"), (Var("y"), (Var("z")))))))))
+               # false, since Mary reads a book
+        }
 
-    for nr, e in e2.items():
-        print()
-        print("[[" + repr(e) + "]]^M2,g2 =")
-        print(e.denot(m2, g2))
-        depth = 0
+        for nr, e in e2.items():
+            print()
+            print("[[" + repr(e) + "]]^M2,v2 =")
+            print(e.denot(m2, v2))
+            depth = 0
+
 
     # Example 3: love #1 (ExSh 9 Ex. 1)
-    #############################
-    print("\n---------------------------------\n")
-    #############################
+    if 3 in output:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
 
-    d3 = {"Mary", "John", "Peter"}
-    f3 = {"j": "Peter", "p": "John",
-          "woman": {("Mary",)},
-          "man": {("John", ), ("Peter", )},
-          "love": {("Mary", "John"), ("John", "Mary"), ("John", "John"), ("Peter", "Mary"), ("Peter", "John")},
-          "jealous": {("Peter", "John", "Mary"), ("Peter", "Mary", "John")}}
-    m3 = PredModel(d3, f3)
-    g3 = {"x": "Mary", "y": "Mary", "z": "Peter"}
-    h3 = {"x": "John", "y": "Peter", "z": "John"}
+        d3 = {"Mary", "John", "Peter"}
+        i3 = {"j": "Peter", "p": "John",
+              "woman": {("Mary",)},
+              "man": {("John", ), ("Peter", )},
+              "love": {("Mary", "John"), ("John", "Mary"), ("John", "John"), ("Peter", "Mary"), ("Peter", "John")},
+              "jealous": {("Peter", "John", "Mary"), ("Peter", "Mary", "John")}}
+        m3 = PredModel(d3, i3)
+        v3 = {"x": "Mary", "y": "Mary", "z": "Peter"}
+        vv3 = {"x": "John", "y": "Peter", "z": "John"}
 
-    print(m3)
-    print("g = " + repr(g3))
-    print("h = " + repr(h3))
+        print(m3)
+        print("v = " + repr(v3))
+        print("v' = " + repr(vv3))
 
-    e3 = {
-        1: Const("p"),
-        2: Var("y"),
-        3: Var("y"),
-        4: Atm(Pred("love"), (Const("p"), Const("j"))),
-        5: Atm(Pred("love"), (Var("y"), Var("z"))),
-        6: Atm(Pred("love"), (Var("y"), Var("z"))),
-        7: Exists(Var("x"), Neg(Atm(Pred("love"), (Const("j"), Var("x"))))),
-        8: Forall(Var("x"), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y"))))),
-        9: Neg(Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
-                                     Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
-                                                           Atm(Pred("love"), (Var("x"), Var("y"))))
-                                            )))),
-        10: Neg(Exists(Var("y"), Exists(Var("z"), Atm(Pred("jealous"), (Const("j"), Var("y"), Var("z"))))))
-    }
+        e3 = {
+            1: Const("p"),
+            2: Var("y"),
+            3: Var("y"),
+            4: Atm(Pred("love"), (Const("p"), Const("j"))),
+            5: Atm(Pred("love"), (Var("y"), Var("z"))),
+            6: Atm(Pred("love"), (Var("y"), Var("z"))),
+            7: Exists(Var("x"), Neg(Atm(Pred("love"), (Const("j"), Var("x"))))),
+            8: Forall(Var("x"), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y"))))),
+            9: Neg(Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
+                                         Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
+                                                               Atm(Pred("love"), (Var("x"), Var("y"))))
+                                                )))),
+            10: Neg(Exists(Var("y"), Exists(Var("z"), Atm(Pred("jealous"), (Const("j"), Var("y"), Var("z"))))))
+        }
 
-    for nr, e in e3.items():
-        # print(e)
-        if nr in [1, 2, 4, 5, 7, 8, 9]:
-            print()
-            print("[[" + repr(e) + "]]^M3,g3 =")
-            print(e.denot(m3, g3))
-            depth = 0
-        elif nr in [3, 6, 10]:
-            print()
-            print("[[" + repr(e) + "]]^M3,h3 =")
-            print(e.denot(m3, h3))
-            depth = 0
+        for nr, e in e3.items():
+            # print(e)
+            if nr in [1, 2, 4, 5, 7, 8, 9]:
+                print()
+                print("[[" + repr(e) + "]]^M3,v3 =")
+                print(e.denot(m3, v3))
+                depth = 0
+            elif nr in [3, 6, 10]:
+                print()
+                print("[[" + repr(e) + "]]^M3,v'3 =")
+                print(e.denot(m3, vv3))
+                depth = 0
+
 
     # Example 4: love #2
-    #############################
-    print("\n---------------------------------\n")
-    #############################
+    if 4 in output:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
 
-    d4 = {"Mary", "John", "Susan"}
-    f4 = {"m": "Mary", "j": "John", "s": "Susan",
-          "rain": {},
-          "sun": {()},
-          "woman": {("Mary",), ("Susan",)}, "man": {("John",)},
-          "love": {("John", "Mary"), ("Mary", "Susan"), ("Susan", "Mary"), ("Susan", "Susan")},
-          "jealous": {("John", "Susan", "Mary")}}
-    m4 = PredModel(d4, f4)
-    g4 = m4.gs[5]
+        d4 = {"Mary", "John", "Susan"}
+        i4 = {"m": "Mary", "j": "John", "s": "Susan",
+              "rain": {},
+              "sun": {()},
+              "woman": {("Mary",), ("Susan",)}, "man": {("John",)},
+              "love": {("John", "Mary"), ("Mary", "Susan"), ("Susan", "Mary"), ("Susan", "Susan")},
+              "jealous": {("John", "Susan", "Mary")}}
+        m4 = PredModel(d4, i4)
+        v4 = m4.vs[5]
 
-    print(m4)
-    print("g = " + repr(g4))
+        print(m4)
+        print("v = " + repr(v4))
 
-    e4 = {
-        1: Var("x"),  # Susan
-        2: Const("j"),  # John
-        3: Pred("love"),  # {(J,M), (M,S), (S,M), (S,S)}
-        4: Atm(Pred("love"), (Var("x"), Const("m"))),  # true under g, false in m
-        5: Atm(Pred("love"), (Const("j"), Const("m"))),  # true
-        6: Exists(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # true
-        7: Forall(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # false
-        8: Conj(Atm(Pred("love"), (Const("m"), Const("s"))), Atm(Pred("love"), (Const("s"), Const("m")))),  # true
-        9: Forall(Var("x"), Imp(Atm(Pred("love"), (Const("s"), Var("x"))), Atm(Pred("woman"), (Var("x"),)))),  # true
-        10: Neg(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # false
-        11: Neg(Forall(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # true
-        12: Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
-                                 Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
-                                                       Atm(Pred("love"), (Var("x"), Var("y"))))))),  # false
-        13: Imp(
-            Conj(Conj(Atm(Pred("love"), (Var("x"), Var("y"))),
-                      Atm(Pred("love"), (Var("y"), Var("z")))),
-                 Neg(Atm(Pred("love"), (Var("y"), Var("x"))))),
-            Atm(Pred("jealous"), (Var("x"), Var("z"), Var("y")))),  # true
-        14: Conj(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x")))), Atm(Pred("woman"), (Var("x"),))),
-        15: Atm(Pred("rain"), ()),
-        16: Atm(Pred("sun"), ())
-    }
+        e4 = {
+            1: Var("x"),  # Susan
+            2: Const("j"),  # John
+            3: Pred("love"),  # {(J,M), (M,S), (S,M), (S,S)}
+            4: Atm(Pred("love"), (Var("x"), Const("m"))),  # true under g, false in m
+            5: Atm(Pred("love"), (Const("j"), Const("m"))),  # true
+            6: Exists(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # true
+            7: Forall(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # false
+            8: Conj(Atm(Pred("love"), (Const("m"), Const("s"))), Atm(Pred("love"), (Const("s"), Const("m")))),  # true
+            9: Forall(Var("x"), Imp(Atm(Pred("love"), (Const("s"), Var("x"))), Atm(Pred("woman"), (Var("x"),)))),  # true
+            10: Neg(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # false
+            11: Neg(Forall(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # true
+            12: Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
+                                     Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
+                                                           Atm(Pred("love"), (Var("x"), Var("y"))))))),  # false
+            13: Imp(
+                Conj(Conj(Atm(Pred("love"), (Var("x"), Var("y"))),
+                          Atm(Pred("love"), (Var("y"), Var("z")))),
+                     Neg(Atm(Pred("love"), (Var("y"), Var("x"))))),
+                Atm(Pred("jealous"), (Var("x"), Var("z"), Var("y")))),  # true
+            14: Conj(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x")))), Atm(Pred("woman"), (Var("x"),))),
+            15: Atm(Pred("rain"), ()),
+            16: Atm(Pred("sun"), ())
+        }
 
-    for nr, e in e4.items():
-        if 1 <= nr <= 4:
-            print()
-            print("[[" + repr(e) + "]]^M4,g4 =")
-            print(e.denot(m4, g4))
-            depth = 0
-        if 4 <= nr <= 16:
-            print()
-            print("[[" + repr(e) + "]]^M4 =")
-            print(e.denotG(m4))
-            depth = 0
-        # if nr == 14:
-        #     print(e.freevars())
-        #     print(e.boundvars())
+        for nr, e in e4.items():
+            if 1 <= nr <= 4:
+                print()
+                print("[[" + repr(e) + "]]^M4,v4 =")
+                print(e.denot(m4, v4))
+                depth = 0
+            if 4 <= nr <= 16:
+                print()
+                print("[[" + repr(e) + "]]^M4 =")
+                print(e.denotV(m4))
+                depth = 0
+            # if nr == 14:
+            #     print(e.freevars())
+            #     print(e.boundvars())
+
 
     # Example 5: term equality and function symbols
-    #############################
-    print("\n---------------------------------\n")
-    #############################
+    if 5 in output:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
 
-    d5 = {"Mary", "Peter", "Susan", "Jane"}
-    f5 = {"m": "Mary", "s": "Susan", "j": "Jane",
-          "mother": {("Mary",): "Susan", ("Peter",): "Susan", ("Susan",): "Jane"}}
-    m5 = PredModel(d5, f5)
-    g5 = {"x": "Susan", "y": "Mary", "z": "Peter"}
+        d5 = {"Mary", "Peter", "Susan", "Jane"}
+        i5 = {"m": "Mary", "s": "Susan", "j": "Jane",
+              "mother": {("Mary",): "Susan", ("Peter",): "Susan", ("Susan",): "Jane"}}
+        m5 = PredModel(d5, i5)
+        v5 = {"x": "Susan", "y": "Mary", "z": "Peter"}
 
-    print(m5)
-    print("g = " + repr(g5))
+        print(m5)
+        print("v = " + repr(v5))
 
-    e5 = {
-        1: FuncTerm(Func("mother"), (Const("m"),)),  # Susan
-        2: FuncTerm(Func("mother"), (FuncTerm(Func("mother"), (Const("m"),)),)),  # Jane
-        3: Eq(FuncTerm(Func("mother"), (Const("m"),)), Const("s")),  # true
-        4: Neg(Eq(Var("x"), Const("m")))  # true
-    }
+        e5 = {
+            1: FuncTerm(Func("mother"), (Const("m"),)),  # Susan
+            2: FuncTerm(Func("mother"), (FuncTerm(Func("mother"), (Const("m"),)),)),  # Jane
+            3: Eq(FuncTerm(Func("mother"), (Const("m"),)), Const("s")),  # true
+            4: Neg(Eq(Var("x"), Const("m")))  # true
+        }
 
-    for nr, e in e5.items():
-        print()
-        print("[[" + repr(e) + "]]^M5,g5 =")
-        print(e.denot(m5, g5))
-        depth = 0
+        for nr, e in e5.items():
+            print()
+            print("[[" + repr(e) + "]]^M5,v5 =")
+            print(e.denot(m5, v5))
+            depth = 0
+
 
     # Example 6: modal logic with constant domain
-    #############################
-    print("\n---------------------------------\n")
-    #############################
+    if 6 in output:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
 
-    w6 = {"w1", "w2"}
-    r6 = {("w1", "w1"), ("w1", "w2"), ("w2", "w2"), ("w2", "w2")}
-    d6 = {"a"}
-    f6 = {"w1": {"P": {()}},
-          "w2": {"P": set()}}
-    m6 = ConstModalModel(w6, r6, d6, f6)
-    g6 = m6.gs[0]
+        w6 = {"w1", "w2"}
+        r6 = {("w1", "w1"), ("w1", "w2"), ("w2", "w2"), ("w2", "w2")}
+        d6 = {"a"}
+        i6 = {"w1": {"P": {()}},
+              "w2": {"P": set()}}
+        m6 = ConstModalModel(w6, r6, d6, i6)
+        v6 = m6.vs[0]
 
-    print(m6)
-    print(g6)
+        print(m6)
+        print(v6)
 
-    e6 = {
-        1: Poss(Nec(Eq(Var("x"), Var("x")))),
-        2: Nec(Disj(Atm(Pred("P"), tuple()), Neg(Atm(Pred("P"), tuple())))),
-        3: Disj(Nec(Atm(Pred("P"), tuple())), Nec(Neg(Atm(Pred("P"), tuple()))))
-    }
+        e6 = {
+            1: Poss(Nec(Eq(Var("x"), Var("x")))),
+            2: Nec(Disj(Atm(Pred("P"), tuple()), Neg(Atm(Pred("P"), tuple())))),
+            3: Disj(Nec(Atm(Pred("P"), tuple())), Nec(Neg(Atm(Pred("P"), tuple()))))
+        }
 
-    for nr, e in e6.items():
-        # print()
-        # print("[[" + repr(e) + "]]^M6,g6,w1 =")
-        # print(e.denot(m6, g6, "w1"))
-        # depth = 0
-        # print()
-        # print("[[" + repr(e) + "]]^M6,g6,w2 =")
-        # print(e.denot(m6, g6, "w2"))
-        # depth = 0
-        print("[[" + repr(e) + "]]^M6,g6 =")
-        print(e.denotW(m6, g6))
-        depth = 0
+        for nr, e in e6.items():
+            # print()
+            # print("[[" + repr(e) + "]]^M6,v6,w1 =")
+            # print(e.denot(m6, v6, "w1"))
+            # depth = 0
+            # print()
+            # print("[[" + repr(e) + "]]^M6,v6,w2 =")
+            # print(e.denot(m6, v6, "w2"))
+            # depth = 0
+            print("[[" + repr(e) + "]]^M6,v6 =")
+            print(e.denotW(m6, v6))
+            depth = 0
+
 
     # Example 7: modal logic with varying domain
-    #############################
-    print("\n---------------------------------\n")
-    #############################
+    if 7 in output:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
 
-    w7 = {"w1", "w2"}
-    r7 = {("w1", "w1"), ("w1", "w2"), ("w2", "w2"), ("w2", "w2")}
-    d7 = {"w1": {"a"},
-          "w2": {"a", "b"}}
-    f7 = {"w1": {"P": {("a",)}},
-          "w2": {"P": {("b",)}}}
-    m7 = VarModalModel(w7, r7, d7, f7)
+        w7 = {"w1", "w2"}
+        r7 = {("w1", "w1"), ("w1", "w2"), ("w2", "w2"), ("w2", "w2")}
+        d7 = {"w1": {"a"},
+              "w2": {"a", "b"}}
+        i7 = {"w1": {"P": {("a",)}},
+              "w2": {"P": {("b",)}}}
+        m7 = VarModalModel(w7, r7, d7, i7)
 
-    print(m7)
-    print(m7.gs)
+        print(m7)
+        print(m7.vs)
 
-    e7 = {
-        1: Exists(Var("x"), Exists(Var("y"), Neg(Eq(Var("x"), Var("y")))))
-    }
+        e7 = {
+            1: Exists(Var("x"), Exists(Var("y"), Neg(Eq(Var("x"), Var("y")))))
+        }
 
-    for nr, e in e7.items():
-        print()
-        print("[[" + repr(e) + "]]^M7,w1 =")
-        print(e.denot(m7, m7.gs["w1"][0], "w1"))
-        depth = 0
-        print()
-        print("[[" + repr(e) + "]]^M7,w2 =")
-        print(e.denot(m7, m7.gs["w2"][0], "w2"))
-        depth = 0
-        # print(e.denotG(m7))
-        # print(e.denotW(m7, g7))
-        # print(e.denotGW(m7))
-        # depth = 0
+        for nr, e in e7.items():
+            print()
+            print("[[" + repr(e) + "]]^M7,w1 =")
+            print(e.denot(m7, m7.vs["w1"][0], "w1"))
+            depth = 0
+            print()
+            print("[[" + repr(e) + "]]^M7,w2 =")
+            print(e.denot(m7, m7.vs["w2"][0], "w2"))
+            depth = 0
+            # print(e.denotV(m7))
+            # print(e.denotW(m7, v7))
+            # print(e.denotVW(m7))
+            # depth = 0
 
-    # Example 8: compute set of variable assignments
-    #############################
-    print("\n---------------------------------\n")
-    #############################
+        #############################
+        print("\n---------------------------------\n")
+        #############################
 
-    d = ["a", "b", "c", "d"]
-    vs = ["x", "y", "z"]
-    dprod = cart_prod(list(d), len(vs))  # all ways of forming sets of |vs| long combinations of elements from D
-    gs = [{str(v): a for (v, a) in zip(vs, distr)}for distr in dprod]
 
-    for nr, g in enumerate(gs):
-        print("g" + str(nr+1) + ": " + str(g))
-
-    #############################
-    print("\n---------------------------------\n")
-    #############################
+if __name__ == "__main__":
+    compute(output)
