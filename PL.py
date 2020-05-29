@@ -59,11 +59,11 @@ After specifying your input in the source code, execute this script in a termina
 
 If you would like to understand what's going on under the hood:
 The interesting part for you are the 'denot' methods in each of the expression classes.
-Inspect the code and compare how the formal definitions can be translated into working code almost 1:1,
-and try to follow how the implementation behaves, especially in the loop logic for the quantifiers.
+Compare how the formal definitions can be translated into code almost 1:1,
+and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers.
 A recommendation is to set breakpoints and step through an evaluation process symbol by symbol
 to see how a denotation is computed recursively in line with the inductive definitions.
-The '__repr__' methods are what makes the expressions formatted human-redable in the output.
+The '__repr__' methods are what makes the expressions formatted human-readable in the output.
 Simply ignore anything that looks completely unfamiliar to you (such as 'w'/modal stuff, function symbols, etc.).
 
 Notes on notation:
