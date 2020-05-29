@@ -41,19 +41,23 @@
 This is pyPL, a naive model checker for classical first-order logic.
 
 Usage notes:
-- This tool is intended for didactical purposes. It is not efficient or designed for real-life applications.
-- The interesting part for you are the 'denot' methods in each of the expression classes.
-  Inspect the code and compare how the formal definitions can be translated into working code almost 1:1,
-  and try to see how the implementation behaves especially in the loop logic for the quantifiers.
-  A recommendation is to set breakpoints and step through an evaluation process symbol by symbol.
-  Simply ignore anything that looks completely unfamiliar to you (such as 'w'/modal stuff, function symbols, etc.).
-- This tool is not equipped with an interactive user interface; input has to be specified in the source code.
-  Models and formulas to compute denotations for are defined in the function 'compute' (bottom of source code).
-  You can select which models to include in the output by modifying the variable 'output' (top of source file).
-  You can switch verbose mode (printing out intermediate steps) by setting the variable 'verbose' (top of source code).
-  Follow the examples in the main block and the documentations of the classes and methods to code your specifications.
-  To turn off help mode and switch to printing output, set the varible 'help' (top of source code) to 'False'.
-  After specifying your input and turning off help mode, execute this script in a terminal to view the output.
+------------
+This tool is intended for didactical purposes. It is not efficient or designed for real-life applications.
+
+The interesting part for you are the 'denot' methods in each of the expression classes.
+Inspect the code and compare how the formal definitions can be translated into working code almost 1:1,
+and try to see how the implementation behaves, especially in the loop logic for the quantifiers.
+A recommendation is to set breakpoints and step through an evaluation process symbol by symbol to see what's going on.
+Simply ignore anything that looks completely unfamiliar to you (such as 'w'/modal stuff, function symbols, etc.).
+
+This tool is not equipped with an interactive user interface; input has to be specified in the source code.
+A number of examples are already set up.
+- Models and formulas to compute denotations for are defined in the function 'compute' (bottom of source code).
+- You can select which models to include in the output by modifying the variable 'output' (top of source file).
+- You can switch verbose mode (print out intermediate steps) by setting the variable 'verbose' (top of source code).
+- To turn off help mode and switch to printing output, set the varible 'help' (top of source code) to 'False'.
+Follow the existing examples and the documentations of the classes and methods to code your specifications.
+After specifying your input and turning off help mode, execute this script in a terminal to view the output.
 """
 
 
