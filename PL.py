@@ -856,7 +856,6 @@ class Exists(Formula):
             # if not, we do nothing and try with the next one (continue)
             else:
                 if verbose:
-                    # print(((depth+1) * 2 * " ") + "0")
                     print((depth * 2 * " ") + "✗")
 
         # if we reach the end, then no witness has been found, and the existential statement is false
