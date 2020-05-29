@@ -49,7 +49,7 @@ Usage notes:
 This tool is not equipped with an interactive user interface; input has to be specified in the source code.
 A number of examples are already set up.
 - Models and formulas to compute denotations for are defined in the function 'compute' (bottom of source code).
-- You can select which models to include in the output by modifying the variable 'output' (top of source file).
+- You can select which models to include in the output by modifying the variable 'output' (top of source code).
 - You can switch verbose mode (print out intermediate steps) by setting the variable 'verbose' (top of source code).
 Follow the existing examples and the documentations of the classes and methods to code your specifications.
 
