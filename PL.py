@@ -31,6 +31,7 @@
 #  - efficiency: assignment functions have to be specified on all variables of the language;
 #    the domain is not restricted expression-wise to those variables that actually occur in the expression
 #  - depth has to be reset manually after each call of denot
+#  - global variables
 #
 # Wish list:
 # ----------
