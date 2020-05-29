@@ -46,9 +46,8 @@ Usage notes:
   and try to see how the implementation behaves especially in the loop logic for the quantifiers.
   A recommendation is to set breakpoints and step through an evaluation process symbol by symbol.
   Simply ignore anything that looks completely unfamiliar to you (such as 'w'/modal stuff, function symbols, etc.).
-- This tool is not equipped with an interactive user interface.
-  Models and denotations of formulas to be computed have to be specified in the source code.
-  Models and formulas are defined in the function 'compute' (bottom of this file).
+- This tool is not equipped with an interactive user interface; input has to be specified in the source code.
+  Models and formulas to compute denotations for are defined in the function 'compute' (bottom of this file).
   You can select which models to include in the output by modifying the variable 'output' (top of this file).
   You can switch verbose mode (printing out intermediate steps) by setting the variable 'verbose' (top of this file).
   Follow the examples in the main block and the documentations of the classes and methods to code your specifications.
