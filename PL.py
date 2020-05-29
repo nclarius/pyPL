@@ -826,7 +826,7 @@ class Exists(Formula):
 
     def denot(self, m, v, w=None) -> bool:
         """
-        The denotation of an existentially quantified formula Exists(u, phi) is true
+        The denotation of an existentially quantified formula Exists(x, phi) is true
         iff phi is true under at least one x-variant of v.
         """
         global depth
@@ -894,7 +894,7 @@ class Forall(Formula):
 
     def denot(self, m, v, w=None) -> bool:
         """
-        The denotation of universally quantified formula Forall(u, phi) is true iff
+        The denotation of universally quantified formula Forall(x, phi) is true iff
         phi is true under all x-variants of v.
         """
         global depth
