@@ -849,7 +849,7 @@ class Exists(Formula):
             # if yes, we found a witness, the existential statement is true, and we can stop checking (return)
             if witness:
                 if verbose:
-                    print(((depth) * 2 * " ") + "✓")
+                    print((depth * 2 * " ") + "✓")
                 depth -= 1
                 return True
 
@@ -857,7 +857,7 @@ class Exists(Formula):
             else:
                 if verbose:
                     # print(((depth+1) * 2 * " ") + "0")
-                    print(((depth) * 2 * " ") + "✗")
+                    print((depth * 2 * " ") + "✗")
 
         # if we reach the end, then no witness has been found, and the existential statement is false
         depth -= 1
@@ -918,12 +918,12 @@ class Forall(Formula):
             # if yes, everything is fine until now, we do nothing and go check the next one (continue)
             if witness:
                 if verbose:
-                    print(((depth) * 2 * " ") + "✓")
+                    print((depth * 2 * " ") + "✓")
 
             # if not, we found a counter witness, the universal statement is false, and we can stop checking (return)
             else:
                 if verbose:
-                    print(((depth) * 2 * " ") + "✗")
+                    print((depth * 2 * " ") + "✗")
                 depth -= 1
                 return False
 
