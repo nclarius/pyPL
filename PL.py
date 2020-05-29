@@ -51,7 +51,6 @@ A number of examples are already set up.
 - Models and formulas to compute denotations for are defined in the function 'compute' (bottom of source code).
 - You can select which models to include in the output by modifying the variable 'output' (top of source file).
 - You can switch verbose mode (print out intermediate steps) by setting the variable 'verbose' (top of source code).
-- To turn off help mode and switch to printing output, set the varible 'help' (top of source code) to 'False'.
 Follow the existing examples and the documentations of the classes and methods to code your specifications.
 
 If you would like to understand what's going on under the hood:
@@ -62,14 +61,13 @@ and try to follow how the implementation behaves, especially in the loop logic f
 A recommendation is to set breakpoints and step through an evaluation process symbol by symbol
 to see how a denotation is computed recursively in line with the inductive definitions.
 
-After specifying your input and turning off help mode, execute this script in a terminal to view the output.
+After specifying your input in the source code, execute this script in a terminal to view the output.
 """
 
 
 # settings
 output = [1, 2, 3, 4, 5, 6, 7]  # set here which models to compute (see definitions in function 'compute')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
-help = True  # set this to False if you would like to start printing the output instead of the help information
 
 
 from typing import List, Dict, Set, Tuple
@@ -1630,7 +1628,6 @@ def compute(output):
 
 
 if __name__ == "__main__":
-    if help:
-        print(__doc__)
-    else:
-        compute(output)
+    print(__doc__)
+    compute(output)
+    print("Scroll up for help information.")
