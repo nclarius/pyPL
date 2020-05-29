@@ -24,7 +24,7 @@ Restrictions:
 Known issues:
 -------------
  - name of model, domain, interpr. func., variable assignment and world is not systematically recognized,
-   instead always 'M', 'D', 'F', 'g', 'w' used in printout
+   instead always 'M', 'D', 'I', 'v', 'w' used in printout
  - efficiency: assignment functions have to be specified on all variables of the language;
    the domain is not restricted expression-wise to those variables that actually occur in the expression
  - depth has to be reset manually after each call of denot
