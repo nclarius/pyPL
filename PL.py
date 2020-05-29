@@ -1630,4 +1630,4 @@ def compute(output):
 if __name__ == "__main__":
     print(__doc__)
     compute(output)
-    print("Scroll up for help information.")
+    print("\nScroll up for help information.")
