@@ -65,7 +65,7 @@ and try to follow why the implementation works the way it does, especially the l
 A recommendation is to set breakpoints and step through an evaluation process symbol by symbol
 to see how a denotation is computed recursively in line with the inductive definitions.
 The '__repr__' methods are what makes the expressions formatted human-readable in the output.
-Simply ignore anything that looks completely unfamiliar to you (such as 'w'/modal stuff, function symbols, etc.).
+Simply ignore all the print statements and anything that looks completely unfamiliar to you (such as 'w'/modal stuff).
 
 Notes on notation:
 - 'M' = model/structure (aka 'A')
@@ -78,7 +78,7 @@ Have fun!
 
 
 # settings
-active = [1, 2, 3, 4, 5, 6, 7]  # set here which models to include in the output (see definitions in function 'compute')
+active = [1, 2, 3, 4, 5, 6, 7, 8]  # set here which models to include in the output (see def.s in function 'compute')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
 
@@ -834,37 +834,32 @@ class Exists(Formula):
         d_ = m.d
         if isinstance(m, VarModalModel):
             d_ = m.d[w]
+
         # quantify over the individuals in the domain
-        for d in d_:
-            # compute the x-alternative g'
-            v_ = {**v, self.u.u: d}  # unpack g and overwrite the dictionary value for v with d
+        for d in sorted(d_):
+
+            # compute the x-alternative v'
+            v_ = {**v, self.u.u: d}  # unpack v and overwrite the value for u with d
+
             # check whether the current indiv. d under consideration makes phi true
             if verbose:
-                # print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) + " ...")
-                print((depth * 2 * " ") + "Let v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) + ".")
-                print(((depth+1) * 2 * " ") + "[[" + repr(self.phi) + "]]^M,v" + (depth * "'") + " =")
+                print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) + " ...")
             witness = self.phi.denot(m, v_, w)
-            # if yes, we found a witness, the existential statement is true, and we can stop checking
+
+            # if yes, we found a witness, the existential statement is true, and we can stop checking (return)
             if witness:
                 if verbose:
-                    print(((depth+1) * 2 * " ") + "1")
-                    # print(((depth+1) * 2 * " ") + "✓")
-                    # print(((depth+1) * 2 * " ") + "witness: v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d))
-                if verbose:
-                    print((depth * 2 * " ") + "Since with v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) +
-                          " ex. g" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,v" + (depth * "'") + " = 1,")
-                    print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,v" + ((depth-1) * "'") + " = 1.")
+                    print(((depth) * 2 * " ") + "✓")
                 depth -= 1
                 return True
-            if not witness:
+
+            # if not, we do nothing and try with the next one (continue)
+            else:
                 if verbose:
-                    print(((depth+1) * 2 * " ") + "0")
-                    # print(((depth+1) * 2 * " ") + "✗")
-        # if no witness has been found, the existential statement is false
-        if verbose:
-            print((depth * 2 * " ") + "Since " +
-                  "ex. no v" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,v" + (depth * "'") + " = 1,")
-            print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,v" + ((depth-1) * "'") + " = 0.")
+                    # print(((depth+1) * 2 * " ") + "0")
+                    print(((depth) * 2 * " ") + "✗")
+
+        # if we reach the end, then no witness has been found, and the existential statement is false
         depth -= 1
         return False
 
@@ -908,37 +903,31 @@ class Forall(Formula):
         d_ = m.d
         if isinstance(w, VarModalModel):
             d_ = m.d[w]
+
         # quantify over the individuals in the domain
-        for d in d_:
-            # compute the x-alternative g'
-            v_ = {**v, self.u.u: d}  # unpack g and overwrite the dictionary value for v with d
+        for d in sorted(d_):
+
+            # compute the x-alternative v'
+            v_ = {**v, self.u.u: d}  # unpack v and overwrite the value for u with d
+
             # check whether the current indiv. d under consideration makes phi true
             if verbose:
-                # print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) + " ...")
-                print((depth * 2 * " ") + "Let v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) + ".")
-                print(((depth+1) * 2 * " ") + "[[" + repr(self.phi) + "]]^M,v" + (depth * "'") + " =")
+                print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) + " ...")
             witness = self.phi.denot(m, v_, w)
+
+            # if yes, everything is fine until now, we do nothing and go check the next one (continue)
             if witness:
                 if verbose:
-                    print(((depth+1) * 2 * " ") + "1")
-                    # print(((depth+1) * 2 * " ") + "✓")
-            # if not, we found a counter witness, the universal statement is false, and we can stop checking
+                    print(((depth) * 2 * " ") + "✓")
+
+            # if not, we found a counter witness, the universal statement is false, and we can stop checking (return)
             else:
                 if verbose:
-                    print(((depth+1) * 2 * " ") + "0")
-                    # print(((depth+1) * 2 * " ") + "✗")
-                    # print(((depth+1) * 2 * " ") + "counter witness: v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d))
+                    print(((depth) * 2 * " ") + "✗")
                 depth -= 1
-                if verbose:
-                    print((depth * 2 * " ") + "Since with v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) +
-                          " ex. v" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,v" + (depth * "'") + " = 0,")
-                    print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,v" + ((depth-1) * "'") + " = 0.")
                 return False
-        # if no counter witness has been found, the universal statement is true
-        if verbose:
-            print((depth * 2 * " ") + "Since " +
-                  "f.a. v" + (depth * "'") + ": [[" + repr(self.phi) + "]]^M,v" + (depth * "'") + " = 1,")
-            print((depth * 2 * " ") + "[[" + repr(self) + "]]^M,v" + ((depth-1) * "'") + " = 1.")
+
+        # if we reach the end, then no counter witness has been found, and the universal statement is true
         depth -= 1
         return True
 
@@ -1334,7 +1323,8 @@ def compute():
         print("\n---------------------------------\n")
         ############################
 
-        print("Example 1: tupperware boxes, lids and a bunny (lecture 09)\n")
+        print("Example #1: tupperware boxes, lids and a bunny (logic for linguists lecture 09)")
+        print()
 
         d1 = {"roundbox", "roundlid", "rectbox", "rectlid", "bunny"}
         i1 = {"b1": "roundbox", "b2": "rectbox", "f": "bunny",
@@ -1384,7 +1374,8 @@ def compute():
         print("\n---------------------------------\n")
         ############################
 
-        print("Example 2: MMiL (example from the book)")
+        print("Example #2: MMiL (logic for linguists Example #from the book)")
+        print()
 
         d2 = {"Mary", "Jane", "MMiL"}
         i2 = {"m": "Mary",
@@ -1428,7 +1419,8 @@ def compute():
         print("\n---------------------------------\n")
         #############################
 
-        print("Example 3: love #1 (ExSh 9 Ex. 1)")
+        print("Example #3: love #1 (logic for linguists ExSh 9 Ex. 1)")
+        print()
 
         d3 = {"Mary", "John", "Peter"}
         i3 = {"j": "Peter", "p": "John",
@@ -1479,7 +1471,8 @@ def compute():
         print("\n---------------------------------\n")
         #############################
 
-        print("(Example 4: love #2 (modification of example 3)")
+        print("(Example #4: love #2 (modification of Example #3)")
+        print()
 
         d4 = {"Mary", "John", "Susan"}
         i4 = {"m": "Mary", "j": "John", "s": "Susan",
@@ -1540,7 +1533,8 @@ def compute():
         print("\n---------------------------------\n")
         #############################
 
-        print("Example 5: term equality and function symbols")
+        print("Example #5: term equality and function symbols")
+        print()
 
         d5 = {"Mary", "Peter", "Susan", "Jane"}
         i5 = {"m": "Mary", "s": "Susan", "j": "Jane",
@@ -1570,7 +1564,8 @@ def compute():
         print("\n---------------------------------\n")
         #############################
 
-        print("Example 6: modal logic with constant domain")
+        print("Example #6: modal logic with constant domain")
+        print()
 
         w6 = {"w1", "w2"}
         r6 = {("w1", "w1"), ("w1", "w2"), ("w2", "w2"), ("w2", "w2")}
@@ -1608,7 +1603,8 @@ def compute():
         print("\n---------------------------------\n")
         #############################
 
-        print("Example 7: modal logic with varying domain")
+        print("Example #7: modal logic with varying domain")
+        print()
 
         w7 = {"w1", "w2"}
         r7 = {("w1", "w1"), ("w1", "w2"), ("w2", "w2"), ("w2", "w2")}
@@ -1639,9 +1635,50 @@ def compute():
             # print(e.denotVW(m7))
             # depth = 0
 
+
+    if 8 in active:
         #############################
         print("\n---------------------------------\n")
         #############################
+
+        print("Example #8 (logic for computer scientists lecture 07)")
+        print()
+
+        d8a = {"m1", "m2"}
+        i8a = {"S": {("m1", )},
+               "R": {("m1", "m1"), ("m2", "m1")}
+              }
+        m8a = PredModel(d8a, i8a)
+
+        d8b = {"m1", "m2"}
+        i8b = {"S": {("m2", )},
+               "R": {("m1", "m1"), ("m2", "m1")}
+              }
+        m8b = PredModel(d8b, i8b)
+
+        print(m8a)
+        print()
+        print(m8b)
+
+        e7 = {
+            1: Forall(Var("x"), Exists(Var("y"),
+                                       Conj(Atm(Pred("S"), (Var("y"), )), Atm(Pred("R"), (Var("x"), Var("y"))))))
+        }
+
+        for nr, e in e7.items():
+            print()
+            print("[[" + repr(e) + "]]^M =")
+            print(e.denotV(m8a))
+            depth = 0
+            print()
+            print("[[" + repr(e) + "]]^M' =")
+            print(e.denotV(m8b))
+            depth = 0
+
+
+    #############################
+    print("\n---------------------------------\n")
+    #############################
 
 
 if __name__ == "__main__":
