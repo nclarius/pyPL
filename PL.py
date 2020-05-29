@@ -66,7 +66,7 @@ After specifying your input in the source code, execute this script in a termina
 
 
 # settings
-output = [1, 2, 3, 4, 5, 6, 7]  # set here which models to compute (see definitions in function 'compute')
+output = [1, 2, 3, 4, 5, 6, 7]  # set here which models to include in the output (see definitions in function 'compute')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
 
