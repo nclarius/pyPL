@@ -3,11 +3,12 @@
 
 # A naive model checker for classical first-order logic with an extension to modal first-order logic.
 # © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>
+# Licensed under CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).
 #
 # Disclaimer:
 # -----------
 # This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.
-# I am be happy to learn about any bugs or improvement suggestions.
+# I am happy to learn about any bugs or improvement suggestions.
 #
 # Features:
 # ---------
