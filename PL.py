@@ -64,7 +64,7 @@ Compare how the formal definitions can be translated into code almost 1:1,
 and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers.
 A recommendation is to set breakpoints and step through an evaluation process symbol by symbol
 to see how a denotation is computed recursively in line with the inductive definitions.
-The '__repr__' methods are what makes the expressions formatted human-readable in the output.
+The '__str__' methods are what makes the expressions formatted human-readable in the output.
 Simply ignore all the print statements and anything that looks completely unfamiliar to you (such as 'w'/modal stuff).
 
 Notes on notation:
@@ -167,7 +167,7 @@ class Const(Term):
     def __init__(self, c):
         self.c = c
 
-    def __repr__(self):
+    def __str__(self):
         return self.c
 
     def freevars(self) -> Set[str]:
@@ -204,7 +204,7 @@ class Var(Term):
     def __init__(self, u):
         self.u = u
 
-    def __repr__(self):
+    def __str__(self):
         return self.u
 
     def freevars(self) -> Set[str]:
@@ -215,7 +215,7 @@ class Var(Term):
 
     def subst(self, u, t) -> Term:
         if self.u == u:
-            return Var(repr(t))
+            return Var(str(t))
         else:
             return self
 
@@ -238,7 +238,7 @@ class Func(Expr):
     def __init__(self, f):
         self.f = f
 
-    def __repr__(self):
+    def __str__(self):
         return self.f
 
     def freevars(self) -> Set[str]:
@@ -282,8 +282,8 @@ class FuncTerm(Term):
         self.f = f
         self.terms = terms
 
-    def __repr__(self):
-        return repr(self.f) + "(" + ", ".join([repr(t) for t in self.terms]) + ")"
+    def __str__(self):
+        return str(self.f) + "(" + ", ".join([str(t) for t in self.terms]) + ")"
 
     def freevars(self) -> Set[str]:
         return set().union(*[t.freevars() for t in self.terms])
@@ -316,7 +316,7 @@ class Pred(Expr):
     def __init__(self, p):
         self.p = p
 
-    def __repr__(self):
+    def __str__(self):
         return self.p
 
     def freevars(self) -> Set[str]:
@@ -385,7 +385,7 @@ class Formula(Expr):
         for v in vs:  # otherwise, check the denotation for all assignment functions
             depth += 1
             if verbose:
-                print((depth * " ") + "checking v := " + repr(v) + " ...")
+                print((depth * " ") + "checking v := " + str(v) + " ...")
             witness = self.denot(m, v, w)
             if witness:
                 if verbose:
@@ -394,7 +394,7 @@ class Formula(Expr):
             else:
                 if verbose:
                     print((depth * 2 * " ") + "✗")
-                    print((depth * " ") + "counter assignment: v := " + repr(v))
+                    print((depth * " ") + "counter assignment: v := " + str(v))
                 depth -= 1
                 return False
         return True
@@ -420,7 +420,7 @@ class Formula(Expr):
         for w in m.w:
             depth += 1
             if verbose:
-                print((depth * "  ") + "checking w := " + repr(w) + " ...")
+                print((depth * "  ") + "checking w := " + str(w) + " ...")
             witness = self.denot(m, v, w)
             if witness:
                 if verbose:
@@ -429,7 +429,7 @@ class Formula(Expr):
             else:
                 if verbose:
                     print((depth * 2 * " ") + "✗")
-                    print((depth * " ") + "counter world: w := " + repr(w))
+                    print((depth * " ") + "counter world: w := " + str(w))
                 depth -= 1
                 return False
         return True
@@ -452,7 +452,7 @@ class Formula(Expr):
         for w in m.w:
             depth += 1
             if verbose:
-                print((depth * " ") + "checking w := " + repr(w) + " ...")
+                print((depth * " ") + "checking w := " + str(w) + " ...")
             witness = self.denotV(m, w)
             if witness:
                 if verbose:
@@ -461,7 +461,7 @@ class Formula(Expr):
             else:
                 if verbose:
                     print((depth * 2 * " ") + "✗")
-                    print((depth * " ") + "counter world: w := " + repr(w))
+                    print((depth * " ") + "counter world: w := " + str(w))
                 depth -= 1
                 return False
         return True
@@ -475,7 +475,7 @@ class Verum(Formula):
     def __init__(self):
         pass
 
-    def __repr__(self):
+    def __str__(self):
         return "⊤"
 
     def freevars(self) -> Set[str]:
@@ -503,7 +503,7 @@ class Falsum(Formula):
     def __init__(self):
         pass
 
-    def __repr__(self):
+    def __str__(self):
         return "⊥"
 
     def freevars(self) -> Set[str]:
@@ -534,7 +534,7 @@ class Prop(Formula):
     def __init__(self, p):
         self.p = p
 
-    def __repr__(self):
+    def __str__(self):
         return self.p
 
     def freevars(self) -> Set[str]:
@@ -571,8 +571,8 @@ class Eq(Formula):
         self.t1 = t1
         self.t2 = t2
 
-    def __repr__(self):
-        return repr(self.t1) + " = " + repr(self.t2)
+    def __str__(self):
+        return str(self.t1) + " = " + str(self.t2)
 
     def freevars(self) -> Set[str]:
         return self.t1.freevars() | self.t2.freevars()
@@ -611,8 +611,8 @@ class Atm(Formula):
         self.pred = pred
         self.terms = terms
 
-    def __repr__(self):
-        return repr(self.pred) + "(" + ",".join([repr(t) for t in self.terms]) + ")"
+    def __str__(self):
+        return str(self.pred) + "(" + ",".join([str(t) for t in self.terms]) + ")"
 
     def freevars(self) -> Set[str]:
         return set().union(*[t.freevars() for t in self.terms])
@@ -642,10 +642,10 @@ class Neg(Formula):
     def __init__(self, phi):
         self.phi = phi
 
-    def __repr__(self):
+    def __str__(self):
         if isinstance(self.phi, Eq):
-            return repr(self.phi.t1) + "≠" + repr(self.phi.t2)
-        return "¬" + repr(self.phi)
+            return str(self.phi.t1) + "≠" + str(self.phi.t2)
+        return "¬" + str(self.phi)
 
     def freevars(self) -> Set[str]:
         return self.phi.freevars()
@@ -677,8 +677,8 @@ class Conj(Formula):
         self.phi = phi
         self.psi = psi
 
-    def __repr__(self):
-        return "(" + repr(self.phi) + " ∧ " + repr(self.psi) + ")"
+    def __str__(self):
+        return "(" + str(self.phi) + " ∧ " + str(self.psi) + ")"
 
     def freevars(self) -> Set[str]:
         return self.phi.freevars() | self.psi.freevars()
@@ -710,8 +710,8 @@ class Disj(Formula):
         self.phi = phi
         self.psi = psi
 
-    def __repr__(self):
-        return "(" + repr(self.phi) + " ∨ " + repr(self.psi) + ")"
+    def __str__(self):
+        return "(" + str(self.phi) + " ∨ " + str(self.psi) + ")"
 
     def freevars(self) -> Set[str]:
         return self.phi.freevars() | self.psi.freevars()
@@ -743,8 +743,8 @@ class Imp(Formula):
         self.phi = phi
         self.psi = psi
 
-    def __repr__(self):
-        return "(" + repr(self.phi) + " → " + repr(self.psi) + ")"
+    def __str__(self):
+        return "(" + str(self.phi) + " → " + str(self.psi) + ")"
 
     def freevars(self) -> Set[str]:
         return self.phi.freevars() | self.psi.freevars()
@@ -776,8 +776,8 @@ class Biimp(Formula):
         self.phi = phi
         self.psi = psi
 
-    def __repr__(self):
-        return "(" + repr(self.phi) + " ↔ " + repr(self.psi) + ")"
+    def __str__(self):
+        return "(" + str(self.phi) + " ↔ " + str(self.psi) + ")"
 
     def freevars(self) -> Set[str]:
         return self.phi.freevars() | self.psi.freevars()
@@ -809,8 +809,8 @@ class Exists(Formula):
         self.u = u
         self.phi = phi
 
-    def __repr__(self):
-        return "∃" + repr(self.u) + (" " if isinstance(self.phi, Atm) else "") + repr(self.phi)
+    def __str__(self):
+        return "∃" + str(self.u) + (" " if isinstance(self.phi, Atm) else "") + str(self.phi)
 
     def freevars(self) -> Set[str]:
         return self.phi.freevars() - {self.u.u}
@@ -843,7 +843,7 @@ class Exists(Formula):
 
             # check whether the current x-variant under consideration makes phi true
             if verbose:
-                print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) + " ...")
+                print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d) + " ...")
             witness = self.phi.denot(m, v_, w)
 
             # if yes, we found a witness, the existential statement is true, and we can stop checking (return)
@@ -878,8 +878,8 @@ class Forall(Formula):
         self.u = u
         self.phi = phi
 
-    def __repr__(self):
-        return "∀" + repr(self.u) + (" " if isinstance(self.phi, Atm) else "") + repr(self.phi)
+    def __str__(self):
+        return "∀" + str(self.u) + (" " if isinstance(self.phi, Atm) else "") + str(self.phi)
 
     def freevars(self) -> Set[str]:
         return self.phi.freevars() - {self.u.u}
@@ -912,7 +912,7 @@ class Forall(Formula):
 
             # check whether the current x-variant under consideration makes phi true
             if verbose:
-                print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + repr(self.u) + ") := " + repr(d) + " ...")
+                print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d) + " ...")
             witness = self.phi.denot(m, v_, w)
 
             # if yes, everything is fine until now, we do nothing and go check the next one (continue)
@@ -944,8 +944,8 @@ class Poss(Formula):
     def __init__(self, phi):
         self.phi = phi
 
-    def __repr__(self):
-        return "◇" + repr(self.phi)
+    def __str__(self):
+        return "◇" + str(self.phi)
 
     def subst(self, u, t) -> Formula:
         return Poss(self.phi.subst(u, t))
@@ -976,13 +976,13 @@ class Poss(Formula):
             depth += 1
             # check whether phi is true in w
             if verbose:
-                print((depth * "  ") + "checking w" + (depth * "'") + " := " + repr(w_) + " ...")
+                print((depth * "  ") + "checking w" + (depth * "'") + " := " + str(w_) + " ...")
             witness = self.phi.denot(m, v, w_)
             # if yes, we found a witnessing neighbor, the possibility statement is true, and we can stop checking
             if witness:
                 if verbose:
                     print((depth * 2 * " ") + "✓")
-                    print((depth * 2 * " ") + "neighbor: w" + (depth * "'") + " := " + repr(w_))
+                    print((depth * 2 * " ") + "neighbor: w" + (depth * "'") + " := " + str(w_))
                 depth -= 1
                 return True
             if not witness:
@@ -1006,8 +1006,8 @@ class Nec(Formula):
     def __init__(self, phi):
         self.phi = phi
 
-    def __repr__(self):
-        return "◻" + repr(self.phi)
+    def __str__(self):
+        return "◻" + str(self.phi)
 
     def subst(self, u, t) -> Formula:
         return Poss(self.phi.subst(u, t))
@@ -1037,7 +1037,7 @@ class Nec(Formula):
             depth += 1
             # check whether phi is true in w
             if verbose:
-                print((depth * "  ") + "checking w" + (depth * "'") + " := " + repr(w_) + " ...")
+                print((depth * "  ") + "checking w" + (depth * "'") + " := " + str(w_) + " ...")
             witness = self.phi.denot(m, v, w_)
             if witness:
                 if verbose:
@@ -1047,7 +1047,7 @@ class Nec(Formula):
             else:
                 if verbose:
                     print((depth * 2 * " ") + "✗")
-                    print((depth * 2 * " ") + "counter neighbor: w" + (depth * "'") + " := " + repr(w_))
+                    print((depth * 2 * " ") + "counter neighbor: w" + (depth * "'") + " := " + str(w_))
                 depth -= 1
                 return False
         # if no counter neighbor has been found, the necessity statement is true
@@ -1151,16 +1151,16 @@ class PredModel(Model):
         dprod = cart_prod(list(d), len(vars))  # all ways of forming sets of |vars| long combinations of elements from D
         self.vs = [{str(v): a for (v, a) in zip(vars, distr)} for distr in dprod]
 
-    def __repr__(self):
-        return "Model M = (D,I) with\n" \
-               "D = {" + ", ".join([repr(d) for d in self.d]) + "}\n" \
-               "I = {\n" + ", \n".join(["     " + repr(key) + " ↦ " +
-                                        (repr(val) if isinstance(val, str) else
-                                         (", ".join(["(" + repr(key2) + " ↦ " + repr(val2) + ")"
+    def __str__(self):
+        return "Model M = ⟨D,I⟩ with\n" \
+               "D = {" + ", ".join([str(d) for d in self.d]) + "}\n" \
+               "I = {\n" + ", \n".join(["     " + str(key) + " ↦ " +
+                                        (str(val) if isinstance(val, str) else
+                                         (", ".join(["(" + str(key2) + " ↦ " + str(val2) + "⟩"
                                                      for key2, val2 in val.items()])
                                           if isinstance(val, dict) else
                                           ("{" +
-                                           ", ".join(["(" + ", ".join([repr(t) for t in s]) + ")" for s in val]) +
+                                           ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in val]) +
                                            "}")))
                                         for (key, val) in self.i.items()]) +\
                "\n    }"
@@ -1220,21 +1220,21 @@ class ConstModalModel(ModalModel):
         dprod = cart_prod(list(d), len(vars))  # all ways of forming sets of |vars| long combinations of elements from D
         self.vs = [{str(v): a for (v, a) in zip(vars, distr)} for distr in dprod]
 
-    def __repr__(self):
-        return "Model M = (W,R,D,I) with\n" \
-               "W = {" + ", ".join([repr(w) for w in self.w]) + "}\n"\
-               "R = {" + ", ".join([repr(r) for r in self.r]) + "}\n"\
-               "D = {" + ", ".join([repr(d) for d in self.d]) + "}\n" \
+    def __str__(self):
+        return "Model M = ⟨W,R,D,I⟩ with\n" \
+               "W = {" + ", ".join([str(w) for w in self.w]) + "}\n"\
+               "R = {" + ", ".join([str(r) for r in self.r]) + "}\n"\
+               "D = {" + ", ".join([str(d) for d in self.d]) + "}\n" \
                "I = {\n" +\
-                    " \n".join(["    " + repr(w) + " ↦ \n" + \
+                    " \n".join(["    " + str(w) + " ↦ \n" + \
                         ", \n".join(
-                        ["           " + repr(keyI) + " ↦ " +
-                         (repr(valI) if isinstance(valI, str) else
-                          (", ".join(["(" + repr(keyI2) + " ↦ " + repr(valI2) + ")"
+                        ["           " + str(keyI) + " ↦ " +
+                         (str(valI) if isinstance(valI, str) else
+                          (", ".join(["(" + str(keyI2) + " ↦ " + str(valI2) + ")"
                                       for keyI2, valI2 in valI.items()])
                            if isinstance(valI, dict) else
                            ("{" +
-                            ", ".join(["(" + ", ".join([repr(t) for t in s]) + ")" for s in valI]) +
+                            ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in valI]) +
                             "}")))
                         for (keyI, valI) in self.i[w].items()]) + \
                         "\n    "
@@ -1286,25 +1286,25 @@ class VarModalModel(ModalModel):
         dprods = {w: cart_prod(list(self.d[w]), len(vars)) for w in self.w}  # all ways of forming sets of |vars| long combinations of elements from D
         self.vs = {w: [{str(v): a for (v, a) in zip(vars, distr)} for distr in dprods[w]] for w in self.w}
 
-    def __repr__(self):
-        return "Model M = (W,R,D,F) with\n" \
-               "W = {" + ", ".join([repr(w) for w in self.w]) + "}\n" \
-               "R = {" + ", ".join([repr(r) for r in self.r]) + "}\n" \
+    def __str__(self):
+        return "Model M = ⟨W,R,D,F⟩ with\n" \
+               "W = {" + ", ".join([str(w) for w in self.w]) + "}\n" \
+               "R = {" + ", ".join([str(r) for r in self.r]) + "}\n" \
                "D = {\n" + \
-                    ", \n".join([repr(w) + " ↦ " + \
-                            ", ".join([repr(d) for d in self.d[w]]) + "}"
+                    ", \n".join([str(w) + " ↦ " + \
+                            ", ".join([str(d) for d in self.d[w]]) + "}"
                     for w in self.w]) +\
                     "}\n" \
                "I = {\n" + \
-                    ", \n".join(["    " + repr(w) + " ↦ " +\
+                    ", \n".join(["    " + str(w) + " ↦ " +\
                             ", \n".join(
-                                ["         " + repr(keyI) + " ↦ " +
-                                 (repr(valI) if isinstance(valI, str) else
-                                  (", ".join(["(" + repr(keyI2) + " ↦ " + repr(valI2) + ")"
+                                ["         " + str(keyI) + " ↦ " +
+                                 (str(valI) if isinstance(valI, str) else
+                                  (", ".join(["(" + str(keyI2) + " ↦ " + str(valI2) + ")"
                                               for keyI2, valI2 in valI.items()])
                                    if isinstance(valI, dict) else
                                    ("{" +
-                                    ", ".join(["(" + ", ".join([repr(t) for t in s]) + ")" for s in valI]) +
+                                    ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in valI]) +
                                     "}")))
                                  for (keyI, valI) in self.i[w].items()]) + \
                             "\n    }"
@@ -1338,8 +1338,8 @@ def compute():
         vv1 = {"x": "bunny", "y": "rectbox"}
 
         print(m1)
-        print("v1 = " + repr(v1))
-        print("v'1 = " + repr(vv1))
+        print("v1 = " + str(v1))
+        print("v'1 = " + str(vv1))
 
         e1 = {
             1: Var("x"),
@@ -1356,16 +1356,16 @@ def compute():
         for nr, e in e1.items():
             if nr <= 3:
                 print()
-                print("[[" + repr(e) + "]]^M1,v1 =")
+                print("⟦" + str(e) + "⟧^M1,v1 =")
                 print(e.denot(m1, v1))
                 depth = 0
                 print()
-                print("[[" + repr(e) + "]]^M1,v'1 =")
+                print("⟦" + str(e) + "⟧^M1,v'1 =")
                 print(e.denot(m1, vv1))
                 depth = 0
             if nr > 3:
                 print()
-                print("[[" + repr(e) + "]]^M1 =")
+                print("⟦" + str(e) + "⟧^M1 =")
                 print(e.denotV(m1))
                 depth = 0
 
@@ -1388,7 +1388,7 @@ def compute():
         v2 = {"x": "Jane", "y": "Mary", "z": "MMiL"}
 
         print(m2)
-        print("v = " + repr(v2))
+        print("v = " + str(v2))
 
         e2 = {
             1: Var("x"),  # Jane
@@ -1410,7 +1410,7 @@ def compute():
 
         for nr, e in e2.items():
             print()
-            print("[[" + repr(e) + "]]^M2,v2 =")
+            print("⟦" + str(e) + "⟧^M2,v2 =")
             print(e.denot(m2, v2))
             depth = 0
 
@@ -1434,8 +1434,8 @@ def compute():
         vv3 = {"x": "John", "y": "Peter", "z": "John"}
 
         print(m3)
-        print("v = " + repr(v3))
-        print("v' = " + repr(vv3))
+        print("v = " + str(v3))
+        print("v' = " + str(vv3))
 
         e3 = {
             1: Const("p"),
@@ -1457,12 +1457,12 @@ def compute():
             # print(e)
             if nr in [1, 2, 4, 5, 7, 8, 9]:
                 print()
-                print("[[" + repr(e) + "]]^M3,v3 =")
+                print("⟦" + str(e) + "⟧^M3,v3 =")
                 print(e.denot(m3, v3))
                 depth = 0
             elif nr in [3, 6, 10]:
                 print()
-                print("[[" + repr(e) + "]]^M3,v'3 =")
+                print("⟦" + str(e) + "⟧^M3,v'3 =")
                 print(e.denot(m3, vv3))
                 depth = 0
 
@@ -1486,7 +1486,7 @@ def compute():
         v4 = m4.vs[5]
 
         print(m4)
-        print("v = " + repr(v4))
+        print("v = " + str(v4))
 
         e4 = {
             1: Var("x"),  # Susan
@@ -1516,12 +1516,12 @@ def compute():
         for nr, e in e4.items():
             if 1 <= nr <= 4:
                 print()
-                print("[[" + repr(e) + "]]^M4,v4 =")
+                print("⟦" + str(e) + "⟧^M4,v4 =")
                 print(e.denot(m4, v4))
                 depth = 0
             if 4 <= nr <= 16:
                 print()
-                print("[[" + repr(e) + "]]^M4 =")
+                print("⟦" + str(e) + "⟧^M4 =")
                 print(e.denotV(m4))
                 depth = 0
             # if nr == 14:
@@ -1544,7 +1544,7 @@ def compute():
         v5 = {"x": "Susan", "y": "Mary", "z": "Peter"}
 
         print(m5)
-        print("v = " + repr(v5))
+        print("v = " + str(v5))
 
         e5 = {
             1: FuncTerm(Func("mother"), (Const("m"),)),  # Susan
@@ -1555,7 +1555,7 @@ def compute():
 
         for nr, e in e5.items():
             print()
-            print("[[" + repr(e) + "]]^M5,v5 =")
+            print("⟦" + str(e) + "⟧^M5,v5 =")
             print(e.denot(m5, v5))
             depth = 0
 
@@ -1587,14 +1587,14 @@ def compute():
 
         for nr, e in e6.items():
             # print()
-            # print("[[" + repr(e) + "]]^M6,v6,w1 =")
+            # print("⟦" + str(e) + "⟧^M6,v6,w1 =")
             # print(e.denot(m6, v6, "w1"))
             # depth = 0
             # print()
-            # print("[[" + repr(e) + "]]^M6,v6,w2 =")
+            # print("⟦" + str(e) + "⟧^M6,v6,w2 =")
             # print(e.denot(m6, v6, "w2"))
             # depth = 0
-            print("[[" + repr(e) + "]]^M6,v6 =")
+            print("⟦" + str(e) + "⟧^M6,v6 =")
             print(e.denotW(m6, v6))
             depth = 0
 
@@ -1624,11 +1624,11 @@ def compute():
 
         for nr, e in e7.items():
             print()
-            print("[[" + repr(e) + "]]^M7,w1 =")
+            print("⟦" + str(e) + "⟧^M7,w1 =")
             print(e.denot(m7, m7.vs["w1"][0], "w1"))
             depth = 0
             print()
-            print("[[" + repr(e) + "]]^M7,w2 =")
+            print("⟦" + str(e) + "⟧^M7,w2 =")
             print(e.denot(m7, m7.vs["w2"][0], "w2"))
             depth = 0
             # print(e.denotV(m7))
@@ -1668,11 +1668,11 @@ def compute():
 
         for nr, e in e7.items():
             print()
-            print("[[" + repr(e) + "]]^M =")
+            print("⟦" + str(e) + "⟧^M =")
             print(e.denotV(m8a))
             depth = 0
             print()
-            print("[[" + repr(e) + "]]^M' =")
+            print("⟦" + str(e) + "⟧^M' =")
             print(e.denotV(m8b))
             depth = 0
 
