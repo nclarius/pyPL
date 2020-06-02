@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# A naive model checker for classical first-order logic with an extension to modal first-order logic.
+# A naive model checker for classical propositional and first-order logic with an extension to modal logic.
 # © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>
 # Licensed under CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).
 #
