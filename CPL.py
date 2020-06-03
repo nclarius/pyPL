@@ -12,9 +12,9 @@
 #
 # Features:
 # ---------
+#  - specification of expressions in a language of PL
 #  - specification of expressions in a language of FOL
 #    - accepts languages with with zero-place predicates, function symbols, term equality and modal operators ◻, ◇
-#    - propositional logic may be imitated by means of zero-place predicates in place of propositional variables
 #  - specification of models of FOL with domain, interpretation function and variable assignments
 #    - accepts models without possible worlds, modal models with constant domains and modal models with varying domains
 #  - evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
@@ -22,7 +22,7 @@
 #
 # Restrictions:
 # -------------
-#  - works only on models with finite domains and languages with a finite set of individual variables
+#  - works only on models with finite domains and languages with a finite set of propositional or individual variables
 #  - can't infer universal validity, logical inference etc., only truth in a given model
 #
 # Known issues:
@@ -68,6 +68,7 @@ Simply ignore all the print statements and anything that looks completely unfami
 
 Notes on notation:
 - 'M' = model/structure (aka 'A')
+- 'V' = valuation function
 - 'D' = domain of discourse (aka 'M')
 - 'I' = interpretation function (aka 'F')
 - 'v' = variable assignment function (aka 'g')
@@ -77,7 +78,7 @@ Have fun!
 
 
 # settings
-active = [1, 2, 3, 4, 5, 6, 7, 8]  # set here which models to include in the output (see def.s in function 'compute')
+active = [1, 2, 3, 4, 5, 6, 7, 8, 9]  # set here which models to include in the output (see def.s in function 'compute')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
 
@@ -126,7 +127,7 @@ class Expr:
         """
         pass
 
-    def denot(self, m, v, w=None):
+    def denot(self, m, v=None, w=None):
         """
         Compute the denotation of the expression relative to a model m and assignment g.
 
@@ -147,7 +148,7 @@ class Term(Expr):
     t1, t2, ...
     """
 
-    def denot(self, m, v, w=None) -> str:
+    def denot(self, m, v=None, w=None) -> str:
         """
         @rtype: str
         """
@@ -178,7 +179,7 @@ class Const(Term):
     def subst(self, u, t) -> Term:
         return self
 
-    def denot(self, m, v, w=None) -> str:
+    def denot(self, m, v=None, w=None) -> str:
         """
         The denotation of a constant is that individual that the interpretation function f assigns it.
         """
@@ -218,7 +219,7 @@ class Var(Term):
         else:
             return self
 
-    def denot(self, m, v, w=None) -> str:
+    def denot(self, m, v=None, w=None) -> str:
         """
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
@@ -249,7 +250,7 @@ class Func(Expr):
     def subst(self, u, t) -> Term:
         return self
 
-    def denot(self, m, v, w=None) -> str:
+    def denot(self, m, v=None, w=None) -> str:
         """
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
@@ -293,7 +294,7 @@ class FuncTerm(Term):
     def subst(self, u, t) -> Term:
         return FuncTerm(self.f, map(lambda t: t.subst(u, t), self.terms))
 
-    def denot(self, m, v, w=None) -> str:
+    def denot(self, m, v=None, w=None) -> str:
         """
         The denotation of a function symbol applied to an appropriate number of terms is that individual that the
         interpretation function f assigns to the application.
@@ -327,7 +328,7 @@ class Pred(Expr):
     def subst(self, u, t) -> Expr:
         return self
 
-    def denot(self, m, v, w=None) -> Set[Tuple[str]]:
+    def denot(self, m, v=None, w=None) -> Set[Tuple[str]]:
         """
         The denotation of a predicate is the set of ordered tuples of individuals that the interpretation function f
         assigns it.
@@ -349,7 +350,7 @@ class Formula(Expr):
     @method denotV: the truth value of a formula relative to a model m (without reference to a particular assignment)
     """
 
-    def denot(self, m, v, w=None) -> bool:
+    def denot(self, m, v=None, w=None) -> bool:
         """
         @rtype: bool
         """
@@ -486,7 +487,7 @@ class Verum(Formula):
     def subst(self, u, t) -> Formula:
         return self
 
-    def denot(self, m, v, w=None) -> bool:
+    def denot(self, m, v=None, w=None) -> bool:
         """
         The denotation of the verum is always true.
         """
@@ -514,7 +515,7 @@ class Falsum(Formula):
     def subst(self, u, t) -> Formula:
         return self
 
-    def denot(self, m, v, w=None) -> bool:
+    def denot(self, m, v=None, w=None) -> bool:
         """
         The denotation of the falsum is always false.
         """
@@ -545,14 +546,12 @@ class Prop(Formula):
     def subst(self, u, t) -> Formula:
         return self
 
-    def denot(self, m, v, w=None) -> bool:
+    def denot(self, m, v=None, w=None) -> bool:
         """
-        The denotation of a propositional variable is the truth value the interpretation function f assigns it.
+        The denotation of a propositional variable is the truth value the valuation function V assigns it.
         """
-        i = m.i
-        if isinstance(m, VarModalModel):
-            i = m.i[w]
-        return i[self.p]
+        v = m.v
+        return v[self.p]
 
 
 class Eq(Formula):
@@ -582,7 +581,7 @@ class Eq(Formula):
     def subst(self, u, t) -> Formula:
         return Eq(self.t1.subst(u, t), self.t2.subst(u, t))
 
-    def denot(self, m, v, w=None) -> bool:
+    def denot(self, m, v=None, w=None) -> bool:
         """
         The denotation of a term equality t1 = t2 is true iff t1 and t2 denote the same individual.
         """
@@ -622,7 +621,7 @@ class Atm(Formula):
     def subst(self, u, t) -> Formula:
         return Atm(self.pred, map(lambda t: t.subst(u, t), self.terms))
 
-    def denot(self, m, v, w=None) -> bool:
+    def denot(self, m, v=None, w=None) -> bool:
         """
         The denotation of an atomic predication P(t1, ..., tn) is true iff the tuple of the denotation of the terms is
         an element of the interpretation of the predicate.
@@ -655,7 +654,7 @@ class Neg(Formula):
     def subst(self, u, t) -> Formula:
         return Neg(self.phi.subst(u, t))
 
-    def denot(self, m, v, w=None) -> bool:
+    def denot(self, m, v=None, w=None) -> bool:
         """
         The denotation of a negated formula Neg(phi) is true iff phi is false.
         """
@@ -688,7 +687,7 @@ class Conj(Formula):
     def subst(self, u, t) -> Formula:
         return Conj(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, v, w=None) -> bool:
+    def denot(self, m, v=None, w=None) -> bool:
         """
         The denotation of a conjoined formula Con(phi,psi) is true iff phi is true and psi is true.
         """
@@ -721,7 +720,7 @@ class Disj(Formula):
     def subst(self, u, t) -> Formula:
         return Disj(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, v, w=None) -> bool:
+    def denot(self, m, v=None, w=None) -> bool:
         """
         The denotation of a conjoined formula Disj(phi,psi) is true iff phi is true or psi is true.
         """
@@ -754,7 +753,7 @@ class Imp(Formula):
     def subst(self, u, t) -> Formula:
         return Imp(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, v, w=None) -> bool:
+    def denot(self, m, v=None, w=None) -> bool:
         """
         The denotation of an implicational formula Imp(phi,psi) is true iff phi is false or psi is true.
         """
@@ -787,7 +786,7 @@ class Biimp(Formula):
     def subst(self, u, t) -> Formula:
         return Biimp(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, v, w=None) -> bool:
+    def denot(self, m, v=None, w=None) -> bool:
         """
         The denotation of an biimplicational formula Biimp(phi,psi) is true iff phi and psi have the same truth value.
         """
@@ -823,7 +822,7 @@ class Exists(Formula):
         else:
             return self.phi.subst(u, t)
 
-    def denot(self, m, v, w=None) -> bool:
+    def denot(self, m, v=None, w=None) -> bool:
         """
         The denotation of an existentially quantified formula Exists(x, phi) is true
         iff phi is true under at least one x-variant of v.
@@ -892,7 +891,7 @@ class Forall(Formula):
         else:
             return self.phi.subst(u, t)
 
-    def denot(self, m, v, w=None) -> bool:
+    def denot(self, m, v=None, w=None) -> bool:
         """
         The denotation of universally quantified formula Forall(x, phi) is true iff
         phi is true under all x-variants of v.
@@ -1086,6 +1085,23 @@ class Model:
     @attr i: an interpretation function
     """
     pass
+
+
+class PropModel(Model):
+    """
+    A model of propositional logic with valuation function.
+
+    A model M is a function V: VAR -> {True, False}.
+    V = {"p": True, "q": False, "r": True}
+
+    @attr v: the valuation function
+    @type v: dict[str,bool]
+    """
+    def __init__(self, v):
+        self.v = v
+
+    def __str__(self):
+        return "Model M = V with V: " + ", ".join([str(key) + " ↦ " + str(val) for key, val in self.v.items()])
 
 
 class PredModel(Model):
@@ -1635,45 +1651,86 @@ def compute():
             # print(e.denotVW(m7))
             # depth = 0
 
-
     if 8 in active:
         #############################
         print("\n---------------------------------\n")
         #############################
 
-        print("Example #8 (logic for computer scientists lecture 07)")
+        print("Example #8: propositional logic")
         print()
 
-        d8a = {"m1", "m2"}
-        i8a = {"S": {("m1", )},
-               "R": {("m1", "m1"), ("m2", "m1")}
-              }
-        m8a = PredModel(d8a, i8a)
+        e8 = {
+            1: Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r")))
+        }
 
-        d8b = {"m1", "m2"}
-        i8b = {"S": {("m2", )},
-               "R": {("m1", "m1"), ("m2", "m1")}
-              }
-        m8b = PredModel(d8b, i8b)
+        v8a = {"p": True, "q": False, "r": True}
+        m8a = PropModel(v8a)
 
         print(m8a)
+
+        for nr, e in e8.items():
+            print()
+            print("⟦" + str(e) + "⟧^M =")
+            print(e.denot(m8a))
+            depth = 0
+
+        v8b = {"p": True, "q": True, "r": False}
+        m8b = PropModel(v8b)
+
         print()
+
         print(m8b)
 
-        e7 = {
+        for nr, e in e8.items():
+            print()
+            print("⟦" + str(e) + "⟧^M' =")
+            print(e.denot(m8b))
+            depth = 0
+
+
+    if 9 in active:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+
+        print("Example #9: predicate logic (logic for computer scientists lecture 07)")
+        print()
+
+        e9 = {
             1: Forall(Var("x"), Exists(Var("y"),
                                        Conj(Atm(Pred("S"), (Var("y"), )), Atm(Pred("R"), (Var("x"), Var("y"))))))
         }
 
-        for nr, e in e7.items():
+        d9a = {"m1", "m2"}
+        i9a = {"S": {("m1", )},
+               "R": {("m1", "m1"), ("m2", "m1")}
+              }
+        m9a = PredModel(d9a, i9a)
+
+        print(m9a)
+
+        for nr, e in e9.items():
             print()
             print("⟦" + str(e) + "⟧^M =")
-            print(e.denotV(m8a))
+            print(e.denotV(m9a))
             depth = 0
+
+        print()
+
+        d9b = {"m1", "m2"}
+        i9b = {"S": {("m2", )},
+               "R": {("m1", "m1"), ("m2", "m1")}
+              }
+        m9b = PredModel(d9b, i9b)
+
+        print(m9b)
+
+        for nr, e in e9.items():
             print()
             print("⟦" + str(e) + "⟧^M' =")
-            print(e.denotV(m8b))
+            print(e.denotV(m9b))
             depth = 0
+
 
 
     #############################
