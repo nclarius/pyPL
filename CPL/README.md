@@ -76,10 +76,11 @@ After specifying your input in the source code, execute `main.py` in a terminal 
 - The interesting part for you are the `denot` methods in each of the expression classes in `expr.py`.  
   Compare how the formal definitions can be translated into code almost 1:1,
   and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers.  
-- A recommendation is to set breakpoints and step through an evaluation process symbol by symbol
-  to see how a denotation is computed recursively in line with the inductive definitions,
-  or trace the variables `v` and `v_` to keep track of what the current variable assignment looks like during 
-  quantifier evaluation.  
+- To follow an evaluation process, I recommend to
+  - set breakpoints at each of the `denot` method instances and step through an evaluation process symbol by symbol
+    to see how a denotation is computed recursively in line with the inductive definitions.
+  - trace (watch or simply print) the variables `v` and `v_` in the `denot` methods 
+    to keep track of what the current variable assignment looks like during quantifier evaluation.  
 - The `__str__` methods are what makes the expressions formatted human-readable in the output.  
 - Simply ignore all the print statements and anything that looks completely unfamiliar to you (such as `w`/modal stuff).  
 
@@ -90,4 +91,4 @@ After specifying your input in the source code, execute `main.py` in a terminal 
 - 'v' = variable assignment function for individual variables (aka 'g')
 - 'V' = valuation function for propositional variables
 
-Have fun!
+### Have fun!
