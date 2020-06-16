@@ -53,16 +53,17 @@ A number of examples are already set up.
 After specifying your input in the source code, **execute `main.py` in a terminal to view the output.**  
 
 ### If you would like to understand what's going on under the hood
-`main.py` is the main module from which the computations are run. 
-`expr.py` defines the language, and `model.py` the models of (classical and modal, propostional and first-order) logic.
-The interesting part for you are the `denot` methods in each of the expression classes in `expr.py`.  
-Compare how the formal definitions can be translated into code almost 1:1,
-and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers.  
-A recommendation is to set breakpoints and step through an evaluation process symbol by symbol
-to see how a denotation is computed recursively in line with the inductive definitions,
-or trace the variables `v` and `v_` to keep track of what the current variable assignment looks like during quantification.  
-The `__str__` methods are what makes the expressions formatted human-readable in the output.  
-Simply ignore all the print statements and anything that looks completely unfamiliar to you (such as `w`/modal stuff).  
+- `main.py` is the main module from which the computations are run.  
+  `expr.py` defines the language, and `model.py` the models, of logic.
+- The interesting part for you are the `denot` methods in each of the expression classes in `expr.py`.  
+  Compare how the formal definitions can be translated into code almost 1:1,
+  and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers.  
+- A recommendation is to set breakpoints and step through an evaluation process symbol by symbol
+  to see how a denotation is computed recursively in line with the inductive definitions,
+  or trace the variables `v` and `v_` to keep track of what the current variable assignment looks like during 
+  quantifier evaluation.  
+- The `__str__` methods are what makes the expressions formatted human-readable in the output.  
+- Simply ignore all the print statements and anything that looks completely unfamiliar to you (such as `w`/modal stuff).  
 
 ### Notes on notation
 - 'M' = model/structure (aka 'A')
