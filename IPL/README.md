@@ -56,13 +56,14 @@ is all easily googleable for your respective operating system.
 ### Specifying input
 **This tool is not equipped with an interactive user interface; input has to be specified in the source code.**  
 A number of examples are already set up; this is the stuff you see when running the program.  
-To define your own input:  
-- Models and formulas to compute denotations for are **defined in the function `compute` in `main.py`.**
+To specify your own input:  
+- Models and formulas to compute denotations for are defined in the function `compute` in `main.py`.
   Formulas, unfortunately, have to be entered in prenex form.
   Follow the existing examples and the documentations of the classes and methods to get an idea.
 - You can select which models to include in the output by editing the variable `active` (near top of source code).
 - You can select whether or not to print out intermediate steps by editing the variable `verbose` (same place).
-After specifying your input in the source code, **execute `main.py` in a terminal to view the output.**  
+
+After specifying your input in the source code, execute `main.py` in a terminal to view the output.
 
 ### If you would like to understand what's going on under the hood
 - The directory `CPL` contains the program files for classical logic, `IPL` the ones for intuitionistic logic.  
