@@ -4,11 +4,11 @@ Licensed under CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.
 
 Usage notes:
 ------------
-see `main.py`.
+See `main.py`.
 
 Disclaimer:
 -----------
-This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.
+This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.  
 I am happy to learn about any bugs or improvement suggestions.
 
 Features:
@@ -32,7 +32,7 @@ Known issues:
    instead always 'M', 'D', 'I', 'v', 'w' used in printout
  - efficiency: assignment functions have to be specified on all variables of the language;
    the domain is not restricted expression-wise to those variables that actually occur in the expression
- - depth has to be reset manually after each call of denot
+ - depth has to be reset manually after each call of `denot`
  - global variables are bad
 
 Wish list:
