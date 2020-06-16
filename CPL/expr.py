@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+"""
+Define the language and semantics of clsasical (standard and modal) (prepositional and first-order) logic.
+"""
+
 
 from CPL.main import *
 from CPL.model import *

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""Main module. Input specification and program execution are defined here."""
+
 
 from CPL.expr import *
 from CPL.model import *

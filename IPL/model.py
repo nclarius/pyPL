@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+"""
+Define the Kripke models of intuitionistic (prepositional and first-order) logic.
+"""
+
 from IPL.main import *
 from IPL.expr import *
 
