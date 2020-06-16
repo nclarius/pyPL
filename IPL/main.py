@@ -4,8 +4,8 @@
 """Main module. Input specification and program execution are defined here."""
 
 
-from IPL.expr import *
-from IPL.model import *
+from expr import *
+from model import *
 
 
 # settings

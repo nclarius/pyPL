@@ -5,8 +5,8 @@ Define the language and semantics of intuitionistic (prepositional and first-ord
 """
 
 
-from IPL.main import *
-from IPL.model import *
+from main import *
+from model import *
 
 
 class Expr:

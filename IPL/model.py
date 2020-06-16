@@ -5,8 +5,8 @@ Define the Kripke models of intuitionistic (prepositional and first-order) logic
 """
 
 
-from IPL.main import *
-from IPL.expr import *
+from main import *
+from expr import *
 
 
 # helper functions

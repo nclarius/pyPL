@@ -4,8 +4,8 @@
 """Main module. Input specification and program execution are defined here."""
 
 
-from CPL.expr import *
-from CPL.model import *
+from expr import *
+from model import *
 
 
 # settings

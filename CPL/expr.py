@@ -5,8 +5,8 @@ Define the language and semantics of clsasical (standard and modal) (preposition
 """
 
 
-from CPL.main import *
-from CPL.model import *
+from main import *
+from model import *
 
 from typing import List, Dict, Set, Tuple
 

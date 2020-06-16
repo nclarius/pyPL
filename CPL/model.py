@@ -5,8 +5,8 @@ Define the models of classical (standard and modal) (prepositional and first-ord
 """
 
 
-from CPL.main import *
-from CPL.expr import *
+from main import *
+from expr import *
 
 
 # helper functions
