@@ -5,9 +5,8 @@ Licensed under CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.
 
 Disclaimer
 ----------
-This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.  
-
-Although the program has been extensively tested, I do not guarantee soundness. Use at your own risk.
+- This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.  
+- Although the program has been extensively tested, I do not guarantee soundness. Use at your own risk.
 
 I am happy to learn about any bugs or improvement suggestions.
 
