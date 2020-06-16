@@ -45,10 +45,9 @@ Usage notes
 
 ### Installation
 To run this tool on your machine:
-1. Clone this repository.  
-   The relevant program files for classical logic will be located in the subdirectory `CPL`, the ones for intuitionistic logic in `IPL`.
-3. If you want, edit the file `main.py` in a text editor of your choice to specify custom input (see next section).
-4. Execute `main.py`.
+1. Clone this repository.
+3. If you want, edit the file `CPL/main.py` in a text editor of your choice to specify custom input (see next section).
+4. Execute `CPL/main.py`.
 
 Running this program requires Python (version >= 3.8) to be installed on your machine.  
 'clone github repository', 'install python', 'edit .py file' and 'execute .py script' are all easily googleable 
@@ -65,8 +64,10 @@ A number of examples are already set up.
 After specifying your input in the source code, **execute `main.py` in a terminal to view the output.**  
 
 ### If you would like to understand what's going on under the hood
-- `main.py` is the main module from which the computations are run.  
-  `expr.py` defines the language, and `model.py` the models, of logic.
+- The directory `CPL` contains the program files for classical logic, `IPL` the ones for intuitionistic logic.  
+  The structure in these two versions is the same:
+  `main.py` is the main module in which input is specified and from which the computations are run.  
+  `expr.py` defines the language, and `model.py` the models, of the logic.
 - The interesting part for you are the `denot` methods in each of the expression classes in `expr.py`.  
   Compare how the formal definitions can be translated into code almost 1:1,
   and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers.  
