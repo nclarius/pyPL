@@ -69,10 +69,10 @@ Simply ignore all the print statements and anything that looks completely unfami
 
 Notes on notation:
 - 'M' = model/structure (aka 'A')
-- 'V' = valuation function for propositional variables
 - 'D' = domain of discourse (aka 'M')
-- 'I' = interpretation function (aka 'F')
+- 'I' = interpretation function for non-logical symbols (aka 'F')
 - 'v' = variable assignment function for individual variables (aka 'g')
+- 'V' = valuation function for propositional variables
 
 Have fun!
 """
