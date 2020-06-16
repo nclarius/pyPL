@@ -1,0 +1,534 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+# A naive model checker for classical propositional and first-order logic with an extension to modal logic.
+# © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>
+# Licensed under CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).
+#
+# Disclaimer:
+# -----------
+# This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.
+# I am happy to learn about any bugs or improvement suggestions.
+#
+# Features:
+# ---------
+#  - specification of expressions in a language of PL
+#  - specification of expressions in a language of FOL
+#    - accepts languages with with zero-place predicates, function symbols, term equality and modal operators ◻, ◇
+#  - specification of models of FOL with domain, interpretation function and variable assignments
+#    - accepts models without possible worlds, modal models with constant domains and modal models with varying domains
+#  - evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
+#    relative to models, variable assignments and possible worlds
+#
+# Restrictions:
+# -------------
+#  - works only on models with finite domains and languages with a finite set of propositional or individual variables
+#  - can't infer universal validity, logical inference etc., only truth in a given model
+#
+# Known issues:
+# -------------
+#  - name of model, domain, interpr. func., variable assignment and world is not systematically recognized,
+#    instead always 'M', 'D', 'I', 'v', 'w' used in printout
+#  - efficiency: assignment functions have to be specified on all variables of the language;
+#    the domain is not restricted expression-wise to those variables that actually occur in the expression
+#  - depth has to be reset manually after each call of denot
+#  - global variables are bad
+#
+# Wish list:
+# ----------
+#  - print out detailed derivation rather than just final result of evaluation, possibly with LaTeX mode
+#  - more user-friendly input:
+#    - expression parser instead of the cumbersome PNF specification
+#    - a better way of dealing with singleton tuples
+#    - interactive mode/API instead of need to edit source code in order to set up input
+#  - model generation?
+
+"""
+This is pyPL, a simple model checker for classical first-order logic.
+
+Usage notes:
+------------
+This tool is not equipped with an interactive user interface; input has to be specified in the source code.
+A number of examples are already set up.
+- Models and formulas to compute denotations for are defined in the function 'compute' (near bottom of source code).
+  Formulas, unforunately, have to be entered in prenex form.
+  Follow the existing examples and the documentations of the classes and methods to get an idea.
+- You can select which models to include in the output by editing the variable 'active' (near top of source code).
+- You can select whether or not to print out intermediate steps by editing the variable 'verbose' (same place).
+After specifying your input in the source code, execute this script in a terminal to view the output.
+
+If you would like to understand what's going on under the hood:
+The interesting part for you are the 'denot' methods in each of the expression classes.
+Compare how the formal definitions can be translated into code almost 1:1,
+and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers.
+A recommendation is to set breakpoints and step through an evaluation process symbol by symbol
+to see how a denotation is computed recursively in line with the inductive definitions,
+or trace the variables v and v_ to keep track of what the current variable assignment looks like during quantification.
+The '__str__' methods are what makes the expressions formatted human-readable in the output.
+Simply ignore all the print statements and anything that looks completely unfamiliar to you (such as 'w'/modal stuff).
+
+Notes on notation:
+- 'M' = model/structure (aka 'A')
+- 'D' = domain of discourse (aka 'M')
+- 'I' = interpretation function for non-logical symbols (aka 'F')
+- 'v' = variable assignment function for individual variables (aka 'g')
+- 'V' = valuation function for propositional variables
+
+Have fun!
+"""
+
+
+from CPL.expr import *
+from CPL.model import *
+
+
+# settings
+active = [8, 9, 10]  # set here which models to include in the output (see def.s in fnc. 'compute')
+verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
+
+
+def compute():
+    """
+    Define models and formulas to compute denotations for here.
+    """
+    global depth, active
+
+
+    if 1 in active:
+        ############################
+        print("\n---------------------------------\n")
+        ############################
+
+        print("Example #1: tupperware boxes, lids and a bunny (logic for linguists lecture 010)")
+        print()
+
+        d1 = {"roundbox", "roundlid", "rectbox", "rectlid", "bunny"}
+        i1 = {"b1": "roundbox", "b2": "rectbox", "f": "bunny",
+              "box": {("roundbox", ), ("rectbox", )},
+              "lid": {("roundlid", ), ("rectlid", )},
+              "fit": {("roundlid", "roundbox"), ("rectlid", "rectbox")}
+        }
+        m1 = PredModel(d1, i1)
+        v1 = {"x": "roundbox", "y": "bunny"}
+        vv1 = {"x": "bunny", "y": "rectbox"}
+
+        print(m1)
+        print("v1 = " + str(v1))
+        print("v'1 = " + str(vv1))
+
+        e1 = {
+            1: Var("x"),
+            2: Const("f"),
+            3: Atm(Pred("box"), (Var("x"), )),
+            4: Forall(Var("x"), Imp(Atm(Pred("box"), (Var("x"), )),
+                                    Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"), )),
+                                                          Atm(Pred("fit"), (Var("y"), Var("x"))))))),
+            5: Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"), )),
+                                     Forall(Var("x"), Imp(Atm(Pred("box"), (Var("x"), )),
+                                                          Atm(Pred("fit"), (Var("y"), Var("x")))))))
+        }
+
+        for nr, e in e1.items():
+            if nr <= 3:
+                print()
+                print("⟦" + str(e) + "⟧^M1,v1 =")
+                print(e.denot(m1, v1))
+                depth = 0
+                print()
+                print("⟦" + str(e) + "⟧^M1,v'1 =")
+                print(e.denot(m1, vv1))
+                depth = 0
+            if nr > 3:
+                print()
+                print("⟦" + str(e) + "⟧^M1 =")
+                print(e.denotV(m1))
+                depth = 0
+
+
+    if 2 in active:
+        #############################
+        print("\n---------------------------------\n")
+        ############################
+
+        print("Example #2: MMiL (logic for linguists Example #from the book)")
+        print()
+
+        d2 = {"Mary", "Jane", "MMiL"}
+        i2 = {"m": "Mary",
+              "student": {("Mary", ), ("Jane", )},
+              "book": {("MMiL", )},
+              "read": {("Mary", "MMiL")}
+        }
+        m2 = PredModel(d2, i2)
+        v2 = {"x": "Jane", "y": "Mary", "z": "MMiL"}
+
+        print(m2)
+        print("v = " + str(v2))
+
+        e2 = {
+            1: Var("x"),  # Jane
+            2: Const("m"),  # Mary
+            3: Pred("read"),  # {(Mary, MMiL)}
+            4: Atm(Pred("book"), (Var("x"), )),  # false, since Jane is not a book
+            5: Exists(Var("x"), Conj(Atm(Pred("book"), (Var("x"),)), Atm(Pred("read"), (Const("m"), Var("x"))))), # true
+            6: Forall(Var("y"), Imp(Atm(Pred("student"), (Var("y"), )),
+                                    Exists(Var("x"),
+                                           Conj(Atm(Pred("book"), (Var("x"), )),
+                                                Atm(Pred("read"), (Var("y"), Var("z"))))))),
+               # false, since Jane doesn't read a book
+            7: Neg(Exists(Var("y"), Conj(Atm(Pred("student"), (Var("y"), )),
+                                         Exists(Var("x"),
+                                                Conj(Atm(Pred("book"), (Var("x"), )),
+                                                     Atm(Pred("read"), (Var("y"), (Var("z")))))))))
+               # false, since Mary reads a book
+        }
+
+        for nr, e in e2.items():
+            print()
+            print("⟦" + str(e) + "⟧^M2,v2 =")
+            print(e.denot(m2, v2))
+            depth = 0
+
+
+    if 3 in active:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+
+        print("Example #3: love #1 (logic for linguists ExSh 10 Ex. 1)")
+        print()
+
+        d3 = {"Mary", "John", "Peter"}
+        i3 = {"j": "Peter", "p": "John",
+              "woman": {("Mary",)},
+              "man": {("John", ), ("Peter", )},
+              "love": {("Mary", "John"), ("John", "Mary"), ("John", "John"), ("Peter", "Mary"), ("Peter", "John")},
+              "jealous": {("Peter", "John", "Mary"), ("Peter", "Mary", "John")}}
+        m3 = PredModel(d3, i3)
+        v3 = {"x": "Mary", "y": "Mary", "z": "Peter"}
+        vv3 = {"x": "John", "y": "Peter", "z": "John"}
+
+        print(m3)
+        print("v = " + str(v3))
+        print("v' = " + str(vv3))
+
+        e3 = {
+            1: Const("p"),
+            2: Var("y"),
+            3: Var("y"),
+            4: Atm(Pred("love"), (Const("p"), Const("j"))),
+            5: Atm(Pred("love"), (Var("y"), Var("z"))),
+            6: Atm(Pred("love"), (Var("y"), Var("z"))),
+            7: Exists(Var("x"), Neg(Atm(Pred("love"), (Const("j"), Var("x"))))),
+            8: Forall(Var("x"), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y"))))),
+            9: Neg(Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
+                                         Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
+                                                               Atm(Pred("love"), (Var("x"), Var("y"))))
+                                                )))),
+            10: Neg(Exists(Var("y"), Exists(Var("z"), Atm(Pred("jealous"), (Const("j"), Var("y"), Var("z"))))))
+        }
+
+        for nr, e in e3.items():
+            # print(e)
+            if nr in [1, 2, 4, 5, 7, 8, 9]:
+                print()
+                print("⟦" + str(e) + "⟧^M3,v3 =")
+                print(e.denot(m3, v3))
+                depth = 0
+            elif nr in [3, 6, 10]:
+                print()
+                print("⟦" + str(e) + "⟧^M3,v'3 =")
+                print(e.denot(m3, vv3))
+                depth = 0
+
+
+    if 4 in active:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+
+        print("(Example #4: love #2 (modification of Example #3)")
+        print()
+
+        d4 = {"Mary", "John", "Susan"}
+        i4 = {"m": "Mary", "j": "John", "s": "Susan",
+              "rain": {},
+              "sun": {()},
+              "woman": {("Mary",), ("Susan",)}, "man": {("John",)},
+              "love": {("John", "Mary"), ("Mary", "Susan"), ("Susan", "Mary"), ("Susan", "Susan")},
+              "jealous": {("John", "Susan", "Mary")}}
+        m4 = PredModel(d4, i4)
+        v4 = m4.vs[5]
+
+        print(m4)
+        print("v = " + str(v4))
+
+        e4 = {
+            1: Var("x"),  # Susan
+            2: Const("j"),  # John
+            3: Pred("love"),  # {(J,M), (M,S), (S,M), (S,S)}
+            4: Atm(Pred("love"), (Var("x"), Const("m"))),  # true under g, false in m
+            5: Atm(Pred("love"), (Const("j"), Const("m"))),  # true
+            6: Exists(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # true
+            7: Forall(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # false
+            8: Conj(Atm(Pred("love"), (Const("m"), Const("s"))), Atm(Pred("love"), (Const("s"), Const("m")))),  # true
+            9: Forall(Var("x"), Imp(Atm(Pred("love"), (Const("s"), Var("x"))), Atm(Pred("woman"), (Var("x"),)))),# true
+            10: Neg(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # false
+            11: Neg(Forall(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # true
+            12: Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
+                                     Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
+                                                           Atm(Pred("love"), (Var("x"), Var("y"))))))),  # false
+            13: Imp(
+                Conj(Conj(Atm(Pred("love"), (Var("x"), Var("y"))),
+                          Atm(Pred("love"), (Var("y"), Var("z")))),
+                     Neg(Atm(Pred("love"), (Var("y"), Var("x"))))),
+                Atm(Pred("jealous"), (Var("x"), Var("z"), Var("y")))),  # true
+            14: Conj(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x")))), Atm(Pred("woman"), (Var("x"),))),
+            15: Atm(Pred("rain"), ()),
+            16: Atm(Pred("sun"), ())
+        }
+
+        for nr, e in e4.items():
+            if 1 <= nr <= 4:
+                print()
+                print("⟦" + str(e) + "⟧^M4,v4 =")
+                print(e.denot(m4, v4))
+                depth = 0
+            if 4 <= nr <= 16:
+                print()
+                print("⟦" + str(e) + "⟧^M4 =")
+                print(e.denotV(m4))
+                depth = 0
+            # if nr == 14:
+            #     print(e.freevars())
+            #     print(e.boundvars())
+
+
+    if 5 in active:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+
+        print("Example #5: term equality and function symbols")
+        print()
+
+        d5 = {"Mary", "Peter", "Susan", "Jane"}
+        i5 = {"m": "Mary", "s": "Susan", "j": "Jane",
+              "mother": {("Mary",): "Susan", ("Peter",): "Susan", ("Susan",): "Jane"}}
+        m5 = PredModel(d5, i5)
+        v5 = {"x": "Susan", "y": "Mary", "z": "Peter"}
+
+        print(m5)
+        print("v = " + str(v5))
+
+        e5 = {
+            1: FuncTerm(Func("mother"), (Const("m"),)),  # Susan
+            2: FuncTerm(Func("mother"), (FuncTerm(Func("mother"), (Const("m"),)),)),  # Jane
+            3: Eq(FuncTerm(Func("mother"), (Const("m"),)), Const("s")),  # true
+            4: Neg(Eq(Var("x"), Const("m")))  # true
+        }
+
+        for nr, e in e5.items():
+            print()
+            print("⟦" + str(e) + "⟧^M5,v5 =")
+            print(e.denot(m5, v5))
+            depth = 0
+
+
+    if 6 in active:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+
+        print("Example #6: modal logic with constant domain")
+        print()
+
+        w6 = {"w1", "w2"}
+        r6 = {("w1", "w1"), ("w1", "w2"), ("w2", "w2"), ("w2", "w2")}
+        d6 = {"a"}
+        i6 = {"w1": {"P": {()}},
+              "w2": {"P": set()}}
+        m6 = ConstModalModel(w6, r6, d6, i6)
+        v6 = m6.vs[0]
+
+        print(m6)
+        print(v6)
+
+        e6 = {
+            1: Poss(Nec(Eq(Var("x"), Var("x")))),
+            2: Nec(Disj(Atm(Pred("P"), tuple()), Neg(Atm(Pred("P"), tuple())))),
+            3: Disj(Nec(Atm(Pred("P"), tuple())), Nec(Neg(Atm(Pred("P"), tuple()))))
+        }
+
+        for nr, e in e6.items():
+            # print()
+            # print("⟦" + str(e) + "⟧^M6,v6,w1 =")
+            # print(e.denot(m6, v6, "w1"))
+            # depth = 0
+            # print()
+            # print("⟦" + str(e) + "⟧^M6,v6,w2 =")
+            # print(e.denot(m6, v6, "w2"))
+            # depth = 0
+            print("⟦" + str(e) + "⟧^M6,v6 =")
+            print(e.denotW(m6, v6))
+            depth = 0
+
+
+    if 7 in active:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+
+        print("Example #7: modal logic with varying domain")
+        print()
+
+        w7 = {"w1", "w2"}
+        r7 = {("w1", "w1"), ("w1", "w2"), ("w2", "w2"), ("w2", "w2")}
+        d7 = {"w1": {"a"},
+              "w2": {"a", "b"}}
+        i7 = {"w1": {"P": {("a",)}},
+              "w2": {"P": {("b",)}}}
+        m7 = VarModalModel(w7, r7, d7, i7)
+
+        print(m7)
+        print(m7.vs)
+
+        e7 = {
+            1: Exists(Var("x"), Exists(Var("y"), Neg(Eq(Var("x"), Var("y")))))
+        }
+
+        for nr, e in e7.items():
+            print()
+            print("⟦" + str(e) + "⟧^M7,w1 =")
+            print(e.denot(m7, m7.vs["w1"][0], "w1"))
+            depth = 0
+            print()
+            print("⟦" + str(e) + "⟧^M7,w2 =")
+            print(e.denot(m7, m7.vs["w2"][0], "w2"))
+            depth = 0
+            # print(e.denotV(m7))
+            # print(e.denotW(m7, v7))
+            # print(e.denotVW(m7))
+            # depth = 0
+
+    if 8 in active:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+
+        print("Example #8: propositional logic")
+        print()
+
+        v8a = {"p": True, "q": False, "r": True}
+        m8a = PropModel(v8a)
+
+        print(m8a)
+
+        e8 = {
+            1: Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r")))
+        }
+
+        for nr, e in e8.items():
+            print()
+            print("⟦" + str(e) + "⟧^M =")
+            print(e.denot(m8a))
+            depth = 0
+
+        v8b = {"p": True, "q": True, "r": False}
+        m8b = PropModel(v8b)
+
+        print()
+
+        print(m8b)
+
+        for nr, e in e8.items():
+            print()
+            print("⟦" + str(e) + "⟧^M' =")
+            print(e.denot(m8b))
+            depth = 0
+
+    if 9 in active:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+
+        print("Example #9: predicate logic (logic for computer scientists lecture 07)")
+        print()
+
+        d9a = {"m1", "m2"}
+        i9a = {"S": {("m1", )},
+               "R": {("m1", "m1"), ("m2", "m1")}
+              }
+        m9a = PredModel(d9a, i9a)
+
+        print(m9a)
+
+        e9 = {
+            1: Forall(Var("x"), Exists(Var("y"),
+                                       Conj(Atm(Pred("S"), (Var("y"), )), Atm(Pred("R"), (Var("x"), Var("y"))))))
+        }
+
+        for nr, e in e9.items():
+            print()
+            print("⟦" + str(e) + "⟧^M =")
+            print(e.denotV(m9a))
+            depth = 0
+
+        print()
+
+        d9b = {"m1", "m2"}
+        i9b = {"S": {("m2", )},
+               "R": {("m1", "m1"), ("m2", "m1")}
+              }
+        m9b = PredModel(d9b, i9b)
+
+        print(m9b)
+
+        for nr, e in e9.items():
+            print()
+            print("⟦" + str(e) + "⟧^M' =")
+            print(e.denotV(m9b))
+            depth = 0
+
+    if 10 in active:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+
+        print("Example #10: predicate logic (logic for computer scientists exercise sheet 07)")
+        print()
+
+        d10 = {"a", "b", "c"}
+        i10 = {"P": {("a",)},
+               "R": {("a", "a"), ("a", "b"), ("a", "c"), ("b", "c")},
+               "k": "b",
+               "l": "a"
+              }
+        m10 = PredModel(d10, i10)
+
+        print(m10)
+
+        e10 = {
+            1: Neg(Atm(Pred("R"), (Const("l"), Var("x")))),
+            2: Exists(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y"))))),
+            3: Forall(Var("x"), Exists(Var("y"),
+                                       Conj(Atm(Pred("P"), (Var("x"),)), Atm(Pred("R"), (Var("x"), Var("y"))))))
+        }
+
+        for nr, e in e10.items():
+            print()
+            print("⟦" + str(e) + "⟧^M =")
+            print(e.denotV(m10))
+            depth = 0
+
+        print()
+
+    #############################
+    print("\n---------------------------------\n")
+    #############################
+
+
+if __name__ == "__main__":
+    print(__doc__)
+    compute()
+    print("\nScroll up for help information.")
