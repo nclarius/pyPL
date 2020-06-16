@@ -46,6 +46,10 @@ Wish list
 Usage notes
 -----------
 
+### Try it out
+You can try this tool out [here](https://trinket.io/python3/51733c91f1).  
+If you want to dive deeper, I recommend downloading pyPL to your own computer (see next subsection).
+
 ### Installation and execution
 To run this tool on your machine:
 1. Clone this repository.

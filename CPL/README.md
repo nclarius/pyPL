@@ -46,8 +46,12 @@ Wish list
 Usage notes
 -----------
 
+### Try it out
+You can try this tool out [here](https://trinket.io/python3/757871dd18).  
+If you want to dive deeper, I recommend downloading pyPL to your own computer (see next subsection).
+
 ### Installation and execution
-To run this tool on your machine:
+To run this tool locally on your machine:
 1. Clone this repository.
 2. *Optional:* To specify custom input (see next subsection), edit the file `CPL/main.py` in a text editor of your choice.
 3. Execute `CPL/main.py` in a terminal.
