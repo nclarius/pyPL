@@ -8,27 +8,8 @@ Define the Kripke structures of intuitionistic (propositional and first-order) l
 from main import *
 from expr import *
 
+from itertools import product
 
-# helper functions
-def cart_prod(a, n):
-    """
-    Compute the n-fold cartesian product of a list A.
-    A x ... x A (n times)
-
-    @param a: the list to form the cartesian product of
-    @type a: list
-    @param n: the arity of the cartesian product
-    @type n: int
-    @return: A^n
-    @rtype: list[list[Any]]
-    """
-    if n == 0:
-        return []
-    res = [[x] for x in a]
-    for i in range(n-1):
-        res = [t+[x] for t in res for x in a]
-    res = [tuple(el) for el in res]
-    return res
 
 indiv_vars = ["x", "y", "z"]  # the individual variables of the language
 
@@ -111,7 +92,7 @@ class KripkeStructure():
         self.d = d
         self.f = f
         # all ways of forming sets of |vars| long combinations of elements from D
-        dprods = {k: cart_prod(list(self.d[k]), len(indiv_vars)) for k in self.k} if d else {}
+        dprods = {k: product(list(self.d[k]), len(indiv_vars)) for k in self.k} if d else {}
         # all variable assignment functions
         self.gs = {k: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[k]] for k in self.k} if d else {}
 

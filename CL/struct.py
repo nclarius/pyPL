@@ -8,27 +8,8 @@ Define the structures of classical (standard and modal) (prepositional and first
 from main import *
 from expr import *
 
+from itertools import product
 
-# helper functions
-def cart_prod(a, n):
-    """
-    Compute the n-fold cartesian product of a list A.
-    A x ... x A (n times)
-
-    @param a: the list to form the cartesian product of
-    @type a: list
-    @param n: the arity of the cartesian product
-    @type n: int
-    @return: A^n
-    @rtype: list[list[Any]]
-    """
-    if n == 0:
-        return []
-    res = [[x] for x in a]
-    for i in range(n-1):
-        res = [t+[x] for t in res for x in a]
-    res = [tuple(el) for el in res]
-    return res
 
 indiv_vars = ["x", "y", "z"]  # the individual variables of the language
 
@@ -120,7 +101,7 @@ class PredStructure(Structure):
         self.d = d
         self.i =i
         # all ways of forming sets of |vars| long combinations of elements from D
-        dprod = cart_prod(list(d), len(indiv_vars))
+        dprod = product(list(d), len(indiv_vars))
         # all variable assignment functions
         self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
@@ -191,7 +172,7 @@ class ConstModalStructure(ModalStructure):
         self.d = d
         self.i = f
         # all ways of forming sets of |vars| long combinations of elements from D
-        dprod = cart_prod(list(d), len(indiv_vars))
+        dprod = product(list(d), len(indiv_vars))
         # all variable assignment functions
         self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
@@ -259,7 +240,7 @@ class VarModalStructure(ModalStructure):
         self.d = d
         self.i = i
         # all ways of forming sets of |vars| long combinations of elements from D per world
-        dprods = {w: cart_prod(list(self.d[w]), len(indiv_vars)) for w in self.w}
+        dprods = {w: product(list(self.d[w]), len(indiv_vars)) for w in self.w}
         # all variable assignment functions per world
         self.vs = {w: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[w]] for w in self.w}
 
