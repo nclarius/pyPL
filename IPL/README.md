@@ -18,7 +18,7 @@ Features
  - specification of expressions
     - in a language of propositional logic (aka statement logic)
     - in a language of first-order logic (aka predicate logic, quantifier logic)
-        - accepts languages with with zero-place predicates, function symbols, term equality and modal operators ◻, ◇
+    - accepts languages with with zero-place predicates, function symbols, term equality and modal operators ◻, ◇
  - specification of Kripke structures (aka models, interpretations)
     - of PL with valuation function
     - of FOL with domain, interpretation function and variable assignments
@@ -31,20 +31,19 @@ Restrictions
 
 Known issues
 ------------
+ - global variables are bad
  - name of structure, domain, interpr. func., variable assignment and world is not systematically recognized,
    instead always 'M', 'D', 'I', 'v', 'w' used in printout
  - efficiency: assignment functions have to be specified on all variables of the language;
    the domain is not restricted expression-wise to those variables that actually occur in the expression
  - depth has to be reset manually after each call of `denot`
- - global variables are bad
 
 Wish list
 ---------
  - print out detailed derivation rather than just final result of evaluation, possibly with LaTeX mode
  - more user-friendly input:
-   - expression parser instead of the cumbersome PNF specification
-   - a better way of dealing with singleton tuples
    - interactive mode/API instead of need to edit source code in order to set up input
+   - expression parser instead of the cumbersome PNF specification
  - model generation?
 
 Usage notes
@@ -52,7 +51,7 @@ Usage notes
 
 ### Try it out
 **You can try this tool out [here](https://trinket.io/python3/51733c91f1).**  
-If you want to dive deeper, I recommend downloading pyPL to your own computer.
+If you want to dive in deeper, I recommend downloading pyPL to your own computer.
 
 ### Installation and execution
 To run this tool on your machine:
