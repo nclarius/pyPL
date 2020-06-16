@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """Main module. Input specification and program execution are defined here."""
-
+from functools import reduce
 
 from expr import *
 from struct import *
@@ -453,6 +453,10 @@ def compute():
     print("\n---------------------------------\n")
     #############################
 
-
 if __name__ == "__main__":
     compute()
+    l = ["a", "b", "c"]
+    print(cart_prod(l, 0))
+    print(cart_prod(l, 1))
+    print(cart_prod(l, 2))
+    print(cart_prod(l, 3))

@@ -92,7 +92,7 @@ class KripkeStructure():
         self.d = d
         self.i = i
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D) per state
-        dprods = {k: list(product(* ([list(self.d[k])] * len(indiv_vars)))) for k in self.k} if d else {}
+        dprods = {k: list(product(list(self.d[k]), repeat=len(indiv_vars))) for k in self.k} if d else {}
         # all variable assignment functions
         self.gs = {k: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[k]] for k in self.k} if d else {}
 

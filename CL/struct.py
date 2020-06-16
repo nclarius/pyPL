@@ -101,7 +101,7 @@ class PredStructure(Structure):
         self.d = d
         self.i = i
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D)
-        dprod = list(product(* ([list(d)] * len(indiv_vars))))
+        dprod = list(product(list(d), repeat=len(indiv_vars)))
         # all variable assignment functions
         self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
@@ -172,7 +172,7 @@ class ConstModalStructure(ModalStructure):
         self.d = d
         self.i = i
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D)
-        dprod = list(product(* ([list(d)] * len(indiv_vars))))
+        dprod = list(product(list(d), repeat=len(indiv_vars)))
         # all variable assignment functions
         self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
@@ -240,7 +240,7 @@ class VarModalStructure(ModalStructure):
         self.d = d
         self.i = i
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D) per world
-        dprods = {w: list(product(* ([list(self.d[w])] * len(indiv_vars)))) for w in self.w}
+        dprods = {w: list(product(list(self.d[w]), repeat=len(indiv_vars))) for w in self.w}
         # all variable assignment functions per world
         self.vs = {w: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[w]] for w in self.w}
 
