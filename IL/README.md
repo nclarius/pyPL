@@ -1,4 +1,4 @@
-A naive model checker for classical propositional and first-order logic with an extension to modal logic.  
+A naive model checker for intuitionistic first-order logic with Kripke semantics.  
 This tool computes the denotation (truth value) of a given logical expression in a given structure.  
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
 Licensed under CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).  
@@ -18,7 +18,7 @@ Features
     - in a language of propositional logic (aka statement logic)
     - in a language of first-order logic (aka predicate logic, quantifier logic)
     - accepts languages with with zero-place predicates, function symbols, term equality and modal operators ◻, ◇
- - specification of structures (aka models, interpretations)
+ - specification of Kripke structures (aka models, interpretations)
     - of PL with valuation function
     - of FOL with domain, interpretation function and variable assignments
     - accepts non-modal structures, modal structures with constant domains and modal structures with varying domains
@@ -41,22 +41,22 @@ Wish list
 ---------
  - print out detailed derivation rather than just final result of evaluation, possibly with LaTeX mode
  - more user-friendly input:
-   - expression parser instead of the cumbersome PNF specification
    - interactive mode/API instead of need to edit source code in order to set up input
+   - expression parser instead of the cumbersome PNF specification
  - model generation?
 
 Usage notes
 -----------
 
 ### Try it out
-**You can try this tool out [here](https://trinket.io/python3/757871dd18).**  
+**You can try this tool out [here](https://trinket.io/python3/51733c91f1).**  
 If you want to dive in deeper, I recommend downloading pyPL to your own computer.
 
 ### Installation and execution
-To run this tool locally on your machine:
+To run this tool on your machine:
 1. Clone this repository.
-2. *Optional:* To specify custom input (see next subsection), edit the file `CPL/main.py` in a text editor of your choice.
-3. Execute `CPL/main.py` in a terminal.
+2. *Optional:* To specify custom input (see next subsection), edit the file `IL/main.py` in a text editor of your choice.
+3. Execute `CL/main.py` in a terminal.
 
 Running this program requires Python (version >= 3.8) to be installed on your machine.  
 How to 'install python', 'edit .py file', 'execute .py script in terminal' and 'clone github repository'
@@ -66,16 +66,16 @@ is all easily googleable for your respective operating system.
 **This tool is not equipped with an interactive user interface; input has to be specified in the source code.**  
 A number of examples are already set up; this is the stuff you see when running the program.  
 To specify your own input:  
-- Structures and formulas to compute denotations for are defined in the function `compute` in `main.py`.  
+- structures and formulas to compute denotations for are defined in the function `compute` in `main.py`.  
   Formulas, unfortunately, have to be entered in prenex form.  
-  Follow the existing examples and the documentations of the classes and methods to get an idea.  
+  Follow the existing examples and the documentations of the classes and methods to get an idea.
 - You can select which structures to include in the output by editing the variable `active` (near top of source code).
 - You can select whether or not to print out intermediate steps by editing the variable `verbose` (same place).
 
 After specifying your input in the source code, execute `main.py` in a terminal to view the output.
 
 ### If you would like to understand what's going on under the hood
-- The directory `CPL` contains the program files for classical logic, `IPL` the ones for intuitionistic logic.  
+- The directory `CL` contains the program files for classical logic, `IL` the ones for intuitionistic logic.  
   The program structure in these two versions is the same:  
   `main.py` is the main module in which input is specified and from which the computations are run.  
   `expr.py` defines the language and semantics, and `struct.py` the form of structures, of the logic.
