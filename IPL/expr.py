@@ -6,7 +6,7 @@ Define the language and semantics of intuitionistic (prepositional and first-ord
 
 
 from main import *
-from model import *
+from struct import *
 
 
 class Expr:
@@ -17,7 +17,7 @@ class Expr:
     @method freevars: the set of the free variable occurrences in the expression
     @method boundvars: the set of bound variable occurrences in the expression
     @method subst: substitution of a term for a variable in the expression
-    @method denot: denotation of the expression relative to a model m and assignment g
+    @method denot: denotation of the expression relative to a structure m and assignment g
     """
 
     def freevars(self):
@@ -53,15 +53,15 @@ class Expr:
 
     def denot(self, m, k, g):
         """
-        Compute the denotation of the expression relative to a model m and assignment g.
+        Compute the denotation of the expression relative to a structure m and assignment g.
 
-        @param m: the model to evaluate the formula against
-        @type m: Model
+        @param m: the structure to evaluate the formula against
+        @type m: Structure
         @param g: the assignment to evaluate the formula against
         @type g: dict[str,str]
         @param k: the state to evaluate the formula against
         @type k: str
-        @return: the denotation of the expression relative to the model m and assignment g
+        @return: the denotation of the expression relative to the structure m and assignment g
         """
         pass
 
@@ -265,7 +265,7 @@ class Formula(Expr):
     Formula.
     φ, ψ, ...
 
-    @method denot: the truth value of a formula relative to a model m (without reference to a particular state)
+    @method denot: the truth value of a formula relative to a structure m (without reference to a particular state)
     """
 
     def denot(self, m, k, g):
@@ -276,26 +276,26 @@ class Formula(Expr):
 
     def denotK(self, m):
         """
-        The truth value of a formula relative to a model M (without reference to a particular state).
-        A formula is true in a model M iff it is true in M in the root state.
+        The truth value of a formula relative to a structure M (without reference to a particular state).
+        A formula is true in a structure M iff it is true in M in the root state.
 
-        @param m: a model
-        @type m: KripkeModel
+        @param m: a structure
+        @type m: KripkeStructure
         @return: the truth value of self in m
         @rtype: bool
         """
         global depth
 
-        # a formula is true in a model M iff it is true in the root state k0
+        # a formula is true in a structure M iff it is true in the root state k0
         return self.denotG(m, "k0")
 
     def denotG(self, m, k):
         """
-        The truth value of a formula relative to a model M and state k (w/o reference to a particular var. ass.).
-        A formula is true in a model M and state k iff it is true in M and k under all assignments g.
+        The truth value of a formula relative to a structure M and state k (w/o reference to a particular var. ass.).
+        A formula is true in a structure M and state k iff it is true in M and k under all assignments g.
 
-        @param m: a model
-        @type m: KripkeModel
+        @param m: a structure
+        @type m: KripkeStructure
         @attr g: an assignment function
         @type g: dict[str,str]
         @return: the truth value of self in m at k
@@ -307,7 +307,7 @@ class Formula(Expr):
             var_occs = self.freevars().union(self.boundvars())
             gs_ = [{v: g[v] for v in g if v in var_occs} for g in m.gs[k]]
             gs = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]  # filter out now duplicate assignment functions
-        else:  # propositional model, compute empty assignment functions
+        else:  # propositional structure, compute empty assignment functions
             gs = [dict()]
 
             if not self.freevars():  # if the formula is closed,

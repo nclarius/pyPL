@@ -5,17 +5,17 @@
 
 
 from expr import *
-from model import *
+from struct import *
 
 
 # settings
-active = [8, 9, 10]  # set here which models to include in the output (see def.s in fnc. 'compute')
+active = [8, 9, 10]  # set here which structures to include in the output (see def.s in fnc. 'compute')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
 
 def compute():
     """
-    Define models and formulas to compute denotations for here.
+    Define structures and formulas to compute denotations for here.
     """
     global depth, active
 
@@ -34,7 +34,7 @@ def compute():
               "lid": {("roundlid", ), ("rectlid", )},
               "fit": {("roundlid", "roundbox"), ("rectlid", "rectbox")}
         }
-        m1 = PredModel(d1, i1)
+        m1 = PredStructure(d1, i1)
         v1 = {"x": "roundbox", "y": "bunny"}
         vv1 = {"x": "bunny", "y": "rectbox"}
 
@@ -85,7 +85,7 @@ def compute():
               "book": {("MMiL", )},
               "read": {("Mary", "MMiL")}
         }
-        m2 = PredModel(d2, i2)
+        m2 = PredStructure(d2, i2)
         v2 = {"x": "Jane", "y": "Mary", "z": "MMiL"}
 
         print(m2)
@@ -130,7 +130,7 @@ def compute():
               "man": {("John", ), ("Peter", )},
               "love": {("Mary", "John"), ("John", "Mary"), ("John", "John"), ("Peter", "Mary"), ("Peter", "John")},
               "jealous": {("Peter", "John", "Mary"), ("Peter", "Mary", "John")}}
-        m3 = PredModel(d3, i3)
+        m3 = PredStructure(d3, i3)
         v3 = {"x": "Mary", "y": "Mary", "z": "Peter"}
         vv3 = {"x": "John", "y": "Peter", "z": "John"}
 
@@ -183,7 +183,7 @@ def compute():
               "woman": {("Mary",), ("Susan",)}, "man": {("John",)},
               "love": {("John", "Mary"), ("Mary", "Susan"), ("Susan", "Mary"), ("Susan", "Susan")},
               "jealous": {("John", "Susan", "Mary")}}
-        m4 = PredModel(d4, i4)
+        m4 = PredStructure(d4, i4)
         v4 = m4.vs[5]
 
         print(m4)
@@ -241,7 +241,7 @@ def compute():
         d5 = {"Mary", "Peter", "Susan", "Jane"}
         i5 = {"m": "Mary", "s": "Susan", "j": "Jane",
               "mother": {("Mary",): "Susan", ("Peter",): "Susan", ("Susan",): "Jane"}}
-        m5 = PredModel(d5, i5)
+        m5 = PredStructure(d5, i5)
         v5 = {"x": "Susan", "y": "Mary", "z": "Peter"}
 
         print(m5)
@@ -274,7 +274,7 @@ def compute():
         d6 = {"a"}
         i6 = {"w1": {"P": {()}},
               "w2": {"P": set()}}
-        m6 = ConstModalModel(w6, r6, d6, i6)
+        m6 = ConstModalStructure(w6, r6, d6, i6)
         v6 = m6.vs[0]
 
         print(m6)
@@ -314,7 +314,7 @@ def compute():
               "w2": {"a", "b"}}
         i7 = {"w1": {"P": {("a",)}},
               "w2": {"P": {("b",)}}}
-        m7 = VarModalModel(w7, r7, d7, i7)
+        m7 = VarModalStructure(w7, r7, d7, i7)
 
         print(m7)
         print(m7.vs)
@@ -346,7 +346,7 @@ def compute():
         print()
 
         v8a = {"p": True, "q": False, "r": True}
-        m8a = PropModel(v8a)
+        m8a = PropStructure(v8a)
 
         print(m8a)
 
@@ -361,7 +361,7 @@ def compute():
             depth = 0
 
         v8b = {"p": True, "q": True, "r": False}
-        m8b = PropModel(v8b)
+        m8b = PropStructure(v8b)
 
         print()
 
@@ -385,7 +385,7 @@ def compute():
         i9a = {"S": {("m1", )},
                "R": {("m1", "m1"), ("m2", "m1")}
               }
-        m9a = PredModel(d9a, i9a)
+        m9a = PredStructure(d9a, i9a)
 
         print(m9a)
 
@@ -406,7 +406,7 @@ def compute():
         i9b = {"S": {("m2", )},
                "R": {("m1", "m1"), ("m2", "m1")}
               }
-        m9b = PredModel(d9b, i9b)
+        m9b = PredStructure(d9b, i9b)
 
         print(m9b)
 
@@ -430,7 +430,7 @@ def compute():
                "k": "b",
                "l": "a"
               }
-        m10 = PredModel(d10, i10)
+        m10 = PredStructure(d10, i10)
 
         print(m10)
 

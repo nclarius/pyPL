@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Define the models of classical (standard and modal) (prepositional and first-order) logic.
+Define the structures of classical (standard and modal) (prepositional and first-order) logic.
 """
 
 
@@ -33,9 +33,9 @@ def cart_prod(a, n):
 indiv_vars = ["x", "y", "z"]  # the individual variables of the language
 
 
-class Model:
+class Structure:
     """
-    A modal of (modal) predicate logic.
+    A structure of (modal) predicate logic.
 
     @attr d: the domain of discourse
     @attr i: an interpretation function
@@ -43,11 +43,11 @@ class Model:
     pass
 
 
-class PropModel(Model):
+class PropStructure(Structure):
     """
-    A model of propositional logic with valuation function.
+    A structure of propositional logic with valuation function.
 
-    A model M is a function V: VAR -> {True, False}.
+    A structure M is a function V: VAR -> {True, False}.
     V = {"p": True, "q": False, "r": True}
 
     @attr v: the valuation function
@@ -57,14 +57,14 @@ class PropModel(Model):
         self.v = v
 
     def __str__(self):
-        return "Model M = V with V: " + ", ".join([str(key) + " ↦ " + str(val) for key, val in self.v.items()])
+        return "Structure M = V with V: " + ", ".join([str(key) + " ↦ " + str(val) for key, val in self.v.items()])
 
 
-class PredModel(Model):
+class PredStructure(Structure):
     """
-    A model of predicate logic with domain, interpretation function and a set of assignment functions.
+    A structure of predicate logic with domain, interpretation function and a set of assignment functions.
 
-    A Model M is a pair <D, I> with
+    A Structure M is a pair <D, I> with
       - D = domain of discourse
       - I = interpretation function assigning a denotation to each non-logical symbol
 
@@ -112,7 +112,7 @@ class PredModel(Model):
     @type d: set[str]
     @attr i: the interpretation function assigning denotations to the non-logical symbols
     @type i: dict[str,Any]
-    @type vs: the assignment functions associated with the model
+    @type vs: the assignment functions associated with the structure
     @type vs: list[dict[str,str]]]
     """
 
@@ -125,7 +125,7 @@ class PredModel(Model):
         self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
     def __str__(self):
-        return "Model M = ⟨D,I⟩ with\n" \
+        return "Structure M = ⟨D,I⟩ with\n" \
                "D = {" + ", ".join([str(d) for d in self.d]) + "}\n" \
                "I = {\n" + ", \n".join(["     " + str(key) + " ↦ " +
                                         (str(val) if isinstance(val, str) else
@@ -139,7 +139,7 @@ class PredModel(Model):
                "\n    }"
 
 
-class ModalModel(Model):
+class ModalStructure(Structure):
     """
     A modal of (modal) predicate logic.
 
@@ -151,11 +151,11 @@ class ModalModel(Model):
     pass
 
 
-class ConstModalModel(ModalModel):
+class ConstModalStructure(ModalStructure):
     """
-    A model of modal predicate logic with constant domain.
+    A structure of modal predicate logic with constant domain.
 
-    A ConstModalModel M is a quadrupel <W,R,D,F> with
+    A ConstModalStructure M is a quadrupel <W,R,D,F> with
       - W = set of possible worlds
       - R = the accessibility relation, a binary relation on W
       - D = domain of discourse
@@ -173,7 +173,7 @@ class ConstModalModel(ModalModel):
 
     - The interpretation function F is a dictionary with
       - possible worlds as keys and
-      - and interpretation of the non-logical symbols as values (see Model.f).
+      - and interpretation of the non-logical symbols as values (see Structure.f).
 
     @attr w: the set of possible worlds
     @type w: set[str]
@@ -196,7 +196,7 @@ class ConstModalModel(ModalModel):
         self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
     def __str__(self):
-        return "Model M = ⟨W,R,D,I⟩ with\n" \
+        return "Structure M = ⟨W,R,D,I⟩ with\n" \
                "W = {" + ", ".join([str(w) for w in self.w]) + "}\n"\
                "R = {" + ", ".join([str(r) for r in self.r]) + "}\n"\
                "D = {" + ", ".join([str(d) for d in self.d]) + "}\n" \
@@ -217,11 +217,11 @@ class ConstModalModel(ModalModel):
                     "}"
 
 
-class VarModalModel(ModalModel):
+class VarModalStructure(ModalStructure):
     """
-    A model of modal predicate logic with varying domains.
+    A structure of modal predicate logic with varying domains.
 
-    A VarModalModel M is a quadrupel <W,R,D,I> with
+    A VarModalStructure M is a quadrupel <W,R,D,I> with
       - W = set of possible worlds
       - R = the accessibility relation, a binary relation on W
       - D = an assignment of possible worlds to domains of discourse
@@ -236,12 +236,12 @@ class VarModalModel(ModalModel):
 
     - The domain D is a a dictionary with
       - possible worlds (specified as strings) as keys and
-      - domains (see Model.D) as values
+      - domains (see Structure.D) as values
       D = {'w1': {'a', 'b', 'c'}, 'w2': {'b'}, ...}
 
     - The interpretation function F is a dictionary with
       - possible worlds as keys and
-      - and interpretation of the non-logical symbols (see Model.f) as values.
+      - and interpretation of the non-logical symbols (see Structure.f) as values.
 
     @attr w: the set of possible worlds
     @type w: set[str]
@@ -264,7 +264,7 @@ class VarModalModel(ModalModel):
         self.vs = {w: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[w]] for w in self.w}
 
     def __str__(self):
-        return "Model M = ⟨W,R,D,F⟩ with\n" \
+        return "Structure M = ⟨W,R,D,F⟩ with\n" \
                "W = {" + ", ".join([str(w) for w in self.w]) + "}\n" \
                "R = {" + ", ".join([str(r) for r in self.r]) + "}\n" \
                "D = {\n" + \

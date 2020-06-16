@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Define the Kripke models of intuitionistic (prepositional and first-order) logic.
+Define the Kripke structures of intuitionistic (propositional and first-order) logic.
 """
 
 
@@ -33,11 +33,11 @@ def cart_prod(a, n):
 indiv_vars = ["x", "y", "z"]  # the individual variables of the language
 
 
-class KripkeModel():
+class KripkeStructure():
     """
-    A Kripke model of intuitionistic predicate logic.
+    A Kripke structure of intuitionistic predicate logic.
 
-    A ConstModalModel is a quadrupel <K,R,D,F> with
+    A ConstModalStructure is a quadrupel <K,R,D,F> with
       - K = set of states
       - R = the accessibility relation, a binary relation on K
       - D = an assignment of possible worlds to domains of discourse
@@ -148,7 +148,7 @@ class KripkeModel():
         return {k_ for k_ in self.k if (k_, k) in self.r}
 
     def __repr__(self):
-        return "Model M = (K,R,D,F) with\n" \
+        return "Structure M = (K,R,D,F) with\n" \
                "K = {" + ", ".join([repr(k) for k in self.k]) + "}\n" \
                "R = {" + ", ".join([repr(r) for r in self.r]) + "}\n" \
                "D = {\n" + \

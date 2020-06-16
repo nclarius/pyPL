@@ -6,7 +6,7 @@ Define the language and semantics of clsasical (standard and modal) (preposition
 
 
 from main import *
-from model import *
+from struct import *
 
 from typing import List, Dict, Set, Tuple
 
@@ -19,7 +19,7 @@ class Expr:
     @method freevars: the set of the free variable occurrences in the expression
     @method boundvars: the set of bound variable occurrences in the expression
     @method subst: substitution of a term for a variable in the expression
-    @method denot: denotation of the expression relative to a model m and assignment g
+    @method denot: denotation of the expression relative to a structure m and assignment g
     """
     def freevars(self) -> Set[str]:
         """
@@ -54,15 +54,15 @@ class Expr:
 
     def denot(self, m, v=None, w=None):
         """
-        Compute the denotation of the expression relative to a model m and assignment g.
+        Compute the denotation of the expression relative to a structure m and assignment g.
 
-        @param m: the model to evaluate the formula against
-        @type m: Model
+        @param m: the structure to evaluate the formula against
+        @type m: Structure
         @param v: the assignment to evaluate the formula against
         @type v: dict[str,str]
         @param w: the possible world to evaluate the formula against
         @type w: str
-        @return: the denotation of the expression relative to the model m and assignment g
+        @return: the denotation of the expression relative to the structure m and assignment g
         """
         pass
 
@@ -109,7 +109,7 @@ class Const(Term):
         The denotation of a constant is that individual that the interpretation function f assigns it.
         """
         i = m.i
-        if isinstance(m, ModalModel):
+        if isinstance(m, ModalStructure):
             i = m.i[w]
         return i[self.c]
 
@@ -180,7 +180,7 @@ class Func(Expr):
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
         i = m.i
-        if isinstance(m, ModalModel):
+        if isinstance(m, ModalStructure):
             i = m.i[w]
         return i[self.i]
 
@@ -225,7 +225,7 @@ class FuncTerm(Term):
         interpretation function f assigns to the application.
         """
         i = m.i
-        if isinstance(m, ModalModel):
+        if isinstance(m, ModalStructure):
             i = m.i[w]
         return i[self.f.f][tuple([t.denot(m, v, w) for t in self.terms])]
 
@@ -259,7 +259,7 @@ class Pred(Expr):
         assigns it.
         """
         i = m.i
-        if isinstance(m, ModalModel):
+        if isinstance(m, ModalStructure):
             i = m.i[w]
         return i[self.p]
 
@@ -272,7 +272,7 @@ class Formula(Expr):
     Formula.
     φ, ψ, ...
 
-    @method denotV: the truth value of a formula relative to a model m (without reference to a particular assignment)
+    @method denotV: the truth value of a formula relative to a structure m (without reference to a particular assignment)
     """
 
     def denot(self, m, v=None, w=None) -> bool:
@@ -283,11 +283,11 @@ class Formula(Expr):
 
     def denotV(self, m, w=None) -> bool:
         """
-        The truth value of a formula relative to a model M (without reference to a particular assignment).
-        A formula is true in a model M iff it is true in M under all assignment functions g.
+        The truth value of a formula relative to a structure M (without reference to a particular assignment).
+        A formula is true in a structure M iff it is true in M under all assignment functions g.
 
-        @param m: a model
-        @type m: Model
+        @param m: a structure
+        @type m: Structure
         @attr w: a possible world
         @type w: str
         @return: the truth value of self in m
@@ -297,7 +297,7 @@ class Formula(Expr):
         # for efficiency, restrict the domain of the assignment functions o the vars that actually occur in the formula
         var_occs = self.freevars() | self.boundvars()
         vs__ = m.vs
-        if isinstance(m, VarModalModel):
+        if isinstance(m, VarModalStructure):
             vs__ = m.vs[w]
         vs_ = [{u: v[u] for u in v if u in var_occs} for v in vs__]
         vs = [dict(tpl) for tpl in {tuple(v.items()) for v in vs_}]  # filter out now duplicate assignment functions
@@ -326,11 +326,11 @@ class Formula(Expr):
 
     def denotW(self, m, v) -> bool:
         """
-        The truth value of a formula relative to a model M and assmnt. g (without reference to a particular world).
-        A formula is true in a model M iff it is true in M and g in all possible worlds w.
+        The truth value of a formula relative to a structure M and assmnt. g (without reference to a particular world).
+        A formula is true in a structure M iff it is true in M and g in all possible worlds w.
 
-        @param m: a model
-        @type m: ModalModel
+        @param m: a structure
+        @type m: ModalStructure
         @attr g: an assignment function
         @type v: dict[str,str]
         @return: the truth value of self in m under g
@@ -361,17 +361,17 @@ class Formula(Expr):
 
     def denotVW(self, m) -> bool:
         """
-        The truth value of a formula relative to a model M (without reference to a particular assignment and world).
-        A formula is true in a model M iff it is true in M and g under all assignments g and all possible worlds w.
+        The truth value of a formula relative to a structure M (without reference to a particular assignment and world).
+        A formula is true in a structure M iff it is true in M and g under all assignments g and all possible worlds w.
 
-        @param m: a model
-        @type m: ModalModel
+        @param m: a structure
+        @type m: ModalStructure
         @attr g: an assignment function
         @type v: dict[str,str]
         @return: the truth value of self in m under g
         @rtype: bool
         """
-        # todo doesn't work for modal models with varying domain yet (due different structure of assignment functions)
+        # todo doesn't work for modal structures with varying domain yet (due different structure of assignment functions)
         global depth
 
         for w in m.w:
@@ -756,7 +756,7 @@ class Exists(Formula):
         global depth
         depth += 1
         d_ = m.d
-        if isinstance(m, VarModalModel):
+        if isinstance(m, VarModalStructure):
             d_ = m.d[w]
 
         # iterate through the individuals in the domain
@@ -826,7 +826,7 @@ class Forall(Formula):
         global depth
         depth += 1
         d_ = m.d
-        if isinstance(w, VarModalModel):
+        if isinstance(w, VarModalStructure):
             d_ = m.d[w]
 
         # iterate through the individuals in the domain
@@ -887,8 +887,8 @@ class Poss(Formula):
         The denotation of a possiblity formula is true iff
         phi is true at at least one world accessible from w.
 
-        @param m: the model to evaluate the formula in
-        @type m: ModalModel
+        @param m: the structure to evaluate the formula in
+        @type m: ModalStructure
         @param v: the assignment function to evaluate the formula in
         @type v: dict[str,str]
         @param w: the world to evaluate the formula in
@@ -949,8 +949,8 @@ class Nec(Formula):
         The denotation of a necessity formula is true iff
         phi is true at all worlds accessible from w.
 
-        @param m: the model to evaluate the formula in
-        @type m: ModalModel
+        @param m: the structure to evaluate the formula in
+        @type m: ModalStructure
         @param w: the world to evaluate the formula in
         @type w: str
         @param v: the assignment function to evaluate the formula in

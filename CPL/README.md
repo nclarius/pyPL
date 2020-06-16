@@ -1,4 +1,5 @@
 A naive model checker for classical propositional and first-order logic with an extension to modal logic.  
+This tool computes the denotation (truth value) of a given logical expression in a given structure.  
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
 Licensed under CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).  
 
@@ -12,22 +13,23 @@ I am happy to learn about any bugs or improvement suggestions.
 
 Features
 --------
- - specification of expressions in a language of PL
- - specification of expressions in a language of FOL
+ - specification of expressions in a language of propositional logic (aka statement logic)
+ - specification of expressions in a language of first-order logic (aka predicate logic, quantifier logic)
    - accepts languages with with zero-place predicates, function symbols, term equality and modal operators ◻, ◇
- - specification of models of FOL with domain, interpretation function and variable assignments
-   - accepts models without possible worlds, modal models with constant domains and modal models with varying domains
+ - specification of models (aka interpretations) of PL with valuation function
+ - specification of structures (aka models) of FOL with domain, interpretation function and variable assignments
+   - accepts structures without possible worlds, modal structures with constant domains and modal structures with varying domains
  - evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
-   relative to models, variable assignments and possible worlds
+   relative to structures, variable assignments and possible worlds
 
 Restrictions
 ------------
- - works only on models with finite domains and languages with a finite set of propositional or individual variables
- - can't infer universal validity, logical inference etc., only truth in a given model
+ - works only on structures with finite domains and languages with a finite set of propositional or individual variables
+ - can't infer universal validity, logical inference etc., only truth in a given structure
 
 Known issues
 ------------
- - name of model, domain, interpr. func., variable assignment and world is not systematically recognized,
+ - name of structure, domain, interpr. func., variable assignment and world is not systematically recognized,
    instead always 'M', 'D', 'I', 'v', 'w' used in printout
  - efficiency: assignment functions have to be specified on all variables of the language;
    the domain is not restricted expression-wise to those variables that actually occur in the expression
@@ -64,10 +66,10 @@ is all easily googleable for your respective operating system.
 **This tool is not equipped with an interactive user interface; input has to be specified in the source code.**  
 A number of examples are already set up; this is the stuff you see when running the program.  
 To specify your own input:  
-- Models and formulas to compute denotations for are defined in the function `compute` in `main.py`.  
+- Structures and formulas to compute denotations for are defined in the function `compute` in `main.py`.  
   Formulas, unfortunately, have to be entered in prenex form.  
   Follow the existing examples and the documentations of the classes and methods to get an idea.  
-- You can select which models to include in the output by editing the variable `active` (near top of source code).
+- You can select which structures to include in the output by editing the variable `active` (near top of source code).
 - You can select whether or not to print out intermediate steps by editing the variable `verbose` (same place).
 
 After specifying your input in the source code, execute `main.py` in a terminal to view the output.
@@ -76,7 +78,7 @@ After specifying your input in the source code, execute `main.py` in a terminal 
 - The directory `CPL` contains the program files for classical logic, `IPL` the ones for intuitionistic logic.  
   The program structure in these two versions is the same:  
   `main.py` is the main module in which input is specified and from which the computations are run.  
-  `expr.py` defines the language and semantics, and `model.py` the structure of models, of the logic.
+  `expr.py` defines the language and semantics, and `struct.py` the form of structures, of the logic.
 - The interesting part for you are the `denot` methods in each of the expression classes in `expr.py`.  
   Compare how the formal definitions can be translated into code almost 1:1,
   and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers 
@@ -90,7 +92,7 @@ After specifying your input in the source code, execute `main.py` in a terminal 
 - Simply ignore all the print statements and anything that looks completely unfamiliar to you (such as `w`/modal stuff).  
 
 ### Notes on notation
-- 'M' = model/structure (aka 'A')
+- 'M' = structure/model (aka 'A')
 - 'D' = domain of discourse (aka 'M')
 - 'I' = interpretation function for non-logical symbols (aka 'F')
 - 'v' = variable assignment function for individual variables (aka 'g')

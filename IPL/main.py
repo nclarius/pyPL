@@ -5,21 +5,21 @@
 
 
 from expr import *
-from model import *
+from struct import *
 
 
 # settings
-active = [1, 2, 3]  # set here which models to include in the output (see def.s in fnc. 'compute')
+active = [1, 2, 3]  # set here which structures to include in the output (see def.s in fnc. 'compute')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
 
 def compute():
     """
-    Define models and formulas to compute denotations for here.
+    Define structures and formulas to compute denotations for here.
     """
     global depth, active
 
-    # Example 1: counter model of p v -p and --p -> p
+    # Example 1: counter structure of p v -p and --p -> p
     #############################
     print("\n---------------------------------\n")
     #############################
@@ -29,7 +29,7 @@ def compute():
     d1 = {}
     f1 = {"k0": {"p": False},
           "k1": {"p": True}}
-    m1 = KripkeModel(k1, r1, d1, f1)
+    m1 = KripkeStructure(k1, r1, d1, f1)
 
     print(m1)
     print(m1.r)
@@ -58,7 +58,7 @@ def compute():
         print(e.denotG(m1, "k1"))
         depth = 0
 
-    # Example 2: counter model of (p -> q) v (q -> p)
+    # Example 2: counter structure of (p -> q) v (q -> p)
     #############################
     print("\n---------------------------------\n")
     #############################
@@ -69,7 +69,7 @@ def compute():
     f2 = {"k0": {"p": False, "q": False},
           "k1": {"p": True, "q": False},
           "k2": {"p": False, "q": True}}
-    m2 = KripkeModel(k2, r2, d2, f2)
+    m2 = KripkeStructure(k2, r2, d2, f2)
 
     print(m2)
     print(m2.r)
@@ -85,7 +85,7 @@ def compute():
         print(e.denotK(m2))
         depth = 0
     
-    # Example 3: counter model of (p -> q) -> (-p v q)
+    # Example 3: counter structure of (p -> q) -> (-p v q)
     #############################
     print("\n---------------------------------\n")
     #############################
@@ -98,7 +98,7 @@ def compute():
           "k2": {"p": True, "q": True},
           "k3": {"p": True, "q": True}
           }
-    m3 = KripkeModel(k3, r3, d3, f3)
+    m3 = KripkeStructure(k3, r3, d3, f3)
 
     print(m3)
     print(m3.r)
