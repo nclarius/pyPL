@@ -13,6 +13,8 @@ I am happy to learn about any bugs or improvement suggestions.
 
 Features
 --------
+ - evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
+   relative to structures, variable assignments and possible worlds
  - specification of expressions
     - in a language of propositional logic (aka statement logic)
     - in a language of first-order logic (aka predicate logic, quantifier logic)
@@ -21,8 +23,6 @@ Features
     - of PL with valuation function
     - of FOL with domain, interpretation function and variable assignments
     - accepts non-modal structures, modal structures with constant domains and modal structures with varying domains
- - evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
-   relative to structures, variable assignments and possible worlds
 
 Restrictions
 ------------
