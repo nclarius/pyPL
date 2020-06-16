@@ -837,8 +837,9 @@ class Exists(Formula):
         # iterate through the individuals in the domain
         for d in sorted(d_):
 
-            # compute the x-variant v' with the individual d
-            v_ = {**v, self.u.u: d}  # unpack v and overwrite the value for the u with d
+            # compute the x-variant v' of v
+            v_ = v  # v' is just like v, except...
+            v_[self.u.u] = d  # ... the value for the variable u is now the new individual d
 
             # check whether the current x-variant under consideration makes phi true
             if verbose:
@@ -906,8 +907,9 @@ class Forall(Formula):
         # iterate through the individuals in the domain
         for d in sorted(d_):
 
-            # compute the x-variant v' with the individual d
-            v_ = {**v, self.u.u: d}  # unpack v and overwrite the value for u with d
+            # compute the x-variant v' of v
+            v_ = v  # v' is just like v, except...
+            v_[self.u.u] = d  # ... the value for the variable u is now the new individual d
 
             # check whether the current x-variant under consideration makes phi true
             if verbose:
