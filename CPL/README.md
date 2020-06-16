@@ -43,7 +43,7 @@ Wish list
 Usage notes
 -----------
 
-### Installation
+### Installation and execution
 To run this tool on your machine:
 1. Clone this repository.
 2. *Optional:* To specify custom input (see next subsection), edit the file `CPL/main.py` in a text editor of your choice.
@@ -53,9 +53,10 @@ Running this program requires Python (version >= 3.8) to be installed on your ma
 How to 'install python', 'edit .py file', 'execute .py script in terminal' and 'clone github repository'
 is all easily googleable for your respective operating system.
 
-### Defining input
+### Specifying input
 **This tool is not equipped with an interactive user interface; input has to be specified in the source code.**  
-A number of examples are already set up.
+A number of examples are already set up; this is the stuff you see when running the program.  
+To define your own input:  
 - Models and formulas to compute denotations for are **defined in the function `compute` in `main.py`.**
   Formulas, unfortunately, have to be entered in prenex form.
   Follow the existing examples and the documentations of the classes and methods to get an idea.
@@ -65,7 +66,7 @@ After specifying your input in the source code, **execute `main.py` in a termina
 
 ### If you would like to understand what's going on under the hood
 - The directory `CPL` contains the program files for classical logic, `IPL` the ones for intuitionistic logic.  
-  The structure in these two versions is the same:
+  The program structure in these two versions is the same:  
   `main.py` is the main module in which input is specified and from which the computations are run.  
   `expr.py` defines the language, and `model.py` the models, of the logic.
 - The interesting part for you are the `denot` methods in each of the expression classes in `expr.py`.  
