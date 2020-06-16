@@ -809,7 +809,7 @@ class Exists(Formula):
         self.phi = phi
 
     def __str__(self):
-        return "∃" + str(self.u) + (" " if isinstance(self.phi, Atm) else "") + str(self.phi)
+        return "∃" + str(self.u) + str(self.phi)
 
     def freevars(self) -> Set[str]:
         return self.phi.freevars() - {self.u.u}
@@ -878,7 +878,7 @@ class Forall(Formula):
         self.phi = phi
 
     def __str__(self):
-        return "∀" + str(self.u) + (" " if isinstance(self.phi, Atm) else "") + str(self.phi)
+        return "∀" + str(self.u) + str(self.phi)
 
     def freevars(self) -> Set[str]:
         return self.phi.freevars() - {self.u.u}
