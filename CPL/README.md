@@ -75,7 +75,8 @@ After specifying your input in the source code, execute `main.py` in a terminal 
   `expr.py` defines the language and semantics, and `model.py` the structure of models, of the logic.
 - The interesting part for you are the `denot` methods in each of the expression classes in `expr.py`.  
   Compare how the formal definitions can be translated into code almost 1:1,
-  and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers.  
+  and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers 
+  (classes `Exists` and `Forall` in `expr.py`).  
 - To follow an evaluation process, I recommend to
   - set breakpoints at each of the `denot` method instances and step through an evaluation process symbol by symbol
     to see how a denotation is computed recursively in line with the inductive definitions.
