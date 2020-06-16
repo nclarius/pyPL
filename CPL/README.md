@@ -58,8 +58,8 @@ is all easily googleable for your respective operating system.
 A number of examples are already set up; this is the stuff you see when running the program.  
 To specify your own input:  
 - Models and formulas to compute denotations for are defined in the function `compute` in `main.py`.  
-  Formulas, unfortunately, have to be entered in prenex form.
-  Follow the existing examples and the documentations of the classes and methods to get an idea.
+  Formulas, unfortunately, have to be entered in prenex form.  
+  Follow the existing examples and the documentations of the classes and methods to get an idea.  
 - You can select which models to include in the output by editing the variable `active` (near top of source code).
 - You can select whether or not to print out intermediate steps by editing the variable `verbose` (same place).
 
