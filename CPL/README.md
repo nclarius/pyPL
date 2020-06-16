@@ -44,22 +44,22 @@ Usage notes
 -----------
 This tool is not equipped with an interactive user interface; input has to be specified in the source code.  
 A number of examples are already set up.
-- Models and formulas to compute denotations for are defined in the function 'compute' (near bottom of source code).
+- Models and formulas to compute denotations for are defined in the function `compute` (near bottom of source code).
   Formulas, unfortunately, have to be entered in prenex form.
   Follow the existing examples and the documentations of the classes and methods to get an idea.
-- You can select which models to include in the output by editing the variable 'active' (near top of source code).
-- You can select whether or not to print out intermediate steps by editing the variable 'verbose' (same place).
+- You can select which models to include in the output by editing the variable `active` (near top of source code).
+- You can select whether or not to print out intermediate steps by editing the variable `verbose` (same place).
 After specifying your input in the source code, execute this script in a terminal to view the output.  
 
 If you would like to understand what's going on under the hood:  
-The interesting part for you are the 'denot' methods in each of the expression classes.  
+The interesting part for you are the `denot` methods in each of the expression classes.  
 Compare how the formal definitions can be translated into code almost 1:1,
 and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers.  
 A recommendation is to set breakpoints and step through an evaluation process symbol by symbol
 to see how a denotation is computed recursively in line with the inductive definitions,
-or trace the variables v and v_ to keep track of what the current variable assignment looks like during quantification.  
-The '__str__' methods are what makes the expressions formatted human-readable in the output.  
-Simply ignore all the print statements and anything that looks completely unfamiliar to you (such as 'w'/modal stuff).  
+or trace the variables `v` and `v_` to keep track of what the current variable assignment looks like during quantification.  
+The `__str__` methods are what makes the expressions formatted human-readable in the output.  
+Simply ignore all the print statements and anything that looks completely unfamiliar to you (such as `w`/modal stuff).  
 
 Notes on notation:
 - 'M' = model/structure (aka 'A')
