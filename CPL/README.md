@@ -47,7 +47,7 @@ Usage notes
 To run this tool on your machine:
 1. Clone this repository.
 3. If you want, edit the file `CPL/main.py` in a text editor of your choice to specify custom input (see next section).
-4. Execute `CPL/main.py`.
+4. Execute `CPL/main.py` in a terminal.
 
 Running this program requires Python (version >= 3.8) to be installed on your machine.  
 How to 'install python', 'edit .py file', 'execute .py script' and 'clone github repository'
