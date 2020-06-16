@@ -42,6 +42,7 @@ Wish list
 
 Usage notes
 -----------
+### Defining input
 **This tool is not equipped with an interactive user interface; input has to be specified in the source code.**  
 A number of examples are already set up.
 - Models and formulas to compute denotations for are **defined in the function `compute` in `main.py`.**
@@ -51,7 +52,7 @@ A number of examples are already set up.
 - You can select whether or not to print out intermediate steps by editing the variable `verbose` (same place).
 After specifying your input in the source code, **execute `main.py` in a terminal to view the output.**  
 
-If you would like to understand what's going on under the hood:  
+### If you would like to understand what's going on under the hood
 `main.py` is the main module from which the computations are run. 
 `expr.py` defines the language, and `model.py` the models of (classical and modal, propostional and first-order) logic.
 The interesting part for you are the `denot` methods in each of the expression classes in `expr.py`.  
@@ -63,7 +64,7 @@ or trace the variables `v` and `v_` to keep track of what the current variable a
 The `__str__` methods are what makes the expressions formatted human-readable in the output.  
 Simply ignore all the print statements and anything that looks completely unfamiliar to you (such as `w`/modal stuff).  
 
-Notes on notation:
+### Notes on notation:
 - 'M' = model/structure (aka 'A')
 - 'D' = domain of discourse (aka 'M')
 - 'I' = interpretation function for non-logical symbols (aka 'F')
