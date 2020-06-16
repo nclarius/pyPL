@@ -62,23 +62,24 @@ The interesting part for you are the 'denot' methods in each of the expression c
 Compare how the formal definitions can be translated into code almost 1:1,
 and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers.
 A recommendation is to set breakpoints and step through an evaluation process symbol by symbol
-to see how a denotation is computed recursively in line with the inductive definitions.
+to see how a denotation is computed recursively in line with the inductive definitions,
+or trace the variables v and v_ to keep track of what the current variable assignment looks like during quantification.
 The '__str__' methods are what makes the expressions formatted human-readable in the output.
 Simply ignore all the print statements and anything that looks completely unfamiliar to you (such as 'w'/modal stuff).
 
 Notes on notation:
 - 'M' = model/structure (aka 'A')
-- 'V' = valuation function
+- 'V' = valuation function for propositional variables
 - 'D' = domain of discourse (aka 'M')
 - 'I' = interpretation function (aka 'F')
-- 'v' = variable assignment function (aka 'g')
+- 'v' = variable assignment function for individual variables (aka 'g')
 
 Have fun!
 """
 
 
 # settings
-active = [1, 2, 3, 4, 5, 6, 7, 8, 9]  # set here which models to include in the output (see def.s in function 'compute')
+active = [8, 9, 10]  # set here which models to include in the output (see def.s in fnc. 'compute')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
 
@@ -1298,7 +1299,8 @@ class VarModalModel(ModalModel):
         self.r = r
         self.d = d
         self.i = i
-        dprods = {w: cart_prod(list(self.d[w]), len(vars)) for w in self.w}  # all ways of forming sets of |vars| long combinations of elements from D
+        # all ways of forming sets of |vars| long combinations of elements from D
+        dprods = {w: cart_prod(list(self.d[w]), len(vars)) for w in self.w}
         self.vs = {w: [{str(v): a for (v, a) in zip(vars, distr)} for distr in dprods[w]] for w in self.w}
 
     def __str__(self):
@@ -1339,7 +1341,7 @@ def compute():
         print("\n---------------------------------\n")
         ############################
 
-        print("Example #1: tupperware boxes, lids and a bunny (logic for linguists lecture 09)")
+        print("Example #1: tupperware boxes, lids and a bunny (logic for linguists lecture 010)")
         print()
 
         d1 = {"roundbox", "roundlid", "rectbox", "rectlid", "bunny"}
@@ -1410,7 +1412,7 @@ def compute():
             2: Const("m"),  # Mary
             3: Pred("read"),  # {(Mary, MMiL)}
             4: Atm(Pred("book"), (Var("x"), )),  # false, since Jane is not a book
-            5: Exists(Var("x"), Conj(Atm(Pred("book"), (Var("x"),)), Atm(Pred("read"), (Const("m"), Var("x"))))),  # true
+            5: Exists(Var("x"), Conj(Atm(Pred("book"), (Var("x"),)), Atm(Pred("read"), (Const("m"), Var("x"))))), # true
             6: Forall(Var("y"), Imp(Atm(Pred("student"), (Var("y"), )),
                                     Exists(Var("x"),
                                            Conj(Atm(Pred("book"), (Var("x"), )),
@@ -1435,7 +1437,7 @@ def compute():
         print("\n---------------------------------\n")
         #############################
 
-        print("Example #3: love #1 (logic for linguists ExSh 9 Ex. 1)")
+        print("Example #3: love #1 (logic for linguists ExSh 10 Ex. 1)")
         print()
 
         d3 = {"Mary", "John", "Peter"}
@@ -1461,7 +1463,7 @@ def compute():
             6: Atm(Pred("love"), (Var("y"), Var("z"))),
             7: Exists(Var("x"), Neg(Atm(Pred("love"), (Const("j"), Var("x"))))),
             8: Forall(Var("x"), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y"))))),
-            9: Neg(Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
+            10: Neg(Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
                                          Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
                                                                Atm(Pred("love"), (Var("x"), Var("y"))))
                                                 )))),
@@ -1470,7 +1472,7 @@ def compute():
 
         for nr, e in e3.items():
             # print(e)
-            if nr in [1, 2, 4, 5, 7, 8, 9]:
+            if nr in [1, 2, 4, 5, 7, 8, 10]:
                 print()
                 print("⟦" + str(e) + "⟧^M3,v3 =")
                 print(e.denot(m3, v3))
@@ -1512,7 +1514,7 @@ def compute():
             6: Exists(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # true
             7: Forall(Var("x"), Atm(Pred("love"), (Const("j"), Var("x")))),  # false
             8: Conj(Atm(Pred("love"), (Const("m"), Const("s"))), Atm(Pred("love"), (Const("s"), Const("m")))),  # true
-            9: Forall(Var("x"), Imp(Atm(Pred("love"), (Const("s"), Var("x"))), Atm(Pred("woman"), (Var("x"),)))),  # true
+            10: Forall(Var("x"), Imp(Atm(Pred("love"), (Const("s"), Var("x"))), Atm(Pred("woman"), (Var("x"),)))),# true
             10: Neg(Exists(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # false
             11: Neg(Forall(Var("x"), Atm(Pred("love"), (Var("x"), Var("x"))))),  # true
             12: Forall(Var("x"), Imp(Atm(Pred("woman"), (Var("x"),)),
@@ -1659,14 +1661,14 @@ def compute():
         print("Example #8: propositional logic")
         print()
 
-        e8 = {
-            1: Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r")))
-        }
-
         v8a = {"p": True, "q": False, "r": True}
         m8a = PropModel(v8a)
 
         print(m8a)
+
+        e8 = {
+            1: Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r")))
+        }
 
         for nr, e in e8.items():
             print()
@@ -1687,7 +1689,6 @@ def compute():
             print(e.denot(m8b))
             depth = 0
 
-
     if 9 in active:
         #############################
         print("\n---------------------------------\n")
@@ -1696,11 +1697,6 @@ def compute():
         print("Example #9: predicate logic (logic for computer scientists lecture 07)")
         print()
 
-        e9 = {
-            1: Forall(Var("x"), Exists(Var("y"),
-                                       Conj(Atm(Pred("S"), (Var("y"), )), Atm(Pred("R"), (Var("x"), Var("y"))))))
-        }
-
         d9a = {"m1", "m2"}
         i9a = {"S": {("m1", )},
                "R": {("m1", "m1"), ("m2", "m1")}
@@ -1708,6 +1704,11 @@ def compute():
         m9a = PredModel(d9a, i9a)
 
         print(m9a)
+
+        e9 = {
+            1: Forall(Var("x"), Exists(Var("y"),
+                                       Conj(Atm(Pred("S"), (Var("y"), )), Atm(Pred("R"), (Var("x"), Var("y"))))))
+        }
 
         for nr, e in e9.items():
             print()
@@ -1731,7 +1732,38 @@ def compute():
             print(e.denotV(m9b))
             depth = 0
 
+    if 10 in active:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
 
+        print("Example #10: predicate logic (logic for computer scientists exercise sheet 07)")
+        print()
+
+        d10 = {"a", "b", "c"}
+        i10 = {"P": {("a",)},
+               "R": {("a", "a"), ("a", "b"), ("a", "c"), ("b", "c")},
+               "k": "b",
+               "l": "a"
+              }
+        m10 = PredModel(d10, i10)
+
+        print(m10)
+
+        e10 = {
+            1: Neg(Atm(Pred("R"), (Const("l"), Var("x")))),
+            2: Exists(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y"))))),
+            3: Forall(Var("x"), Exists(Var("y"),
+                                       Conj(Atm(Pred("P"), (Var("x"),)), Atm(Pred("R"), (Var("x"), Var("y"))))))
+        }
+
+        for nr, e in e10.items():
+            print()
+            print("⟦" + str(e) + "⟧^M =")
+            print(e.denotV(m10))
+            depth = 0
+
+        print()
 
     #############################
     print("\n---------------------------------\n")
