@@ -50,7 +50,7 @@ To run this tool on your machine:
 4. Execute `IPL/main.py` in a terminal.
 
 Running this program requires Python (version >= 3.8) to be installed on your machine.  
-How to 'install python', 'edit .py file', 'execute .py script' and 'clone github repository'
+How to 'install python', 'edit .py file', 'execute .py script in terminal' and 'clone github repository'
 is all easily googleable for your respective operating system.
 
 ### Defining input
