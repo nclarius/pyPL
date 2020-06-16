@@ -79,7 +79,7 @@ After specifying your input in the source code, execute `main.py` in a terminal 
   The program structure in these two versions is the same:  
   `main.py` is the main module in which input is specified and from which the computations are run.  
   `expr.py` defines the language and semantics, and `struct.py` the form of structures, of the logic.
-- The interesting part for you are the `denot` methods in each of the expression classes in `expr.py`.  
+- The interesting part for you are the `denot` (denotation) methods in each of the expression classes in `expr.py`.  
   Compare how the formal definitions can be translated into code almost 1:1,
   and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers 
   (classes `Exists` and `Forall` in `expr.py`).  
