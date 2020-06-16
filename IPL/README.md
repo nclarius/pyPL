@@ -45,9 +45,10 @@ Usage notes
 
 ### Installation
 To run this tool on your machine:
-1. Clone this repository.
-2. If you want, edit the file `main.py` in a text editor of your choice to specify custom input (see next section).
-3. Execute `main.py`.
+1. Clone this repository.  
+   The relevant program files for classical logic will be located in the subdirectory `CPL`, the ones for intuitionistic logic in `IPL`.
+3. If you want, edit the file `main.py` in a text editor of your choice to specify custom input (see next section).
+4. Execute `main.py`.
 
 Running this program requires Python (version >= 3.8) to be installed on your machine.  
 'clone github repository', 'install python', 'edit .py file' and 'execute .py script' are all easily googleable 
