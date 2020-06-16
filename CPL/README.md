@@ -50,8 +50,8 @@ To run this tool on your machine:
 4. Execute `CPL/main.py`.
 
 Running this program requires Python (version >= 3.8) to be installed on your machine.  
-'clone github repository', 'install python', 'edit .py file' and 'execute .py script' are all easily googleable 
-for your respective operating system.
+How to 'install python', 'edit .py file', 'execute .py script' and 'clone github repository'
+is all easily googleable for your respective operating system.
 
 ### Defining input
 **This tool is not equipped with an interactive user interface; input has to be specified in the source code.**  
