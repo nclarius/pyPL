@@ -44,10 +44,11 @@ Usage notes
 -----------
 ### Installation
 To run this tool on your machine:
-1. Clone this github project.
+1. Clone this repository.
 2. If you want, edit the file `main.py` in a text editor of your choice to specify custom input (see next section).
 3. Execute `main.py`. This requires Python (version >= 3.8) to be installed on your machine.  
-'clone github project', 'install python', 'edit .py script' and 'execute .py script' are all easily googleable 
+
+'clone github repository', 'install python', 'edit .py script' and 'execute .py script' are all easily googleable 
 for your respective operating system.
 
 ### Defining input
