@@ -27,9 +27,9 @@ def compute():
     k1 = {"k0", "k1"}
     r1 = {("k0", "k1")}
     d1 = {}
-    f1 = {"k0": {"p": False},
+    i1 = {"k0": {"p": False},
           "k1": {"p": True}}
-    m1 = KripkeStructure(k1, r1, d1, f1)
+    m1 = KripkeStructure(k1, r1, d1, i1)
 
     print(m1)
     print(m1.r)
@@ -66,10 +66,10 @@ def compute():
     k2 = {"k0", "k1", "k2"}
     r2 = {("k0", "k1"), ("k0", "k2")}
     d2 = {}
-    f2 = {"k0": {"p": False, "q": False},
+    i2 = {"k0": {"p": False, "q": False},
           "k1": {"p": True, "q": False},
           "k2": {"p": False, "q": True}}
-    m2 = KripkeStructure(k2, r2, d2, f2)
+    m2 = KripkeStructure(k2, r2, d2, i2)
 
     print(m2)
     print(m2.r)
@@ -93,12 +93,12 @@ def compute():
     k3 = {"k0", "k1", "k2", "k3"}
     r3 = {("k0", "k1"), ("k0", "k2"), ("k1", "k3"), ("k2", "k3")}
     d3 = {}
-    f3 = {"k0": {"p": False, "q": False},
+    i3 = {"k0": {"p": False, "q": False},
           "k1": {"p": False, "q": True},
           "k2": {"p": True, "q": True},
           "k3": {"p": True, "q": True}
           }
-    m3 = KripkeStructure(k3, r3, d3, f3)
+    m3 = KripkeStructure(k3, r3, d3, i3)
 
     print(m3)
     print(m3.r)

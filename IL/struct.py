@@ -18,11 +18,11 @@ class KripkeStructure():
     """
     A Kripke structure of intuitionistic predicate logic.
 
-    A ConstModalStructure is a quadrupel <K,R,D,F> with
+    A ConstModalStructure is a quadrupel <K,R,D,I> with
       - K = set of states
       - R = the accessibility relation, a binary relation on K
       - D = an assignment of possible worlds to domains of discourse
-      - F = interpretation function assigning to each member of K and each non-logical symbol a denotation
+      - I = interpretation function assigning to each member of K and each non-logical symbol a denotation
     and a set of assignment functions gs assigning to each statek to each variable an element from the domain of k.
 
     - The set of states K is a set of states, specified as strings, where the root state has to be specified as 'k0':
@@ -74,7 +74,7 @@ class KripkeStructure():
                'f': {('c1',): 'a', ('c2',): 'b'}
                'h': {('c1', 'c2'): 'a'}
 
-         F = {'k0':  {'c': 'a', 'P': {('a', )}}, 'k0': {'c': 'a',  'P': {('a', ), ('b', )}}}
+         I = {'k0':  {'c': 'a', 'P': {('a', )}}, 'k0': {'c': 'a',  'P': {('a', ), ('b', )}}}
 
     @attr w: the set of states
     @type w: set[str]
@@ -82,15 +82,15 @@ class KripkeStructure():
     @type r: set[tuple[str,str]]
     @attr d: the mapping of states to domains of discourse
     @type d: dict[str,set[str]]
-    @attr f: the interpretation function
-    @type f: dict[str,dict[str,Any]]
+    @attr i: the interpretation function
+    @type i: dict[str,dict[str,Any]]
     """
 
-    def __init__(self, k, r, d, f):
+    def __init__(self, k, r, d, i):
         self.k = k
         self.r = r
         self.d = d
-        self.f = f
+        self.i = i
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D) per state
         dprods = {k: list(product(* ([list(self.d[k])] * len(indiv_vars)))) for k in self.k} if d else {}
         # all variable assignment functions
@@ -150,8 +150,8 @@ class KripkeStructure():
                                         ", ".join(["(" + ", ".join([repr(t) for t in s]) + ")" for s in valF]) +
                                         "}")))
                                   )
-                                 for (keyF, valF) in self.f[k].items()]) + \
+                                 for (keyF, valF) in self.i[k].items()]) + \
                             "\n           }"
-                            for (k, fk) in self.f.items()]) + \
+                            for (k, fk) in self.i.items()]) + \
                     "\n    }"
 

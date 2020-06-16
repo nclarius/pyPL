@@ -107,8 +107,8 @@ class Const(Term):
         """
         The denotation of a constant is that individual that the interpretation function f assigns it.
         """
-        f = m.f[k][k]
-        return f[self.c]
+        i = m.i[k][k]
+        return i[self.c]
 
 
 class Var(Term):
@@ -177,8 +177,8 @@ class Func(Expr):
         """
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
-        f = m.f[k][k]
-        return f[self.f]
+        i = m.i[k][k]
+        return i[self.f]
 
 
 class FuncTerm(Term):
@@ -220,8 +220,8 @@ class FuncTerm(Term):
         The denotation of a function symbol applied to an appropriate number of terms is that individual that the
         interpretation function f assigns to the application.
         """
-        f = m.f[k][k]
-        return f[self.f.f][tuple([t.denot(m, k, g) for t in self.terms])]
+        i = m.i[k][k]
+        return i[self.f.f][tuple([t.denot(m, k, g) for t in self.terms])]
 
 
 class Pred(Expr):
@@ -253,8 +253,8 @@ class Pred(Expr):
         The denotation of a predicate is the set of ordered tuples of individuals that the interpretation function f
         assigns it.
         """
-        f = m.f[k]
-        return f[self.p]
+        i = m.i[k]
+        return i[self.p]
 
 
 depth = 0  # keep track of the level of nesting
@@ -418,7 +418,7 @@ class Prop(Formula):
         The denotation of a propositional variable is the truth value the interpretation function f assigns it,
         or its downwards monotonicity closure.
         """
-        return (m.f[k][self.p] or
+        return (m.i[k][self.p] or
                 True in [self.denot(m, k_, g) for k_ in m.past(k) - {k}])
 
 

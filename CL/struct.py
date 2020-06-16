@@ -99,7 +99,7 @@ class PredStructure(Structure):
 
     def __init__(self, d, i):
         self.d = d
-        self.i =i
+        self.i = i
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D)
         dprod = list(product(* ([list(d)] * len(indiv_vars))))
         # all variable assignment functions
@@ -166,11 +166,11 @@ class ConstModalStructure(ModalStructure):
     @type i: dict[str,dict[str,Any]]
     """
     # todo doesnt work yet (assignment function)
-    def __init__(self, w, r, d, f):
+    def __init__(self, w, r, d, i):
         self.w = w
         self.r = r
         self.d = d
-        self.i = f
+        self.i = i
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D)
         dprod = list(product(* ([list(d)] * len(indiv_vars))))
         # all variable assignment functions
