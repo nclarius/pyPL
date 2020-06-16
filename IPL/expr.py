@@ -4,8 +4,10 @@
 Define the language and semantics of intuitionistic (prepositional and first-order) logic.
 """
 
+
 from IPL.main import *
 from IPL.model import *
+
 
 class Expr:
     """
