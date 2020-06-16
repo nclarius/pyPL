@@ -4,6 +4,7 @@ from CPL.main import *
 from CPL.expr import *
 
 
+# helper functions
 def cart_prod(a, n):
     """
     Compute the n-fold cartesian product of a list A.
