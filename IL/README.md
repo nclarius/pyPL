@@ -1,7 +1,7 @@
 A naive model checker for intuitionistic first-order logic with Kripke semantics.  
 This tool computes the denotation (truth value) of a given logical expression in a given structure.  
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
-Licensed under CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).  
+License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).  
 
 Disclaimer
 ----------
@@ -41,8 +41,8 @@ Wish list
 ---------
  - print out detailed derivation rather than just final result of evaluation, possibly with LaTeX mode
  - more user-friendly input:
-   - interactive mode/API instead of need to edit source code in order to set up input
-   - expression parser instead of the cumbersome PNF specification
+   - interactive mode instead of need to edit source code in order to set up input
+   - expression parser instead of the cumbersome prefix notation
  - model generation?
 
 Usage notes
@@ -67,7 +67,7 @@ is all easily googleable for your respective operating system.
 A number of examples are already set up; this is the stuff you see when running the program.  
 To specify your own input:  
 - structures and formulas to compute denotations for are defined in the function `compute` in `main.py`.  
-  Formulas, unfortunately, have to be entered in prenex form.  
+  Formulas, unfortunately, have to be entered in prefix notation.  
   Follow the existing examples and the documentations of the classes and methods to get an idea.
 - You can select which structures to include in the output by editing the variable `active` (near top of source code).
 - You can select whether or not to print out intermediate steps by editing the variable `verbose` (same place).
