@@ -706,6 +706,7 @@ class Exists(Formula):
         The denotation of an existentially quantified formula Exists(x, phi) is true at k iff
         phi is true under at least one x-alternative of g at k.
         """
+        # todo add one-liner version
         global depth
         depth += 1
         d_ = m.d[k]
@@ -769,6 +770,7 @@ class Forall(Formula):
         The denotation of universally quantified formula Forall(x, phi) is true at k iff
         at all subsequent states k' >= k, phi is true under all x-alternatives of g at k.
         """
+        # todo add one-liner version
         global depth
         depth += 1
 

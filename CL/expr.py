@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Define the language and semantics of clsasical (standard and modal) (prepositional and first-order) logic.
+Define the language and semantics of classical (standard and modal) (prepositional and first-order) logic.
 """
 
 
@@ -753,22 +753,28 @@ class Exists(Formula):
         The denotation of an existentially quantified formula Exists(x, phi) is true
         iff phi is true under at least one x-variant of v.
         """
+        d = m.d
+        if isinstance(m, VarModalStructure):
+            d = m.d[w]
+
+        # short version
+        if not verbose:
+            return any([self.phi.denot(m, {**v, self.u.u: d}) for d_ in d])
+
+        # long version
         global depth
         depth += 1
-        d_ = m.d
-        if isinstance(m, VarModalStructure):
-            d_ = m.d[w]
 
         # iterate through the individuals in the domain
-        for d in sorted(d_):
+        for d_ in sorted(d):
 
             # compute the x-variant v' of v
             v_ = v  # v' is just like v, except...
-            v_[self.u.u] = d  # ... the value for the variable u is now the new individual d
+            v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
 
             # check whether the current x-variant under consideration makes phi true
             if verbose:
-                print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d) + " ...")
+                print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_) + " ...")
             witness = self.phi.denot(m, v_, w)
 
             # if yes, we found a witness, the existential statement is true, and we can stop checking (return)
@@ -823,22 +829,28 @@ class Forall(Formula):
         The denotation of universally quantified formula Forall(x, phi) is true iff
         phi is true under all x-variants of v.
         """
+        d = m.d
+        if isinstance(w, VarModalStructure):
+            d = m.d[w]
+
+        # short version
+        if not verbose:
+            return all([self.phi.denot(m, {**v, self.u.u: d}) for d_ in d])
+
+        # long version
         global depth
         depth += 1
-        d_ = m.d
-        if isinstance(w, VarModalStructure):
-            d_ = m.d[w]
 
         # iterate through the individuals in the domain
-        for d in sorted(d_):
+        for d_ in sorted(d):
 
             # compute the x-variant v' of v
             v_ = v  # v' is just like v, except...
-            v_[self.u.u] = d  # ... the value for the variable u is now the new individual d
+            v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
 
             # check whether the current x-variant under consideration makes phi true
             if verbose:
-                print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d) + " ...")
+                print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_) + " ...")
             witness = self.phi.denot(m, v_, w)
 
             # if yes, everything is fine until now, we do nothing and go check the next one (continue)
