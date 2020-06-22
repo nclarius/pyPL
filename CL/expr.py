@@ -773,21 +773,18 @@ class Exists(Formula):
             v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
 
             # check whether the current x-variant under consideration makes phi true
-            if verbose:
-                print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_) + " ...")
+            print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_) + " ...")
             witness = self.phi.denot(m, v_, w)
 
             # if yes, we found a witness, the existential statement is true, and we can stop checking (return)
             if witness:
-                if verbose:
-                    print((depth * 2 * " ") + "✓")
+                print((depth * 2 * " ") + "✓")
                 depth -= 1
                 return True
 
             # if not, we do nothing and try with the next one (continue)
             else:
-                if verbose:
-                    print((depth * 2 * " ") + "✗")
+                print((depth * 2 * " ") + "✗")
                 continue
 
         # if we reach the end, then no witness has been found, and the existential statement is false
@@ -849,20 +846,18 @@ class Forall(Formula):
             v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
 
             # check whether the current x-variant under consideration makes phi true
-            if verbose:
-                print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_) + " ...")
+            print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_) + " ...")
             witness = self.phi.denot(m, v_, w)
 
             # if yes, everything is fine until now, we do nothing and go check the next one (continue)
             if witness:
-                if verbose:
-                    print((depth * 2 * " ") + "✓")
+                print((depth * 2 * " ") + "✓")
+                depth -= 1
                 continue
 
             # if not, we found a counter witness, the universal statement is false, and we can stop checking (return)
             else:
-                if verbose:
-                    print((depth * 2 * " ") + "✗")
+                print((depth * 2 * " ") + "✗")
                 depth -= 1
                 return False
 
@@ -907,26 +902,37 @@ class Poss(Formula):
         @type w: str
         @return: the denotation of Poss(phi)
         """
-        global depth
-        # iterate over all possible worlds w' which are accessible from w
+        # all possible worlds w' which are accessible from w
         neighbors = [w_ for w_ in m.w if (w, w_) in m.r]
+
+        # short version
+        if not verbose:
+            return any([self.phi.denot(m, v, w_) for w_ in neighbors])
+
+        # long version
+        global depth
+        depth += 1
+
+        # iterate through ws neighbors w'
         for w_ in neighbors:
-            depth += 1
+
             # check whether phi is true in w
-            if verbose:
-                print((depth * "  ") + "checking w" + (depth * "'") + " := " + str(w_) + " ...")
+            print((depth * "  ") + "checking w" + (depth * "'") + " := " + str(w_) + " ...")
             witness = self.phi.denot(m, v, w_)
+
             # if yes, we found a witnessing neighbor, the possibility statement is true, and we can stop checking
             if witness:
-                if verbose:
-                    print((depth * 2 * " ") + "✓")
-                    print((depth * 2 * " ") + "neighbor: w" + (depth * "'") + " := " + str(w_))
+                print((depth * 2 * " ") + "✓")
+                print((depth * 2 * " ") + "neighbor: w" + (depth * "'") + " := " + str(w_))
                 depth -= 1
                 return True
-            if not witness:
-                if verbose:
-                    print((depth * 2 * " ") + "✗")
+
+            # if not, we do nothing and try with the next one (continue)
+            else:
+                print((depth * 2 * " ") + "✗")
                 depth -= 1
+                continue
+
         # if no witness has been found, the possibility statement is false
         depth -= 1
         return False
@@ -968,26 +974,37 @@ class Nec(Formula):
         @param v: the assignment function to evaluate the formula in
         @type v: dict[str,str]
         """
-        global depth
-        # iterate over all possible worlds w' which are accessible from w
+        # all possible worlds w' which are accessible from w
         neighbors = [w_ for w_ in m.w if (w, w_) in m.r]
+
+        # short version
+        if not verbose:
+            return all([self.phi.denot(m, v, w_) for w_ in neighbors])
+
+        # long version
+        global depth
+        depth += 1
+
+        # iterate through ws neighbors w'
         for w_ in neighbors:
-            depth += 1
+
             # check whether phi is true in w
-            if verbose:
-                print((depth * "  ") + "checking w" + (depth * "'") + " := " + str(w_) + " ...")
+            print((depth * "  ") + "checking w" + (depth * "'") + " := " + str(w_) + " ...")
             witness = self.phi.denot(m, v, w_)
+
+            # if yes, everything is fine until now, we do nothing and go check the next one (continue)
             if witness:
-                if verbose:
-                    print((depth * 2 * " ") + "✓")
+                print((depth * 2 * " ") + "✓")
                 depth -= 1
+                continue
+
             # if not, we found a counter neighbor, the necessity statement is false, and we can stop checking
             else:
-                if verbose:
-                    print((depth * 2 * " ") + "✗")
-                    print((depth * 2 * " ") + "counter neighbor: w" + (depth * "'") + " := " + str(w_))
+                print((depth * 2 * " ") + "✗")
+                print((depth * 2 * " ") + "counter neighbor: w" + (depth * "'") + " := " + str(w_))
                 depth -= 1
                 return False
+
         # if no counter neighbor has been found, the necessity statement is true
         depth -= 1
         return True
