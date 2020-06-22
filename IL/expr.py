@@ -38,9 +38,9 @@ class Expr:
         """
         pass
 
-    def subst(self, v, t):
+    def subst(self, u, t):
         """
-        Substitute all occurrences of the variable v for the term t in self.
+        Substitute all occurrences of the variable u for the term t in self.
 
         @param v: the variable to be substituted
         @type v: Var
@@ -51,17 +51,17 @@ class Expr:
         """
         pass
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
-        Compute the denotation of the expression relative to a structure m and assignment g.
+        Compute the denotation of the expression relative to a structure m and assignment v.
 
         @param m: the structure to evaluate the formula against
         @type m: Structure
-        @param g: the assignment to evaluate the formula against
-        @type g: dict[str,str]
+        @param v: the assignment to evaluate the formula against
+        @type v: dict[str,str]
         @param k: the state to evaluate the formula against
         @type k: str
-        @return: the denotation of the expression relative to the structure m and assignment g
+        @return: the denotation of the expression relative to the structure m and assignment v
         """
         pass
 
@@ -72,7 +72,7 @@ class Term(Expr):
     t1, t2, ...
     """
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         @rtype: str
         """
@@ -91,7 +91,7 @@ class Const(Term):
     def __init__(self, c):
         self.c = c
 
-    def __repr__(self):
+    def __str__(self):
         return self.c
 
     def freevars(self):
@@ -100,10 +100,10 @@ class Const(Term):
     def boundvars(self):
         return {}
 
-    def subst(self, v, t):
+    def subst(self, u, t):
         return self
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of a constant is that individual that the interpretation function f assigns it.
         """
@@ -124,29 +124,29 @@ class Var(Term):
     # it will be necessary to reference the variables by their name (self.v)
     # rather than the variable objects themselves (self)
     # in order for different variable occurrences with the same name to be identified, as desired in the theory.
-    def __init__(self, v):
-        self.v = v
+    def __init__(self, u):
+        self.u = u
 
-    def __repr__(self):
-        return self.v
+    def __str__(self):
+        return self.u
 
     def freevars(self):
-        return {self.v}
+        return {self.u}
 
     def boundvars(self):
         return set()
 
-    def subst(self, v, t):
-        if self.v == v:
-            return Var(repr(a))
+    def subst(self, u, t):
+        if self.u == u:
+            return Var(str(t))
         else:
             return self
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
-        return g[self.v]
+        return g[self.u]
 
 
 class Func(Expr):
@@ -161,7 +161,7 @@ class Func(Expr):
     def __init__(self, f):
         self.f = f
 
-    def __repr__(self):
+    def __str__(self):
         return self.f
 
     def freevars(self):
@@ -170,10 +170,10 @@ class Func(Expr):
     def boundvars(self):
         return {}
 
-    def subst(self, v, t):
+    def subst(self, u, t):
         return self
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
@@ -203,8 +203,8 @@ class FuncTerm(Term):
         self.f = f
         self.terms = terms
 
-    def __repr__(self):
-        return repr(self.f) + "(" + ", ".join([repr(t) for t in self.terms]) + ")"
+    def __str__(self):
+        return str(self.f) + "(" + ", ".join([str(t) for t in self.terms]) + ")"
 
     def freevars(self):
         return set().union(*[t.freevars() for t in self.terms])
@@ -212,16 +212,16 @@ class FuncTerm(Term):
     def boundvars(self):
         return set().union(*[t.boundvars() for t in self.terms])
 
-    def subst(self, v, t):
-        return FuncTerm(self.f, map(lambda t: t.subst(v, t), self.terms))
+    def subst(self, u, t):
+        return FuncTerm(self.f, map(lambda t: t.subst(u, t), self.terms))
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of a function symbol applied to an appropriate number of terms is that individual that the
         interpretation function f assigns to the application.
         """
         i = m.i[k][k]
-        return i[self.f.f][tuple([t.denot(m, k, g) for t in self.terms])]
+        return i[self.f.f][tuple([t.denot(m, k, v) for t in self.terms])]
 
 
 class Pred(Expr):
@@ -236,7 +236,7 @@ class Pred(Expr):
     def __init__(self, p):
         self.p = p
 
-    def __repr__(self):
+    def __str__(self):
         return self.p
 
     def freevars(self):
@@ -245,10 +245,10 @@ class Pred(Expr):
     def boundvars(self):
         return {}
 
-    def subst(self, v, t):
+    def subst(self, u, t):
         return self
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of a predicate is the set of ordered tuples of individuals that the interpretation function f
         assigns it.
@@ -268,7 +268,7 @@ class Formula(Expr):
     @method denot: the truth value of a formula relative to a structure m (without reference to a particular state)
     """
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         @rtype: bool
         """
@@ -287,49 +287,55 @@ class Formula(Expr):
         global depth
 
         # a formula is true in a structure M iff it is true in the root state k0
-        return self.denotG(m, "k0")
+        return self.denotV(m, "k0")
 
-    def denotG(self, m, k):
+    def denotV(self, m, k):
         """
         The truth value of a formula relative to a structure M and state k (w/o reference to a particular var. ass.).
-        A formula is true in a structure M and state k iff it is true in M and k under all assignments g.
+        A formula is true in a structure M and state k iff it is true in M and k under all assignments v.
 
         @param m: a structure
         @type m: KripkeStructure
-        @attr g: an assignment function
-        @type g: dict[str,str]
+        @attr v: an assignment function
+        @type v: dict[str,str]
         @return: the truth value of self in m at k
         @rtype: bool
         """
         global depth
+
         # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
         if m.d:
             var_occs = self.freevars().union(self.boundvars())
-            gs_ = [{v: g[v] for v in g if v in var_occs} for g in m.gs[k]]
-            gs = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]  # filter out now duplicate assignment functions
+            vs_ = [{u: v[u] for u in v if u in var_occs} for v in m.vs[k]]
+            vs = [dict(tpl) for tpl in {tuple(v.items()) for v in vs_}]  # filter out now duplicate assignment functions
+
         else:  # propositional structure, compute empty assignment functions
-            gs = [dict()]
+            vs = [dict()]
 
             if not self.freevars():  # if the formula is closed,
                 # spare yourself the quantification over all assignment functions and pick an arbitrary assignment
                 # (here: the first)
-                return self.denot(m, k, gs[0])
+                return self.denot(m, k, vs[0])
 
-        for g in m.gs:  # otherwise, check the denotation for all assignment functions
+        for v in m.vs:  # otherwise, check the denotation for all assignment functions
             depth += 1
+
             if verbose:
-                print((depth * " ") + "checking g := " + repr(g) + " ...")
-            witness = self.denot(m, k, g)
+                print((depth * " ") + "checking g := " + str(v) + " ...")
+            witness = self.denot(m, k, v)
+
             if witness:
                 if verbose:
                     print((depth * 2 * " ") + "✓")
                 depth -= 1
+
             else:
                 if verbose:
                     print((depth * 2 * " ") + "✗")
-                    print((depth * " ") + "counter assignment: g := " + repr(g))
+                    print((depth * " ") + "counter assignment: g := " + str(v))
                 depth -= 1
                 return False
+        
         return True
 
 
@@ -342,7 +348,7 @@ class Verum(Formula):
     def __init__(self):
         pass
 
-    def __repr__(self):
+    def __str__(self):
         return "⊤"
 
     def freevars(self):
@@ -351,10 +357,10 @@ class Verum(Formula):
     def boundvars(self):
         return set()
 
-    def subst(self, v, t):
+    def subst(self, u, t):
         return self
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of the verum is always true.
         """
@@ -370,7 +376,7 @@ class Falsum(Formula):
     def __init__(self):
         pass
 
-    def __repr__(self):
+    def __str__(self):
         return "⊥"
 
     def freevars(self):
@@ -379,10 +385,10 @@ class Falsum(Formula):
     def boundvars(self):
         return set()
 
-    def subst(self, v, t):
+    def subst(self, u, t):
         return self
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of the falsum is always false.
         """
@@ -401,7 +407,7 @@ class Prop(Formula):
     def __init__(self, p):
         self.p = p
 
-    def __repr__(self):
+    def __str__(self):
         return self.p
 
     def freevars(self):
@@ -410,16 +416,16 @@ class Prop(Formula):
     def boundvars(self):
         return set()
 
-    def subst(self, v, t):
+    def subst(self, u, t):
         return self
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of a propositional variable is the truth value the interpretation function f assigns it,
         or its downwards monotonicity closure.
         """
         return (m.i[k][self.p] or
-                True in [self.denot(m, k_, g) for k_ in m.past(k) - {k}])
+                True in [self.denot(m, k_, v) for k_ in m.past(k) - {k}])
 
 
 class Eq(Formula):
@@ -437,8 +443,8 @@ class Eq(Formula):
         self.t1 = t1
         self.t2 = t2
 
-    def __repr__(self):
-        return repr(self.t1) + " = " + repr(self.t2)
+    def __str__(self):
+        return str(self.t1) + " = " + str(self.t2)
 
     def freevars(self):
         return self.t1.freevars() | self.t2.freevars()
@@ -446,14 +452,14 @@ class Eq(Formula):
     def boundvars(self):
         return self.t1.boundvars() | self.t2.boundvars()
 
-    def subst(self, v, t):
-        return Eq(self.t1.subst(v, t), self.t2.subst(v, t))
+    def subst(self, u, t):
+        return Eq(self.t1.subst(u, t), self.t2.subst(u, t))
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of a term equality t1 = t2 is true iff t1 and t2 denote the same individual.
         """
-        return self.t1.denot(m, k, g) == self.t2.denot(m, k, g)
+        return self.t1.denot(m, k, v) == self.t2.denot(m, k, v)
 
 
 class Atm(Formula):
@@ -478,8 +484,8 @@ class Atm(Formula):
         self.pred = pred
         self.terms = terms
 
-    def __repr__(self):
-        return repr(self.pred) + "(" + ",".join([repr(t) for t in self.terms]) + ")"
+    def __str__(self):
+        return str(self.pred) + "(" + ",".join([str(t) for t in self.terms]) + ")"
 
     def freevars(self):
         return set().union(*[t.freevars() for t in self.terms])
@@ -487,17 +493,17 @@ class Atm(Formula):
     def boundvars(self):
         return set().union(*[t.boundvars() for t in self.terms])
 
-    def subst(self, v, t):
-        return Atm(self.pred, map(lambda t: t.subst(v, t), self.terms))
+    def subst(self, u, t):
+        return Atm(self.pred, map(lambda t: t.subst(u, t), self.terms))
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of an atomic predication P(t1, ..., tn) is true iff the tuple of the denotation of the terms is
         an element of the interpretation of the predicate at k, or
         there is a preceding state k' <= k at which P(t1, ..., tn) is true.
         """
-        return (tuple([t.denot(m, k, g) for t in self.terms]) in self.pred.denot(m, k, g) or
-                True in [self.denot(m, k_, g) for k_ in m.past(k) - {k}])
+        return (tuple([t.denot(m, k, v) for t in self.terms]) in self.pred.denot(m, k, v) or
+                True in [self.denot(m, k_, v) for k_ in m.past(k) - {k}])
 
 
 class Neg(Formula):
@@ -512,10 +518,10 @@ class Neg(Formula):
     def __init__(self, phi):
         self.phi = phi
 
-    def __repr__(self):
+    def __str__(self):
         if isinstance(self.phi, Eq):
-            return repr(self.phi.t1) + "≠" + repr(self.phi.t2)
-        return "¬" + repr(self.phi)
+            return str(self.phi.t1) + "≠" + str(self.phi.t2)
+        return "¬" + str(self.phi)
 
     def freevars(self):
         return self.phi.freevars()
@@ -523,14 +529,14 @@ class Neg(Formula):
     def boundvars(self):
         return self.phi.boundvars()
 
-    def subst(self, v, t):
-        return Neg(self.phi.subst(v, t))
+    def subst(self, u, t):
+        return Neg(self.phi.subst(u, t))
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of a negated formula Neg(phi) is true iff phi is false at all subsequent states k' >= k.
         """
-        return True not in [self.phi.denot(m, k_, g) for k_ in m.future(k)]
+        return True not in [self.phi.denot(m, k_, v) for k_ in m.future(k)]
 
 
 class Conj(Formula):
@@ -548,8 +554,8 @@ class Conj(Formula):
         self.phi = phi
         self.psi = psi
 
-    def __repr__(self):
-        return "(" + repr(self.phi) + " ∧ " + repr(self.psi) + ")"
+    def __str__(self):
+        return "(" + str(self.phi) + " ∧ " + str(self.psi) + ")"
 
     def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
@@ -557,14 +563,14 @@ class Conj(Formula):
     def boundvars(self):
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, v, t):
-        return Conj(self.phi.subst(v, t), self.psi.subst(v, t))
+    def subst(self, u, t):
+        return Conj(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of a conjoined formula Con(phi,psi) is true iff phi is true and psi is true at k.
         """
-        return self.phi.denot(m, k, g) and self.psi.denot(m, k, g)
+        return self.phi.denot(m, k, v) and self.psi.denot(m, k, v)
 
 
 class Disj(Formula):
@@ -582,8 +588,8 @@ class Disj(Formula):
         self.phi = phi
         self.psi = psi
 
-    def __repr__(self):
-        return "(" + repr(self.phi) + " ∨ " + repr(self.psi) + ")"
+    def __str__(self):
+        return "(" + str(self.phi) + " ∨ " + str(self.psi) + ")"
 
     def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
@@ -591,14 +597,14 @@ class Disj(Formula):
     def boundvars(self):
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, v, t):
-        return Disj(self.phi.subst(v, t), self.psi.subst(v, t))
+    def subst(self, u, t):
+        return Disj(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of a conjoined formula Disj(phi,psi) is true iff phi is true or psi is true at k.
         """
-        return self.phi.denot(m, k, g) or self.psi.denot(m, k, g)
+        return self.phi.denot(m, k, v) or self.psi.denot(m, k, v)
 
 
 class Imp(Formula):
@@ -616,8 +622,8 @@ class Imp(Formula):
         self.phi = phi
         self.psi = psi
 
-    def __repr__(self):
-        return "(" + repr(self.phi) + " → " + repr(self.psi) + ")"
+    def __str__(self):
+        return "(" + str(self.phi) + " → " + str(self.psi) + ")"
 
     def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
@@ -625,15 +631,15 @@ class Imp(Formula):
     def boundvars(self):
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, v, t):
-        return Imp(self.phi.subst(v, t), self.psi.subst(v, t))
+    def subst(self, u, t):
+        return Imp(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of an implicational formula Imp(phi,psi) is true at k iff
         at all subsequent states k' >= k, either phi is false or psi is true at k'.
         """
-        return False not in [(not self.phi.denot(m, k_, g) or self.psi.denot(m, k_, g)) for k_ in m.future(k)]
+        return False not in [(not self.phi.denot(m, k_, v) or self.psi.denot(m, k_, v)) for k_ in m.future(k)]
 
 
 class Biimp(Formula):
@@ -651,8 +657,8 @@ class Biimp(Formula):
         self.phi = phi
         self.psi = psi
 
-    def __repr__(self):
-        return "(" + repr(self.phi) + " ↔ " + repr(self.psi) + ")"
+    def __str__(self):
+        return "(" + str(self.phi) + " ↔ " + str(self.psi) + ")"
 
     def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
@@ -660,15 +666,15 @@ class Biimp(Formula):
     def boundvars(self):
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, v, t):
-        return Biimp(self.phi.subst(v, t), self.psi.subst(v, t))
+    def subst(self, u, t):
+        return Biimp(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of an biimplicational formula Biimp(phi,psi) is true at k iff
         at all subsequent states k' >= k, phi and psi have the same truth value.
         """
-        return False not in [(self.phi.denot(m, k_, g) == self.psi.denot(m, k_, g)) for k_ in m.future(k)]
+        return False not in [(self.phi.denot(m, k_, v) == self.psi.denot(m, k_, v)) for k_ in m.future(k)]
 
 
 class Exists(Formula):
@@ -682,54 +688,63 @@ class Exists(Formula):
     @type phi: Formula
     """
 
-    def __init__(self, v, phi):
-        self.v = v
+    def __init__(self, u, phi):
+        self.u = u
         self.phi = phi
 
-    def __repr__(self):
-        return "∃" + repr(self.v) + (" " if isinstance(self.phi, Atm) else "") + repr(self.phi)
+    def __str__(self):
+        return "∃" + str(self.u) + str(self.phi)
 
     def freevars(self):
-        return self.phi.freevars() - {self.v.v}
+        return self.phi.freevars() - {self.u.u}
 
     def boundvars(self):
-        return self.phi.boundvars() | {self.v.v}
+        return self.phi.boundvars() | {self.u.u}
 
-    def subst(self, v, t):
-        if v == self.v:
+    def subst(self, u, t):
+        if u == self.u:
             return self
         else:
-            return self.phi.subst(v, t)
+            return self.phi.subst(u, t)
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of an existentially quantified formula Exists(x, phi) is true at k iff
-        phi is true under at least one x-alternative of g at k.
+        phi is true under at least one x-alternative v' of v at k.
         """
-        # todo add one-liner version
+        d = m.d[k]
+
+        # short version
+        if not verbose:
+            return any([self.phi.denot(m, k, {**v, self.u.u: d_}) for d_ in d])
+
+        # long version
         global depth
         depth += 1
-        d_ = m.d[k]
-        # quantify over the individuals in the domain
-        for d in d_:
-            # compute the x-alternative g'
-            g_ = {**g, self.v.v: d}  # unpack g and overwrite the dictionary value for v with d
+
+        # iterate through the individuals in the domain
+        for d_ in d:
+
+            # compute the x-variant v' of v
+            v_ = v  # v' is just like v, except...
+            v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
+
             # check whether the current indiv. d under consideration makes phi true
-            if verbose:
-                print(
-                    (depth * 2 * " ") + "checking g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d) + " ...")
-            witness = self.phi.denot(m, k, g_)
-            # if yes, we found a witness, the existential statement is true, and we can stop checking
+            print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_) + " ...")
+            witness = self.phi.denot(m, k, v_)
+
+            # if yes, we found a witness, the existential statement is true, and we can stop checking (return)
             if witness:
-                if verbose:
-                    print(((depth + 1) * 2 * " ") + "✓")
-                    print(
-                        ((depth + 1) * 2 * " ") + "witness: g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(d))
+                print(((depth + 1) * 2 * " ") + "✓")
+                print(((depth + 1) * 2 * " ") + "witness: v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d))
                 depth -= 1
                 return True
-            if not witness:
-                if verbose:
-                    print(((depth + 1) * 2 * " ") + "✗")
+
+            # if not, we do nothing and try with the next one (continue)
+            else:
+                print(((depth + 1) * 2 * " ") + "✗")
+                continue
+
         # if no witness has been found, the existential statement is false
         depth -= 1
         return False
@@ -746,56 +761,65 @@ class Forall(Formula):
     @type phi: Formula
     """
 
-    def __init__(self, v, phi):
-        self.v = v
+    def __init__(self, u, phi):
+        self.u = u
         self.phi = phi
 
-    def __repr__(self):
-        return "∀" + repr(self.v) + (" " if isinstance(self.phi, Atm) else "") + repr(self.phi)
+    def __str__(self):
+        return "∀" + str(self.u) + str(self.phi)
 
     def freevars(self):
-        return self.phi.freevars() - {self.v.v}
+        return self.phi.freevars() - {self.u.u}
 
     def boundvars(self):
-        return self.phi.boundvars() | {self.v.v}
+        return self.phi.boundvars() | {self.u.u}
 
-    def subst(self, v, t):
-        if v == self.v:
+    def subst(self, u, t):
+        if u == self.u:
             return self
         else:
-            return self.phi.subst(v, t)
+            return self.phi.subst(u, t)
 
-    def denot(self, m, k, g):
+    def denot(self, m, k, v):
         """
         The denotation of universally quantified formula Forall(x, phi) is true at k iff
-        at all subsequent states k' >= k, phi is true under all x-alternatives of g at k.
+        at all subsequent states k' >= k, phi is true under all x-alternatives v' of v at k'.
         """
-        # todo add one-liner version
+        # short version
+        if not verbose:
+            return all([all([self.phi.denot(m, k_, {**v, self.u.u: d_}) for d_ in m.d[k_]]) for k_ in m.future(k)])
+        
+        # long version
         global depth
         depth += 1
 
         # quantify over the subsequent states
         for k_ in m.future(k):
-            d_ = m.d[k_]
+            d = m.d[k_]
             depth += 1
-            # quantify over the individuals in the domain
-            for d in d_:
-                # compute the x-alternative g'
-                g_ = {**g, self.v.v: d}  # unpack_ g and overwrite the dictionary value for v with d
+            
+            # iterate through the individuals in the domain of the future state
+            for d_ in d:
+
+                # compute the x-variant v' of v
+                v_ = v  # v' is just like v, except...
+                v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
+
                 # check whether the current indiv. d under consideration makes phi true at k'
-                if verbose:
-                    print((depth * 2 * " ") + "checking g" + (depth * "'") + "(" + repr(self.v) + ") := " + repr(
-                        d) + " ...")
-                witness = self.phi.denot(m, k_, g_)
+                print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_) + " ...")
+                witness = self.phi.denot(m, k_, v_)
+
+                # if yes, everything is fine until now, we do nothing and go check the next one (continue)
                 if witness:
-                    if verbose:
-                        print(((depth + 1) * 2 * " ") + "✓")
+                    print(((depth + 1) * 2 * " ") + "✓")
+
                 # if not, we found a counter witness, the universal statement is false, and we can stop checking
                 else:
-                    # if verbose:
-                    #     # print(((depth+1) * 2 * " ") + "✗")
-                    #     # print(((depth+1) * 2 * " ") + "counter witness: g" + (depth * "'") +
+                    print(((depth+1) * 2 * " ") + "✗")
+                    print(((depth+1) * 2 * " ") + "counter witness: k' = " + str(k_) + ", " +
+                          "v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_))
                     return False
+
             # if no counter witness has been found, the universal statement is true at k'
             depth -= 1
 

@@ -753,6 +753,7 @@ class Exists(Formula):
         The denotation of an existentially quantified formula Exists(x, phi) is true
         iff phi is true under at least one x-variant of v.
         """
+        global verbose
         d = m.d
         if isinstance(m, VarModalStructure):
             d = m.d[w]
@@ -826,6 +827,7 @@ class Forall(Formula):
         The denotation of universally quantified formula Forall(x, phi) is true iff
         phi is true under all x-variants of v.
         """
+        global verbose
         d = m.d
         if isinstance(w, VarModalStructure):
             d = m.d[w]
@@ -852,7 +854,6 @@ class Forall(Formula):
             # if yes, everything is fine until now, we do nothing and go check the next one (continue)
             if witness:
                 print((depth * 2 * " ") + "✓")
-                depth -= 1
                 continue
 
             # if not, we found a counter witness, the universal statement is false, and we can stop checking (return)
@@ -920,7 +921,7 @@ class Poss(Formula):
             print((depth * "  ") + "checking w" + (depth * "'") + " := " + str(w_) + " ...")
             witness = self.phi.denot(m, v, w_)
 
-            # if yes, we found a witnessing neighbor, the possibility statement is true, and we can stop checking
+            # if yes, we found a witnessing neighbor, the poss. statement is true, and we can stop checking (return)
             if witness:
                 print((depth * 2 * " ") + "✓")
                 print((depth * 2 * " ") + "neighbor: w" + (depth * "'") + " := " + str(w_))
@@ -930,7 +931,6 @@ class Poss(Formula):
             # if not, we do nothing and try with the next one (continue)
             else:
                 print((depth * 2 * " ") + "✗")
-                depth -= 1
                 continue
 
         # if no witness has been found, the possibility statement is false
@@ -995,7 +995,6 @@ class Nec(Formula):
             # if yes, everything is fine until now, we do nothing and go check the next one (continue)
             if witness:
                 print((depth * 2 * " ") + "✓")
-                depth -= 1
                 continue
 
             # if not, we found a counter neighbor, the necessity statement is false, and we can stop checking
