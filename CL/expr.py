@@ -759,7 +759,7 @@ class Exists(Formula):
 
         # short version
         if not verbose:
-            return any([self.phi.denot(m, {**v, self.u.u: d}) for d_ in d])
+            return any([self.phi.denot(m, {**v, self.u.u: d_}) for d_ in d])
 
         # long version
         global depth
@@ -835,7 +835,7 @@ class Forall(Formula):
 
         # short version
         if not verbose:
-            return all([self.phi.denot(m, {**v, self.u.u: d}) for d_ in d])
+            return all([self.phi.denot(m, {**v, self.u.u: d_}) for d_ in d])
 
         # long version
         global depth
