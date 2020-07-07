@@ -49,7 +49,7 @@ class Expr:
         """
         pass
 
-    def subst(self, u: str, t: str):
+    def subst(self, u, t):
         """
         Substitute all occurrences of the variable u for the term t in self.
 
@@ -161,8 +161,8 @@ class Var(Term):
         return set()
 
     def subst(self, u, t):
-        if self.u == u:
-            return Var(t)
+        if u.u == self.u:
+            return t
         else:
             return self
 
@@ -811,7 +811,7 @@ class Exists(Formula):
         return self.phi.constants()
 
     def subst(self, u, t):
-        if u == self.u:
+        if u.u == self.u:
             return self
         else:
             return self.phi.subst(u, t)
@@ -888,7 +888,7 @@ class Forall(Formula):
         return self.phi.constants()
 
     def subst(self, u, t):
-        if u == self.u:
+        if u.u == self.u:
             return self
         else:
             return self.phi.subst(u, t)
