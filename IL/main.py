@@ -46,16 +46,16 @@ def compute():
 
     for nr, e in e1.items():
         print()
-        print("[[" + repr(e) + "]]^M1 =")
+        print("[[" + str(e) + "]]^M1 =")
         print(e.denotK(m1))
         depth = 0
         print()
-        print("[[" + repr(e) + "]]^M1,k0 =")
-        print(e.denotG(m1, "k0"))
+        print("[[" + str(e) + "]]^M1,k0 =")
+        print(e.denotV(m1, "k0"))
         depth = 0
         print()
-        print("[[" + repr(e) + "]]^M1,k1 =")
-        print(e.denotG(m1, "k1"))
+        print("[[" + str(e) + "]]^M1,k1 =")
+        print(e.denotV(m1, "k1"))
         depth = 0
 
     # Example 2: counter structure of (p -> q) v (q -> p)
@@ -81,7 +81,7 @@ def compute():
 
     for nr, e in e2.items():
         print()
-        print("[[" + repr(e) + "]]^M2 =")
+        print("[[" + str(e) + "]]^M2 =")
         print(e.denotK(m2))
         depth = 0
     
@@ -115,22 +115,22 @@ def compute():
     for nr, e in e3.items():
         print()
         if nr in [1]:
-            print("[[" + repr(e) + "]]^M3 =")
+            print("[[" + str(e) + "]]^M3 =")
             print(e.denotK(m3))
             depth = 0
         elif nr in [2]:
-            print("[[" + repr(e) + "]]^M3,k3 =")
-            print(e.denotG(m3, "k3"))
+            print("[[" + str(e) + "]]^M3,k3 =")
+            print(e.denotV(m3, "k3"))
             depth = 0
-            print("[[" + repr(e) + "]]^M3,k1 =")
-            print(e.denotG(m3, "k1"))
+            print("[[" + str(e) + "]]^M3,k1 =")
+            print(e.denotV(m3, "k1"))
             depth = 0
-            print("[[" + repr(e) + "]]^M3,k0 =")
-            print(e.denotG(m3, "k0"))
+            print("[[" + str(e) + "]]^M3,k0 =")
+            print(e.denotV(m3, "k0"))
             depth = 0
         elif nr in [3, 4, 5]:
-            print("[[" + repr(e) + "]]^M3,k0 =")
-            print(e.denotG(m3, "k0"))
+            print("[[" + str(e) + "]]^M3,k0 =")
+            print(e.denotV(m3, "k0"))
             depth = 0
 
     #############################

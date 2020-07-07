@@ -49,20 +49,20 @@ class Expr:
         """
         pass
 
-    def subst(self, u, t):
+    def subst(self, u: str, t: str):
         """
         Substitute all occurrences of the variable u for the term t in self.
 
-        @param v: the variable to be substituted
-        @type v: Var
-        @param a: the term to substitute
-        @type a: Term
+        @param u: the variable to be substituted
+        @type u: Var
+        @param t: the term to substitute
+        @type t: Term
         @return: the result of substituting all occurrences of the variable v for the term t in self
         @rtype Expr
         """
         pass
 
-    def denot(self, m, k, v):
+    def denot(self, m: KripkeStructure, k: str, v: Dict[str,str]):
         """
         Compute the denotation of the expression relative to a structure m and assignment v.
 
@@ -83,13 +83,13 @@ class Term(Expr):
     t1, t2, ...
     """
 
-    def subst(self, u: str, t: str) -> Expr:
+    def subst(self, u, t):
         """
         @rtype: Term
         """
         pass
 
-    def denot(self, m, k, v):
+    def denot(self, m, k, v) -> str:
         """
         @rtype: str
         """
@@ -105,22 +105,22 @@ class Const(Term):
     @type c: str
     """
 
-    def __init__(self, c):
+    def __init__(self, c: str):
         self.c = c
 
     def __str__(self):
         return self.c
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return set()
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return set()
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return {self.c}
 
-    def subst(self, u, t) -> Const:
+    def subst(self, u, t):
         return self
 
     def denot(self, m, k, v):
@@ -144,22 +144,22 @@ class Var(Term):
     # it will be necessary to reference the variables by their name (self.v)
     # rather than the variable objects themselves (self)
     # in order for different variable occurrences with the same name to be identified, as desired in the theory.
-    def __init__(self, u):
+    def __init__(self, u: str):
         self.u = u
 
     def __str__(self):
         return self.u
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return {self.u}
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return set()
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return set()
 
-    def subst(self, u, t) -> Term:
+    def subst(self, u, t):
         if self.u == u:
             return Var(str(t))
         else:
@@ -181,25 +181,25 @@ class Func(Expr):
     @type f: str
     """
 
-    def __init__(self, f):
+    def __init__(self, f: str):
         self.f = f
 
     def __str__(self):
         return self.f
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return set()
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return set()
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return set()
 
-    def subst(self, u, t) -> Func:
+    def subst(self, u, t):
         return self
 
-    def denot(self, m, k, v):
+    def denot(self, m, k, v) -> str:
         """
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
@@ -225,26 +225,26 @@ class FuncTerm(Term):
     @type terms: tuple[Term]
     """
 
-    def __init__(self, f, terms):
+    def __init__(self, f: Func, terms: Tuple[Term]):
         self.f = f
         self.terms = terms
 
     def __str__(self):
         return str(self.f) + "(" + ", ".join([str(t) for t in self.terms]) + ")"
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return set().union(*[t.freevars() for t in self.terms])
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return set().union(*[t.boundvars() for t in self.terms])
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return set().union(*[t.constants() for t in self.terms])
 
-    def subst(self, u, t) -> FuncTerm:
+    def subst(self, u, t):
         return FuncTerm(self.f, tuple(map(lambda t: t.subst(u, t), self.terms)))
 
-    def denot(self, m, k, v):
+    def denot(self, m, k, v) -> str:
         """
         The denotation of a function symbol applied to an appropriate number of terms is that individual that the
         interpretation function f assigns to the application.
@@ -262,25 +262,25 @@ class Pred(Expr):
     @type p: str
     """
 
-    def __init__(self, p):
+    def __init__(self, p: str):
         self.p = p
 
     def __str__(self):
         return self.p
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return set()
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return set()
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return set()
 
-    def subst(self, u, t) -> Pred:
+    def subst(self, u, t):
         return self
 
-    def denot(self, m, k, v):
+    def denot(self, m, k, v) -> Set[Tuple[str]]:
         """
         The denotation of a predicate is the set of ordered tuples of individuals that the interpretation function f
         assigns it.
@@ -299,8 +299,13 @@ class Formula(Expr):
 
     @method denot: the truth value of a formula relative to a structure m (without reference to a particular state)
     """
+    def subst(self, u, t):
+        """
+        @rtype: Formula
+        """
+        pass
 
-    def denot(self, m, k, v):
+    def denot(self, m, k, v) -> bool:
         """
         @rtype: bool
         """
@@ -383,16 +388,16 @@ class Verum(Formula):
     def __str__(self):
         return "⊤"
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return set()
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return set()
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return set()
 
-    def subst(self, u, t) -> Formula:
+    def subst(self, u, t):
         return self
 
     def denot(self, m, k, v):
@@ -414,13 +419,13 @@ class Falsum(Formula):
     def __str__(self):
         return "⊥"
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return set()
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return set()
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return set()
 
     def subst(self, u, t) -> Formula:
@@ -448,16 +453,16 @@ class Prop(Formula):
     def __str__(self):
         return self.p
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return set()
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return set()
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return set()
 
-    def subst(self, u, t) -> Formula:
+    def subst(self, u, t):
         return self
 
     def denot(self, m, k, v):
@@ -480,23 +485,23 @@ class Eq(Formula):
     @type t2: Term
     """
 
-    def __init__(self, t1, t2):
+    def __init__(self, t1: Term, t2: Term):
         self.t1 = t1
         self.t2 = t2
 
     def __str__(self):
         return str(self.t1) + " = " + str(self.t2)
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return self.t1.freevars() | self.t2.freevars()
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return self.t1.boundvars() | self.t2.boundvars()
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return self.t1.constants() | self.t2.constants()
 
-    def subst(self, u, t) -> Formula:
+    def subst(self, u, t):
         return Eq(self.t1.subst(u, t), self.t2.subst(u, t))
 
     def denot(self, m, k, v):
@@ -524,24 +529,24 @@ class Atm(Formula):
     @type terms: tuple[Term]
     """
 
-    def __init__(self, pred, terms):
+    def __init__(self, pred: Pred, terms: Tuple[Term]):
         self.pred = pred
         self.terms = terms
 
     def __str__(self):
         return str(self.pred) + "(" + ",".join([str(t) for t in self.terms]) + ")"
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return set().union(*[t.freevars() for t in self.terms])
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return set().union(*[t.boundvars() for t in self.terms])
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return set().union(*[t.constants() for t in self.terms])
 
-    def subst(self, u, t) -> Formula:
-        return Atm(self.pred, map(lambda t: t.subst(u, t), self.terms))
+    def subst(self, u, t):
+        return Atm(self.pred, tuple(map(lambda t: t.subst(u, t), self.terms)))
 
     def denot(self, m, k, v):
         """
@@ -562,7 +567,7 @@ class Neg(Formula):
     @type phi: Formula
     """
 
-    def __init__(self, phi):
+    def __init__(self, phi: Formula):
         self.phi = phi
 
     def __str__(self):
@@ -570,16 +575,16 @@ class Neg(Formula):
             return str(self.phi.t1) + "≠" + str(self.phi.t2)
         return "¬" + str(self.phi)
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return self.phi.freevars()
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return self.phi.boundvars()
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return self.phi.constants()
 
-    def subst(self, u, t) -> Formula:
+    def subst(self, u, t):
         return Neg(self.phi.subst(u, t))
 
     def denot(self, m, k, v):
@@ -600,23 +605,23 @@ class Conj(Formula):
     @type psi: Formula
     """
 
-    def __init__(self, phi, psi):
+    def __init__(self, phi: Formula, psi: Formula):
         self.phi = phi
         self.psi = psi
 
     def __str__(self):
         return "(" + str(self.phi) + " ∧ " + str(self.psi) + ")"
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return self.phi.constants() | self.psi.constants()
 
-    def subst(self, u, t) -> Formula:
+    def subst(self, u, t):
         return Conj(self.phi.subst(u, t), self.psi.subst(u, t))
 
     def denot(self, m, k, v):
@@ -637,23 +642,23 @@ class Disj(Formula):
     @type psi: Formula
     """
 
-    def __init__(self, phi, psi):
+    def __init__(self, phi: Formula, psi: Formula):
         self.phi = phi
         self.psi = psi
 
     def __str__(self):
         return "(" + str(self.phi) + " ∨ " + str(self.psi) + ")"
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return self.phi.constants() | self.psi.constants()
 
-    def subst(self, u, t) -> Formula:
+    def subst(self, u, t):
         return Disj(self.phi.subst(u, t), self.psi.subst(u, t))
 
     def denot(self, m, k, v):
@@ -674,23 +679,23 @@ class Imp(Formula):
     @type psi: Formula
     """
 
-    def __init__(self, phi, psi):
+    def __init__(self, phi: Formula, psi: Formula):
         self.phi = phi
         self.psi = psi
 
     def __str__(self):
         return "(" + str(self.phi) + " → " + str(self.psi) + ")"
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return self.phi.constants() | self.psi.constants()
 
-    def subst(self, u, t) -> Formula:
+    def subst(self, u, t):
         return Imp(self.phi.subst(u, t), self.psi.subst(u, t))
 
     def denot(self, m, k, v):
@@ -712,23 +717,23 @@ class Biimp(Formula):
     @type psi: Formula
     """
 
-    def __init__(self, phi, psi):
+    def __init__(self, phi: Formula, psi: Formula):
         self.phi = phi
         self.psi = psi
 
     def __str__(self):
         return "(" + str(self.phi) + " ↔ " + str(self.psi) + ")"
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return self.phi.constants() | self.psi.constants()
 
-    def subst(self, u, t) -> Formula:
+    def subst(self, u, t):
         return Biimp(self.phi.subst(u, t), self.psi.subst(u, t))
 
     def denot(self, m, k, v):
@@ -744,29 +749,29 @@ class Exists(Formula):
     Existential quantification.
     ∃xφ
 
-    @attr v: the binding variable
-    @type v: Var
+    @attr u: the binding variable
+    @type u: Var
     @attr phi: the formula to be quantified
     @type phi: Formula
     """
 
-    def __init__(self, u, phi):
+    def __init__(self, u: Var, phi: Formula):
         self.u = u
         self.phi = phi
 
     def __str__(self):
         return "∃" + str(self.u) + str(self.phi)
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return self.phi.freevars() - {self.u.u}
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return self.phi.boundvars() | {self.u.u}
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return self.phi.constants()
 
-    def subst(self, u, t) -> Formula:
+    def subst(self, u, t):
         if u == self.u:
             return self
         else:
@@ -820,29 +825,29 @@ class Forall(Formula):
     Universal quantification.
     ∀xφ
 
-    @attr v: the binding variable
-    @type v: Var
+    @attr u: the binding variable
+    @type u: Var
     @attr phi: the formula to be quantified
     @type phi: Formula
     """
 
-    def __init__(self, u, phi):
+    def __init__(self, u: Var, phi: Formula):
         self.u = u
         self.phi = phi
 
     def __str__(self):
         return "∀" + str(self.u) + str(self.phi)
 
-    def freevars(self) -> Set[str]:
+    def freevars(self):
         return self.phi.freevars() - {self.u.u}
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self):
         return self.phi.boundvars() | {self.u.u}
 
-    def constants(self) -> Set[str]:
+    def constants(self):
         return self.phi.constants()
 
-    def subst(self, u, t) -> Formula:
+    def subst(self, u, t):
         if u == self.u:
             return self
         else:
