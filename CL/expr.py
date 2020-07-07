@@ -227,7 +227,7 @@ class FuncTerm(Term):
     @type terms: tuple[Term]
     """
 
-    def __init__(self, f: str, terms: Tuple[Term]):
+    def __init__(self, f: FuncTerm, terms: Tuple[Term]):
         self.f = f
         self.terms = terms
 
