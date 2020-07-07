@@ -16,30 +16,39 @@ class Expr:
     Well-formed expression of predicate logic.
     α, β, ...
 
-    @method freevars: the set of the free variable occurrences in the expression
-    @method boundvars: the set of bound variable occurrences in the expression
+    @method freevars: the set of free variables in the expression
+    @method boundvars: the set of bound variables in the expression
     @method subst: substitution of a term for a variable in the expression
     @method denot: denotation of the expression relative to a structure m and assignment g
     """
     def freevars(self) -> Set[str]:
         """
-        The set of the free variable occurrences in the expression.
+        The set of free variables in the expression.
 
-        @return: the set of the free variable occurrences in the expression
+        @return: the set of free variables in the expression
         @rtype: set[str]
         """
         pass
 
     def boundvars(self) -> Set[str]:
         """
-        The set of the bound variable occurrences in the expression.
+        The set of bound variables in the expression.
 
-        @return: the set of the bound variable occurrences in the expression
+        @return: the set of bound variables in the expression
+        @rtype: set[str]
+        """
+        pass
+    
+    def constants(self) -> Set[str]:
+        """
+        The set of constants in the expression.
+
+        @return: the set of constants in the expression
         @rtype: set[str]
         """
         pass
 
-    def subst(self, u, t):
+    def subst(self, u: str, t: str):
         """
         Substitute all occurrences of the variable u for the term t in self.
 
@@ -52,7 +61,7 @@ class Expr:
         """
         pass
 
-    def denot(self, m, v=None, w=None):
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None):
         """
         Compute the denotation of the expression relative to a structure m and assignment g.
 
@@ -73,7 +82,13 @@ class Term(Expr):
     t1, t2, ...
     """
 
-    def denot(self, m, v=None, w=None) -> str:
+    def subst(self, u: str, t: str) -> Expr:
+        """
+        @rtype: Term
+        """
+        pass
+
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> str:
         """
         @rtype: str
         """
@@ -89,7 +104,7 @@ class Const(Term):
     @type c: str
     """
 
-    def __init__(self, c):
+    def __init__(self, c: str):
         self.c = c
 
     def __str__(self):
@@ -101,10 +116,13 @@ class Const(Term):
     def boundvars(self) -> Set[str]:
         return set()
 
-    def subst(self, u, t) -> Term:
+    def constants(self) -> Set[str]:
+        return {self.c}
+
+    def subst(self, u: str, t: str) -> Expr:
         return self
 
-    def denot(self, m, v=None, w=None) -> str:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> str:
         """
         The denotation of a constant is that individual that the interpretation function f assigns it.
         """
@@ -126,7 +144,7 @@ class Var(Term):
     # it will be necessary to reference the variables by their name (self.v)
     # rather than the variable objects themselves (self)
     # in order for different variable occurrences with the same name to be identified, as desired in the theory.
-    def __init__(self, u):
+    def __init__(self, u: str):
         self.u = u
 
     def __str__(self):
@@ -138,13 +156,16 @@ class Var(Term):
     def boundvars(self) -> Set[str]:
         return set()
 
-    def subst(self, u, t) -> Term:
+    def constants(self) -> Set[str]:
+        return set()
+
+    def subst(self, u: str, t: str) -> Term:
         if self.u == u:
-            return Var(str(t))
+            return Var(t)
         else:
             return self
 
-    def denot(self, m, v=None, w=None) -> str:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> str:
         """
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
@@ -160,7 +181,7 @@ class Func(Expr):
     @type f: str
     """
 
-    def __init__(self, f):
+    def __init__(self, f: str):
         self.f = f
 
     def __str__(self):
@@ -172,10 +193,13 @@ class Func(Expr):
     def boundvars(self) -> Set[str]:
         return set()
 
-    def subst(self, u, t) -> Term:
+    def constants(self) -> Set[str]:
+        return set()
+
+    def subst(self, u: str, t: str) -> Expr:
         return self
 
-    def denot(self, m, v=None, w=None) -> str:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> str:
         """
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
@@ -203,7 +227,7 @@ class FuncTerm(Term):
     @type terms: tuple[Term]
     """
 
-    def __init__(self, f, terms):
+    def __init__(self, f: str, terms: Tuple[Term]):
         self.f = f
         self.terms = terms
 
@@ -216,10 +240,13 @@ class FuncTerm(Term):
     def boundvars(self) -> Set[str]:
         return set().union(*[t.boundvars() for t in self.terms])
 
-    def subst(self, u, t) -> Term:
-        return FuncTerm(self.f, map(lambda t: t.subst(u, t), self.terms))
+    def constants(self) -> Set[str]:
+        return set().union(*[t.constants() for t in self.terms])
 
-    def denot(self, m, v=None, w=None) -> str:
+    def subst(self, u: str, t: str) -> Term:
+        return FuncTerm(self.f, tuple(map(lambda t: t.subst(u, t), self.terms)))
+
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> str:
         """
         The denotation of a function symbol applied to an appropriate number of terms is that individual that the
         interpretation function f assigns to the application.
@@ -238,7 +265,7 @@ class Pred(Expr):
     @attr p: the predicate name
     @type p: str
     """
-    def __init__(self, p):
+    def __init__(self, p: str):
         self.p = p
 
     def __str__(self):
@@ -250,10 +277,13 @@ class Pred(Expr):
     def boundvars(self) -> Set[str]:
         return set()
 
-    def subst(self, u, t) -> Expr:
+    def constants(self) -> Set[str]:
+        return set()
+
+    def subst(self, u: str, t: str) -> Expr:
         return self
 
-    def denot(self, m, v=None, w=None) -> Set[Tuple[str]]:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> Set[Tuple[str]]:
         """
         The denotation of a predicate is the set of ordered tuples of individuals that the interpretation function f
         assigns it.
@@ -274,14 +304,19 @@ class Formula(Expr):
 
     @method denotV: the truth value of a formula relative to a structure m (without reference to a particular assignment)
     """
+    def subst(self, u: str, t: str) -> Expr:
+        """
+        @rtype: Formula
+        """
+        pass
 
-    def denot(self, m, v=None, w=None) -> bool:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> bool:
         """
         @rtype: bool
         """
         pass
 
-    def denotV(self, m, w=None) -> bool:
+    def denotV(self, m: Structure, w: str = None) -> bool:
         """
         The truth value of a formula relative to a structure M (without reference to a particular assignment).
         A formula is true in a structure M iff it is true in M under all assignment functions g.
@@ -324,7 +359,7 @@ class Formula(Expr):
                 return False
         return True
 
-    def denotW(self, m, v) -> bool:
+    def denotW(self, m: Structure, v: Dict[str,str]) -> bool:
         """
         The truth value of a formula relative to a structure M and assmnt. g (without reference to a particular world).
         A formula is true in a structure M iff it is true in M and g in all possible worlds w.
@@ -359,7 +394,7 @@ class Formula(Expr):
                 return False
         return True
 
-    def denotVW(self, m) -> bool:
+    def denotVW(self, m: Structure) -> bool:
         """
         The truth value of a formula relative to a structure M (without reference to a particular assignment and world).
         A formula is true in a structure M iff it is true in M and g under all assignments g and all possible worlds w.
@@ -409,10 +444,13 @@ class Verum(Formula):
     def boundvars(self) -> Set[str]:
         return set()
 
-    def subst(self, u, t) -> Formula:
+    def constants(self) -> Set[str]:
+        return set()
+
+    def subst(self, u: str, t: str) -> Formula:
         return self
 
-    def denot(self, m, v=None, w=None) -> bool:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> bool:
         """
         The denotation of the verum is always true.
         """
@@ -437,10 +475,13 @@ class Falsum(Formula):
     def boundvars(self) -> Set[str]:
         return set()
 
-    def subst(self, u, t) -> Formula:
+    def constants(self) -> Set[str]:
+        return set()
+
+    def subst(self, u: str, t: str) -> Formula:
         return self
 
-    def denot(self, m, v=None, w=None) -> bool:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> bool:
         """
         The denotation of the falsum is always false.
         """
@@ -456,7 +497,7 @@ class Prop(Formula):
     @type p: str
     """
 
-    def __init__(self, p):
+    def __init__(self, p: str):
         self.p = p
 
     def __str__(self):
@@ -468,10 +509,13 @@ class Prop(Formula):
     def boundvars(self) -> Set[str]:
         return set()
 
-    def subst(self, u, t) -> Formula:
+    def constants(self) -> Set[str]:
+        return set()
+
+    def subst(self, u: str, t: str) -> Formula:
         return self
 
-    def denot(self, m, v=None, w=None) -> bool:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> bool:
         """
         The denotation of a propositional variable is the truth value the valuation function V assigns it.
         """
@@ -490,7 +534,7 @@ class Eq(Formula):
     @type t2: Term
     """
 
-    def __init__(self, t1, t2):
+    def __init__(self, t1: Term, t2: Term):
         self.t1 = t1
         self.t2 = t2
 
@@ -503,15 +547,17 @@ class Eq(Formula):
     def boundvars(self) -> Set[str]:
         return self.t1.boundvars() | self.t2.boundvars()
 
-    def subst(self, u, t) -> Formula:
+    def constants(self) -> Set[str]:
+        return self.t1.constants() | self.t2.constants()
+
+    def subst(self, u: str, t: str) -> Formula:
         return Eq(self.t1.subst(u, t), self.t2.subst(u, t))
 
-    def denot(self, m, v=None, w=None) -> bool:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> bool:
         """
         The denotation of a term equality t1 = t2 is true iff t1 and t2 denote the same individual.
         """
         return self.t1.denot(m, v, w) == self.t2.denot(m, v, w)
-
 
 
 class Atm(Formula):
@@ -531,7 +577,7 @@ class Atm(Formula):
     @attr terms: the terms to apply the predicate symbol to
     @type terms: tuple[Term]
     """
-    def __init__(self, pred, terms):
+    def __init__(self, pred: Pred, terms: Tuple[Term]):
         self.pred = pred
         self.terms = terms
 
@@ -544,10 +590,13 @@ class Atm(Formula):
     def boundvars(self) -> Set[str]:
         return set().union(*[t.boundvars() for t in self.terms])
 
-    def subst(self, u, t) -> Formula:
-        return Atm(self.pred, map(lambda t: t.subst(u, t), self.terms))
+    def constants(self) -> Set[str]:
+        return set().union(*[t.constants() for t in self.terms])
 
-    def denot(self, m, v=None, w=None) -> bool:
+    def subst(self, u: str, t: str) -> Formula:
+        return Atm(self.pred, tuple(map(lambda t: t.subst(u, t), self.terms)))
+
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> bool:
         """
         The denotation of an atomic predication P(t1, ..., tn) is true iff the tuple of the denotation of the terms is
         an element of the interpretation of the predicate.
@@ -563,7 +612,7 @@ class Neg(Formula):
     @attr phi: the negated formula
     @type phi: Formula
     """
-    def __init__(self, phi):
+    def __init__(self, phi: Formula):
         self.phi = phi
 
     def __str__(self):
@@ -577,10 +626,13 @@ class Neg(Formula):
     def boundvars(self) -> Set[str]:
         return self.phi.boundvars()
 
-    def subst(self, u, t) -> Formula:
+    def constants(self) -> Set[str]:
+        return self.phi.constants()
+
+    def subst(self, u: str, t: str) -> Formula:
         return Neg(self.phi.subst(u, t))
 
-    def denot(self, m, v=None, w=None) -> bool:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> bool:
         """
         The denotation of a negated formula Neg(phi) is true iff phi is false.
         """
@@ -597,7 +649,7 @@ class Conj(Formula):
     @attr psi: the right conjunct
     @type psi: Formula
     """
-    def __init__(self, phi, psi):
+    def __init__(self, phi: Formula, psi: Formula):
         self.phi = phi
         self.psi = psi
 
@@ -610,10 +662,13 @@ class Conj(Formula):
     def boundvars(self) -> Set[str]:
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, u, t) -> Formula:
+    def constants(self) -> Set[str]:
+        return self.phi.constants() | self.psi.constants()
+
+    def subst(self, u: str, t: str) -> Formula:
         return Conj(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, v=None, w=None) -> bool:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> bool:
         """
         The denotation of a conjoined formula Con(phi,psi) is true iff phi is true and psi is true.
         """
@@ -630,7 +685,7 @@ class Disj(Formula):
     @attr psi: the right disjunct
     @type psi: Formula
     """
-    def __init__(self, phi, psi):
+    def __init__(self, phi: Formula, psi: Formula):
         self.phi = phi
         self.psi = psi
 
@@ -643,10 +698,13 @@ class Disj(Formula):
     def boundvars(self) -> Set[str]:
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, u, t) -> Formula:
+    def constants(self) -> Set[str]:
+        return self.phi.constants() | self.psi.constants()
+
+    def subst(self, u: str, t: str) -> Formula:
         return Disj(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, v=None, w=None) -> bool:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> bool:
         """
         The denotation of a conjoined formula Disj(phi,psi) is true iff phi is true or psi is true.
         """
@@ -663,7 +721,7 @@ class Imp(Formula):
     @attr psi: the consequent
     @type psi: Formula
     """
-    def __init__(self, phi, psi):
+    def __init__(self, phi: Formula, psi: Formula):
         self.phi = phi
         self.psi = psi
 
@@ -676,10 +734,13 @@ class Imp(Formula):
     def boundvars(self) -> Set[str]:
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, u, t) -> Formula:
+    def constants(self) -> Set[str]:
+        return self.phi.constants() | self.psi.constants()
+
+    def subst(self, u: str, t: str) -> Formula:
         return Imp(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, v=None, w=None) -> bool:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> bool:
         """
         The denotation of an implicational formula Imp(phi,psi) is true iff phi is false or psi is true.
         """
@@ -696,7 +757,7 @@ class Biimp(Formula):
     @attr psi: the right formula
     @type psi: Formula
     """
-    def __init__(self, phi, psi):
+    def __init__(self, phi: Formula, psi: Formula):
         self.phi = phi
         self.psi = psi
 
@@ -709,10 +770,13 @@ class Biimp(Formula):
     def boundvars(self) -> Set[str]:
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def subst(self, u, t) -> Formula:
+    def constants(self) -> Set[str]:
+        return self.phi.constants() | self.psi.constants()
+
+    def subst(self, u: str, t: str) -> Formula:
         return Biimp(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, v=None, w=None) -> bool:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> bool:
         """
         The denotation of an biimplicational formula Biimp(phi,psi) is true iff phi and psi have the same truth value.
         """
@@ -729,7 +793,7 @@ class Exists(Formula):
     @attr phi: the formula to be quantified
     @type phi: Formula
     """
-    def __init__(self, u, phi):
+    def __init__(self, u: Var, phi: Formula):
         self.u = u
         self.phi = phi
 
@@ -742,13 +806,16 @@ class Exists(Formula):
     def boundvars(self) -> Set[str]:
         return self.phi.boundvars() | {self.u.u}
 
-    def subst(self, u, t) -> Formula:
+    def constants(self) -> Set[str]:
+        return self.phi.constants()
+
+    def subst(self, u: str, t: str) -> Formula:
         if u == self.u:
             return self
         else:
             return self.phi.subst(u, t)
 
-    def denot(self, m, v=None, w=None) -> bool:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> bool:
         """
         The denotation of an existentially quantified formula Exists(x, phi) is true
         iff phi is true under at least one x-variant of v.
@@ -803,7 +870,7 @@ class Forall(Formula):
     @attr phi: the formula to be quantified
     @type phi: Formula
     """
-    def __init__(self, u, phi):
+    def __init__(self, u: Var, phi: Formula):
         self.u = u
         self.phi = phi
 
@@ -816,13 +883,16 @@ class Forall(Formula):
     def boundvars(self) -> Set[str]:
         return self.phi.boundvars() | {self.u.u}
 
-    def subst(self, u, t) -> Formula:
+    def constants(self) -> Set[str]:
+        return self.phi.constants()
+
+    def subst(self, u: str, t: str) -> Formula:
         if u == self.u:
             return self
         else:
             return self.phi.subst(u, t)
 
-    def denot(self, m, v=None, w=None) -> bool:
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None) -> bool:
         """
         The denotation of universally quantified formula Forall(x, phi) is true iff
         phi is true under all x-variants of v.
@@ -875,13 +945,13 @@ class Poss(Formula):
     @attr phi: the formula to apply the modal operator to
     @type phi: Expr
     """
-    def __init__(self, phi):
+    def __init__(self, phi: Formula):
         self.phi = phi
 
     def __str__(self):
         return "◇" + str(self.phi)
 
-    def subst(self, u, t) -> Formula:
+    def subst(self, u: str, t: str) -> Formula:
         return Poss(self.phi.subst(u, t))
 
     def freevars(self) -> Set[str]:
@@ -890,7 +960,10 @@ class Poss(Formula):
     def boundvars(self) -> Set[str]:
         return self.phi.boundvars()
 
-    def denot(self, m, v, w) -> bool:
+    def constants(self) -> Set[str]:
+        return self.phi.constants()
+
+    def denot(self, m: Structure, v: Dict[str,str], w: str) -> bool:
         """
         The denotation of a possiblity formula is true iff
         phi is true at at least one world accessible from w.
@@ -947,13 +1020,13 @@ class Nec(Formula):
     @type phi: Expr
     """
 
-    def __init__(self, phi):
+    def __init__(self, phi: Formula):
         self.phi = phi
 
     def __str__(self):
         return "◻" + str(self.phi)
 
-    def subst(self, u, t) -> Formula:
+    def subst(self, u: str, t: str) -> Formula:
         return Poss(self.phi.subst(u, t))
 
     def freevars(self) -> Set[str]:
@@ -962,7 +1035,10 @@ class Nec(Formula):
     def boundvars(self) -> Set[str]:
         return self.phi.boundvars()
 
-    def denot(self, m, v, w) -> bool:
+    def constants(self) -> Set[str]:
+        return self.phi.constants()
+
+    def denot(self, m: Structure, v: Dict[str,str], w: str) -> bool:
         """
         The denotation of a necessity formula is true iff
         phi is true at all worlds accessible from w.

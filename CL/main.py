@@ -455,8 +455,8 @@ def compute():
 
 if __name__ == "__main__":
     compute()
-    l = ["a", "b", "c"]
-    print(cart_prod(l, 0))
-    print(cart_prod(l, 1))
-    print(cart_prod(l, 2))
-    print(cart_prod(l, 3))
+    # l = ["a", "b", "c"]
+    # print(cart_prod(l, 0))
+    # print(cart_prod(l, 1))
+    # print(cart_prod(l, 2))
+    # print(cart_prod(l, 3))
