@@ -21,7 +21,7 @@ class Expr:
     @method subst: substitution of a term for a variable in the expression
     @method denot: denotation of the expression relative to a structure m and assignment g
     """
-    
+
     def freevars(self) -> Set[str]:
         """
         The set of free variables in the expression.
@@ -62,7 +62,7 @@ class Expr:
         """
         pass
 
-    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None):
+    def denot(self, m, v: Dict[str,str] = None, w: str = None):
         """
         Compute the denotation of the expression relative to a structure m and assignment g.
 
@@ -111,6 +111,9 @@ class Const(Term):
     def __str__(self):
         return self.c
 
+    def __eq__(self, other):
+        return isinstance(other, Const) and self.c == other.c
+
     def freevars(self):
         return set()
 
@@ -145,11 +148,15 @@ class Var(Term):
     # it will be necessary to reference the variables by their name (self.v)
     # rather than the variable objects themselves (self)
     # in order for different variable occurrences with the same name to be identified, as desired in the theory.
+
     def __init__(self, u: str):
         self.u = u
 
     def __str__(self):
         return self.u
+
+    def __eq__(self, other):
+        return isinstance(other, Var) and self.u == other.u
 
     def freevars(self):
         return {self.u}
@@ -187,6 +194,9 @@ class Func(Expr):
 
     def __str__(self):
         return self.f
+
+    def __eq__(self, other):
+        return isinstance(other, Func) and self.f == other.f
 
     def freevars(self):
         return set()
@@ -235,6 +245,9 @@ class FuncTerm(Term):
     def __str__(self):
         return str(self.f) + "(" + ", ".join([str(t) for t in self.terms]) + ")"
 
+    def __eq__(self, other):
+        return isinstance(other, FuncTerm) and self.f == other.f and self.terms == other.terms
+
     def freevars(self):
         return set().union(*[t.freevars() for t in self.terms])
 
@@ -271,6 +284,9 @@ class Pred(Expr):
 
     def __str__(self):
         return self.p
+
+    def __eq__(self, other):
+        return isinstance(other, Pred) and self.p == other.p
 
     def freevars(self):
         return set()
@@ -317,7 +333,7 @@ class Formula(Expr):
         """
         pass
 
-    def denotV(self, m: Structure, w: str = None) -> bool:
+    def denotV(self, m, w: str = None) -> bool:
         """
         The truth value of a formula relative to a structure M (without reference to a particular assignment).
         A formula is true in a structure M iff it is true in M under all assignment functions g.
@@ -360,7 +376,7 @@ class Formula(Expr):
                 return False
         return True
 
-    def denotW(self, m: Structure, v: Dict[str,str]) -> bool:
+    def denotW(self, m, v: Dict[str,str]) -> bool:
         """
         The truth value of a formula relative to a structure M and assmnt. g (without reference to a particular world).
         A formula is true in a structure M iff it is true in M and g in all possible worlds w.
@@ -395,7 +411,7 @@ class Formula(Expr):
                 return False
         return True
 
-    def denotVW(self, m: Structure) -> bool:
+    def denotVW(self, m) -> bool:
         """
         The truth value of a formula relative to a structure M (without reference to a particular assignment and world).
         A formula is true in a structure M iff it is true in M and g under all assignments g and all possible worlds w.
@@ -427,6 +443,12 @@ class Formula(Expr):
                 return False
         return True
 
+    def tableau_pos(self, node):
+        pass
+
+    def tableau_neg(self, node):
+        pass
+
 
 class Verum(Formula):
     """
@@ -438,6 +460,9 @@ class Verum(Formula):
 
     def __str__(self):
         return "⊤"
+
+    def __eq__(self, other):
+        return isinstance(other, Verum)
 
     def freevars(self):
         return set()
@@ -469,6 +494,9 @@ class Falsum(Formula):
 
     def __str__(self):
         return "⊥"
+
+    def __eq__(self, other):
+        return isinstance(other, Falsum)
 
     def freevars(self):
         return set()
@@ -503,6 +531,9 @@ class Prop(Formula):
 
     def __str__(self):
         return self.p
+
+    def __eq__(self, other):
+        return isinstance(other, Prop) and self.p == other.p
 
     def freevars(self):
         return set()
@@ -541,6 +572,9 @@ class Eq(Formula):
 
     def __str__(self):
         return str(self.t1) + " = " + str(self.t2)
+
+    def __eq__(self, other):
+        return isinstance(other, Eq) and self.t1 == other.t1 and self.t2 == other.t2
 
     def freevars(self):
         return self.t1.freevars() | self.t2.freevars()
@@ -585,6 +619,9 @@ class Atm(Formula):
     def __str__(self):
         return str(self.pred) + "(" + ",".join([str(t) for t in self.terms]) + ")"
 
+    def __eq__(self, other):
+        return isinstance(other, Atm) and self.pred == other.pred and self.terms == other.terms
+
     def freevars(self):
         return set().union(*[t.freevars() for t in self.terms])
 
@@ -621,6 +658,9 @@ class Neg(Formula):
             return str(self.phi.t1) + "≠" + str(self.phi.t2)
         return "¬" + str(self.phi)
 
+    def __eq__(self, other):
+        return isinstance(other, Neg) and self.phi == other.phi
+
     def freevars(self):
         return self.phi.freevars()
 
@@ -638,6 +678,20 @@ class Neg(Formula):
         The denotation of a negated formula Neg(phi) is true iff phi is false.
         """
         return not self.phi.denot(m, v, w)
+
+    def tableau_pos(self, node):
+        """
+        ¬φ
+        ...
+        """
+        self.phi.tableau_neg(node)
+
+    def tableau_neg(self, node):
+        """
+        ¬¬φ
+         φ
+        """
+        node.branch_unary([self.phi], "¬¬")
 
 
 class Conj(Formula):
@@ -657,6 +711,9 @@ class Conj(Formula):
     def __str__(self):
         return "(" + str(self.phi) + " ∧ " + str(self.psi) + ")"
 
+    def __eq__(self, other):
+        return isinstance(other, Conj) and self.phi == other.phi and self.psi == other.psi
+
     def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
 
@@ -674,6 +731,22 @@ class Conj(Formula):
         The denotation of a conjoined formula Con(phi,psi) is true iff phi is true and psi is true.
         """
         return self.phi.denot(m, v, w) and self.psi.denot(m, v, w)
+
+    def tableau_pos(self, node):
+        """
+        (φ∧ψ)
+          φ
+          ψ
+        """
+        node.branch_unary([self.phi, self.psi], "∧")
+
+    def tableau_neg(self, node):
+        """
+         ¬(φ∧ψ)
+          /  \
+        ¬φ   ¬ψ
+        """
+        node.branch_binary([Neg(self.phi)], [Neg(self.psi)], "¬∧")
 
 
 class Disj(Formula):
@@ -693,6 +766,9 @@ class Disj(Formula):
     def __str__(self):
         return "(" + str(self.phi) + " ∨ " + str(self.psi) + ")"
 
+    def __eq__(self, other):
+        return isinstance(other, Disj) and self.phi == other.phi and self.psi == other.psi
+
     def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
 
@@ -710,6 +786,22 @@ class Disj(Formula):
         The denotation of a conjoined formula Disj(phi,psi) is true iff phi is true or psi is true.
         """
         return self.phi.denot(m, v, w) or self.psi.denot(m, v, w)
+
+    def tableau_pos(self, node):
+        """
+        (φ∨ψ)
+         /  \
+        φ   ψ
+        """
+        node.branch_binary([self.phi], [self.psi], "∨")
+
+    def tableau_neg(self, node):
+        """
+        ¬(φ∨ψ)
+          ¬φ
+          ¬ψ
+        """
+        node.branch_unary([Neg(self.phi), Neg(self.psi)], "¬∨")
 
 
 class Imp(Formula):
@@ -729,6 +821,9 @@ class Imp(Formula):
     def __str__(self):
         return "(" + str(self.phi) + " → " + str(self.psi) + ")"
 
+    def __eq__(self, other):
+        return isinstance(other, Imp) and self.phi == other.phi and self.psi == other.psi
+
     def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
 
@@ -746,6 +841,22 @@ class Imp(Formula):
         The denotation of an implicational formula Imp(phi,psi) is true iff phi is false or psi is true.
         """
         return not self.phi.denot(m, v, w) or self.psi.denot(m, v, w)
+
+    def tableau_pos(self, node):
+        """
+        (φ→ψ)
+         /  \
+        ¬φ  ψ
+        """
+        node.branch_binary([Neg(self.phi)], [self.psi], "→")
+
+    def tableau_neg(self, node):
+        """
+        ¬(φ→ψ)
+           φ
+          ¬ψ
+        """
+        node.branch_unary([self.phi, Neg(self.psi)], "¬→")
 
 
 class Biimp(Formula):
@@ -765,6 +876,9 @@ class Biimp(Formula):
     def __str__(self):
         return "(" + str(self.phi) + " ↔ " + str(self.psi) + ")"
 
+    def __eq__(self, other):
+        return isinstance(other, Biimp) and self.phi == other.phi and self.psi == other.psi
+
     def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
 
@@ -783,6 +897,24 @@ class Biimp(Formula):
         """
         return self.phi.denot(m, v, w) == self.psi.denot(m, v, w)
 
+    def tableau_pos(self, node):
+        """
+         (φ↔ψ)
+         /  \
+        φ   ¬φ
+        ψ   ¬ψ
+        """
+        node.branch_binary([self.phi, self.psi], [Neg(self.phi), Neg(self.psi)], "↔")
+
+    def tableau_neg(self, node):
+        """
+         (φ↔ψ)
+          /  \
+         φ   ¬φ
+        ¬ψ    ψ
+        """
+        node.branch_binary([self.phi, Neg(self.psi)], [Neg(self.phi), self.psi], "¬↔")
+
 
 class Exists(Formula):
     """
@@ -800,6 +932,9 @@ class Exists(Formula):
 
     def __str__(self):
         return "∃" + str(self.u) + str(self.phi)
+
+    def __eq__(self, other):
+        return isinstance(other, Exists) and self.u == other.u and self.phi == other.phi
 
     def freevars(self):
         return self.phi.freevars() - {self.u.u}
@@ -860,6 +995,20 @@ class Exists(Formula):
         depth -= 1
         return False
 
+    def tableau_pos(self, node):
+        """
+        ∃xφ(x)
+         φ(c)
+        """
+        pass
+
+    def tableau_neg(self, node):
+        """
+        ¬∃xφ(x)
+         ¬φ(c)
+        """
+        pass
+
 
 class Forall(Formula):
     """
@@ -877,6 +1026,9 @@ class Forall(Formula):
 
     def __str__(self):
         return "∀" + str(self.u) + str(self.phi)
+
+    def __eq__(self, other):
+        return isinstance(other, Forall) and self.u == other.u and self.phi == other.phi
 
     def freevars(self):
         return self.phi.freevars() - {self.u.u}
@@ -937,6 +1089,20 @@ class Forall(Formula):
         depth -= 1
         return True
 
+    def tableau_pos(self, node):
+        """
+        ∀xφ(x)
+         φ(c)
+        """
+        pass
+
+    def tableau_neg(self, node):
+        """
+        ¬∀xφ(x)
+         ¬φ(c)
+        """
+        pass
+
 
 class Poss(Formula):
     """
@@ -951,6 +1117,9 @@ class Poss(Formula):
 
     def __str__(self):
         return "◇" + str(self.phi)
+
+    def __eq__(self, other):
+        return isinstance(other, Poss) and self.phi == other.phi
 
     def freevars(self):
         return self.phi.freevars()
@@ -1026,6 +1195,9 @@ class Nec(Formula):
 
     def __str__(self):
         return "◻" + str(self.phi)
+
+    def __eq__(self, other):
+        return isinstance(other, Nec) and self.phi == other.phi
 
     def freevars(self):
         return self.phi.freevars()
