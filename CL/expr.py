@@ -6,7 +6,7 @@ Define the language and semantics of classical (standard and modal) (preposition
 
 
 from main import *
-from struct import *
+from structure import *
 
 from typing import List, Dict, Set, Tuple
 
@@ -21,6 +21,15 @@ class Expr:
     @method subst: substitution of a term for a variable in the expression
     @method denot: denotation of the expression relative to a structure m and assignment g
     """
+
+    def propvars(self) -> Set[str]:
+        """
+        The set of propositional variables in the expression.
+
+        @return: the seet of propositional varibles in the expression
+        @rtype: set[str]
+        """
+        return self.phi.propvars()
 
     def freevars(self) -> Set[str]:
         """
@@ -114,6 +123,9 @@ class Const(Term):
     def __eq__(self, other):
         return isinstance(other, Const) and self.c == other.c
 
+    def propvars(self):
+        return set()
+
     def freevars(self):
         return set()
 
@@ -158,6 +170,9 @@ class Var(Term):
     def __eq__(self, other):
         return isinstance(other, Var) and self.u == other.u
 
+    def propvars(self):
+        return set()
+
     def freevars(self):
         return {self.u}
 
@@ -197,6 +212,9 @@ class Func(Expr):
 
     def __eq__(self, other):
         return isinstance(other, Func) and self.f == other.f
+
+    def propvars(self):
+        return set()
 
     def freevars(self):
         return set()
@@ -248,6 +266,9 @@ class FuncTerm(Term):
     def __eq__(self, other):
         return isinstance(other, FuncTerm) and self.f == other.f and self.terms == other.terms
 
+    def propvars(self):
+        return set()
+
     def freevars(self):
         return set().union(*[t.freevars() for t in self.terms])
 
@@ -287,6 +308,9 @@ class Pred(Expr):
 
     def __eq__(self, other):
         return isinstance(other, Pred) and self.p == other.p
+
+    def propvars(self):
+        return set()
 
     def freevars(self):
         return set()
@@ -464,6 +488,9 @@ class Verum(Formula):
     def __eq__(self, other):
         return isinstance(other, Verum)
 
+    def propvars(self):
+        return set()
+
     def freevars(self):
         return set()
 
@@ -482,6 +509,12 @@ class Verum(Formula):
         """
         return True
 
+    def tableau_pos(self, node):
+        pass
+
+    def tableau_neg(self, node):
+        pass
+
 
 class Falsum(Formula):
     """
@@ -497,6 +530,9 @@ class Falsum(Formula):
 
     def __eq__(self, other):
         return isinstance(other, Falsum)
+
+    def propvars(self):
+        return set()
 
     def freevars(self):
         return set()
@@ -516,6 +552,11 @@ class Falsum(Formula):
         """
         return False
 
+    def tableau_pos(self, node):
+        pass
+
+    def tableau_neg(self, node):
+        pass
 
 class Prop(Formula):
     """
@@ -535,6 +576,9 @@ class Prop(Formula):
     def __eq__(self, other):
         return isinstance(other, Prop) and self.p == other.p
 
+    def propvars(self):
+        return {self.p}
+
     def freevars(self):
         return set()
 
@@ -553,6 +597,12 @@ class Prop(Formula):
         """
         v = m.v
         return v[self.p]
+
+    def tableau_pos(self, node):
+        pass
+
+    def tableau_neg(self, node):
+        pass
 
 
 class Eq(Formula):
@@ -576,6 +626,9 @@ class Eq(Formula):
     def __eq__(self, other):
         return isinstance(other, Eq) and self.t1 == other.t1 and self.t2 == other.t2
 
+    def propvars(self):
+        return set()
+
     def freevars(self):
         return self.t1.freevars() | self.t2.freevars()
 
@@ -593,6 +646,12 @@ class Eq(Formula):
         The denotation of a term equality t1 = t2 is true iff t1 and t2 denote the same individual.
         """
         return self.t1.denot(m, v, w) == self.t2.denot(m, v, w)
+
+    def tableau_pos(self, node):
+        pass
+
+    def tableau_neg(self, node):
+        pass
 
 
 class Atm(Formula):
@@ -621,6 +680,9 @@ class Atm(Formula):
 
     def __eq__(self, other):
         return isinstance(other, Atm) and self.pred == other.pred and self.terms == other.terms
+
+    def propvars(self):
+        return set()
 
     def freevars(self):
         return set().union(*[t.freevars() for t in self.terms])
@@ -660,6 +722,9 @@ class Neg(Formula):
 
     def __eq__(self, other):
         return isinstance(other, Neg) and self.phi == other.phi
+
+    def propvars(self):
+        return self.phi.prpvars()
 
     def freevars(self):
         return self.phi.freevars()
@@ -713,6 +778,9 @@ class Conj(Formula):
 
     def __eq__(self, other):
         return isinstance(other, Conj) and self.phi == other.phi and self.psi == other.psi
+
+    def propvars(self):
+        return self.phi.propvars() | self.psi.propvars()
 
     def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
@@ -769,6 +837,9 @@ class Disj(Formula):
     def __eq__(self, other):
         return isinstance(other, Disj) and self.phi == other.phi and self.psi == other.psi
 
+    def propvars(self):
+        return self.phi.propvars() | self.psi.propvars()
+
     def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
 
@@ -824,6 +895,9 @@ class Imp(Formula):
     def __eq__(self, other):
         return isinstance(other, Imp) and self.phi == other.phi and self.psi == other.psi
 
+    def propvars(self):
+        return self.phi.propvars() | self.psi.propvars()
+
     def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
 
@@ -878,6 +952,9 @@ class Biimp(Formula):
 
     def __eq__(self, other):
         return isinstance(other, Biimp) and self.phi == other.phi and self.psi == other.psi
+
+    def propvars(self):
+        return self.phi.propvars() | self.psi.propvars()
 
     def freevars(self):
         return self.phi.freevars() | self.psi.freevars()
@@ -935,6 +1012,9 @@ class Exists(Formula):
 
     def __eq__(self, other):
         return isinstance(other, Exists) and self.u == other.u and self.phi == other.phi
+
+    def propvars(self):
+        return set()
 
     def freevars(self):
         return self.phi.freevars() - {self.u.u}
@@ -1030,6 +1110,9 @@ class Forall(Formula):
     def __eq__(self, other):
         return isinstance(other, Forall) and self.u == other.u and self.phi == other.phi
 
+    def propvars(self):
+        return set()
+
     def freevars(self):
         return self.phi.freevars() - {self.u.u}
 
@@ -1121,6 +1204,9 @@ class Poss(Formula):
     def __eq__(self, other):
         return isinstance(other, Poss) and self.phi == other.phi
 
+    def propvars(self):
+        return self.phi.propvars()
+
     def freevars(self):
         return self.phi.freevars()
 
@@ -1199,6 +1285,9 @@ class Nec(Formula):
     def __eq__(self, other):
         return isinstance(other, Nec) and self.phi == other.phi
 
+    def propvars(self):
+        return self.phi.propvars()
+
     def freevars(self):
         return self.phi.freevars()
 
@@ -1256,3 +1345,29 @@ class Nec(Formula):
         # if no counter neighbor has been found, the necessity statement is true
         depth -= 1
         return True
+
+
+class Open(Formula):
+    """
+    Special pseudo-formula indicating a branch is open.
+    ○
+    """
+
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return "○"
+
+
+class Closed(Formula):
+    """
+    Special pseudo-formula indicating a branch is closed.
+    ×
+    """
+
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return "×"

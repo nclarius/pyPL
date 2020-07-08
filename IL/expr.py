@@ -6,7 +6,7 @@ Define the language and semantics of intuitionistic (prepositional and first-ord
 
 
 from main import *
-from struct import *
+from structure import *
 
 from typing import List, Dict, Set, Tuple
 

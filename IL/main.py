@@ -5,7 +5,7 @@
 
 
 from expr import *
-from struct import *
+from structure import *
 
 
 # settings

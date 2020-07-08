@@ -5,7 +5,7 @@
 from functools import reduce
 
 from expr import *
-from struct import *
+from structure import *
 
 
 # settings
