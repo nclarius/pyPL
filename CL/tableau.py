@@ -115,14 +115,7 @@ class Tableau(object):
                     # domain = all const.s occurring in formulas
                     d = set(itertools.chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))
                     # interpretation = make all unnegated predications true and all others false
-                    i = {p: set() for p in predicates}
-                    for a in atoms:
-                        pred = a[0]
-                        terms = a[1]
-                        tpl = tuple([t.c for t in terms])
-                        i[pred.p].add(tpl)
-                    # todo make iterative solution work
-                    # i = {p: {tuple([t.c for t in a[1]]) for a in atoms if (p, a[1]) in atoms} for p in predicates}
+                    i = {p: {tuple([t.c for t in a[1]]) for a in atoms if (Pred(p), a[1]) in atoms} for p in predicates}
                     # todo interpretation is improperly specified (?)
                     model = PredStructure(d, i)
                     res.append(model)
