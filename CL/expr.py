@@ -500,7 +500,7 @@ class Formula(Expr):
             #  φ ... ¬φ; ¬φ ... φ
             if Neg(self) == other.fml or \
                self == Neg(other.fml):
-                node.add_contradiction([other.line, node.line])
+                node.add_close([other.line, node.line])
 
     def tableau_contradiction_neg(self, node):
         """
@@ -510,7 +510,7 @@ class Formula(Expr):
             #  φ ... ¬φ; ¬φ ... φ
             if Neg(self) == other.fml or \
                self == Neg(other.fml):
-                node.add_contradiction([other.line, node.line])
+                node.add_close([other.line, node.line])
 
 
 class Verum(Formula):
@@ -709,11 +709,11 @@ class Eq(Formula):
 
     def tableau_contradiction_pos(self, node):
         if str(self.t1) != str(self.t2):
-            node.add_contradiction([node.line])
+            node.add_close([node.line])
 
     def tableau_contradiction_neg(self, node):
         if str(self.t1) == str(self.t2):
-            node.add_contradiction([node.line])
+            node.add_close([node.line])
 
 
 class Atm(Formula):
@@ -839,7 +839,7 @@ class Neg(Formula):
         for other in node.branch[:-1]:  # contradiction to another formula in the same branch
             #  ¬¬φ ... ¬φ; ¬φ ... ¬¬φ
             if self == other.fml:
-                node.add_contradiction([other.line, node.line])
+                node.add_close([other.line, node.line])
 
 
 class Conj(Formula):

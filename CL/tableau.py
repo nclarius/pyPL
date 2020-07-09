@@ -45,14 +45,15 @@ class Tableau(object):
             return
         print("Tableau for " +
               ", ".join([str(premise.fml) for premise in self.premises]) + " ⊨ " + str(self.root.fml.phi) + ":\n")
-        self.expand()
-        print(self)
-        print("The tableau is " + ("open" if (models := self.models()) else "closed") + ":\n"
+        self.expand()  # recursively apply the rules
+        models = self.models()  # collect branches that are still open
+        print(self)  # print the tableau
+        print("The tableau is " + ("open" if models else "closed") + ":\n"
               "The " + ("inference" if self.premises else "formula") + " is " + ("in" if models else "") + "valid.")
         if models:
             print("\nCounter models:")
             for model in models:
-                print(model)
+                print(model)  # print counter model
         print("\n")
 
     def expand(self, node=None):
@@ -90,6 +91,8 @@ class Tableau(object):
         for leaf in self.root.leaves():
             if not isinstance(leaf.fml, Closed):
                 # open branch
+                leaf.add_open()
+                leaf = leaf.branch[-2]
 
                 if self.propositional:
                     # atoms = all unnegated propositional variables
@@ -148,6 +151,10 @@ class Node(object):
         """
         # todo better overall representation?
         # todo carry "|" into unary children of binary parents
+        len_col1 = max([len(str(node.line)) for node in self.branch[0].preorder()])
+        len_col2 = max([len(str(node.fml)) for node in self.branch[0].preorder()]) + 1
+        len_col3 = max([len(str(node.cite)) for node in self.branch[0].preorder()])
+
         res = indent
         if binary:
             res += "|--"
@@ -155,7 +162,10 @@ class Node(object):
             res += "|  "
         else:
             res += "   "
-        res += str(self) + "\n"
+        res += "{:<{len}}".format(str(self.line) + ".", len=len_col1) + \
+               "{:^{len}}".format(str(self.fml), len=len_col2) + \
+               "{:<{len}}".format(str(self.cite), len=len_col3) + \
+               "\n"
         if self.children:
             if not last:
                 if len(self.children) == 1:  # unary branching; dont indent
@@ -379,11 +389,17 @@ class Node(object):
     def check_contradiction(self):
         self.fml.tableau_contradiction_pos(self)
 
-    def add_contradiction(self, lines):
+    def add_close(self, lines):
         """
         Add a pseudo-node for a contradictory branch.
         """
         self.add_child((None, None, Closed(), "(" + ", ".join([str(line) for line in lines]) + ")"))
+
+    def add_open(self):
+        """
+        Add a pseudo-node for a contradictory branch.
+        """
+        self.add_child((None, None, Open(), ""))
 
 
 ####################
