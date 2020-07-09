@@ -149,47 +149,33 @@ class Node(object):
         """
         String representation of the tree whose root is this node.
         """
-        # todo better overall representation?
-        # todo carry "|" into unary children of binary parents
+        # todo non-rotated visualization?
         len_col1 = max([len(str(node.line)) for node in self.branch[0].preorder()])
         len_col2 = max([len(str(node.fml)) for node in self.branch[0].preorder()]) + 1
         len_col3 = max([len(str(node.cite)) for node in self.branch[0].preorder()])
+        str_line = "{:<{len}}".format(str(self.line) + "." if self.line else "", len=len_col1)
+        str_fml = "{:^{len}}".format(str(self.fml), len=len_col2)
+        str_cite = "{:<{len}}".format(str(self.cite), len=len_col3)
 
         res = indent
-        if binary:
-            res += "|--"
-        elif not last:
-            res += "|  "
-        else:
-            res += "   "
-        res += "{:<{len}}".format(str(self.line) + "." if self.line else "", len=len_col1) + \
-               "{:^{len}}".format(str(self.fml), len=len_col2) + \
-               "{:<{len}}".format(str(self.cite), len=len_col3) + \
-               "\n"
-        if self.children:
-            if not last:
-                if len(self.children) == 1:  # unary branching; dont indent
-                    if childstr := self.children[0].treestr(indent, False, True):
-                        res += childstr
-                elif len(self.children) == 2:  # binary branching; indent
-                    if childstr1 := self.children[0].treestr(indent + "|  ", True, False):
-                        res += childstr1
-                    if childstr2 := self.children[1].treestr(indent + "|  ", True, True):
-                        res += childstr2
-            else:
-                if len(self.children) == 1:  # unary branching; dont indent
-                    if childstr := self.children[0].treestr(indent, False, True):
-                        res += childstr
-                elif len(self.children) == 2:  # binary branching; indent
-                    if childstr1 := self.children[0].treestr(indent + "   ", True, False):
-                        res += childstr1
-                    if childstr2 := self.children[1].treestr(indent + "   ", True, True):
-                        res += childstr2
-        else:
-            if last:
-                res += indent + "   \n"
-            else:
-                res += indent + "   \n"
+        res += "|--" if binary else ""
+        res += str_line + str_fml + str_cite + "\n"
+        if self.children:  # self branches
+            if len(self.children) == 1:  # unary branching
+                if binary:
+                    if not last:
+                        indent += "|  "
+                    else:
+                        indent += "   "
+                if childstr := self.children[0].treestr(indent, False, True):
+                    res += childstr
+            elif len(self.children) == 2:  # binary branching; indent
+                if childstr1 := self.children[0].treestr(indent, True, False):
+                    res += childstr1
+                if childstr2 := self.children[1].treestr(indent, True, True):
+                    res += childstr2
+        else:  # self is leaf
+            res += indent + "\n"
         return res
 
     def preorder(self):
@@ -327,7 +313,6 @@ class Node(object):
                 constants = list(chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))  # all existing constants in the curr. branch
                 param = Const(constants[0] if constants else "c1")  # choose old parameter
                 fml = phi.subst(var, param)  # substitute the parameter vor the variable
-                # todo wrong expansion, skipping inner quantifier?
                 cite = "(" + rule + ", " + str(leaf.line) + ")" + " " + "[" + var.u + "/" + param.c + "]"
                 node = leaf.add_child((line, sig, fml, cite))  # add node
 
@@ -348,7 +333,6 @@ class Node(object):
                 constants = list(chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))  # all existing constants in the curr. branch
                 param = Const("c" + str(min([i for i in range(1, 10) if "c" + str(i) not in constants])))  # choose new
                 fml = phi.subst(var, param)  # substitute the parameter vor the variable
-                # todo wrong expansion, skipping inner quantifier?
                 cite = "(" + rule + ", " + str(leaf.line) + ")" + " " + "[" + var.u + "/" + param.c + "]"
                 node = leaf.add_child((line, sig, fml, cite))  # add node
 
