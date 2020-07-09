@@ -111,7 +111,6 @@ class Tableau(object):
                     # todo take care of function symbols in domain and interpretation
                     predicates = set(itertools.chain(self.root.fml.nonlogs()[2],
                                                      *[prem.fml.nonlogs()[2] for prem in self.premises]))
-                    # todo predicates are imporperly collected (?)
                     # domain = all const.s occurring in formulas
                     d = set(itertools.chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))
                     # interpretation = make all unnegated predications true and all others false
