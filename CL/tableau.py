@@ -104,17 +104,18 @@ class Tableau(object):
                     atoms = [(node.fml.pred, node.fml.terms) for node in leaf.branch if isinstance(node.fml, Atm)]
                     # predicates = all predicates occurring in the conclusion and premises
                     constants = set(chain(self.root.fml.nonlogs()[0],
-                                                    *[prem.fml.nonlogs()[0] for prem in self.premises]))
+                                          *[prem.fml.nonlogs()[0] for prem in self.premises]))
                     # todo show constants in interpret.?
                     funcsymbs = set(chain(self.root.fml.nonlogs()[1],
-                                                    *[prem.fml.nonlogs()[1] for prem in self.premises]))
+                                          *[prem.fml.nonlogs()[1] for prem in self.premises]))
                     # todo take care of function symbols in domain and interpretation
                     predicates = set(chain(self.root.fml.nonlogs()[2],
-                                                     *[prem.fml.nonlogs()[2] for prem in self.premises]))
+                                           *[prem.fml.nonlogs()[2] for prem in self.premises]))
                     # domain = all const.s occurring in formulas
                     d = set(chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))
                     # interpretation = make all unnegated predications true and all others false
-                    i = {p: {tuple([t.c for t in a[1]]) for a in atoms if (Pred(p), a[1]) in atoms} for p in predicates}
+                    i = {p: {tuple([str(t) for t in a[1]]) for a in atoms if (Pred(p), a[1]) in atoms}
+                         for p in predicates}
                     model = PredStructure(d, i)
                     res.append(model)
 
@@ -140,7 +141,6 @@ class Node(object):
         return (str(self.line) + "." if self.line else "") + "\t" + \
                str(self.fml) + "\t" + \
                self.cite
-               # (".".join([str(i) for i in self.sig]) + "\t" if self.sig else "") + \
 
     def treestr(self, indent="", binary=False, last=True) -> str:
         """
@@ -317,7 +317,6 @@ class Node(object):
                 constants = list(chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))  # all existing constants in the curr. branch
                 param = Const(constants[0] if constants else "c1")  # choose old parameter
                 fml = phi.subst(var, param)  # substitute the parameter vor the variable
-                # todo subst not working
                 # todo wrong expansion, skipping inner quantifier?
                 cite = "(" + rule + ", " + str(leaf.line) + ")" + " " + "[" + var.u + "/" + param.c + "]"
                 node = leaf.add_child((line, sig, fml, cite))  # add node
@@ -336,10 +335,9 @@ class Node(object):
         for leaf in self.leaves():  # visit each branch
             if not isinstance(leaf.fml, Closed):  # skip already closed branches
                 line += 1
-                constants = list(chain(*[node.fml.nonogs()[0] for node in leaf.branch]))  # all existing constants in the curr. branch
+                constants = list(chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))  # all existing constants in the curr. branch
                 param = Const("c" + str(min([i for i in range(1, 10) if "c" + str(i) not in constants])))  # choose new
                 fml = phi.subst(var, param)  # substitute the parameter vor the variable
-                # todo subst not working
                 # todo wrong expansion, skipping inner quantifier?
                 cite = "(" + rule + ", " + str(leaf.line) + ")" + " " + "[" + var.u + "/" + param.c + "]"
                 node = leaf.add_child((line, sig, fml, cite))  # add node
@@ -409,13 +407,13 @@ if __name__ == "__main__":
     tab4 = Tableau(fml4)
     tab4.generate()
 
-    # fml5 = Exists(Var("x"), Forall(Var("y"), Atm(Pred("P"), (Var("x"), Var("y")))))
-    # tab5 = Tableau(fml5)
-    # tab5.generate()
-    #
-    # fml6 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("P"), (Var("x"), Var("y")))))
-    # tab6 = Tableau(fml6)
-    # tab6.generate()
+    fml5 = Exists(Var("x"), Forall(Var("y"), Atm(Pred("P"), (Var("x"), Var("y")))))
+    tab5 = Tableau(fml5)
+    tab5.generate()
+
+    fml6 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("P"), (Var("x"), Var("y")))))
+    tab6 = Tableau(fml6)
+    tab6.generate()
 
     fml7a = Imp(Prop("p"), Prop("q"))
     fml7b = Imp(Prop("q"), Prop("r"))

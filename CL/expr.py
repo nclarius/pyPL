@@ -69,6 +69,7 @@ class Expr:
         @return: the result of substituting all occurrences of the variable v for the term t in self
         @rtype Expr
         """
+        # todo doesnt work
         pass
 
     def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None):
@@ -281,7 +282,7 @@ class FuncTerm(Term):
                set()
 
     def subst(self, u, t):
-        return FuncTerm(self.f, tuple(map(lambda t: t.subst(u, t), self.terms)))
+        return FuncTerm(self.f, tuple([term.subst(u, t) for term in self.terms]))
 
     def denot(self, m, v=None, w=None) -> str:
         """
@@ -757,7 +758,7 @@ class Atm(Formula):
                {self.pred.p}
 
     def subst(self, u, t):
-        return Atm(self.pred, tuple(map(lambda t: t.subst(u, t), self.terms)))
+        return Atm(self.pred, tuple([term.subst(u, t) for term in self.terms]))
 
     def denot(self, m, v=None, w=None):
         """
@@ -832,7 +833,6 @@ class Neg(Formula):
         return node.rule_alpha, [self.phi], "¬¬"
 
     def tableau_contradiction_pos(self, node):
-        # todo doesn't find contradictions for double-negate formulas
         self.phi.tableau_contradiction_neg(node)
 
     def tableau_contradiction_neg(self, node):
@@ -1172,7 +1172,7 @@ class Exists(Formula):
          φ(c)
         where c is new
         """
-        node.rule_delta(self.phi, self.u), "∃"
+        return node.rule_delta, (self.phi, self.u), "∃"
 
     def tableau_neg(self, node):
         """
@@ -1279,7 +1279,7 @@ class Forall(Formula):
          ¬φ(c)
         where c is new
         """
-        node.rule_delta(self.phi, self.u), "¬∀"
+        return node.rule_delta, (Neg(self.phi), self.u), "¬∀"
 
 
 class Poss(Formula):
@@ -1471,7 +1471,7 @@ class Nec(Formula):
         σ.n ¬φ
         where σ.n is new
         """
-        return node.rule_mu (Neg(self.phi), node.sig), "¬◻"
+        return node.rule_mu, (Neg(self.phi), node.sig), "¬◻"
 
 
 class Open(Formula):

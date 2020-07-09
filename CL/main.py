@@ -6,7 +6,7 @@ from functools import reduce
 
 from expr import *
 from structure import *
-from tableau import *
+# from tableau import *
 
 
 # settings
