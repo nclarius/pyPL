@@ -50,14 +50,13 @@ class Expr:
         """
         pass
     
-    def constants(self) -> Set[str]:
+    def nonlogs(self, u, t):
         """
-        The set of constants in the expression.
-
-        @return: the set of constants in the expression
-        @rtype: set[str]
+        The set of non-logical symbols in the expression.
+        
+        @return the set of non-logical symbols in the expression: (constants, functions, predicates)
+        @rtype: tuple[set[str]]
         """
-        pass
 
     def subst(self, u, t):
         """
@@ -133,8 +132,8 @@ class Const(Term):
     def boundvars(self):
         return set()
 
-    def constants(self):
-        return {self.c}
+    def nonlogs(self):
+        return {self.c}, set(), set()
 
     def subst(self, u, t):
         return self
@@ -180,8 +179,8 @@ class Var(Term):
     def boundvars(self):
         return set()
 
-    def constants(self):
-        return set()
+    def nonlogs(self):
+        return set(), set(), set()
 
     def subst(self, u, t):
         if u.u == self.u:
@@ -223,8 +222,8 @@ class Func(Expr):
     def boundvars(self):
         return set()
 
-    def constants(self):
-        return set()
+    def nonlogs(self):
+        return set(), {self.f}, set()
 
     def subst(self, u, t):
         return self
@@ -276,8 +275,8 @@ class FuncTerm(Term):
     def boundvars(self):
         return set().union(*[t.boundvars() for t in self.terms])
 
-    def constants(self):
-        return set().union(*[t.constants() for t in self.terms])
+    def nonlogs(self):
+        return set().union(*[t.nonlogs()[0] for t in self.terms]), {self.f}, set()
 
     def subst(self, u, t):
         return FuncTerm(self.f, tuple(map(lambda t: t.subst(u, t), self.terms)))
@@ -319,8 +318,8 @@ class Pred(Expr):
     def boundvars(self):
         return set()
 
-    def constants(self):
-        return set()
+    def nonlogs(self):
+        return set(), set(), {self.p}
 
     def subst(self, u, t):
         return self
@@ -498,8 +497,8 @@ class Verum(Formula):
     def boundvars(self):
         return set()
 
-    def constants(self):
-        return set()
+    def nonlogs(self):
+        return set(), set(), set()
 
     def subst(self, u, t):
         return self
@@ -541,8 +540,8 @@ class Falsum(Formula):
     def boundvars(self):
         return set()
 
-    def constants(self):
-        return set()
+    def nonlogs(self):
+        return set(), set(), set()
 
     def subst(self, u, t):
         return self
@@ -586,8 +585,8 @@ class Prop(Formula):
     def boundvars(self):
         return set()
 
-    def constants(self):
-        return set()
+    def nonlogs(self):
+        return set(), set(), set()
 
     def subst(self, u, t):
         return self
@@ -636,8 +635,8 @@ class Eq(Formula):
     def boundvars(self):
         return self.t1.boundvars() | self.t2.boundvars()
 
-    def constants(self):
-        return self.t1.constants() | self.t2.constants()
+    def nonlogs(self):
+        return self.t1.nonlogs()[0] | self.t2.nonlogs()[0], self.t1.nonlogs()[1] | self.t2.nonlogs()[1], set()
 
     def subst(self, u, t):
         return Eq(self.t1.subst(u, t), self.t2.subst(u, t))
@@ -691,8 +690,9 @@ class Atm(Formula):
     def boundvars(self):
         return set().union(*[t.boundvars() for t in self.terms])
 
-    def constants(self):
-        return set().union(*[t.constants() for t in self.terms])
+    def nonlogs(self):
+        return set().union(*[t.nonlogs()[0] for t in self.terms]), set().union(*[t.nonlogs()[1] for t in self.terms]), \
+               {self.pred.p}
 
     def subst(self, u, t):
         return Atm(self.pred, tuple(map(lambda t: t.subst(u, t), self.terms)))
@@ -733,8 +733,8 @@ class Neg(Formula):
     def boundvars(self):
         return self.phi.boundvars()
 
-    def constants(self):
-        return self.phi.constants()
+    def nonlogs(self):
+        return self.phi.nonlogs()[0], self.phi.nonlogs()[1], self.phi.nonlogs()[2]
 
     def subst(self, u, t):
         return Neg(self.phi.subst(u, t))
@@ -791,8 +791,10 @@ class Conj(Formula):
     def boundvars(self):
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def constants(self):
-        return self.phi.constants() | self.psi.constants()
+    def nonlogs(self):
+        return self.phi.nonlogs()[0] | self.psi.nonlogs()[0], \
+               self.phi.nonlogs()[1] | self.psi.nonlogs()[1], \
+               self.phi.nonlogs()[2] | self.psi.nonlogs()[1]
 
     def subst(self, u, t):
         return Conj(self.phi.subst(u, t), self.psi.subst(u, t))
@@ -849,8 +851,10 @@ class Disj(Formula):
     def boundvars(self):
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def constants(self):
-        return self.phi.constants() | self.psi.constants()
+    def nonlogs(self):
+        return self.phi.nonlogs()[0] | self.psi.nonlogs()[0], \
+               self.phi.nonlogs()[1] | self.psi.nonlogs()[1], \
+               self.phi.nonlogs()[2] | self.psi.nonlogs()[1]
 
     def subst(self, u, t):
         return Disj(self.phi.subst(u, t), self.psi.subst(u, t))
@@ -907,8 +911,10 @@ class Imp(Formula):
     def boundvars(self):
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def constants(self):
-        return self.phi.constants() | self.psi.constants()
+    def nonlogs(self):
+        return self.phi.nonlogs()[0] | self.psi.nonlogs()[0], \
+               self.phi.nonlogs()[1] | self.psi.nonlogs()[1], \
+               self.phi.nonlogs()[2] | self.psi.nonlogs()[1]
 
     def subst(self, u, t):
         return Imp(self.phi.subst(u, t), self.psi.subst(u, t))
@@ -965,8 +971,10 @@ class Biimp(Formula):
     def boundvars(self):
         return self.phi.boundvars() | self.psi.boundvars()
 
-    def constants(self):
-        return self.phi.constants() | self.psi.constants()
+    def nonlogs(self):
+        return self.phi.nonlogs()[0] | self.psi.nonlogs()[0], \
+               self.phi.nonlogs()[1] | self.psi.nonlogs()[1], \
+               self.phi.nonlogs()[2] | self.psi.nonlogs()[1]
 
     def subst(self, u, t):
         return Biimp(self.phi.subst(u, t), self.psi.subst(u, t))
@@ -1025,8 +1033,8 @@ class Exists(Formula):
     def boundvars(self):
         return self.phi.boundvars() | {self.u.u}
 
-    def constants(self):
-        return self.phi.constants()
+    def nonlogs(self):
+        return self.phi.nonlogs()
 
     def subst(self, u, t):
         if u.u == self.u:
@@ -1124,8 +1132,8 @@ class Forall(Formula):
     def boundvars(self):
         return self.phi.boundvars() | {self.u.u}
 
-    def constants(self):
-        return self.phi.constants()
+    def nonlogs(self):
+        return self.phi.nonlogs()
 
     def subst(self, u, t):
         if u.u == self.u:
@@ -1220,8 +1228,8 @@ class Poss(Formula):
     def boundvars(self):
         return self.phi.boundvars()
 
-    def constants(self):
-        return self.phi.constants()
+    def nonlogs(self):
+        return self.phi.nonlogs()
 
     def subst(self, u, t):
         return Poss(self.phi.subst(u, t))
@@ -1317,8 +1325,8 @@ class Nec(Formula):
     def boundvars(self):
         return self.phi.boundvars()
 
-    def constants(self):
-        return self.phi.constants()
+    def nonlogs(self):
+        return self.phi.nonlogs()
 
     def subst(self, u, t):
         return Poss(self.phi.subst(u, t))

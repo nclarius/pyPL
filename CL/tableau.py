@@ -5,11 +5,12 @@ Tableau proofs.
 """
 
 
-# This part is still under construction.
+# THIS PART IS STILL UNDER CONSTRUCTION.
 
 # todo predicate logic
 # todo modal logic
-# todo integration in main module gives class not defined errors -- circular imports?
+# todo parser
+# todo premises + conclusion
 
 
 from main import *
@@ -25,27 +26,32 @@ class Tableau(object):
     A tableau tree.
     """
 
-    def __init__(self, root_fml, propositional=False, modal=False):
-        self.root = Node(1, [1], root_fml, "(A)", None)
+    def __init__(self, conclusion, premises=[], propositional=False, modal=False):
+        self.root = Node(1, [1], Neg(conclusion), "(A)", None)
+        self.premises = [self.root.leaves()[0].add_child((i+2, [1], premise, "(A)"))
+                         for i, premise in enumerate(premises)]
         self.propositional = propositional  # todo detect automatically?
         self.modal = modal  # todo detect automatically?
 
     def __str__(self):
-        return self.root.treestr()
+        return self.root.treestr()[:-1]
 
     def generate(self):
         """
         Expand the tableau, generate the associate models and print some info.
         """
+        # todo systematic error handlng
         if not self.propositional and self.root.fml.freevars():
             print("ERROR: You may only enter closed formulas.")
             return
-        print("Tableau for " + str(self.root.fml) + ":\n")
+        print("Tableau for " +
+              ", ".join([str(premise.fml) for premise in self.premises]) + " ⊨ " + str(self.root.fml.phi) + ":\n")
         self.expand()
         print(self)
-        print("The tableau is " + ("open" if (models := self.models()) else "closed") + ".")
+        print("The tableau is " + ("open" if (models := self.models()) else "closed") + ":\n"
+              "The " + ("inference" if self.premises else "formula") + " is " + ("in" if models else "") + "valid.")
         if models:
-            print("Models:")
+            print("\nCounter models:")
             for model in models:
                 print(model)
         print("\n")
@@ -54,9 +60,10 @@ class Tableau(object):
         """
         Recursively expand all nodes in the tableau.
         """
-        # todo expand tableau systematically rather than preorder
+        # todo expand tableau systematically rather than in preorder
         if not node:
             node = self.root
+            node.check_contradictions()
         node.expand()
         for child in node.children:
             self.expand(child)
@@ -95,11 +102,21 @@ class Tableau(object):
                 else:
                     # atoms = all unnegated atomic predications
                     atoms = [node.fml for node in leaf.branch if isinstance(node.fml, Atm)]
+                    # predicates = all predicates occurring in the conclusion and premises
+                    constants = set(itertools.chain(self.root.fml.nonlogs()[0],
+                                                  *[prem.fml.nonlogs()[0] for prem in self.premises]))
+                    funcsymbs = set(itertools.chain(self.root.fml.nonlogs()[1],
+                                                  *[prem.fml.nonlogs()[1] for prem in self.premises]))
+                    # todo take care of function symbols in domain and interpretation
+                    predicates = set(itertools.chain(self.root.fml.nonlogs()[2],
+                                                  *[prem.fml.nonlogs()[2] for prem in self.premises]))
                     # domain = all const.s occurring in formulas
-                    d = set(itertools.chain(*[node.fml.constants() for node in leaf.branch]))
-                    # todo take care of function symbols
+                    d = set(itertools.chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))
                     # interpretation = make all unnegated predications true and all others false
-                    i = {a.pred.p: {tuple([term.c for term in a.terms if Atm(a.pred, a.terms) in atoms])} for a in atoms}
+                    i = {**{c: c for c in constants},
+                         **{p: {tuple([term.c for term in a.terms if Atm(Pred(p), a.terms) in atoms]) for a in atoms}
+                         for p in predicates}}
+                    # todo specify interpret. for all non-log. symbols, not just the ones that occur in positive atoms
                     model = PredStructure(d, i)
                     res.append(model)
 
@@ -132,7 +149,7 @@ class Node(object):
         String representation of the tree whose root is this node.
         """
         # todo nicer overall representation?
-        # todo carry | into unary children of binary parents
+        # todo carry "|" into unary children of binary parents
         res = indent
         if binary:
             res += "|--"
@@ -293,7 +310,7 @@ class Node(object):
         for leaf in self.leaves():  # visit each branch
             if not isinstance(leaf.fml, Closed):  # skip already closed branches
                 line += 1
-                constants = list(itertools.chain(*[node.fml.constants() for node in leaf.branch]))  # all existing constants in the curr. branch
+                constants = list(itertools.chain(*[node.fml.nonogs()[0] for node in leaf.branch]))  # all existing constants in the curr. branch
                 param = Const("c" + str(min([i for i in range(1, 10) if "c" + str(i) not in constants])))  # choose new
                 fml = phi.subst(var, param)  # substitute the parameter vor the variable
                 # todo subst not working
@@ -314,7 +331,7 @@ class Node(object):
         for leaf in self.leaves():  # visit each branch
             if not isinstance(leaf.fml, Closed):  # skip already closed branches
                 line += 1
-                constants = list(itertools.chain(*[node.fml.constants() for node in leaf.branch]))  # all existing constants in the curr. branch
+                constants = list(itertools.chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))  # all existing constants in the curr. branch
                 param = Const(constants[0] if constants else "c1")  # choose old parameter
                 fml = phi.subst(var, param)  # substitute the parameter vor the variable
                 # todo subst not working
@@ -364,42 +381,62 @@ class Node(object):
         # ⊥
         if isinstance(self.fml, Falsum):
             self.add_child((None, None, Closed(), "(" + ", " + str(self.line) + ")"))
+            return
 
         # a = b
         if isinstance(self.fml, Eq) and not self.fml.t1 == self.fml.t2:
             self.add_child((None, None, Closed(), "(" + ", " + str(self.line) + ")"))
+            return
 
         # ¬(a = a)
         if isinstance(self.fml, Neg) and isinstance(self.fml.phi, Eq) and self.fml.phi.t1 == self.fml.phi.t2:
-            self.add_child((None, None, Closed(), "(" + ", " + str(self.line) + ")"))
+            self.add_child((None, None, Closed(), "(" + str(self.line) + ")"))
+            return
 
         # contradiction to another formula in the same branch
         for other in self.branch:
             #  φ ... ¬φ                      ¬φ ... φ
             if Neg(self.fml) == other.fml or self.fml == Neg(other.fml):
                 self.add_child((None, None, Closed(), "(" + str(other.line) + ", " + str(self.line) + ")"))
+                return
 
 
 ####################
 
+# todo integration in main module gives class not defined errors -- circular imports?
 if __name__ == "__main__":
-    fml1 = Conj(Imp(Prop("p"), Prop("q")), Prop("r"))
+
+    fml1 = Neg(Conj(Imp(Prop("p"), Prop("q")), Prop("r")))
     tab1 = Tableau(fml1, propositional=True)
     tab1.generate()
 
     fml2 = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
-    tab2 = Tableau(Neg(fml2), propositional=True)
+    tab2 = Tableau(fml2, propositional=True)
     tab2.generate()
 
-    fml3 = Disj(Atm(Pred("P"), (Const("a"), Const("b"))), Atm(Pred("P"), (Const("b"), Const("a"))))
+    fml3 = Neg(Disj(Atm(Pred("P"), (Const("a"), Const("b"))), Atm(Pred("P"), (Const("b"), Const("a")))))
     tab3 = Tableau(fml3)
     tab3.generate()
 
-    # fml4 = Exists(Var("x"), Forall(Var("y"), Atm(Pred("P"), (Var("x"), Var("y")))))
-    # tab4 = Tableau(fml4)
-    # tab4.generate()
-    #
-    # fml5 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("P"), (Var("x"), Var("y")))))
+    fml4 = Neg(Conj(Atm(Pred("P"), (Const("a"), Const("a"))), Neg(Eq(Const("a"), Const("a")))))
+    tab4 = Tableau(fml4)
+    tab4.generate()
+
+    # fml5 = Exists(Var("x"), Forall(Var("y"), Atm(Pred("P"), (Var("x"), Var("y")))))
     # tab5 = Tableau(fml5)
     # tab5.generate()
+    #
+    # fml6 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("P"), (Var("x"), Var("y")))))
+    # tab6 = Tableau(fml6)
+    # tab6.generate()
 
+    fml7a = Imp(Prop("p"), Prop("q"))
+    fml7b = Imp(Prop("q"), Prop("r"))
+    fml7 = Imp(Prop("p"), Prop("r"))
+    tab7 = Tableau(fml7, premises=[fml7a, fml7b], propositional=True)
+    tab7.generate()
+
+    fml8a = Imp(Atm(Pred("P"), (Const("a"), Const("b"))), Atm(Pred("P"), (Const("a"), Const("c"))))
+    fml8 = Atm(Pred("P"), (Const("a"), Const("a")))
+    tab8 = Tableau(fml8, premises=[fml8a])
+    tab8.generate()
