@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -147,7 +148,6 @@ class Const(Term):
         if isinstance(m, ModalStructure):
             i = m.i[w]
         return i[self.c]
-
 
 class Var(Term):
     """

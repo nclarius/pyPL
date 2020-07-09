@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -131,6 +132,34 @@ class ModalStructure(Structure):
     @type r: set[tuple[str,str]]
     """
     pass
+
+
+class PropModalStructure(Structure):
+    """
+    A structure of propositional logic with valuation function.
+
+    A structure M is a function V: VAR -> {True, False}.
+    V = {"p": True, "q": False, "r": True}
+
+    @attr v: the valuation function
+    @type v: dict[str,bool]
+    """
+    def __init__(self, w, r, v):
+        self.w = w
+        self.r = r
+        self.v = v
+
+    def __str__(self):
+        return "Structure M = (W, V) with\n"\
+               "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n"\
+               "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n"\
+               "V = {\n" +\
+                        " \n".join(["    " + str(w) + " ↦ \n" +
+                            ", \n".join(["           " + str(p) + " ↦ " + str(tv)
+                            for (p, tv) in sorted(self.v[w].items())])
+                        for w in sorted(self.w)]) +\
+                    "}"
+
 
 
 class ConstModalStructure(ModalStructure):

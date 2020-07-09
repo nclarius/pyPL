@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 """
@@ -25,12 +26,13 @@ class Tableau(object):
     A tableau tree.
     """
 
-    def __init__(self, conclusion, premises=[], propositional=False, modal=False):
+    def __init__(self, conclusion, premises=[], propositional=False, modal=False, vardomain=False):
         self.root = Node(1, [1], Neg(conclusion), "(A)", None)
         self.premises = [self.root.leaves()[0].add_child((i+2, [1], premise, "(A)"))
                          for i, premise in enumerate(premises)]
         self.propositional = propositional  # todo detect automatically?
         self.modal = modal  # todo detect automatically?
+        self.vardomain = vardomain
 
     def __str__(self):
         return self.root.treestr()[:-1]
@@ -93,18 +95,35 @@ class Tableau(object):
                 # open branch
                 leaf.add_open()
                 leaf = leaf.branch[-2]
+                branch = leaf.branch
+
+                if self.modal:
+                    sigs = [node.sig for node in branch]
+                    w = {".".join(sig) for sig in sigs}
+                    r = {(".".join(sig[:-1]), sig[-1]) for sig in sigs if len(sig) > 1}
 
                 if self.propositional:
-                    # atoms = all unnegated propositional variables
-                    atoms = [node.fml.p for node in leaf.branch if isinstance(node.fml, Prop)]
-                    # valuation = make all positive propositional variables true and all others false
-                    v = {p: (True if p in atoms else False) for p in self.root.fml.propvars()}
-                    model = PropStructure(v)
-                    res.append(model)
+
+                    if not self.modal:  # non-modal propositional
+                        # atoms = all unnegated propositional variables
+                        atoms = [node.fml.p for node in branch if isinstance(node.fml, Prop)]
+                        # valuation = make all positive propositional variables true and all others false
+                        v = {p: (True if p in atoms else False) for p in self.root.fml.propvars()}
+                        model = PropStructure(v)
+                        res.append(model)
+
+                    else:  # modal propositional
+                        # atoms = all unnegated propositional variables
+                        atoms = {sig: [node.fml.p for node in branch if isinstance(node.fml, Prop) and node.sig == sig]
+                                 for sig in sigs}
+                        # valuation = make all positive propositional variables true and all others false
+                        v = {sig: {p: (True if p in atoms[sig] else False) for p in self.root.fml.propvars()}
+                             for sig in sigs}
+                        model = PropModalStructure(w, r, v)
+                        res.append(model)
+
 
                 else:
-                    # atoms = all unnegated atomic predications
-                    atoms = [(node.fml.pred, node.fml.terms) for node in leaf.branch if isinstance(node.fml, Atm)]
                     # predicates = all predicates occurring in the conclusion and premises
                     constants = set(chain(self.root.fml.nonlogs()[0],
                                           *[prem.fml.nonlogs()[0] for prem in self.premises]))
@@ -114,13 +133,39 @@ class Tableau(object):
                     # todo take care of function symbols in domain and interpretation
                     predicates = set(chain(self.root.fml.nonlogs()[2],
                                            *[prem.fml.nonlogs()[2] for prem in self.premises]))
-                    # domain = all const.s occurring in formulas
-                    d = set(chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))
-                    # interpretation = make all unnegated predications true and all others false
-                    i = {p: {tuple([str(t) for t in a[1]]) for a in atoms if (Pred(p), a[1]) in atoms}
-                         for p in predicates}
-                    model = PredStructure(d, i)
-                    res.append(model)
+
+                    if not self.modal:  # non-modal predicational
+                        # atoms = all unnegated atomic predications
+                        atoms = [(node.fml.pred, node.fml.terms) for node in branch if isinstance(node.fml, Atm)]
+                        # domain = all const.s occurring in formulas
+                        d = set(chain(*[node.fml.nonlogs()[0] for node in branch]))
+                        # interpretation = make all unnegated predications true and all others false
+                        i = {p: {tuple([str(t) for t in a[1]]) for a in atoms if (Pred(p), a[1]) in atoms}
+                             for p in predicates}
+                        model = PredStructure(d, i)
+                        res.append(model)
+
+                    else:
+                        # atoms = all unnegated atomic predications
+                        atoms = {sig: [(node.fml.pred, node.fml.terms) for node in branch
+                                       if isinstance(node.fml, Atm) and node.sig == sig]
+                                 for sig in sigs}
+                        i = {sig: {p: {tuple([str(t) for t in a[1]]) for a in atoms[sig]
+                                       if (Pred(p), a[1]) in atoms[sig]}
+                                   for p in predicates}
+                                 for sig in sigs}
+
+                        if not self.vardomain:  # modal predicational with constant domain
+                            d = set(chain(*[node.fml.nonlogs()[0] for node in branch]))
+                            model = ConstModalStructure(w, r, d, i)
+                            res.append(model)
+
+                        else:  # modal predicational with varying domain
+                            d = {sig: set(chain(*[node.fml.nonlogs()[0] for node in branch
+                                                  if node.sig == sig]))
+                                 for sig in sigs}
+                            model = VarModalStructure(w, r, d, i)
+                            res.append(model)
 
         return res
 
@@ -150,16 +195,17 @@ class Node(object):
         String representation of the tree whose root is this node.
         """
         # todo non-rotated visualization?
-        len_col1 = max([len(str(node.line)) for node in self.branch[0].preorder()])
-        len_col2 = max([len(str(node.fml)) for node in self.branch[0].preorder()]) + 1
-        len_col3 = max([len(str(node.cite)) for node in self.branch[0].preorder()])
-        str_line = "{:<{len}}".format(str(self.line) + "." if self.line else "", len=len_col1)
-        str_fml = "{:^{len}}".format(str(self.fml), len=len_col2)
-        str_cite = "{:<{len}}".format(str(self.cite), len=len_col3)
+        len_line = max([len(str(node.line)) for node in self.branch[0].preorder()])
+        len_fml = max([len(str(node.fml)) for node in self.branch[0].preorder()]) + 1
+        len_cite = max([len(str(node.cite)) for node in self.branch[0].preorder()])
+        str_line = "{:<{len}}".format(str(self.line) + "." if self.line else "", len=len_line)
+        str_fml = "{:^{len}}".format(str(self.fml), len=len_fml)
+        str_cite = "{:<{len}}".format(str(self.cite), len=len_cite)
+        selfstr = str_line + str_fml + str_cite + "\n"
 
         res = indent
         res += "|--" if binary else ""
-        res += str_line + str_fml + str_cite + "\n"
+        res += selfstr
         if self.children:  # self branches
             if len(self.children) == 1:  # unary branching
                 if binary:
@@ -169,7 +215,7 @@ class Node(object):
                         indent += "   "
                 if childstr := self.children[0].treestr(indent, False, True):
                     res += childstr
-            elif len(self.children) == 2:  # binary branching; indent
+            elif len(self.children) == 2:  # binary branching
                 if childstr1 := self.children[0].treestr(indent, True, False):
                     res += childstr1
                 if childstr2 := self.children[1].treestr(indent, True, True):
@@ -306,13 +352,17 @@ class Node(object):
         sig = None
         max_line = max([node.line for node in self.branch[0].preorder() if node.line])
         line = max_line
+        params = "abcdefghijklmnopqrstuvwxyz"
 
         for leaf in self.leaves():  # visit each branch
             if not isinstance(leaf.fml, Closed):  # skip already closed branches
                 line += 1
-                constants = list(chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))  # all existing constants in the curr. branch
-                param = Const(constants[0] if constants else "c1")  # choose old parameter
-                fml = phi.subst(var, param)  # substitute the parameter vor the variable
+                # all existing constants in the curr. branch
+                constants = list(chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))
+                # choose arb. parameter (first unused in list)
+                param = Const(params[(min([i for i in range(len(params)) if params[i] not in constants]))])
+                # substitute the parameter vor the variable
+                fml = phi.subst(var, param)
                 cite = "(" + rule + ", " + str(leaf.line) + ")" + " " + "[" + var.u + "/" + param.c + "]"
                 node = leaf.add_child((line, sig, fml, cite))  # add node
 
@@ -326,13 +376,17 @@ class Node(object):
         sig = None
         max_line = max([node.line for node in self.branch[0].preorder() if node.line])
         line = max_line
+        params = "abcdefghijklmnopqrstuvwxyz"
 
         for leaf in self.leaves():  # visit each branch
             if not isinstance(leaf.fml, Closed):  # skip already closed branches
                 line += 1
-                constants = list(chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))  # all existing constants in the curr. branch
-                param = Const("c" + str(min([i for i in range(1, 10) if "c" + str(i) not in constants])))  # choose new
-                fml = phi.subst(var, param)  # substitute the parameter vor the variable
+                # all existing constants in the curr. branch
+                constants = list(chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))
+                # choose new parameter (first unused in list)
+                param = Const(params[(min([i for i in range(len(params)) if params[i] not in constants]))])
+                # substitute the parameter vor the variable
+                fml = phi.subst(var, param)
                 cite = "(" + rule + ", " + str(leaf.line) + ")" + " " + "[" + var.u + "/" + param.c + "]"
                 node = leaf.add_child((line, sig, fml, cite))  # add node
 
