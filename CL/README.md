@@ -1,4 +1,4 @@
-A naive model checker for classical propositional and first-order logic with an extension to modal logic.  
+A naive model checker and generator for classical propositional and first-order logic with an extension to modal logic.  
 This tool computes the denotation (truth value) of a given logical expression in a given structure.  
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
 License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).  
