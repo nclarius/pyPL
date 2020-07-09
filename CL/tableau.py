@@ -2,15 +2,8 @@
 
 """
 Tableau proofs.
+THIS PART IS STILL UNDER CONSTRUCTION.
 """
-
-
-# THIS PART IS STILL UNDER CONSTRUCTION.
-
-# todo predicate logic
-# todo modal logic
-# todo parser
-# todo premises + conclusion
 
 
 from main import *
@@ -18,7 +11,13 @@ from expr import *
 from structure import *
 
 from typing import List, Dict, Set, Tuple
-import itertools
+from itertools import chain
+
+
+# todo documentation
+# todo predicate logic
+# todo modal logic
+# todo parser
 
 
 class Tableau(object):
@@ -40,7 +39,7 @@ class Tableau(object):
         """
         Expand the tableau, generate the associate models and print some info.
         """
-        # todo systematic error handlng
+        # todo systematic error handling
         if not self.propositional and self.root.fml.freevars():
             print("ERROR: You may only enter closed formulas.")
             return
@@ -62,11 +61,12 @@ class Tableau(object):
         """
         # todo expand tableau systematically rather than in preorder
         if not node:
-            node = self.root
-            node.check_contradictions()
-        node.expand()
+            node = self.root  # value on initialization
+            for node in self.root.leaves()[0].branch:
+                node.check_contradiction()  # check for contradictions in assumptions
+        node.expand()  # expand node
         for child in node.children:
-            self.expand(child)
+            self.expand(child)  # recursively expand children
 
     def closed(self) -> bool:
         """
@@ -103,16 +103,16 @@ class Tableau(object):
                     # atoms = all unnegated atomic predications
                     atoms = [(node.fml.pred, node.fml.terms) for node in leaf.branch if isinstance(node.fml, Atm)]
                     # predicates = all predicates occurring in the conclusion and premises
-                    constants = set(itertools.chain(self.root.fml.nonlogs()[0],
+                    constants = set(chain(self.root.fml.nonlogs()[0],
                                                     *[prem.fml.nonlogs()[0] for prem in self.premises]))
                     # todo show constants in interpret.?
-                    funcsymbs = set(itertools.chain(self.root.fml.nonlogs()[1],
+                    funcsymbs = set(chain(self.root.fml.nonlogs()[1],
                                                     *[prem.fml.nonlogs()[1] for prem in self.premises]))
                     # todo take care of function symbols in domain and interpretation
-                    predicates = set(itertools.chain(self.root.fml.nonlogs()[2],
+                    predicates = set(chain(self.root.fml.nonlogs()[2],
                                                      *[prem.fml.nonlogs()[2] for prem in self.premises]))
                     # domain = all const.s occurring in formulas
-                    d = set(itertools.chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))
+                    d = set(chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))
                     # interpretation = make all unnegated predications true and all others false
                     i = {p: {tuple([t.c for t in a[1]]) for a in atoms if (Pred(p), a[1]) in atoms} for p in predicates}
                     model = PredStructure(d, i)
@@ -146,7 +146,7 @@ class Node(object):
         """
         String representation of the tree whose root is this node.
         """
-        # todo nicer overall representation?
+        # todo better overall representation?
         # todo carry "|" into unary children of binary parents
         res = indent
         if binary:
@@ -222,12 +222,17 @@ class Node(object):
         (line, sig, fml, cite) = spec
         node = Node(line, sig, fml, cite, self)
         self.children.append(node)
-        node.check_contradictions()
+        node.check_contradiction()
         return node
 
-    def branch_unary(self, fmls, rule):
+    def expand(self):
+        if val := self.fml.tableau_pos(self):  # check which rule application the formula defines, if any
+            (rule_type, args, rule) = val
+            rule_type(args, rule)  # apply the rule
+
+    def rule_alpha(self, fmls, rule):
         """
-        Branch this line unary in all of this node's subordinary branches.
+        Extend the current line unary in all of this node's subordinary branches.
         """
         sig = None
         max_line = max([node.line for node in self.branch[0].preorder() if node.line])
@@ -253,9 +258,9 @@ class Node(object):
                         cite = "(" + rule + ", " + str(leaf.line) + ")"
                         node2 = leafleaf.add_child((line, sig, fml, cite))
 
-    def branch_binary(self, fmls_left, fmls_right, rule):
+    def rule_beta(self, fmls, rule):
         """
-        Branch this current line binary in all this node's subordinary branches.
+        Extend the current line binary in all this node's subordinary branches.
         """
         sig = None
         max_line = max([node.line for node in self.branch[0].preorder() if node.line])
@@ -267,61 +272,41 @@ class Node(object):
 
                 # append (top) left node
                 line += 1
-                fml = fmls_left[0]
+                fml = fmls[0][0]
                 cite = "(" + rule + ", " + str(leaf.line) + ")"
                 node1 = leaf.add_child((line, sig, fml, cite))
 
                 # append bottom left node
-                if len(fmls_left) == 2:
+                if len(fmls[0]) == 2:
                     leafleaf = node1
                     if not (leafleaf.children and isinstance(leafleaf.children[0].fml, Closed)):
                         line += 1
-                        fml = fmls_left[1]
+                        fml = fmls[0][1]
                         cite = "(" + rule + ", " + str(leaf.line) + ")"
                         node3 = leafleaf.add_child((line, sig, fml, cite))
 
                 # append (top) right node
                 line += 1
-                fml = fmls_right[0]
+                fml = fmls[1][0]
                 cite = "(" + rule + ", " + str(leaf.line) + ")"
                 node2 = leaf.add_child((line, sig, fml, cite))
 
                 # append bottom right node
-                if len(fmls_right) == 2:
+                if len(fmls[1]) == 2:
                     leafleaf = node2
                     if not (leafleaf.children and isinstance(leafleaf.children[0].fml, Closed)):
                         line += 1
-                        fml = fmls_right[1]
+                        fml = fmls[1][1]
                         cite = "(" + rule + ", " + str(leaf.line) + ")"
                         node4 = leafleaf.add_child((line, sig, fml, cite))
 
-    def branch_delta(self, phi, var, rule):
-        """
-        Extend the current line according to the gamma schema (with a new param.) in all this node's subord. branches.
-        """
-        # ! dummy & doesn't work yet
-        # todo specify rule application adequately
-        sig = None
-        max_line = max([node.line for node in self.branch[0].preorder() if node.line])
-        line = max_line
-
-        for leaf in self.leaves():  # visit each branch
-            if not isinstance(leaf.fml, Closed):  # skip already closed branches
-                line += 1
-                constants = list(itertools.chain(*[node.fml.nonogs()[0] for node in leaf.branch]))  # all existing constants in the curr. branch
-                param = Const("c" + str(min([i for i in range(1, 10) if "c" + str(i) not in constants])))  # choose new
-                fml = phi.subst(var, param)  # substitute the parameter vor the variable
-                # todo subst not working
-                # todo wrong expansion, skipping inner quantifier?
-                cite = "(" + rule + ", " + str(leaf.line) + ")" + " " + "[" + var.u + "/" + param.c + "]"
-                node = leaf.add_child((line, sig, fml, cite))  # add node
-
-    def branch_gamma(self, phi, var, rule):
+    def rule_gamma(self, args, rule):
         """
         Extend the current line according to the delta schema (with an arb. param.) in all this node's subord. branches.
         """
         # ! dummy, & doesn't work yet
         # todo specify rule application adequately
+        phi, var = args
         sig = None
         max_line = max([node.line for node in self.branch[0].preorder() if node.line])
         line = max_line
@@ -329,7 +314,7 @@ class Node(object):
         for leaf in self.leaves():  # visit each branch
             if not isinstance(leaf.fml, Closed):  # skip already closed branches
                 line += 1
-                constants = list(itertools.chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))  # all existing constants in the curr. branch
+                constants = list(chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))  # all existing constants in the curr. branch
                 param = Const(constants[0] if constants else "c1")  # choose old parameter
                 fml = phi.subst(var, param)  # substitute the parameter vor the variable
                 # todo subst not working
@@ -337,7 +322,29 @@ class Node(object):
                 cite = "(" + rule + ", " + str(leaf.line) + ")" + " " + "[" + var.u + "/" + param.c + "]"
                 node = leaf.add_child((line, sig, fml, cite))  # add node
 
-    def branch_mu(self, fml, rule):
+    def rule_delta(self, args, rule):
+        """
+        Extend the current line according to the gamma schema (with a new param.) in all this node's subord. branches.
+        """
+        # ! dummy & doesn't work yet
+        # todo specify rule application adequately
+        phi, var = args
+        sig = None
+        max_line = max([node.line for node in self.branch[0].preorder() if node.line])
+        line = max_line
+
+        for leaf in self.leaves():  # visit each branch
+            if not isinstance(leaf.fml, Closed):  # skip already closed branches
+                line += 1
+                constants = list(chain(*[node.fml.nonogs()[0] for node in leaf.branch]))  # all existing constants in the curr. branch
+                param = Const("c" + str(min([i for i in range(1, 10) if "c" + str(i) not in constants])))  # choose new
+                fml = phi.subst(var, param)  # substitute the parameter vor the variable
+                # todo subst not working
+                # todo wrong expansion, skipping inner quantifier?
+                cite = "(" + rule + ", " + str(leaf.line) + ")" + " " + "[" + var.u + "/" + param.c + "]"
+                node = leaf.add_child((line, sig, fml, cite))  # add node
+
+    def rule_mu(self, fml, rule):
         """
         Extend the current line according to the mu schema (with a new sig.) in all this node's subord. branches.
         """
@@ -354,7 +361,7 @@ class Node(object):
                 cite = "(" + rule + ", " + str(leaf.line) + ")"
                 node = leaf.add_child((line, sig, fml, cite))  # add node
 
-    def branch_nu(self, fml, rule):
+    def rule_nu(self, fml, rule):
         """
         Extend the current line according to the nu schema (with an old sig.) in all this node's subord. branches.
         """
@@ -371,32 +378,14 @@ class Node(object):
                 cite = "(" + rule + ", " + str(leaf.line) + ")"
                 node = leaf.add_child((line, sig, fml, cite))  # add node
 
-    def expand(self):
-        self.fml.tableau_pos(self)
+    def check_contradiction(self):
+        self.fml.tableau_contradiction_pos(self)
 
-    def check_contradictions(self):
-
-        # ⊥
-        if isinstance(self.fml, Falsum):
-            self.add_child((None, None, Closed(), "(" + ", " + str(self.line) + ")"))
-            return
-
-        # a = b
-        if isinstance(self.fml, Eq) and not self.fml.t1 == self.fml.t2:
-            self.add_child((None, None, Closed(), "(" + ", " + str(self.line) + ")"))
-            return
-
-        # ¬(a = a)
-        if isinstance(self.fml, Neg) and isinstance(self.fml.phi, Eq) and self.fml.phi.t1 == self.fml.phi.t2:
-            self.add_child((None, None, Closed(), "(" + str(self.line) + ")"))
-            return
-
-        # contradiction to another formula in the same branch
-        for other in self.branch:
-            #  φ ... ¬φ                      ¬φ ... φ
-            if Neg(self.fml) == other.fml or self.fml == Neg(other.fml):
-                self.add_child((None, None, Closed(), "(" + str(other.line) + ", " + str(self.line) + ")"))
-                return
+    def add_contradiction(self, lines):
+        """
+        Add a pseudo-node for a contradictory branch.
+        """
+        self.add_child((None, None, Closed(), "(" + ", ".join([str(line) for line in lines]) + ")"))
 
 
 ####################

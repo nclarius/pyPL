@@ -470,10 +470,46 @@ class Formula(Expr):
         return True
 
     def tableau_pos(self, node):
+        """
+        Tableau rule for the unnegated formula.
+
+        @return: A triple of
+                 - the type of rule (alpha/beta/gamma/delta/mu/nu)
+                 - the arguments of the rule: the formulas to extend and, if applicable, parameter/signature information
+                 - the rule name
+        """
         pass
 
     def tableau_neg(self, node):
+        """
+        Tableau rule for the negated formula.
+
+        @return: A triple of
+                 - the type of rule (alpha/beta/gamma/delta/mu/nu)
+                 - the arguments of the rule: the formulas to extend and, if applicable, parameter/signature information
+                 - the rule name
+        """
         pass
+
+    def tableau_contradiction_pos(self, node):
+        """
+        The cases where the unnegated formula leads to a contradiction in the branch.
+        """
+        for other in node.branch[:-1]:  # contradiction to another formula in the same branch
+            #  φ ... ¬φ; ¬φ ... φ
+            if Neg(self) == other.fml or \
+               self == Neg(other.fml):
+                node.add_contradiction([other.line, node.line])
+
+    def tableau_contradiction_neg(self, node):
+        """
+        The cases where the unnegated formula leads to a contradiction in the branch.
+        """
+        for other in node.branch[:-1]:  # contradiction to another formula in the same branch
+            #  φ ... ¬φ; ¬φ ... φ
+            if Neg(self) == other.fml or \
+               self == Neg(other.fml):
+                node.add_contradiction([other.line, node.line])
 
 
 class Verum(Formula):
@@ -512,10 +548,16 @@ class Verum(Formula):
         return True
 
     def tableau_pos(self, node):
-        pass
+        return None
 
     def tableau_neg(self, node):
+        return None
+
+    def tableau_contradiction_pos(self, node):
         pass
+
+    def tableau_contradiction_neg(self, node):
+        node.add_child((None, None, Closed(), "(" + str(node.line) + ")"))
 
 
 class Falsum(Formula):
@@ -555,10 +597,17 @@ class Falsum(Formula):
         return False
 
     def tableau_pos(self, node):
-        pass
+        return None
 
     def tableau_neg(self, node):
+        return None
+
+    def tableau_contradiction_pos(self, node):
+        node.add_child((None, None, Closed(), "(" + str(node.line) + ")"))
+
+    def tableau_contradiction_neg(self, node):
         pass
+
 
 class Prop(Formula):
     """
@@ -601,10 +650,10 @@ class Prop(Formula):
         return v[self.p]
 
     def tableau_pos(self, node):
-        pass
+        return None
 
     def tableau_neg(self, node):
-        pass
+        return None
 
 
 class Eq(Formula):
@@ -652,10 +701,18 @@ class Eq(Formula):
         return self.t1.denot(m, v, w) == self.t2.denot(m, v, w)
 
     def tableau_pos(self, node):
-        pass
+        return None
 
     def tableau_neg(self, node):
-        pass
+        return None
+
+    def tableau_contradiction_pos(self, node):
+        if str(self.t1) != str(self.t2):
+            node.add_contradiction([node.line])
+
+    def tableau_contradiction_neg(self, node):
+        if str(self.t1) == str(self.t2):
+            node.add_contradiction([node.line])
 
 
 class Atm(Formula):
@@ -709,6 +766,12 @@ class Atm(Formula):
         """
         return tuple([t.denot(m, v, w) for t in self.terms]) in self.pred.denot(m, v, w)
 
+    def tableau_pos(self, node):
+        return None
+
+    def tableau_neg(self, node):
+        return None
+
 
 class Neg(Formula):
     """
@@ -758,7 +821,7 @@ class Neg(Formula):
         ...
         """
         # If the negation does not occur under another neg., apply the negative tableau rule on the negative formula.
-        self.phi.tableau_neg(node)
+        return self.phi.tableau_neg(node)
 
     def tableau_neg(self, node):
         """
@@ -766,7 +829,17 @@ class Neg(Formula):
          φ
         """
         # If the negation is itself negated, apply the double negation elimination rule on the double negated formula.
-        node.branch_unary([self.phi], "¬¬")
+        return node.rule_alpha, [self.phi], "¬¬"
+
+    def tableau_contradiction_pos(self, node):
+        # todo doesn't find contradictions for double-negate formulas
+        self.phi.tableau_contradiction_neg(node)
+
+    def tableau_contradiction_neg(self, node):
+        for other in node.branch[:-1]:  # contradiction to another formula in the same branch
+            #  ¬¬φ ... ¬φ; ¬φ ... ¬¬φ
+            if self == other.fml:
+                node.add_contradiction([other.line, node.line])
 
 
 class Conj(Formula):
@@ -818,7 +891,7 @@ class Conj(Formula):
           φ
           ψ
         """
-        node.branch_unary([self.phi, self.psi], "∧")
+        return node.rule_alpha, ([self.phi, self.psi]), "∧"
 
     def tableau_neg(self, node):
         """
@@ -826,7 +899,7 @@ class Conj(Formula):
           /  \
         ¬φ   ¬ψ
         """
-        node.branch_binary([Neg(self.phi)], [Neg(self.psi)], "¬∧")
+        return node.rule_beta, ([Neg(self.phi)], [Neg(self.psi)]), "¬∧"
 
 
 class Disj(Formula):
@@ -878,7 +951,7 @@ class Disj(Formula):
          /  \
         φ   ψ
         """
-        node.branch_binary([self.phi], [self.psi], "∨")
+        return node.rule_beta, ([self.phi], [self.psi]), "∨"
 
     def tableau_neg(self, node):
         """
@@ -886,7 +959,7 @@ class Disj(Formula):
           ¬φ
           ¬ψ
         """
-        node.branch_unary([Neg(self.phi), Neg(self.psi)], "¬∨")
+        return node.rule_alpha, ([Neg(self.phi), Neg(self.psi)]), "¬∨"
 
 
 class Imp(Formula):
@@ -938,7 +1011,7 @@ class Imp(Formula):
          /  \
         ¬φ  ψ
         """
-        node.branch_binary([Neg(self.phi)], [self.psi], "→")
+        return node.rule_beta, ([Neg(self.phi)], [self.psi]), "→"
 
     def tableau_neg(self, node):
         """
@@ -946,7 +1019,7 @@ class Imp(Formula):
            φ
           ¬ψ
         """
-        node.branch_unary([self.phi, Neg(self.psi)], "¬→")
+        return node.rule_alpha, ([self.phi, Neg(self.psi)]), "¬→"
 
 
 class Biimp(Formula):
@@ -999,7 +1072,7 @@ class Biimp(Formula):
         φ   ¬φ
         ψ   ¬ψ
         """
-        node.branch_binary([self.phi, self.psi], [Neg(self.phi), Neg(self.psi)], "↔")
+        return node.rule_beta, ([self.phi, self.psi], [Neg(self.phi), Neg(self.psi)]), "↔"
 
     def tableau_neg(self, node):
         """
@@ -1008,7 +1081,7 @@ class Biimp(Formula):
          φ   ¬φ
         ¬ψ    ψ
         """
-        node.branch_binary([self.phi, Neg(self.psi)], [Neg(self.phi), self.psi], "¬↔")
+        return node.rule_beta, ([self.phi, Neg(self.psi)], [Neg(self.phi), self.psi]), "¬↔"
 
 
 class Exists(Formula):
@@ -1099,7 +1172,7 @@ class Exists(Formula):
          φ(c)
         where c is new
         """
-        node.branch_delta(self.phi, self.u, "∃")
+        node.rule_delta(self.phi, self.u), "∃"
 
     def tableau_neg(self, node):
         """
@@ -1107,7 +1180,7 @@ class Exists(Formula):
          ¬φ(c)
         where c is arbitrary
         """
-        node.branch_gamma(Neg(self.phi), self.u, "¬∃")
+        return node.rule_gamma, (Neg(self.phi), self.u), "¬∃"
 
 
 class Forall(Formula):
@@ -1198,7 +1271,7 @@ class Forall(Formula):
          φ(c)
         where c is arbitrary
         """
-        node.branch_gamma(self.phi, self.u, "∀")
+        return node.rule_gamma, (self.phi, self.u), "∀"
 
     def tableau_neg(self, node):
         """
@@ -1206,7 +1279,7 @@ class Forall(Formula):
          ¬φ(c)
         where c is new
         """
-        node.branch_delta(self.phi, self.u, "¬∀")
+        node.rule_delta(self.phi, self.u), "¬∀"
 
 
 class Poss(Formula):
@@ -1294,7 +1367,7 @@ class Poss(Formula):
         σ.n φ
         where σ.n is new
         """
-        node.branch_mu(self.phi, node.sig)
+        return node.rule_mu, (self.phi, node.sig), "◇"
 
     def tableau_neg(self, node):
         """
@@ -1302,7 +1375,7 @@ class Poss(Formula):
         σ.n ¬φ
         where σ.n is old
         """
-        node.branch_nu(Neg(self.phi), node.sig)
+        return node.rule_nu, (Neg(self.phi), node.sig), "¬"
 
 
 class Nec(Formula):
@@ -1390,7 +1463,7 @@ class Nec(Formula):
         σ.n φ
         where σ.n is old
         """
-        node.branch_nu(self.phi, node.sig)
+        return node.rule_nu, (self.phi, node.sig), "◻"
 
     def tableau_neg(self, node):
         """
@@ -1398,7 +1471,7 @@ class Nec(Formula):
         σ.n ¬φ
         where σ.n is new
         """
-        node.branch_mu(Neg(self.phi), node.sig)
+        return node.rule_mu (Neg(self.phi), node.sig), "¬◻"
 
 
 class Open(Formula):
