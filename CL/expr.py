@@ -1120,7 +1120,7 @@ class Exists(Formula):
         if u.u == self.u:
             return self
         else:
-            return self.phi.subst(u, t)
+            return Exists(self.u, self.phi.subst(u, t))
 
     def denot(self, m, v=None, w=None):
         """
@@ -1219,7 +1219,7 @@ class Forall(Formula):
         if u.u == self.u:
             return self
         else:
-            return self.phi.subst(u, t)
+            return Forall(self.u, self.phi.subst(u, t))
 
     def denot(self, m, v=None, w=None):
         """

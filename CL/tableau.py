@@ -162,7 +162,7 @@ class Node(object):
             res += "|  "
         else:
             res += "   "
-        res += "{:<{len}}".format(str(self.line) + ".", len=len_col1) + \
+        res += "{:<{len}}".format(str(self.line) + "." if self.line else "", len=len_col1) + \
                "{:^{len}}".format(str(self.fml), len=len_col2) + \
                "{:<{len}}".format(str(self.cite), len=len_col3) + \
                "\n"
