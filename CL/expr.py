@@ -50,7 +50,7 @@ class Expr:
         """
         pass
     
-    def nonlogs(self, u, t):
+    def nonlogs(self):
         """
         The set of non-logical symbols in the expression.
         
@@ -276,7 +276,9 @@ class FuncTerm(Term):
         return set().union(*[t.boundvars() for t in self.terms])
 
     def nonlogs(self):
-        return set().union(*[t.nonlogs()[0] for t in self.terms]), {self.f}, set()
+        return set().union(*[t.nonlogs()[0] for t in self.terms]), \
+               set().union(*[t.nonlogs()[1] for t in self.terms]) | {self.f}, \
+               set()
 
     def subst(self, u, t):
         return FuncTerm(self.f, tuple(map(lambda t: t.subst(u, t), self.terms)))
@@ -636,7 +638,9 @@ class Eq(Formula):
         return self.t1.boundvars() | self.t2.boundvars()
 
     def nonlogs(self):
-        return self.t1.nonlogs()[0] | self.t2.nonlogs()[0], self.t1.nonlogs()[1] | self.t2.nonlogs()[1], set()
+        return self.t1.nonlogs()[0] | self.t2.nonlogs()[0], \
+               self.t1.nonlogs()[1] | self.t2.nonlogs()[1], \
+               set()
 
     def subst(self, u, t):
         return Eq(self.t1.subst(u, t), self.t2.subst(u, t))
@@ -691,7 +695,8 @@ class Atm(Formula):
         return set().union(*[t.boundvars() for t in self.terms])
 
     def nonlogs(self):
-        return set().union(*[t.nonlogs()[0] for t in self.terms]), set().union(*[t.nonlogs()[1] for t in self.terms]), \
+        return set().union(*[t.nonlogs()[0] for t in self.terms]), \
+               set().union(*[t.nonlogs()[1] for t in self.terms]), \
                {self.pred.p}
 
     def subst(self, u, t):
@@ -734,7 +739,9 @@ class Neg(Formula):
         return self.phi.boundvars()
 
     def nonlogs(self):
-        return self.phi.nonlogs()[0], self.phi.nonlogs()[1], self.phi.nonlogs()[2]
+        return self.phi.nonlogs()[0], \
+               self.phi.nonlogs()[1], \
+               self.phi.nonlogs()[2]
 
     def subst(self, u, t):
         return Neg(self.phi.subst(u, t))
@@ -794,7 +801,7 @@ class Conj(Formula):
     def nonlogs(self):
         return self.phi.nonlogs()[0] | self.psi.nonlogs()[0], \
                self.phi.nonlogs()[1] | self.psi.nonlogs()[1], \
-               self.phi.nonlogs()[2] | self.psi.nonlogs()[1]
+               self.phi.nonlogs()[2] | self.psi.nonlogs()[2]
 
     def subst(self, u, t):
         return Conj(self.phi.subst(u, t), self.psi.subst(u, t))
@@ -854,7 +861,7 @@ class Disj(Formula):
     def nonlogs(self):
         return self.phi.nonlogs()[0] | self.psi.nonlogs()[0], \
                self.phi.nonlogs()[1] | self.psi.nonlogs()[1], \
-               self.phi.nonlogs()[2] | self.psi.nonlogs()[1]
+               self.phi.nonlogs()[2] | self.psi.nonlogs()[2]
 
     def subst(self, u, t):
         return Disj(self.phi.subst(u, t), self.psi.subst(u, t))
@@ -914,7 +921,7 @@ class Imp(Formula):
     def nonlogs(self):
         return self.phi.nonlogs()[0] | self.psi.nonlogs()[0], \
                self.phi.nonlogs()[1] | self.psi.nonlogs()[1], \
-               self.phi.nonlogs()[2] | self.psi.nonlogs()[1]
+               self.phi.nonlogs()[2] | self.psi.nonlogs()[2]
 
     def subst(self, u, t):
         return Imp(self.phi.subst(u, t), self.psi.subst(u, t))
@@ -974,7 +981,7 @@ class Biimp(Formula):
     def nonlogs(self):
         return self.phi.nonlogs()[0] | self.psi.nonlogs()[0], \
                self.phi.nonlogs()[1] | self.psi.nonlogs()[1], \
-               self.phi.nonlogs()[2] | self.psi.nonlogs()[1]
+               self.phi.nonlogs()[2] | self.psi.nonlogs()[2]
 
     def subst(self, u, t):
         return Biimp(self.phi.subst(u, t), self.psi.subst(u, t))

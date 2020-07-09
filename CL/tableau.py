@@ -101,22 +101,29 @@ class Tableau(object):
 
                 else:
                     # atoms = all unnegated atomic predications
-                    atoms = [node.fml for node in leaf.branch if isinstance(node.fml, Atm)]
+                    atoms = [(node.fml.pred, node.fml.terms) for node in leaf.branch if isinstance(node.fml, Atm)]
                     # predicates = all predicates occurring in the conclusion and premises
                     constants = set(itertools.chain(self.root.fml.nonlogs()[0],
-                                                  *[prem.fml.nonlogs()[0] for prem in self.premises]))
+                                                    *[prem.fml.nonlogs()[0] for prem in self.premises]))
+                    # todo show constants in interpret.?
                     funcsymbs = set(itertools.chain(self.root.fml.nonlogs()[1],
-                                                  *[prem.fml.nonlogs()[1] for prem in self.premises]))
+                                                    *[prem.fml.nonlogs()[1] for prem in self.premises]))
                     # todo take care of function symbols in domain and interpretation
                     predicates = set(itertools.chain(self.root.fml.nonlogs()[2],
-                                                  *[prem.fml.nonlogs()[2] for prem in self.premises]))
+                                                     *[prem.fml.nonlogs()[2] for prem in self.premises]))
+                    # todo predicates are imporperly collected (?)
                     # domain = all const.s occurring in formulas
                     d = set(itertools.chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))
                     # interpretation = make all unnegated predications true and all others false
-                    i = {**{c: c for c in constants},
-                         **{p: {tuple([term.c for term in a.terms if Atm(Pred(p), a.terms) in atoms]) for a in atoms}
-                         for p in predicates}}
-                    # todo specify interpret. for all non-log. symbols, not just the ones that occur in positive atoms
+                    i = {p: set() for p in predicates}
+                    for a in atoms:
+                        pred = a[0]
+                        terms = a[1]
+                        tpl = tuple([t.c for t in terms])
+                        i[pred.p].add(tpl)
+                    # todo make iterative solution work
+                    # i = {p: {tuple([t.c for t in a[1]]) for a in atoms if (p, a[1]) in atoms} for p in predicates}
+                    # todo interpretation is improperly specified (?)
                     model = PredStructure(d, i)
                     res.append(model)
 
@@ -436,7 +443,7 @@ if __name__ == "__main__":
     tab7 = Tableau(fml7, premises=[fml7a, fml7b], propositional=True)
     tab7.generate()
 
-    fml8a = Imp(Atm(Pred("P"), (Const("a"), Const("b"))), Atm(Pred("P"), (Const("a"), Const("c"))))
-    fml8 = Atm(Pred("P"), (Const("a"), Const("a")))
+    fml8a = Imp(Atm(Pred("P"), (Const("a"), Const("b"))), Atm(Pred("Q"), (Const("a"), Const("c"))))
+    fml8 = Atm(Pred("R"), (Const("a"), Const("a")))
     tab8 = Tableau(fml8, premises=[fml8a])
     tab8.generate()
