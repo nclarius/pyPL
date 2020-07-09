@@ -22,6 +22,7 @@ Features
     - of PL with valuation function
     - of FOL with domain, interpretation function and variable assignments
     - accepts non-modal structures, modal structures with constant domains and modal structures with varying domains
+ - analytic tableau proofs -- **currently under construction**
 
 Restrictions
 ------------
