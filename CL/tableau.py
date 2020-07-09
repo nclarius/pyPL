@@ -116,7 +116,6 @@ class Tableau(object):
                     d = set(itertools.chain(*[node.fml.nonlogs()[0] for node in leaf.branch]))
                     # interpretation = make all unnegated predications true and all others false
                     i = {p: {tuple([t.c for t in a[1]]) for a in atoms if (Pred(p), a[1]) in atoms} for p in predicates}
-                    # todo interpretation is improperly specified (?)
                     model = PredStructure(d, i)
                     res.append(model)
 
