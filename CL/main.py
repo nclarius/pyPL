@@ -6,14 +6,16 @@ from functools import reduce
 
 from expr import *
 from structure import *
+from tableau import *
 
 
 # settings
-active = [8, 9, 10]  # set here which structures to include in the output (see def.s in fnc. 'compute')
+denots = [8, 9, 10]  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
+tableaus = [1, 2] # set here which tableaus to include in the output (see def.s in fnc. 'compute_denots')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
 
-def compute():
+def compute_denots():
     """
     Define structures and formulas to compute denotations for here.
     """
@@ -453,10 +455,20 @@ def compute():
     print("\n---------------------------------\n")
     #############################
 
+
+def compute_tableaus():
+
+    if 1 in tableaus:
+        fml1 = Conj(Imp(Prop("p"), Prop("q")), Prop("r"))
+        tab1 = Tableau(fml1)
+        tab1.generate()
+
+    if 2 in tableaus:
+        fml2 = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
+        tab2 = Tableau(Neg(fml2))
+        tab2.generate()
+
+
 if __name__ == "__main__":
-    compute()
-    # l = ["a", "b", "c"]
-    # print(cart_prod(l, 0))
-    # print(cart_prod(l, 1))
-    # print(cart_prod(l, 2))
-    # print(cart_prod(l, 3))
+    compute_denots()
+    # compute_tableaus()

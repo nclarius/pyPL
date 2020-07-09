@@ -38,7 +38,8 @@ class PropStructure(Structure):
         self.v = v
 
     def __str__(self):
-        return "Structure M = V with V: " + ", ".join([str(key) + " ↦ " + str(val) for key, val in self.v.items()])
+        return "Structure M = V with V: " + \
+               ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v.items())])
 
 
 class PredStructure(Structure):
@@ -107,7 +108,7 @@ class PredStructure(Structure):
 
     def __str__(self):
         return "Structure M = ⟨D,I⟩ with\n" \
-               "D = {" + ", ".join([str(d) for d in self.d]) + "}\n" \
+               "D = {" + ", ".join([str(d) for d in sorted(self.d)]) + "}\n" \
                "I = {\n" + ", \n".join(["     " + str(key) + " ↦ " +
                                         (str(val) if isinstance(val, str) else
                                          (", ".join(["(" + str(key2) + " ↦ " + str(val2) + "⟩"
@@ -116,7 +117,7 @@ class PredStructure(Structure):
                                           ("{" +
                                            ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in val]) +
                                            "}")))
-                                        for (key, val) in self.i.items()]) +\
+                                        for (key, val) in sorted(self.i.items())]) +\
                "\n    }"
 
 
@@ -178,9 +179,9 @@ class ConstModalStructure(ModalStructure):
 
     def __str__(self):
         return "Structure M = ⟨W,R,D,I⟩ with\n" \
-               "W = {" + ", ".join([str(w) for w in self.w]) + "}\n"\
-               "R = {" + ", ".join([str(r) for r in self.r]) + "}\n"\
-               "D = {" + ", ".join([str(d) for d in self.d]) + "}\n" \
+               "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n"\
+               "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n"\
+               "D = {" + ", ".join([str(d) for d in sorted(self.d)]) + "}\n" \
                "I = {\n" +\
                     " \n".join(["    " + str(w) + " ↦ \n" + \
                         ", \n".join(
@@ -194,7 +195,7 @@ class ConstModalStructure(ModalStructure):
                             "}")))
                         for (keyI, valI) in self.i[w].items()]) + \
                         "\n    "
-                    for (w, fw) in self.i.items()]) +\
+                    for (w, fw) in sorted(self.i.items())]) +\
                     "}"
 
 
@@ -246,11 +247,11 @@ class VarModalStructure(ModalStructure):
 
     def __str__(self):
         return "Structure M = ⟨W,R,D,F⟩ with\n" \
-               "W = {" + ", ".join([str(w) for w in self.w]) + "}\n" \
-               "R = {" + ", ".join([str(r) for r in self.r]) + "}\n" \
+               "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" \
+               "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n" \
                "D = {\n" + \
                     ", \n".join([str(w) + " ↦ " + \
-                            ", ".join([str(d) for d in self.d[w]]) + "}"
+                            ", ".join([str(d) for d in sorted(self.d[w])]) + "}"
                     for w in self.w]) +\
                     "}\n" \
                "I = {\n" + \
@@ -264,7 +265,7 @@ class VarModalStructure(ModalStructure):
                                    ("{" +
                                     ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in valI]) +
                                     "}")))
-                                 for (keyI, valI) in self.i[w].items()]) + \
+                                 for (keyI, valI) in sorted(self.i[w].items())]) + \
                             "\n    }"
-                            for (w, fw) in self.i.items()]) + \
+                            for (w, fw) in sorted(self.i.items())]) + \
                     "}"

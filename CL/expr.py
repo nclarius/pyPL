@@ -7,6 +7,7 @@ Define the language and semantics of classical (standard and modal) (preposition
 
 from main import *
 from structure import *
+# from tableau import *
 
 from typing import List, Dict, Set, Tuple
 
@@ -71,7 +72,7 @@ class Expr:
         """
         pass
 
-    def denot(self, m, v: Dict[str,str] = None, w: str = None):
+    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None):
         """
         Compute the denotation of the expression relative to a structure m and assignment g.
 
@@ -351,13 +352,13 @@ class Formula(Expr):
         """
         pass
 
-    def denot(self, m, v=None, w=None) -> bool:
+    def denot(self, m: Structure, v=None, w=None) -> bool:
         """
         @rtype: bool
         """
         pass
 
-    def denotV(self, m, w: str = None) -> bool:
+    def denotV(self, m: Structure, w: str = None) -> bool:
         """
         The truth value of a formula relative to a structure M (without reference to a particular assignment).
         A formula is true in a structure M iff it is true in M under all assignment functions g.
@@ -400,7 +401,7 @@ class Formula(Expr):
                 return False
         return True
 
-    def denotW(self, m, v: Dict[str,str]) -> bool:
+    def denotW(self, m: Structure, v: Dict[str,str]) -> bool:
         """
         The truth value of a formula relative to a structure M and assmnt. g (without reference to a particular world).
         A formula is true in a structure M iff it is true in M and g in all possible worlds w.
@@ -435,7 +436,7 @@ class Formula(Expr):
                 return False
         return True
 
-    def denotVW(self, m) -> bool:
+    def denotVW(self, m: Structure) -> bool:
         """
         The truth value of a formula relative to a structure M (without reference to a particular assignment and world).
         A formula is true in a structure M iff it is true in M and g under all assignments g and all possible worlds w.
@@ -724,7 +725,7 @@ class Neg(Formula):
         return isinstance(other, Neg) and self.phi == other.phi
 
     def propvars(self):
-        return self.phi.prpvars()
+        return self.phi.propvars()
 
     def freevars(self):
         return self.phi.freevars()
@@ -749,6 +750,7 @@ class Neg(Formula):
         ¬φ
         ...
         """
+        # If the negation does not occur under another neg., apply the negative tableau rule on the negative formula.
         self.phi.tableau_neg(node)
 
     def tableau_neg(self, node):
@@ -756,6 +758,7 @@ class Neg(Formula):
         ¬¬φ
          φ
         """
+        # If the negation is itself negated, apply the double negation elimination rule on the double negated formula.
         node.branch_unary([self.phi], "¬¬")
 
 
@@ -1079,15 +1082,17 @@ class Exists(Formula):
         """
         ∃xφ(x)
          φ(c)
+        where c is new
         """
-        pass
+        node.branch_delta(self.phi, self.u, "∃")
 
     def tableau_neg(self, node):
         """
         ¬∃xφ(x)
          ¬φ(c)
+        where c is arbitrary
         """
-        pass
+        node.branch_gamma(Neg(self.phi), self.u, "¬∃")
 
 
 class Forall(Formula):
@@ -1176,15 +1181,17 @@ class Forall(Formula):
         """
         ∀xφ(x)
          φ(c)
+        where c is arbitrary
         """
-        pass
+        node.branch_gamma(self.phi, self.u, "∀")
 
     def tableau_neg(self, node):
         """
         ¬∀xφ(x)
          ¬φ(c)
+        where c is new
         """
-        pass
+        node.branch_delta(self.phi, self.u, "¬∀")
 
 
 class Poss(Formula):
@@ -1266,6 +1273,22 @@ class Poss(Formula):
         depth -= 1
         return False
 
+    def tableau_pos(self, node):
+        """
+        σ  ◇φ
+        σ.n φ
+        where σ.n is new
+        """
+        node.branch_mu(self.phi, node.sig)
+
+    def tableau_neg(self, node):
+        """
+        σ  ¬◇φ
+        σ.n ¬φ
+        where σ.n is old
+        """
+        node.branch_nu(Neg(self.phi), node.sig)
+
 
 class Nec(Formula):
     """
@@ -1345,6 +1368,22 @@ class Nec(Formula):
         # if no counter neighbor has been found, the necessity statement is true
         depth -= 1
         return True
+
+    def tableau_pos(self, node):
+        """
+        σ  ◻φ
+        σ.n φ
+        where σ.n is old
+        """
+        node.branch_nu(self.phi, node.sig)
+
+    def tableau_neg(self, node):
+        """
+        σ  ¬◻φ
+        σ.n ¬φ
+        where σ.n is new
+        """
+        node.branch_mu(Neg(self.phi), node.sig)
 
 
 class Open(Formula):
