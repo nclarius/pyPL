@@ -134,15 +134,35 @@ class ModalStructure(Structure):
     pass
 
 
-class PropModalStructure(Structure):
+class PropModalStructure(ModalStructure):
     """
-    A structure of propositional logic with valuation function.
+    A structure of modal propositional logic.
 
-    A structure M is a function V: VAR -> {True, False}.
-    V = {"p": True, "q": False, "r": True}
+    A PropModalStructure M is a triple <W,R,V> with
+      - W = set of possible worlds
+      - R = accessibility relation, a binary relation on W
+      - V = valuation function
 
+    - The set of possible worlds W is a set of possible worlds, specified as strings:
+       W = {'w1', 'w2', ...}
+
+    - The accessibility relation W is a set of tuples of possible worlds:
+      R = {('w1', 'w2'), ('w2', 'w2'), ...}
+
+    - The valuation function V is a dictionary with
+      - possible worlds as keys and
+      - a dictionary with
+        - propositional variables as keys and
+        - truth values as values
+      as values.
+      V = {'w1': {'p': True, 'q': False}, {'w2': {'p': False, 'q': False}}, ...}
+
+    @attr w: the set of possible worlds
+    @type w: set[str]
+    @attr r: the accessibility relation on self.w
+    @type r: set[tuple[str,str]]
     @attr v: the valuation function
-    @type v: dict[str,bool]
+    @type v: dict[dict[str,bool]]
     """
     def __init__(self, w, r, v):
         self.w = w
@@ -161,14 +181,13 @@ class PropModalStructure(Structure):
                     "}"
 
 
-
 class ConstModalStructure(ModalStructure):
     """
     A structure of modal predicate logic with constant domain.
 
     A ConstModalStructure M is a quadrupel <W,R,D,F> with
       - W = set of possible worlds
-      - R = the accessibility relation, a binary relation on W
+      - R = accessibility relation, a binary relation on W
       - D = domain of discourse
       - I = interpretation function assigning to each member of w and each non-logical symbol a denotation
     and a set of assignment functions vs.
@@ -234,7 +253,7 @@ class VarModalStructure(ModalStructure):
 
     A VarModalStructure M is a quadrupel <W,R,D,I> with
       - W = set of possible worlds
-      - R = the accessibility relation, a binary relation on W
+      - R = accessibility relation, a binary relation on W
       - D = an assignment of possible worlds to domains of discourse
       - I = interpretation function assigning to each member of W and each non-logical symbol a denotation
     and a set of assignment functions vs.
