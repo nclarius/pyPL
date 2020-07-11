@@ -2,10 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-Tableau proofs.
+Tableau proofs and model extraction.
 THIS PART IS STILL UNDER CONSTRUCTION.
 """
-
 
 from main import *
 from expr import *
@@ -20,19 +19,21 @@ class Tableau(object):
     A tableau tree.
     """
 
-    def __init__(self, conclusion, premises=[], propositional=False, modal=False, vardomain=False):
+    def __init__(self, conclusion=None, premises=[], validity=True, propositional=False, modal=False, vardomain=False):
         # settings
+        self.validity = validity
         self.propositional = propositional  # todo detect automatically?
         self.modal = modal
         self.vardomain = vardomain
         sig = [1] if modal else None
 
-        # insert nodes
-        self.root = Node(1, sig, Neg(conclusion), "(A)", None, self)
+        # append initial nodes
+        root_fml = conclusion if conclusion else premises[0]
+        self.root = Node(1, sig, (Neg(root_fml) if validity else root_fml), "(A)", None, self)
         if self.root.rule():
-            self.root.applicable[self.root] = self.root.rule()
-        self.premises = [self.root.leaves()[0].add_child((i+2, sig, premise, "(A)"))
-                         for i, premise in enumerate(premises)]
+            self.root.set_applicable(self.root, self.root.rule())
+        self.premises = [self.root.leaves()[0].add_child((i + 2, sig, premise, "(A)"))
+                         for i, premise in (enumerate(premises) if conclusion else enumerate(premises[1:]))]
 
     def __str__(self):
         return self.root.treestr()[:-1]
@@ -50,8 +51,12 @@ class Tableau(object):
             return
 
         # print info
-        print("Tableau for " +
-              ", ".join([str(premise.fml) for premise in self.premises]) + " ⊨ " + str(self.root.fml.phi) + ":\n")
+        if self.validity:
+            print("Tableau for " +
+                  ", ".join([str(premise.fml) for premise in self.premises]) + " ⊨ " + str(self.root.fml.phi) + ":\n")
+        else:
+            print("Tableau for " +
+                  ", ".join([str(node.fml) for node in [self.root] + self.premises]) + " ⊭ ⊥:\n")
 
         # recursively apply the rules
         self.expand()
@@ -59,22 +64,35 @@ class Tableau(object):
         # print the tableau
         print(self)
 
-        # print results
+        # print result
         if self.closed():
-            print("The tableau is closed:\n"
-                  "The " + ("inference" if self.premises else "formula") + " is valid.")
+            print("The tableau is closed:")
+            if self.validity:
+                print("The " + ("inference" if self.premises else "formula") + " is valid.")
+            else:
+                print("The " + ("set of sentences is inconsistent." if self.premises else "formula is unsatisfiable."))
         elif self.open():
-            print("The tableau is open:\n"
-                  "The " + ("inference" if self.premises else "formula") + " is invalid.")
+            print("The tableau is open:")
+            if self.validity:
+                print("The " + ("inference" if self.premises else "formula") + " is invalid.")
+            else:
+                print("The " + ("set of sentences is consistent" if self.premises else "formula is satisfiable."))
         elif self.infinite():
-            print("The tableau is potentially infinite:\n"
-                  "The " + ("inference" if self.premises else "formula") + " may or may not be valid.")
-        # print the counter models
+            print("The tableau is potentially infinite:")
+            if self.validity:
+                print("The " + ("inference" if self.premises else "formula") + " may or may not be valid.")
+            else:
+                print("The " + ("set of sentences" if self.premises else "formula") + " may or may not be " +
+                      ("consistent." if self.premises else "satisfiable."))
+
+        # generate and print models
         if models := self.models():
-            print("\nCounter models:")
+            print("\nCounter models:" if self.validity else "\nModels:")
             for model in models:
+                print()
                 print(model)
-        print("\n")
+
+        print("\n" + 80 * "-" + "\n")
 
     def expand(self, node=None):
         """
@@ -82,28 +100,37 @@ class Tableau(object):
         """
         if not node:
             node = self.root  # value on initialization
-
-        # threshold of total rule applications to avoid non-termination
-        limit = 100
-        count = 0
-        while (applicable := self.applicable()) and count < limit:
+        while applicable := self.applicable():
             top = applicable[0]
             (target, source) = (top[0], top[1])
             # print("expanding:")
             # print(str(target) + " -> " + str(source))
             target.expand(source)
             # print("--------")
-            count += 1
 
     def applicable(self):
         """
         A prioritized list of applicable rules in the tree in the format
-        {(leaf,source)}
+        {(target,source)}
 
-        @rtype: list[node,node]
+        @rtype: list[tuple[node,node]]
         """
-        appl = {leaf: leaf.applicable for leaf in self.root.leaves() if leaf.applicable}
-        res = list(chain(*[[(leaf, source) for source in appl[leaf]] for leaf in appl]))
+        #                    (target, source, rule_type, parameters, delayed)
+        appl = list(chain(*[[(leaf, source, *leaf.applicable[source])
+                             for source in leaf.applicable]
+                            for leaf in self.root.leaves() if leaf.applicable]))
+        # print(appl)
+        rule_order = {"alpha": 0, "delta": 1, "nu": 2, "gamma": 3, "mu": 4, "beta": 5}
+        appl_sorted_v1 = [itm for itm in sorted(appl, key=lambda i:
+                          (len(i[3]), i[1].line, i[0].line, rule_order[i[2]]))]
+        #                  num_appls,  rc_line,  targ_line, rule_type
+        appl_sorted_v2 = [itm for itm in sorted(appl, key=lambda i:
+                          (rule_order[i[2]], len(i[3]), i[1].line, i[0].line))]
+        #                  rule_type,        num_appl,  src_line,  targ_line
+        # print("\n".join([", ".join([str(itm[0].line), str(itm[1].line), itm[2], str(len(itm[3])), str(itm[4])])
+        #                  for itm in appl_sorted_v1]) + "\n")
+        appl_sorted = [itm[:2] for itm in appl_sorted_v1]
+
         # print("applicable:")
         # print("\n".join([str(r[0]) + ": " + str(r[1]) for r in res]))
         # todo prioritize
@@ -111,7 +138,7 @@ class Tableau(object):
         # - 1. rule type: alpha > delta > nu > gamma > mu > beta
         # - 2. number of rule applications: low > high
         # - 3. line number: low > high
-        return res
+        return appl_sorted
 
     def closed(self) -> bool:
         """
@@ -126,7 +153,7 @@ class Tableau(object):
         """
         A tableau is open iff at least one branch is open.
 
-        @return True if all branches are closed, and False otherwise
+        @return True if at least one branch is open, and False otherwise
         @rtype: bool
         """
         return any([isinstance(leaf.fml, Open) for leaf in self.root.leaves()])
@@ -135,7 +162,7 @@ class Tableau(object):
         """
         A tableau is (probably) infinite iff at least one branch is (probably) infinite.
 
-        @return True if all branches are closed, and False otherwise
+        @return True if all at least one branch is infinite, and False otherwise
         @rtype: bool
         """
         return any([isinstance(leaf.fml, Infinite) for leaf in self.root.leaves()])
@@ -216,7 +243,7 @@ class Tableau(object):
                         i = {sig: {p: {tuple([str(t) for t in a[1]]) for a in atoms[sig]
                                        if (Pred(p), a[1]) in atoms[sig]}
                                    for p in predicates}
-                                 for sig in sigs}
+                             for sig in sigs}
 
                         if not self.vardomain:  # modal predicational with constant domain
                             d = set(chain(*[node.fml.nonlogs()[0] for node in branch]))
@@ -232,6 +259,7 @@ class Tableau(object):
 
         return res
 
+
 class Node(object):
     """
     A node in a tree.
@@ -245,7 +273,7 @@ class Node(object):
         self.branch = (parent.branch if parent else []) + [self]
         self.children = []
         self.tableau = tableau
-        self.applicable = dict()
+        self.applicable = dict()  # {source: (rule_type, params, delayed)}
 
     def __str__(self):
         """
@@ -272,11 +300,11 @@ class Node(object):
         # todo non-rotated visualization?
 
         # compute lengths of columns
-        len_line = max([len(str(node.line)) for node in self.branch[0].preorder()])
-        len_sig = max([len(".".join([str(s) for s in node.sig])) for node in self.branch[0].preorder() if node.sig]) \
+        len_line = max([len(str(node.line)) for node in self.root().preorder()])
+        len_sig = max([len(".".join([str(s) for s in node.sig])) for node in self.root().preorder() if node.sig]) \
             if self.tableau.modal else None
-        len_fml = max([len(str(node.fml)) for node in self.branch[0].preorder()]) + 1
-        len_cite = max([len(str(node.cite)) for node in self.branch[0].preorder()])
+        len_fml = max([len(str(node.fml)) for node in self.root().preorder()]) + 1
+        len_cite = max([len(str(node.cite)) for node in self.root().preorder()])
         # compute columns
         str_line = "{:<{len}}".format(str(self.line) + "." if self.line else "", len=len_line)
         str_sig = "{:<{len}}".format(".".join([str(s) for s in self.sig]) if self.sig else "", len=len_sig) \
@@ -328,6 +356,7 @@ class Node(object):
         Get the leave nodes descending from the this node.
         """
         leaves = []
+
         def collect_leaves(node):
             if node is not None:
                 if not node.children:
@@ -335,14 +364,9 @@ class Node(object):
                 else:
                     for child in node.children:
                         collect_leaves(child)
+
         collect_leaves(self)
         return leaves
-
-    def leaf(self):
-        """
-        The last non-contradiction node belonging to the branch of this node.
-        """
-        return self.branch[-1] if not isinstance(self.branch[-1].fml, Closed) else self.branch[-2]
 
     def root(self):
         """
@@ -357,7 +381,7 @@ class Node(object):
         # todo sometimes adds None nodes (?)
         # don't add children to branches that are already closed, open or declard infinite
         if self.children and (isinstance(self.children[0].fml, Closed) or isinstance(self.children[0].fml, Open) or
-                              isinstance(self.children[9].fml, Infinite)):
+                              isinstance(self.children[0].fml, Infinite)):
             return
 
         (line, sig, fml, cite) = spec
@@ -371,8 +395,8 @@ class Node(object):
                 # transfer applicable rules to new leaf
                 # if the child formula has applicable rules, add it to its own applicable rules
                 child.applicable = {key: val for (key, val) in self.applicable.items()}
-                if child.rule():
-                    child.applicable[child] = child.rule()
+                if rule := child.rule():
+                    child.set_applicable(child, rule)
                 # print("adding:")
                 # print(str(self) + " + " + str(child))
                 # print(self.applicable, child.applicable)
@@ -392,16 +416,14 @@ class Node(object):
         """
         if val := source.fml.tableau_pos():  # check which rule application the formula defines, if any
             (rule_type, args, rule) = val
-            rule_func = getattr(self, rule_type)
+            rule_func = getattr(self, "rule_" + rule_type)
             rule_func(source, args, rule)  # apply the rule
 
             # check if expansion leaves open branches
             for leaf in self.leaves():
                 if not (isinstance(leaf.fml, Closed) or isinstance(leaf.fml, Infinite)):
-                    # if the child has no applicable (or only delayed) rules, the branch is open
-                    if (not leaf.applicable or \
-                        all([isinstance(leaf.applicable[key], tuple) and leaf.applicable[key][0] == leaf.rule_nu
-                             and leaf.applicable[key][3] for key in leaf.applicable])):
+                    # if the child has no applicable or only delayed rules, the branch is open
+                    if not leaf.applicable or all([leaf.applicable[src][2] for src in leaf.applicable]):
                         leaf.add_open()
 
     def rule_alpha(self, source, args, rule):
@@ -409,93 +431,91 @@ class Node(object):
         Expand the source node unary in this branch.
         """
         fmls = args
-        max_line = max([node.line for node in self.branch[0].preorder() if node.line])
+        max_line = max([node.line for node in self.root().preorder() if node.line])
         line = max_line
         sig = source.sig
 
         # rule is now being applied; remove from list of applicable
-        self.applicable.pop(source, None)
+        self.remove_applicable(source)
 
         # append (top) node
         line += 1
         fml = fmls[0]
-        cite = "(" + rule + ", " + str(source.line) + ")"
+        cite = "(" + (" " if len(rule) == 1 else "") + rule + ", " + str(source.line) + ")"
         node1 = self.add_child((line, sig, fml, cite))
 
         # append bottom node
         if len(fmls) == 2:
             line += 1
             fml = fmls[1]
-            cite = "(" + rule + ", " + str(source.line) + ")"
+            cite = "(" + (" " if len(rule) == 1 else "") + rule + ", " + str(source.line) + ")"
             node2 = node1.add_child((line, sig, fml, cite))
             node1.applicable = dict()
 
         # self is now no longer leaf, so has no applicable rules
-        self.applicable = dict()
+        self.empty_applicable()
 
     def rule_beta(self, source, args, rule):
         """
         Expand the source node binary in this branch.
         """
         fmls = args
-        max_line = max([node.line for node in self.branch[0].preorder() if node.line])
+        max_line = max([node.line for node in self.root().preorder() if node.line])
         line = max_line
         sig = source.sig
 
         # rule is now being applied; remove from list of applicable
-        self.applicable.pop(source, None)
+        self.remove_applicable(source)
 
         # append (top) left node
         line += 1
         fml = fmls[0][0]
-        cite = "(" + rule + ", " + str(source.line) + ")"
+        cite = "(" + (" " if len(rule) == 1 else "") + rule + ", " + str(source.line) + ")"
         node1 = self.add_child((line, sig, fml, cite))
 
         # append bottom left node
         if len(fmls[0]) == 2 and node1:
             line += 1
             fml = fmls[0][1]
-            cite = "(" + rule + ", " + str(source.line) + ")"
+            cite = "(" + (" " if len(rule) == 1 else "") + rule + ", " + str(source.line) + ")"
             node3 = node1.add_child((line, sig, fml, cite))
-            node1.applicable = dict()
+            node1.empty_applicable()
 
         # append (top) right node
         line += 1
         fml = fmls[1][0]
-        cite = "(" + rule + ", " + str(source.line) + ")"
+        cite = "(" + (" " if len(rule) == 1 else "") + rule + ", " + str(source.line) + ")"
         node2 = self.add_child((line, sig, fml, cite))
 
         # append bottom right node
         if len(fmls[1]) == 2 and node2:
             line += 1
             fml = fmls[1][1]
-            cite = "(" + rule + ", " + str(source.line) + ")"
+            cite = "(" + (" " if len(rule) == 1 else "") + rule + ", " + str(source.line) + ")"
             node4 = node2.add_child((line, sig, fml, cite))
-            node2.applicable = dict()
+            node2.empty_applicable()
 
         # self is now no longer leaf, so has no applicable rules
-        self.applicable = dict()
+        self.empty_applicable()
 
     def rule_gamma(self, source, args, rule):
         """
-        Expand the source node according to the gamma schema (with an arb. param.) in this branch.
+        Expand the source node with an arbitrary parameter in this branch.
         """
         # todo doesn't work yet
         phi, var = args
-        max_line = max([node.line for node in self.branch[0].preorder() if node.line])
+        max_line = max([node.line for node in self.root().preorder() if node.line])
         line = max_line
         sig = source.sig
         parameters = list("abcdefghijklmnopqrst")
 
-        # find a constant to substitue
-        # if there is no list of constants already used with this rule, create it
-        if not isinstance(self.applicable[source], tuple):
-            self.applicable[source] = (self.rule_gamma, [])
+        # find a constant to substitute
         # all existing constants in the curr. branch
         constants = list(chain(*[node.fml.nonlogs()[0] for node in self.branch]))
         # all constants and parameters
         useable = constants + parameters
         # alternative formulation: only use constants that already occur in the branch, no parameters
+        # todo redefine applicability
         # useable = constants if constants else parmeters[0]
         # all parameters already used with this rule
         used = self.applicable[source][1]
@@ -505,38 +525,36 @@ class Node(object):
             subscript = ".".join([str(s) for s in source.sig])
         # choose first symbol from constants and parameters that has not already been used with this particular rule
         # todo correct?
-        const = Const(useable[(min([i for i in range(len(useable))
-                                    if useable[i] + subscript not in used]))]
-                      + subscript)
+        const_symbol = useable[(min([i for i in range(len(useable))
+                                     if useable[i] + subscript not in used]))] + subscript
+        const = Const(const_symbol)
 
         # rule is now being applied; add chosen constant to already used ones
-        self.applicable[source] = (self.rule_beta, used + [const])
+        self.set_applicable(source, "gamma", used + [const_symbol])
 
         # add node
         line += 1
         sig = source.sig
         fml = phi.subst(var, const)  # substitute the constant for the variable
-        cite = "(" + rule + ", " + str(source.line) + ")" + " " + "[" + var.u + "/" + const.c + "]"
+        cite = "(" + (" " if len(rule) == 1 else "") + rule + ", " + str(source.line) + ", " + \
+               "[" + var.u + "/" + const.c + "]" + ")"
         node = self.add_child((line, source.sig, fml, cite))
 
         # self is now no longer leaf, so has no applicable rules
-        self.applicable = dict()
+        self.empty_applicable()
 
     def rule_delta(self, source, args, rule):
         """
-        Expand the source node according to the delta schema (with a new param.) in this branch.
+        Expand the source node with a new parameter in this branch.
         """
         # todo doesn't work yet
         phi, var = args
         sig = source.sig
-        max_line = max([node.line for node in self.branch[0].preorder() if node.line])
+        max_line = max([node.line for node in self.root().preorder() if node.line])
         line = max_line
         parameters = list("abcdefghijklmnopqrst")
 
         # find a constant to substitue
-        # if there is no list of constants already used with this rule, create it
-        if not isinstance(self.applicable[source], tuple):
-            self.applicable[source] = (self.rule_delta, [])
         # all existing constants in the curr. branch
         constants = list(chain(*[node.fml.nonlogs()[0] for node in self.branch]))
         # all parameters already used with this rule
@@ -546,70 +564,63 @@ class Node(object):
         if self.tableau.modal and not self.tableau.propositional and self.tableau.vardomain:
             subscript = ".".join([str(s) for s in source.sig])
         # choose first symbol from list of parameters that does not yet occur in this branch
-        const = Const(parameters[(min([i for i in range(len(parameters))
-                                       if parameters[i] + subscript not in constants]))]
-                      + subscript)
+        const_symbol = parameters[(min([i for i in range(len(parameters))
+                                        if parameters[i] + subscript not in constants]))] + subscript
+        const = Const(const_symbol)
 
         # rule is now being applied; add chosen constant to already used ones
-        self.applicable[source] = (self.rule_beta, used + [const])
+        self.set_applicable(source, "delta", used + [const_symbol])
         # alternative formulation: rule may only be applied once; remove from applicable
-        # self.applicable.pop(source, Noone)
+        # self.remove_from_applicable(source)
 
         # add node
         line += 1
         fml = phi.subst(var, const)  # substitute the constant for the variable
-        cite = "(" + rule + ", " + str(source.line) + ")" + " " + "[" + var.u + "/" + const.c + "]"
+        cite = "(" + (" " if len(rule) == 1 else "") + rule + ", " + str(source.line) + ", " + \
+               "[" + var.u + "/" + const.c + "]" + ")"
         node = self.add_child((line, sig, fml, cite))
 
         # self is now no longer leaf, so has no applicable rules
-        self.applicable = dict()
+        self.empty_applicable()
 
     def rule_mu(self, source, args, rule):
         """
-        Expand the source node according to the mu schema (with a new sig.) in all this branch.
+        Expand the source node according with a new signature in this branch.
         """
         # todo not tested yet
         fml = args
-        max_line = max([node.line for node in self.branch[0].preorder() if node.line])
+        max_line = max([node.line for node in self.root().preorder() if node.line])
         line = max_line
 
         # find a signature
-        # if there is no list of signatures already used with this rule, create it
-        if not isinstance(self.applicable[source], tuple):
-            self.applicable[source] = (self.rule_mu, [])
         # all signature extensions for the source signature existing in the current branch
         signatures = [node.sig for node in self.branch if node.sig[:-1] == source.sig]
         # all parameters already used with this rule
         used = self.applicable[source][1]
         # choose a signature that does not already occur in this branch
-        sig = source.sig.append(min([i for i in range(1,)
+        sig = source.sig.append(min([i for i in range(1, )
                                      if source.sig.append(i) not in signatures]))
 
         # rule is now being applied; add chosen signature to already used ones
-        self.applicable[source] = (self.rule_beta, used + [sig])
+        self.set_applicable(source, "mu", used + [sig])
 
         # add node
         line += 1
-        cite = "(" + rule + ", " + str(source.line) + ")"
+        cite = "(" + (" " if len(rule) == 1 else "") + rule + str(source.line) + ", " + \
+               "⟨" + ".".join([str(s) for s in source.sig]) + ", " + ".".join([str(s) for s in sig]) + "⟩" + ")"
         node = self.add_child((line, sig, fml, cite))
 
         # self is now no longer leaf, so has no applicable rules
-        self.applicable = dict()
+        self.empty_applicable()
 
     def rule_nu(self, source, args, rule):
         """
-        Expand the source node according to the nu schema (with an old sig.) in this branch.
+        Expand the source node with an existing signature in this branch.
         """
         # todo not tested yet
         fml = args
-        max_line = max([node.line for node in self.branch[0].preorder() if node.line])
+        max_line = max([node.line for node in self.root().preorder() if node.line])
         line = max_line
-        # if there is no list of signatures already used with this rule, create it
-        if not isinstance(self.applicable[source], tuple):
-            self.applicable[source] = (self.rule_nu, [], False)
-        # reset the delayed label
-        if not isinstance(self.applicable[source], tuple):
-            self.applicable[source] = (self.rule_nu, self.applicable[source][1], False)
 
         # find a signature
         # all signature extensions for the source signature existing in the current branch
@@ -618,22 +629,32 @@ class Node(object):
         used = self.applicable[source][1]
         if signatures:
             # choose the first signature that already occurs in this branch but has not already been used with this rule
-            sig = source.sig.append(min([i for i in range(1,)
+            sig = source.sig.append(min([i for i in range(1, )
                                          if source.sig.append(i) in signatures and source.sig.append(i) not in used]))
         else:
             # if there are no suitable signatures, the rule can not be applied here; mark it as delayed
-            self.applicable[source] = (self.rule_beta, used, True)
+            self.set_applicable(source, "nu", used, True)
             return
 
         # rule is now being applied; add chosen signature to already used ones
-        self.applicable[source] = (self.rule_beta, used + [sig])
+        self.set_applicable(source, "nu", used + [sig])
 
         # add node
         line += 1
-        cite = "(" + rule + ", " + str(source.line) + ")"
+        cite = "(" + (" " if len(rule) == 1 else "") + rule + str(source.line) + ", " + \
+               "⟨" + ".".join([str(s) for s in source.sig]) + ", " + ".".join([str(s) for s in sig]) + "⟩" + ")"
         node = self.add_child((line, sig, fml, cite))
 
         # self is now no longer leaf, so has no applicable rules
+        self.empty_applicable()
+
+    def set_applicable(self, source, rule_type, params=[], delayed=False):
+        self.applicable[source] = (rule_type, params, delayed)
+
+    def remove_applicable(self, source):
+        self.applicable.pop(source, None)
+
+    def empty_applicable(self):
         self.applicable = dict()
 
     def contradiction(self):
@@ -677,7 +698,6 @@ class Node(object):
 
 # todo integration in main module gives class not defined errors -- circular imports?
 if __name__ == "__main__":
-
     fml1 = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
     tab1 = Tableau(fml1, propositional=True)
     tab1.generate()
@@ -688,12 +708,13 @@ if __name__ == "__main__":
     # tab2 = Tableau(fml2, premises=[fml2a, fml2b], propositional=True)
     # tab2.generate()
 
-    # fml3 = Neg(Conj(Imp(Prop("p"), Prop("q")), Prop("r")))
-    # tab3 = Tableau(fml3, propositional=True)
-    # tab3.generate()
-    #
-    # fml4 = Neg(Conj(Atm(Pred("P"), (Const("a"), Const("a"))), Neg(Eq(Const("a"), Const("a")))))
-    # tab4 = Tableau(fml4)
+    fml3 = Neg(Conj(Imp(Prop("p"), Prop("q")), Prop("r")))
+    tab3 = Tableau(fml3, validity=False, propositional=True)
+    tab3.generate()
+
+    # fml4a = Atm(Pred("P"), (Const("a"), Const("a")))
+    # fml4b = Neg(Eq(Const("a"), Const("a")))
+    # tab4 = Tableau(premises=[fml4a, fml4b], validity=False)
     # tab4.generate()
 
     fml5a = Imp(Atm(Pred("P"), (Const("a"), Const("b"))), Atm(Pred("Q"), (Const("a"), Const("c"))))
@@ -701,6 +722,20 @@ if __name__ == "__main__":
     tab5 = Tableau(fml5, premises=[fml5a])
     tab5.generate()
 
-    # fml6 = Imp(Forall(Var("x"), Atm(Pred("P"), (Var("x"),))), Neg(Exists(Var("x"), Neg(Atm(Pred("P"), (Var("x"),))))))
-    # tab6 = Tableau(fml6)
-    # tab6.generate()
+    fml6 = Biimp(Forall(Var("x"), Atm(Pred("P"), (Var("x"),))), Neg(Exists(Var("x"), Neg(Atm(Pred("P"), (Var("x"),))))))
+    tab6 = Tableau(fml6)
+    tab6.generate()
+
+    fml7a = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    fml7 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    tab7 = Tableau(fml7, premises=[fml7a])
+    tab7.generate()
+
+    fml8a = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    fml8 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    tab8 = Tableau(fml8, premises=[fml8a])
+    tab8.generate()
+
+    # fml9 = Biimp(Nec(Prop("p")), Neg(Poss(Neg(Prop("p")))))
+    # tab9 = Tableau(fml9, propositional=True, modal=True)
+    # tab9.generate()

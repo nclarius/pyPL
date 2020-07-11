@@ -516,7 +516,7 @@ class Formula(Expr):
         return False
 
 # define short names for tableau rule names
-alpha, beta, gamma, delta, mu, nu = "rule_alpha", "rule_beta", "rule_gamma", "rule_delta", "rule_mu", "rule_nu"
+alpha, beta, gamma, delta, mu, nu = "alpha", "beta", "gamma", "delta", "mu", "nu"
 
 class Verum(Formula):
     """
