@@ -32,14 +32,17 @@ class PropStructure(Structure):
     A structure M is a function V: VAR -> {True, False}.
     V = {"p": True, "q": False, "r": True}
 
+    @attr name: the name of the structure (such as "M1")
+    @type name: str
     @attr v: the valuation function
     @type v: dict[str,bool]
     """
-    def __init__(self, v):
+    def __init__(self, name, v):
+        self.name = name
         self.v = v
 
     def __str__(self):
-        return "Structure M = V with V: " + \
+        return "Structure " + self.name + " = V with V: " + \
                ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v.items())])
 
 
@@ -91,6 +94,8 @@ class PredStructure(Structure):
 
     ---------
 
+    @attr name: the name of the structure (such as "M1")
+    @type name: str
     @attr d: the domain of discourse
     @type d: set[str]
     @attr i: the interpretation function assigning denotations to the non-logical symbols
@@ -99,7 +104,8 @@ class PredStructure(Structure):
     @type vs: list[dict[str,str]]]
     """
 
-    def __init__(self, d, i):
+    def __init__(self, name, d, i):
+        self.name = name
         self.d = d
         self.i = i
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D)
@@ -108,9 +114,9 @@ class PredStructure(Structure):
         self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
     def __str__(self):
-        return "Structure M = ⟨D,I⟩ with\n" \
+        return "Structure " + self.name + "  = ⟨D,I⟩ with\n" \
                "D = {" + ", ".join([str(d) for d in sorted(self.d)]) + "}\n" \
-               "I = {\n" + ", \n".join(["     " + str(key) + " ↦ " +
+               "I : " + ", \n    ".join([str(key) + " ↦ " +
                                         (str(val) if isinstance(val, str) else
                                          (", ".join(["(" + str(key2) + " ↦ " + str(val2) + "⟩"
                                                      for key2, val2 in val.items()])
@@ -118,14 +124,15 @@ class PredStructure(Structure):
                                           ("{" +
                                            ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in val]) +
                                            "}")))
-                                        for (key, val) in sorted(self.i.items())]) +\
-               "\n    }"
+                                        for (key, val) in sorted(self.i.items())])
 
 
 class ModalStructure(Structure):
     """
     A modal of (modal) predicate logic.
 
+    @attr name: the name of the structure (such as "M1")
+    @type name: str
     @attr w: a set of possible worlds
     @type w: set[str]
     @attr r: an accessibility relation on r
@@ -157,6 +164,8 @@ class PropModalStructure(ModalStructure):
       as values.
       V = {'w1': {'p': True, 'q': False}, {'w2': {'p': False, 'q': False}}, ...}
 
+    @attr name: the name of the structure (such as "M1")
+    @type name: str
     @attr w: the set of possible worlds
     @type w: set[str]
     @attr r: the accessibility relation on self.w
@@ -164,21 +173,20 @@ class PropModalStructure(ModalStructure):
     @attr v: the valuation function
     @type v: dict[dict[str,bool]]
     """
-    def __init__(self, w, r, v):
+    def __init__(self, name, w, r, v):
+        self.name = name
         self.w = w
         self.r = r
         self.v = v
 
     def __str__(self):
-        return "Structure M = (W, V) with\n"\
+        return "Structure " + self.name + " = (W, V) with\n"\
                "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n"\
                "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n"\
-               "V = {\n" +\
-                        " \n".join(["    " + str(w) + " ↦ \n" +
+               "V : " + ", \n    ".join([str(w) + " ↦ \n" +
                             ", \n".join(["           " + str(p) + " ↦ " + str(tv)
                             for (p, tv) in sorted(self.v[w].items())])
-                        for w in sorted(self.w)]) +\
-                    "}"
+                        for w in sorted(self.w)])
 
 
 class ConstModalStructure(ModalStructure):
@@ -205,7 +213,9 @@ class ConstModalStructure(ModalStructure):
       - possible worlds as keys and
       - and interpretation of the non-logical symbols as values (see Structure.f).
 
-    @attr w: the set of possible worlds
+
+    @attr name: the name of the structure (such as "M1")
+    @type name: str @attr w: the set of possible worlds
     @type w: set[str]
     @attr r: the accessibility relation on self.w
     @type r: set[tuple[str,str]]
@@ -215,7 +225,8 @@ class ConstModalStructure(ModalStructure):
     @type i: dict[str,dict[str,Any]]
     """
     # todo doesnt work yet (assignment function)
-    def __init__(self, w, r, d, i):
+    def __init__(self, name, w, r, d, i):
+        self.name = name
         self.w = w
         self.r = r
         self.d = d
@@ -226,12 +237,11 @@ class ConstModalStructure(ModalStructure):
         self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
     def __str__(self):
-        return "Structure M = ⟨W,R,D,I⟩ with\n" \
+        return "Structure " + self.name + " = ⟨W,R,D,I⟩ with\n" \
                "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n"\
                "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n"\
                "D = {" + ", ".join([str(d) for d in sorted(self.d)]) + "}\n" \
-               "I = {\n" +\
-                    " \n".join(["    " + str(w) + " ↦ \n" + \
+               "I : " + ", \n    ".join([str(w) + " ↦ \n" + \
                         ", \n".join(
                         ["           " + str(keyI) + " ↦ " +
                          (str(valI) if isinstance(valI, str) else
@@ -243,8 +253,7 @@ class ConstModalStructure(ModalStructure):
                             "}")))
                         for (keyI, valI) in self.i[w].items()]) + \
                         "\n    "
-                    for (w, fw) in sorted(self.i.items())]) +\
-                    "}"
+                    for (w, fw) in sorted(self.i.items())])
 
 
 class VarModalStructure(ModalStructure):
@@ -273,6 +282,9 @@ class VarModalStructure(ModalStructure):
       - possible worlds as keys and
       - and interpretation of the non-logical symbols (see Structure.f) as values.
 
+
+    @attr name: the name of the structure (such as "M1")
+    @type name: str
     @attr w: the set of possible worlds
     @type w: set[str]
     @attr r: the accessibility relation on self.w
@@ -283,7 +295,8 @@ class VarModalStructure(ModalStructure):
     @type i: dict[str,dict[str,Any]]
     """
 
-    def __init__(self, w, r, d, i):
+    def __init__(self, name, w, r, d, i):
+        self.name = name
         self.w = w
         self.r = r
         self.d = d
@@ -294,16 +307,14 @@ class VarModalStructure(ModalStructure):
         self.vs = {w: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[w]] for w in self.w}
 
     def __str__(self):
-        return "Structure M = ⟨W,R,D,F⟩ with\n" \
+        return "Structure " + self.name + " = ⟨W,R,D,F⟩ with\n" \
                "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" \
                "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n" \
-               "D = {\n" + \
-                    ", \n".join([str(w) + " ↦ " + \
+               "D : " + ", \n".join([str(w) + " ↦ " + \
                             ", ".join([str(d) for d in sorted(self.d[w])]) + "}"
                     for w in self.w]) +\
-                    "}\n" \
-               "I = {\n" + \
-                    ", \n".join(["    " + str(w) + " ↦ " +\
+                    \
+               "I : " + ", \n    ".join([str(w) + " ↦ " +\
                             ", \n".join(
                                 ["         " + str(keyI) + " ↦ " +
                                  (str(valI) if isinstance(valI, str) else
@@ -315,5 +326,4 @@ class VarModalStructure(ModalStructure):
                                     "}")))
                                  for (keyI, valI) in sorted(self.i[w].items())]) + \
                             "\n    }"
-                            for (w, fw) in sorted(self.i.items())]) + \
-                    "}"
+                            for (w, fw) in sorted(self.i.items())])

@@ -1515,4 +1515,4 @@ class Infinite(Formula):
         pass
 
     def __str__(self):
-        return "..."
+        return "⋮"

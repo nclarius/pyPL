@@ -36,7 +36,7 @@ def compute_denots():
               "lid": {("roundlid", ), ("rectlid", )},
               "fit": {("roundlid", "roundbox"), ("rectlid", "rectbox")}
         }
-        m1 = PredStructure(d1, i1)
+        m1 = PredStructure("M1", d1, i1)
         v1 = {"x": "roundbox", "y": "bunny"}
         vv1 = {"x": "bunny", "y": "rectbox"}
 
@@ -87,7 +87,7 @@ def compute_denots():
               "book": {("MMiL", )},
               "read": {("Mary", "MMiL")}
         }
-        m2 = PredStructure(d2, i2)
+        m2 = PredStructure("D2", d2, i2)
         v2 = {"x": "Jane", "y": "Mary", "z": "MMiL"}
 
         print(m2)
@@ -132,7 +132,7 @@ def compute_denots():
               "man": {("John", ), ("Peter", )},
               "love": {("Mary", "John"), ("John", "Mary"), ("John", "John"), ("Peter", "Mary"), ("Peter", "John")},
               "jealous": {("Peter", "John", "Mary"), ("Peter", "Mary", "John")}}
-        m3 = PredStructure(d3, i3)
+        m3 = PredStructure("M3", d3, i3)
         v3 = {"x": "Mary", "y": "Mary", "z": "Peter"}
         vv3 = {"x": "John", "y": "Peter", "z": "John"}
 
@@ -185,7 +185,7 @@ def compute_denots():
               "woman": {("Mary",), ("Susan",)}, "man": {("John",)},
               "love": {("John", "Mary"), ("Mary", "Susan"), ("Susan", "Mary"), ("Susan", "Susan")},
               "jealous": {("John", "Susan", "Mary")}}
-        m4 = PredStructure(d4, i4)
+        m4 = PredStructure("M4", d4, i4)
         v4 = m4.vs[5]
 
         print(m4)
@@ -243,7 +243,7 @@ def compute_denots():
         d5 = {"Mary", "Peter", "Susan", "Jane"}
         i5 = {"m": "Mary", "s": "Susan", "j": "Jane",
               "mother": {("Mary",): "Susan", ("Peter",): "Susan", ("Susan",): "Jane"}}
-        m5 = PredStructure(d5, i5)
+        m5 = PredStructure("M5", d5, i5)
         v5 = {"x": "Susan", "y": "Mary", "z": "Peter"}
 
         print(m5)
@@ -276,7 +276,7 @@ def compute_denots():
         d6 = {"a"}
         i6 = {"w1": {"P": {()}},
               "w2": {"P": set()}}
-        m6 = ConstModalStructure(w6, r6, d6, i6)
+        m6 = ConstModalStructure("M6", w6, r6, d6, i6)
         v6 = m6.vs[0]
 
         print(m6)
@@ -316,7 +316,7 @@ def compute_denots():
               "w2": {"a", "b"}}
         i7 = {"w1": {"P": {("a",)}},
               "w2": {"P": {("b",)}}}
-        m7 = VarModalStructure(w7, r7, d7, i7)
+        m7 = VarModalStructure("M7", w7, r7, d7, i7)
 
         print(m7)
         print(m7.vs)
@@ -348,7 +348,7 @@ def compute_denots():
         print()
 
         v8a = {"p": True, "q": False, "r": True}
-        m8a = PropStructure(v8a)
+        m8a = PropStructure("M8", v8a)
 
         print(m8a)
 
@@ -358,12 +358,12 @@ def compute_denots():
 
         for nr, e in e8.items():
             print()
-            print("⟦" + str(e) + "⟧^M =")
+            print("⟦" + str(e) + "⟧^M9 =")
             print(e.denot(m8a))
             depth = 0
 
         v8b = {"p": True, "q": True, "r": False}
-        m8b = PropStructure(v8b)
+        m8b = PropStructure("M8'", v8b)
 
         print()
 
@@ -371,7 +371,7 @@ def compute_denots():
 
         for nr, e in e8.items():
             print()
-            print("⟦" + str(e) + "⟧^M' =")
+            print("⟦" + str(e) + "⟧^M8' =")
             print(e.denot(m8b))
             depth = 0
 
@@ -387,7 +387,7 @@ def compute_denots():
         i9a = {"S": {("m1", )},
                "R": {("m1", "m1"), ("m2", "m1")}
               }
-        m9a = PredStructure(d9a, i9a)
+        m9a = PredStructure("M9a", d9a, i9a)
 
         print(m9a)
 
@@ -398,7 +398,7 @@ def compute_denots():
 
         for nr, e in e9.items():
             print()
-            print("⟦" + str(e) + "⟧^M =")
+            print("⟦" + str(e) + "⟧^M9 =")
             print(e.denotV(m9a))
             depth = 0
 
@@ -408,13 +408,13 @@ def compute_denots():
         i9b = {"S": {("m2", )},
                "R": {("m1", "m1"), ("m2", "m1")}
               }
-        m9b = PredStructure(d9b, i9b)
+        m9b = PredStructure("M9'", d9b, i9b)
 
         print(m9b)
 
         for nr, e in e9.items():
             print()
-            print("⟦" + str(e) + "⟧^M' =")
+            print("⟦" + str(e) + "⟧^M9' =")
             print(e.denotV(m9b))
             depth = 0
 
@@ -432,7 +432,7 @@ def compute_denots():
                "k": "b",
                "l": "a"
               }
-        m10 = PredStructure(d10, i10)
+        m10 = PredStructure("M10", d10, i10)
 
         print(m10)
 
@@ -445,7 +445,7 @@ def compute_denots():
 
         for nr, e in e10.items():
             print()
-            print("⟦" + str(e) + "⟧^M =")
+            print("⟦" + str(e) + "⟧^M10 =")
             print(e.denotV(m10))
             depth = 0
 

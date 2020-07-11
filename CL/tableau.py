@@ -73,7 +73,7 @@ class Tableau(object):
             print("The tableau is open:\n"
                   "The " + ("inference" if self.premises else "formula") + " is invalid.")
         elif self.infinite():
-            print("The tableau is possibly infinite:\n"
+            print("The tableau is potentially infinite:\n"
                   "The " + ("inference" if self.premises else "formula") + " may or may not be valid.")
         # print the counter models
         if models := self.models():
@@ -156,12 +156,15 @@ class Tableau(object):
         """
         # todo minimal models
         res = []
+        count = 0
         for leaf in self.root.leaves():
 
             if isinstance(leaf.fml, Open):
                 # open branch
                 leaf = leaf.branch[-2]
                 branch = leaf.branch
+                count += 1
+                name = "M" + str(count)
 
                 if self.modal:
                     sigs = [node.sig for node in branch]
@@ -175,7 +178,7 @@ class Tableau(object):
                         atoms = [node.fml.p for node in branch if isinstance(node.fml, Prop)]
                         # valuation = make all positive propositional variables true and all others false
                         v = {p: (True if p in atoms else False) for p in self.root.fml.propvars()}
-                        model = PropStructure(v)
+                        model = PropStructure(name, v)
                         res.append(model)
 
                     else:  # modal propositional
@@ -185,7 +188,7 @@ class Tableau(object):
                         # valuation = make all positive propositional variables true and all others false
                         v = {sig: {p: (True if p in atoms[sig] else False) for p in self.root.fml.propvars()}
                              for sig in sigs}
-                        model = PropModalStructure(w, r, v)
+                        model = PropModalStructure(name, w, r, v)
                         res.append(model)
 
 
@@ -204,11 +207,11 @@ class Tableau(object):
                         # atoms = all unnegated atomic predications
                         atoms = [(node.fml.pred, node.fml.terms) for node in branch if isinstance(node.fml, Atm)]
                         # domain = all const.s occurring in formulas
-                        d = set(chain(*[node.fml.nonlogs()[0] for node in branch]))
+                        d = set(list(chain(*[node.fml.nonlogs()[0] for node in branch if node.fml.nonlogs()])))
                         # interpretation = make all unnegated predications true and all others false
                         i = {p: {tuple([str(t) for t in a[1]]) for a in atoms if (Pred(p), a[1]) in atoms}
                              for p in predicates}
-                        model = PredStructure(d, i)
+                        model = PredStructure(name, d, i)
                         res.append(model)
 
                     else:
@@ -223,14 +226,14 @@ class Tableau(object):
 
                         if not self.vardomain:  # modal predicational with constant domain
                             d = set(chain(*[node.fml.nonlogs()[0] for node in branch]))
-                            model = ConstModalStructure(w, r, d, i)
+                            model = ConstModalStructure(name, w, r, d, i)
                             res.append(model)
 
                         else:  # modal predicational with varying domain
                             d = {sig: set(chain(*[node.fml.nonlogs()[0] for node in branch
                                                   if node.sig == sig]))
                                  for sig in sigs}
-                            model = VarModalStructure(w, r, d, i)
+                            model = VarModalStructure(name, w, r, d, i)
                             res.append(model)
 
         return res
@@ -367,7 +370,8 @@ class Node(object):
         self.children.append(child)
 
         # check properties of new child
-        if not child.contradiction() and not child.infinite() and not isinstance(fml, Open):
+        if not (isinstance(fml, Closed) or isinstance(fml, Open) or isinstance(fml, Infinite)) \
+            and not (child.contradiction() or child.infinite()):
             # transfer applicable rules to new leaf
             child.applicable = {key: val for (key, val) in self.applicable.items()}
             # print("adding:")
@@ -398,7 +402,8 @@ class Node(object):
             # check if expansion leaves open branches
             for leaf in self.leaves():
                 # if the child has no applicable (or only delayed) rules, the branch is open
-                if not isinstance(leaf.fml, Closed) and (not leaf.applicable or \
+                if not (isinstance(leaf.fml, Closed) or isinstance(leaf.fml, Infinite)) and \
+                        (not leaf.applicable or \
                         all([isinstance(leaf.applicable[key], tuple) and leaf.applicable[key][0] == leaf.rule_nu
                              and leaf.applicable[key][3] for key in leaf.applicable])):
                     leaf.add_open()
@@ -479,8 +484,7 @@ class Node(object):
         """
         Extend the source node according to the delta schema (with an arb. param.) in this branch.
         """
-        # ! dummy, & doesn't work yet
-        # todo specify rule application adequately
+        # todo doesn't work yet
         phi, var = args
         max_line = max([node.line for node in self.branch[0].preorder() if node.line])
         line = max_line
@@ -495,6 +499,8 @@ class Node(object):
         constants = list(chain(*[node.fml.nonlogs()[0] for node in self.branch]))
         # all constants and parameters
         useable = constants + parameters
+        # alternative formulation: only use constants that already occur in the branch, no parameters
+        # useable = constants if constants else parmeters[0]
         # all parameters already used with this rule
         used = self.applicable[source][1]
         # for modal predicate logic with varying domains: add signature subscript to constant
@@ -524,8 +530,7 @@ class Node(object):
         """
         Extend the source line according to the gamma schema (with a new param.) in this branch.
         """
-        # ! dummy & doesn't work yet
-        # todo specify rule application adequately
+        # todo doesn't work yet
         phi, var = args
         sig = source.sig
         max_line = max([node.line for node in self.branch[0].preorder() if node.line])
@@ -551,6 +556,8 @@ class Node(object):
 
         # rule is now being applied; add chosen constant to already used ones
         self.applicable[source] = (self.rule_beta, used + [const])
+        # alternative formulation: rule may only be applied once; remove from applicable
+        # self.applicable.pop(source, Noone)
 
         # add node
         line += 1
@@ -565,6 +572,7 @@ class Node(object):
         """
         Extend the source node according to the mu schema (with a new sig.) in all this branch.
         """
+        # todo not tested yet
         fml = args
         max_line = max([node.line for node in self.branch[0].preorder() if node.line])
         line = max_line
@@ -596,6 +604,7 @@ class Node(object):
         """
         Extend the source node according to the nu schema (with an old sig.) in this branch.
         """
+        # todo not tested yet
         fml = args
         max_line = max([node.line for node in self.branch[0].preorder() if node.line])
         line = max_line
@@ -642,9 +651,9 @@ class Node(object):
 
     def infinite(self):
         """
-        A branch is declared infinite if it is longer than 15.
+        A branch is declared infinite if it is 10 or longer.
         """
-        if len(self.branch) > 15:
+        if len(self.branch) >= 10:
             self.add_infinite()
             return True
         return False
@@ -673,37 +682,29 @@ class Node(object):
 # todo integration in main module gives class not defined errors -- circular imports?
 if __name__ == "__main__":
 
-    fml1 = Neg(Conj(Imp(Prop("p"), Prop("q")), Prop("r")))
+    fml1 = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
     tab1 = Tableau(fml1, propositional=True)
     tab1.generate()
 
-    fml2 = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
-    tab2 = Tableau(fml2, propositional=True)
-    tab2.generate()
+    # fml2a = Imp(Prop("p"), Prop("q"))
+    # fml2b = Imp(Prop("q"), Prop("r"))
+    # fml2 = Imp(Prop("p"), Prop("r"))
+    # tab2 = Tableau(fml2, premises=[fml2a, fml2b], propositional=True)
+    # tab2.generate()
 
-    fml3 = Neg(Disj(Atm(Pred("P"), (Const("a"), Const("b"))), Atm(Pred("P"), (Const("b"), Const("a")))))
-    tab3 = Tableau(fml3)
-    tab3.generate()
+    # fml3 = Neg(Conj(Imp(Prop("p"), Prop("q")), Prop("r")))
+    # tab3 = Tableau(fml3, propositional=True)
+    # tab3.generate()
     #
     # fml4 = Neg(Conj(Atm(Pred("P"), (Const("a"), Const("a"))), Neg(Eq(Const("a"), Const("a")))))
     # tab4 = Tableau(fml4)
     # tab4.generate()
-    #
-    # fml5 = Exists(Var("x"), Forall(Var("y"), Atm(Pred("P"), (Var("x"), Var("y")))))
-    # tab5 = Tableau(fml5)
-    # tab5.generate()
-    #
-    # fml6 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("P"), (Var("x"), Var("y")))))
+
+    fml5a = Imp(Atm(Pred("P"), (Const("a"), Const("b"))), Atm(Pred("Q"), (Const("a"), Const("c"))))
+    fml5 = Atm(Pred("R"), (Const("a"), Const("a")))
+    tab5 = Tableau(fml5, premises=[fml5a])
+    tab5.generate()
+
+    # fml6 = Imp(Forall(Var("x"), Atm(Pred("P"), (Var("x"),))), Neg(Exists(Var("x"), Neg(Atm(Pred("P"), (Var("x"),))))))
     # tab6 = Tableau(fml6)
     # tab6.generate()
-
-    fml7a = Imp(Prop("p"), Prop("q"))
-    fml7b = Imp(Prop("q"), Prop("r"))
-    fml7 = Imp(Prop("p"), Prop("r"))
-    tab7 = Tableau(fml7, premises=[fml7a, fml7b], propositional=True)
-    tab7.generate()
-
-    fml8a = Imp(Atm(Pred("P"), (Const("a"), Const("b"))), Atm(Pred("Q"), (Const("a"), Const("c"))))
-    fml8 = Atm(Pred("R"), (Const("a"), Const("a")))
-    tab8 = Tableau(fml8, premises=[fml8a])
-    tab8.generate()
