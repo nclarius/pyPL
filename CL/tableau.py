@@ -15,12 +15,6 @@ from typing import List, Dict, Set, Tuple
 from itertools import chain
 
 
-# todo documentation
-# todo predicate logic
-# todo modal logic
-# todo parser
-
-
 class Tableau(object):
     """
     A tableau tree.
@@ -29,12 +23,12 @@ class Tableau(object):
     def __init__(self, conclusion, premises=[], propositional=False, modal=False, vardomain=False):
         # settings
         self.propositional = propositional  # todo detect automatically?
-        self.modal = modal  # todo detect automatically?
+        self.modal = modal
         self.vardomain = vardomain
         sig = [1] if modal else None
 
         # insert nodes
-        self.root = Node(1, sig if modal else None, Neg(conclusion), "(A)", None, self)
+        self.root = Node(1, sig, Neg(conclusion), "(A)", None, self)
         if self.root.rule():
             self.root.applicable[self.root] = self.root.rule()
         self.premises = [self.root.leaves()[0].add_child((i+2, sig, premise, "(A)"))
@@ -361,30 +355,32 @@ class Node(object):
         Add a child to the current node.
         """
         # todo sometimes adds None nodes (?)
-        # don't add children to branches that are already closed or terminally open
-        if self.children and (isinstance(self.children[0].fml, Closed) or isinstance(self.children[0].fml, Open)):
+        # don't add children to branches that are already closed, open or declard infinite
+        if self.children and (isinstance(self.children[0].fml, Closed) or isinstance(self.children[0].fml, Open) or
+                              isinstance(self.children[9].fml, Infinite)):
             return
+
         (line, sig, fml, cite) = spec
         child = Node(line, sig, fml, cite, self, self.tableau)
         # add the child
         self.children.append(child)
 
-        # check properties of new child
-        if not (isinstance(fml, Closed) or isinstance(fml, Open) or isinstance(fml, Infinite)) \
-            and not (child.contradiction() or child.infinite()):
-            # transfer applicable rules to new leaf
-            child.applicable = {key: val for (key, val) in self.applicable.items()}
-            # print("adding:")
-            # print(str(self) + " + " + str(child))
-            # print(self.applicable, child.applicable)
-            # print("children:")
-            # print("\n".join([str(node) + ": " + str(node.children) for node in self.root().preorder()]))
-            # print()
-            # print(self.root().treestr())
-            # if the child formula has applicable rules, add it to its own applicable rules
-            if child.rule():
-                child.applicable[child] = child.rule()
-            # todo generically handle reset of parent applicable rules after all children have been added
+        if not (isinstance(fml, Closed) or isinstance(fml, Open) or isinstance(fml, Infinite)):
+            # check properties of new child
+            if not (child.contradiction() or child.infinite()):
+                # transfer applicable rules to new leaf
+                # if the child formula has applicable rules, add it to its own applicable rules
+                child.applicable = {key: val for (key, val) in self.applicable.items()}
+                if child.rule():
+                    child.applicable[child] = child.rule()
+                # print("adding:")
+                # print(str(self) + " + " + str(child))
+                # print(self.applicable, child.applicable)
+                # print("children:")
+                # print("\n".join([str(node) + ": " + str(node.children) for node in self.root().preorder()]))
+                # print()
+                # print(self.root().treestr())
+                # todo generically handle reset of parent applicable rules after all children have been added
         return child
 
     def rule(self):
@@ -401,16 +397,16 @@ class Node(object):
 
             # check if expansion leaves open branches
             for leaf in self.leaves():
-                # if the child has no applicable (or only delayed) rules, the branch is open
-                if not (isinstance(leaf.fml, Closed) or isinstance(leaf.fml, Infinite)) and \
-                        (not leaf.applicable or \
+                if not (isinstance(leaf.fml, Closed) or isinstance(leaf.fml, Infinite)):
+                    # if the child has no applicable (or only delayed) rules, the branch is open
+                    if (not leaf.applicable or \
                         all([isinstance(leaf.applicable[key], tuple) and leaf.applicable[key][0] == leaf.rule_nu
                              and leaf.applicable[key][3] for key in leaf.applicable])):
-                    leaf.add_open()
+                        leaf.add_open()
 
     def rule_alpha(self, source, args, rule):
         """
-        Extend the source node unary in this branch.
+        Expand the source node unary in this branch.
         """
         fmls = args
         max_line = max([node.line for node in self.branch[0].preorder() if node.line])
@@ -439,7 +435,7 @@ class Node(object):
 
     def rule_beta(self, source, args, rule):
         """
-        Extend the source node binary in this branch.
+        Expand the source node binary in this branch.
         """
         fmls = args
         max_line = max([node.line for node in self.branch[0].preorder() if node.line])
@@ -482,7 +478,7 @@ class Node(object):
 
     def rule_gamma(self, source, args, rule):
         """
-        Extend the source node according to the delta schema (with an arb. param.) in this branch.
+        Expand the source node according to the gamma schema (with an arb. param.) in this branch.
         """
         # todo doesn't work yet
         phi, var = args
@@ -528,7 +524,7 @@ class Node(object):
 
     def rule_delta(self, source, args, rule):
         """
-        Extend the source line according to the gamma schema (with a new param.) in this branch.
+        Expand the source node according to the delta schema (with a new param.) in this branch.
         """
         # todo doesn't work yet
         phi, var = args
@@ -570,7 +566,7 @@ class Node(object):
 
     def rule_mu(self, source, args, rule):
         """
-        Extend the source node according to the mu schema (with a new sig.) in all this branch.
+        Expand the source node according to the mu schema (with a new sig.) in all this branch.
         """
         # todo not tested yet
         fml = args
@@ -602,7 +598,7 @@ class Node(object):
 
     def rule_nu(self, source, args, rule):
         """
-        Extend the source node according to the nu schema (with an old sig.) in this branch.
+        Expand the source node according to the nu schema (with an old sig.) in this branch.
         """
         # todo not tested yet
         fml = args
