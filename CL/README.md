@@ -32,11 +32,11 @@ Restrictions
 Known issues
 ------------
  - global variables are bad
- - name of structure, domain, interpr. func., variable assignment and world is not systematically recognized,
+ - depth has to be reset manually after each call of `denot`
+ - name of variable assignment and world is not systematically recognized,
    instead always 'M', 'D', 'I', 'v', 'w' used in printout
  - efficiency: assignment functions have to be specified on all variables of the language;
    the domain is not restricted expression-wise to those variables that actually occur in the expression
- - depth has to be reset manually after each call of `denot`
 
 Wish list
 ---------
