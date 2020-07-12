@@ -28,10 +28,11 @@ class Tableau(object):
     """
 
     def __init__(self, conclusion=None, premises=[], validity=True,
-                 propositional=False, modal=False, vardomain=False, frame="K"):
+                 classical=True, propositional=False, modal=False, vardomain=False, frame="K"):
         # settings
         self.validity = validity
         # todo check consistency of settings
+        self.classical = classical
         self.propositional = propositional  # todo detect automatically?
         self.modal = modal
         self.vardomain = vardomain
@@ -59,12 +60,21 @@ class Tableau(object):
         res = "\n"
 
         # print info
+        res += "You are using " + \
+               ("classical " if self.classical else "intuitionistic ") + \
+               ("modal " if self.modal else "") + \
+               ("propositional " if self.propositional else "predicate ") + \
+               "logic" + \
+               (" with " + ("varying " if self.vardomain else "constant ") + "domains"
+                if self.modal and not self.propositional else "") + \
+               (" in a " + self.frame + " frame" if self.modal else "") + \
+               ".\n\n"
         if self.validity:
-            res += "Tableau for " +\
-                  ", ".join([str(premise.fml) for premise in self.premises]) + " ⊨ " + str(self.root.fml.phi) + ":\n"
+            res += "Tableau for " + \
+                   ", ".join([str(premise.fml) for premise in self.premises]) + " ⊨ " + str(self.root.fml.phi) + ":\n\n"
         else:
-            res += "Tableau for " +\
-                  ", ".join([str(node.fml) for node in [self.root] + self.premises]) + " ⊭ ⊥:\n"
+            res += "Tableau for " + \
+                   ", ".join([str(node.fml) for node in [self.root] + self.premises]) + " ⊭ ⊥:\n\n"
 
         # recursively apply the rules
         self.expand()
@@ -92,8 +102,8 @@ class Tableau(object):
             if self.validity:
                 res += "The " + ("inference" if self.premises else "formula") + " may or may not be valid.\n"
             else:
-                res += "The " + ("set of sentences" if self.premises else "formula") + " may or may not be " +\
-                                ("consistent.\n" if self.premises else "satisfiable.\n")
+                res += "The " + ("set of sentences" if self.premises else "formula") + " may or may not be " + \
+                       ("consistent.\n" if self.premises else "satisfiable.\n")
 
         # generate and print models
         if models := self.models():
@@ -104,7 +114,7 @@ class Tableau(object):
 
         res += "\n" + 80 * "-"
         return res
-    
+
     def tex(self):
         """
         Expand the tableau, generate the associate models and print some info.
@@ -117,13 +127,22 @@ class Tableau(object):
         res = "\\documentclass[a4paper]{article}\n\n\\usepackage{amssymb}\n\n\\begin{document}\n\n"
 
         # print info
+        res += "You are using " + \
+               ("classical " if self.classical else "intuitionistic ") + \
+               ("modal " if self.modal else "") + \
+               ("propositional " if self.propositional else "predicate ") + \
+               "logic" + \
+               (" with " + ("varying " if self.vardomain else "constant ") + "domains"
+                if self.modal and not self.propositional else "") + \
+               (" in a " + self.frame + " frame" if self.modal else "") + \
+               ".\\\\\\\\\n\n"
         if self.validity:
             res += "Tableau for " + \
-                  "$" + ", ".join([premise.fml.tex() for premise in self.premises]) + \
+                   "$" + ", ".join([premise.fml.tex() for premise in self.premises]) + \
                    " \\vDash " + self.root.fml.phi.tex() + "$:\\\\\n\n"
         else:
             res += "Tableau for " + \
-                  "$" + ", ".join([node.fml.tex() for node in [self.root] + self.premises]) + \
+                   "$" + ", ".join([node.fml.tex() for node in [self.root] + self.premises]) + \
                    " \\not \\vDash \\bot$:\\\\\n\n"
 
         # recursively apply the rules
@@ -152,8 +171,8 @@ class Tableau(object):
             if self.validity:
                 res += "The " + ("inference" if self.premises else "formula") + " may or may not be valid.\\\\\n"
             else:
-                res += "The " + ("set of sentences" if self.premises else "formula") + " may or may not be " +\
-                                ("consistent.\\\\\n" if self.premises else "satisfiable.\\\\\n")
+                res += "The " + ("set of sentences" if self.premises else "formula") + " may or may not be " + \
+                       ("consistent.\\\\\n" if self.premises else "satisfiable.\\\\\n")
 
         # generate and print models
         if models := self.models():
@@ -252,7 +271,7 @@ class Tableau(object):
                 if self.modal:
                     sigs = {node.sig for node in branch}
                     # w1, ..., wn as names for worlds instead of signatures
-                    worlds = {sig: "w" + str(i+1) for (i, sig) in enumerate(sigs)}
+                    worlds = {sig: "w" + str(i + 1) for (i, sig) in enumerate(sigs)}
                     w = {worlds[sig] for sig in sigs}
                     r_ = {(sig[:-1], sig[-1]) for sig in sigs if len(sig) > 1}
                     r = {(worlds[sig1], worlds[sig2]) for (sig1, sig2) in r_}
@@ -598,7 +617,7 @@ class Node(object):
             subscript = ".".join([str(s) for s in source.sig])
         # choose first symbol from constants and parameters that has not already been used with this particular rule
         const_symbol = usable[(min([i for i in range(len(usable))
-                                     if usable[i] + subscript not in used]))] + subscript
+                                    if usable[i] + subscript not in used]))] + subscript
         const = Const(const_symbol)
 
         # rule is now being applied; add chosen constant to already used ones
