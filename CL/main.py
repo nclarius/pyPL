@@ -19,6 +19,8 @@ def compute_denots():
     """
     Define structures and formulas to compute denotations for here.
     """
+    # todo tex
+
     global depth, active
 
 
@@ -461,12 +463,12 @@ def compute_tableaus():
     if 1 in tableaus:
         fml1 = Conj(Imp(Prop("p"), Prop("q")), Prop("r"))
         tab1 = Tableau(fml1)
-        tab1.generate()
+        tab1.__str__()
 
     if 2 in tableaus:
         fml2 = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
         tab2 = Tableau(Neg(fml2))
-        tab2.generate()
+        tab2.__str__()
 
 
 if __name__ == "__main__":

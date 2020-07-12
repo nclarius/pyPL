@@ -5,6 +5,8 @@
 Define the structures of classical (standard and modal) (prepositional and first-order) logic.
 """
 
+# todo latex
+
 
 from main import *
 from expr import *

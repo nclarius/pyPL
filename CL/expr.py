@@ -24,11 +24,19 @@ class Expr:
     @method denot: denotation of the expression relative to a structure m and assignment g
     """
 
+    def tex(self) -> str:
+        """
+        The expression formatted in LaTeX code.
+
+        @return self in LaTeX code
+        @rtype str
+        """
+
     def propvars(self) -> Set[str]:
         """
         The set of propositional variables in the expression.
 
-        @return: the seet of propositional varibles in the expression
+        @return: the set of propositional varibles in the expression
         @rtype: set[str]
         """
         return self.phi.propvars()
@@ -122,6 +130,9 @@ class Const(Term):
     def __str__(self):
         return self.c
 
+    def tex(self):
+        return self.c
+
     def __eq__(self, other):
         return isinstance(other, Const) and self.c == other.c
 
@@ -168,6 +179,9 @@ class Var(Term):
     def __str__(self):
         return self.u
 
+    def tex(self):
+        return self.u
+
     def __eq__(self, other):
         return isinstance(other, Var) and self.u == other.u
 
@@ -209,6 +223,9 @@ class Func(Expr):
         self.f = f
 
     def __str__(self):
+        return self.f
+
+    def tex(self):
         return self.f
 
     def __eq__(self, other):
@@ -264,6 +281,9 @@ class FuncTerm(Term):
     def __str__(self):
         return str(self.f) + "(" + ", ".join([str(t) for t in self.terms]) + ")"
 
+    def tex(self):
+        return self.f.tex() + "(" + ", ".join([t.tex() for t in self.terms]) + ")"
+
     def __eq__(self, other):
         return isinstance(other, FuncTerm) and self.f == other.f and self.terms == other.terms
 
@@ -307,6 +327,9 @@ class Pred(Expr):
         self.p = p
 
     def __str__(self):
+        return self.p
+
+    def tex(self):
         return self.p
 
     def __eq__(self, other):
@@ -472,23 +495,25 @@ class Formula(Expr):
 
     def tableau_pos(self):
         """
-        Tableau rule for the unnegated formula.
+        Tableau rules for the unnegated formula.
 
-        @return: A triple of
+        @return: A list of triples of
+                 - the rule name
                  - the type of rule (alpha/beta/gamma/delta/mu/nu)
                  - the arguments of the rule: the formulas to extend and, if applicable, parameter/signature information
-                 - the rule name
+        @rtype List[Tuple[str,str,Any]]
         """
         pass
 
     def tableau_neg(self):
         """
-        Tableau rule for the negated formula.
+        Tableau rules for the negated formula.
 
-        @return: A triple of
+        @return: A list of triples of
+                 - the rule name
                  - the type of rule (alpha/beta/gamma/delta/mu/nu)
                  - the arguments of the rule: the formulas to extend and, if applicable, parameter/signature information
-                 - the rule name
+        @rtype List[Tuple[str,str,Any]]
         """
         pass
 
@@ -497,9 +522,10 @@ class Formula(Expr):
         The cases where the unnegated formula leads to a contradiction in the branch.
         """
         for other in node.branch[:-1]:  # contradiction to another formula in the same branch
-            #  φ ... ¬φ; ¬φ ... φ
-            if Neg(self) == other.fml or \
-               self == Neg(other.fml):
+            #  φ        ¬φ
+            #  ⋮    or    ⋮
+            # ¬φ         φ
+            if Neg(self) == other.fml or self == Neg(other.fml):
                 node.add_closed([other.line, node.line])
                 return True
         return False
@@ -509,7 +535,9 @@ class Formula(Expr):
         The cases where the unnegated formula leads to a contradiction in the branch.
         """
         for other in node.branch[:-1]:  # contradiction to another formula in the same branch
-            #  φ ... ¬φ; ¬φ ... φ
+            #  φ        ¬φ
+            #  ⋮    or    ⋮
+            # ¬φ         φ
             if self == other.fml:
                 node.add_closed([other.line, node.line])
                 return True
@@ -527,6 +555,9 @@ class Verum(Formula):
         pass
 
     def __str__(self):
+        return "⊤"
+
+    def tex(self):
         return "⊤"
 
     def __eq__(self, other):
@@ -554,16 +585,16 @@ class Verum(Formula):
         return True
 
     def tableau_pos(self):
-        return None
+        return []
 
     def tableau_neg(self):
-        return None
+        return []
 
     def tableau_contradiction_pos(self, node):
         return False
 
     def tableau_contradiction_neg(self, node):
-        node.add_child((None, None, Closed(), "(" + str(node.line) + ")"))
+        node.add_closed(node.line)
         return True
 
 
@@ -577,6 +608,9 @@ class Falsum(Formula):
         pass
 
     def __str__(self):
+        return "⊥"
+
+    def tex(self):
         return "⊥"
 
     def __eq__(self, other):
@@ -604,13 +638,13 @@ class Falsum(Formula):
         return False
 
     def tableau_pos(self):
-        return None
+        return []
 
     def tableau_neg(self):
-        return None
+        return []
 
     def tableau_contradiction_pos(self, node):
-        node.add_child((None, None, Closed(), "(" + str(node.line) + ")"))
+        node.add_closed(node.line)
         return True
 
     def tableau_contradiction_neg(self, node):
@@ -630,6 +664,9 @@ class Prop(Formula):
         self.p = p
 
     def __str__(self):
+        return self.p
+
+    def tex(self):
         return self.p
 
     def __eq__(self, other):
@@ -658,10 +695,10 @@ class Prop(Formula):
         return v[self.p]
 
     def tableau_pos(self):
-        return None
+        return []
 
     def tableau_neg(self):
-        return None
+        return []
 
 
 class Eq(Formula):
@@ -681,6 +718,9 @@ class Eq(Formula):
 
     def __str__(self):
         return str(self.t1) + " = " + str(self.t2)
+
+    def tex(self):
+        return self.t1.tex() + " = " + self.t2.tex()
 
     def __eq__(self, other):
         return isinstance(other, Eq) and self.t1 == other.t1 and self.t2 == other.t2
@@ -709,10 +749,10 @@ class Eq(Formula):
         return self.t1.denot(m, v, w) == self.t2.denot(m, v, w)
 
     def tableau_pos(self):
-        return None
+        return []
 
     def tableau_neg(self):
-        return None
+        return []
 
     def tableau_contradiction_pos(self, node):
         if str(self.t1) != str(self.t2):
@@ -751,6 +791,9 @@ class Atm(Formula):
     def __str__(self):
         return str(self.pred) + "(" + ",".join([str(t) for t in self.terms]) + ")"
 
+    def tex(self):
+        return self.pred.tex() + "(" + ",".join([t.tex() for t in self.terms]) + ")"
+
     def __eq__(self, other):
         return isinstance(other, Atm) and self.pred == other.pred and self.terms == other.terms
 
@@ -779,10 +822,10 @@ class Atm(Formula):
         return tuple([t.denot(m, v, w) for t in self.terms]) in self.pred.denot(m, v, w)
 
     def tableau_pos(self):
-        return None
+        return []
 
     def tableau_neg(self):
-        return None
+        return []
 
 
 class Neg(Formula):
@@ -800,6 +843,11 @@ class Neg(Formula):
         if isinstance(self.phi, Eq):
             return str(self.phi.t1) + "≠" + str(self.phi.t2)
         return "¬" + str(self.phi)
+
+    def tex(self):
+        if isinstance(self.phi, Eq):
+            return self.phi.t1.tex() + " \\neq " + self.phi.t2.tex()
+        return "\\neg" + self.phi.tex()
 
     def __eq__(self, other):
         return isinstance(other, Neg) and self.phi == other.phi
@@ -830,7 +878,7 @@ class Neg(Formula):
     def tableau_pos(self):
         """
         ¬φ
-        ...
+         ⋮
         """
         # If the negation does not occur under another neg., apply the negative tableau rule on the negative formula.
         return self.phi.tableau_neg()
@@ -838,10 +886,11 @@ class Neg(Formula):
     def tableau_neg(self):
         """
         ¬¬φ
+         |
          φ
         """
         # If the negation is itself negated, apply the double negation elimination rule on the double negated formula.
-        return alpha, [self.phi], "¬¬"
+        return [("¬¬", alpha, [self.phi])]
 
     def tableau_contradiction_pos(self, node):
         return self.phi.tableau_contradiction_neg(node)
@@ -863,6 +912,9 @@ class Conj(Formula):
 
     def __str__(self):
         return "(" + str(self.phi) + " ∧ " + str(self.psi) + ")"
+
+    def tex(self):
+        return "(" + self.phi.tex() + " \\wedge " + self.psi.tex() + ")"
 
     def __eq__(self, other):
         return isinstance(other, Conj) and self.phi == other.phi and self.psi == other.psi
@@ -894,9 +946,10 @@ class Conj(Formula):
         """
         (φ∧ψ)
           φ
+          |
           ψ
         """
-        return alpha, ([self.phi, self.psi]), "∧"
+        return [("∧", alpha, ([self.phi, self.psi]))]
 
     def tableau_neg(self):
         """
@@ -904,7 +957,7 @@ class Conj(Formula):
           /  \
         ¬φ   ¬ψ
         """
-        return beta, ([Neg(self.phi)], [Neg(self.psi)]), "¬∧"
+        return [("¬∧", beta, ([Neg(self.phi)], [Neg(self.psi)]))]
 
 
 class Disj(Formula):
@@ -923,6 +976,9 @@ class Disj(Formula):
 
     def __str__(self):
         return "(" + str(self.phi) + " ∨ " + str(self.psi) + ")"
+
+    def tex(self):
+        return "(" + self.phi.tex() + " \\vee " + self.psi.tex() + ")"
 
     def __eq__(self, other):
         return isinstance(other, Disj) and self.phi == other.phi and self.psi == other.psi
@@ -956,15 +1012,17 @@ class Disj(Formula):
          /  \
         φ   ψ
         """
-        return beta, ([self.phi], [self.psi]), "∨"
+        return [("∨", beta, ([self.phi], [self.psi]))]
 
     def tableau_neg(self):
         """
         ¬(φ∨ψ)
+           |
           ¬φ
+           |
           ¬ψ
         """
-        return alpha, ([Neg(self.phi), Neg(self.psi)]), "¬∨"
+        return [("¬∨", alpha, ([Neg(self.phi), Neg(self.psi)]))]
 
 
 class Imp(Formula):
@@ -983,6 +1041,9 @@ class Imp(Formula):
 
     def __str__(self):
         return "(" + str(self.phi) + " → " + str(self.psi) + ")"
+
+    def tex(self):
+        return "(" + self.phi.tex() + " \\rightarrow " + self.psi.tex() + ")"
 
     def __eq__(self, other):
         return isinstance(other, Imp) and self.phi == other.phi and self.psi == other.psi
@@ -1016,15 +1077,17 @@ class Imp(Formula):
          /  \
         ¬φ  ψ
         """
-        return beta, ([Neg(self.phi)], [self.psi]), "→"
+        return [("→", beta, ([Neg(self.phi)], [self.psi]))]
 
     def tableau_neg(self):
         """
         ¬(φ→ψ)
+           |
            φ
+           |
           ¬ψ
         """
-        return alpha, ([self.phi, Neg(self.psi)]), "¬→"
+        return [("¬→", alpha, ([self.phi, Neg(self.psi)]))]
 
 
 class Biimp(Formula):
@@ -1043,6 +1106,9 @@ class Biimp(Formula):
 
     def __str__(self):
         return "(" + str(self.phi) + " ↔ " + str(self.psi) + ")"
+
+    def tex(self):
+        return "(" + self.phi.tex() + " \\leftrightarrow " + self.psi.tex() + ")"
 
     def __eq__(self, other):
         return isinstance(other, Biimp) and self.phi == other.phi and self.psi == other.psi
@@ -1075,18 +1141,20 @@ class Biimp(Formula):
          (φ↔ψ)
          /  \
         φ   ¬φ
+        |    <
         ψ   ¬ψ
         """
-        return beta, ([self.phi, self.psi], [Neg(self.phi), Neg(self.psi)]), "↔"
+        return [("↔", beta, ([self.phi, self.psi], [Neg(self.phi), Neg(self.psi)]))]
 
     def tableau_neg(self):
         """
          (φ↔ψ)
           /  \
          φ   ¬φ
+         |    |
         ¬ψ    ψ
         """
-        return beta, ([self.phi, Neg(self.psi)], [Neg(self.phi), self.psi]), "¬↔"
+        return [("¬↔", beta, ([self.phi, Neg(self.psi)], [Neg(self.phi), self.psi]))]
 
 
 class Exists(Formula):
@@ -1105,6 +1173,9 @@ class Exists(Formula):
 
     def __str__(self):
         return "∃" + str(self.u) + str(self.phi)
+
+    def tex(self):
+        return "\\exists " + self.u.tex() + " " + self.phi.tex()
 
     def __eq__(self, other):
         return isinstance(other, Exists) and self.u == other.u and self.phi == other.phi
@@ -1173,19 +1244,23 @@ class Exists(Formula):
 
     def tableau_pos(self):
         """
-        ∃xφ(x)
-         φ(c)
+         ∃vφ
+          |
+        φ[v/c]
+
         where c is new
         """
-        return delta, (self.phi, self.u), "∃"
+        return [("∃", delta, (self.phi, self.u))]
 
     def tableau_neg(self):
         """
-        ¬∃xφ(x)
-         ¬φ(c)
+         ¬∃vφ
+           |
+        ¬φ[v/c]
+
         where c is arbitrary
         """
-        return gamma, (Neg(self.phi), self.u), "¬∃"
+        return [("¬∃", gamma, (Neg(self.phi), self.u))]
 
 
 class Forall(Formula):
@@ -1204,6 +1279,9 @@ class Forall(Formula):
 
     def __str__(self):
         return "∀" + str(self.u) + str(self.phi)
+
+    def tex(self):
+        return "\\forall " + self.u.tex() + " " + self.phi.tex()
 
     def __eq__(self, other):
         return isinstance(other, Forall) and self.u == other.u and self.phi == other.phi
@@ -1272,19 +1350,23 @@ class Forall(Formula):
 
     def tableau_pos(self):
         """
-        ∀xφ(x)
-         φ(c)
+         ∀vφ
+          |
+        φ[v/c]
+
         where c is arbitrary
         """
-        return gamma, (self.phi, self.u), "∀"
+        return [("∀", gamma, (self.phi, self.u))]
 
     def tableau_neg(self):
         """
-        ¬∀xφ(x)
-         ¬φ(c)
+        ¬∀vφ
+          |
+        ¬φ[x/c]
+
         where c is new
         """
-        return delta, (Neg(self.phi), self.u), "¬∀"
+        return [("¬∀", delta, (Neg(self.phi), self.u))]
 
 
 class Poss(Formula):
@@ -1300,6 +1382,9 @@ class Poss(Formula):
 
     def __str__(self):
         return "◇" + str(self.phi)
+
+    def tex(self):
+        return "\\Diamond " + " " + self.phi.tex()
 
     def __eq__(self, other):
         return isinstance(other, Poss) and self.phi == other.phi
@@ -1369,18 +1454,22 @@ class Poss(Formula):
     def tableau_pos(self):
         """
         σ  ◇φ
+          |
         σ.n φ
+
         where σ.n is new
         """
-        return mu, self.phi, "◇"
+        return [("◇", mu, self.phi)]
 
     def tableau_neg(self):
         """
         σ  ¬◇φ
+           |
         σ.n ¬φ
+
         where σ.n is old
         """
-        return nu, Neg(self.phi), "¬"
+        return [("¬", nu, Neg(self.phi))]
 
 
 class Nec(Formula):
@@ -1397,6 +1486,9 @@ class Nec(Formula):
 
     def __str__(self):
         return "◻" + str(self.phi)
+
+    def tex(self):
+        return "\\Box " + " " + self.phi.tex()
 
     def __eq__(self, other):
         return isinstance(other, Nec) and self.phi == other.phi
@@ -1465,18 +1557,22 @@ class Nec(Formula):
     def tableau_pos(self):
         """
         σ  ◻φ
+          |
         σ.n φ
+
         where σ.n is old
         """
-        return nu, self.phi, "◻"
+        return [("◻", nu, self.phi)]
 
     def tableau_neg(self):
         """
         σ  ¬◻φ
+           |
         σ.n ¬φ
+
         where σ.n is new
         """
-        return mu, Neg(self.phi), "¬◻"
+        return [("¬◻", mu, Neg(self.phi))]
 
 
 class Closed(Formula):
