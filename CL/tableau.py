@@ -29,11 +29,12 @@ class Tableau(object):
 
     def __init__(self, conclusion=None, premises=[], validity=True,
                  classical=True, propositional=False, modal=False, vardomain=False, frame="K"):
+        # todo documentation
         # settings
         self.validity = validity
         # todo check consistency of settings
         self.classical = classical
-        self.propositional = propositional  # todo detect automatically?
+        self.propositional = propositional
         self.modal = modal
         self.vardomain = vardomain
         self.frame = frame
@@ -184,6 +185,9 @@ class Tableau(object):
         res += "\n\\end{document}"
         return res
 
+    def __len__(self):
+        return len(self.root.nodes())
+
     def expand(self, node=None):
         """
         Recursively expand all nodes in the tableau.
@@ -193,7 +197,7 @@ class Tableau(object):
         while applicable := self.applicable():
             (target, source, rule) = applicable[0]
             # print("expanding:")
-            # print(str(target) + " -> " + rule + " from " + str(source))
+            # print(str(target), " -> ", rule, " from ", str(source))
             target.expand(source, rule)
             # print("--------")
 
@@ -211,14 +215,15 @@ class Tableau(object):
         # print(appl)
         # todo improve prioritization
         rule_order = {r: i for (i, r) in enumerate(["alpha", "beta", "delta", "gamma", "epsilon", "zeta", "mu", "nu"])}
-        #                    num_appls, src_line,  targ_line, rule_type
-        sort_v1 = lambda i: (len(i[4]), i[1].line, i[0].line, rule_order[i[3]])
+        pos = {node: i for (i, node) in enumerate(self.root.nodes())}  # enumerate the nodes breadth-first
+        #                    num_appls, src pos,    targ pos,   rule_type
+        sort_v1 = lambda i: (len(i[4]), pos[i[1]], pos[i[0]], rule_order[i[3]])
         #                    rule_type,        num_appls, src_line,  targ_line
-        sort_v2 = lambda i: (rule_order[i[3]], len(i[4]), i[1].line, i[0].line)
+        sort_v2 = lambda i: (rule_order[i[3]], len(i[4]), pos[i[1]], pos[i[0]])
         appl_sorted = [itm for itm in sorted(appl, key=sort_v1)]
         # print("applicable:")
-        # print("\n".join([", ".join([str(itm[0].line), str(itm[1].line), itm[2], str(len(itm[3])), str(itm[4])])
-        #                  for itm in appl_sorted_v1]) + "\n")
+        # print("\n".join([", ".join([str(itm[0].line), str(itm[1].line), itm[2], str(itm[4]), str(itm[5])])
+        #                  for itm in appl_sorted]) + "\n")
         return [itm[:3] for itm in appl_sorted]
 
     def closed(self) -> bool:
@@ -384,7 +389,7 @@ class Node(object):
         # todo non-rotated visualization?
 
         # compute lengths of columns
-        len_line = max([len(str(node.line)) for node in self.root().nodes()])
+        len_line = max([len(str(node.line)) for node in self.root().nodes()]) + 2
         len_sig = max([len(".".join([str(s) for s in node.sig])) for node in self.root().nodes() if node.sig]) \
             if self.tableau.modal else None
         len_fml = max([len(str(node.fml)) for node in self.root().nodes()]) + 1
@@ -420,13 +425,30 @@ class Node(object):
 
     def nodes(self):
         """
-        Pre-order traversal:
-        First visit the node itself, then recurse through its children.
+        Level-order traversal:
+        First the nodes on a level from left to right, then recurse through the nodes' children.
         """
-        res = [self]
-        for child in self.children:
-            res += child.nodes()
+        res = []
+        # visit root
+        queue = [self]
+        while queue:
+            # visit front of queue
+            res.append(queue[0])
+            # go to next element
+            node = queue.pop(0)
+            # visit children
+            for child in node.children:
+                queue.append(child)
         return res
+
+        # """
+        # Pre-order traversal:
+        # First visit the node itself, then recurse through its children.
+        # """
+        # res = [self]
+        # for child in self.children:
+        #     res += child.nodes()
+        # return res
         # return [self] + [child.preorder() for child in self.children]
 
     def branches(self):
@@ -562,12 +584,6 @@ class Node(object):
         cite = "(" + (" " if len(rule) == 1 else "") + rule + ", " + str(source.line) + ")"
         node1 = self.add_child((line, sig, fml, cite))
 
-        # append (top) right node
-        line += 1
-        fml = fmls[1][0]
-        cite = "(" + (" " if len(rule) == 1 else "") + rule + ", " + str(source.line) + ")"
-        node2 = self.add_child((line, sig, fml, cite))
-
         # append bottom left node
         if len(fmls[0]) == 2 and node1:
             line += 1
@@ -575,6 +591,12 @@ class Node(object):
             cite = "(" + (" " if len(rule) == 1 else "") + rule + ", " + str(source.line) + ")"
             node3 = node1.add_child((line, sig, fml, cite))
             node1.empty_applicable()
+
+        # append (top) right node
+        line += 1
+        fml = fmls[1][0]
+        cite = "(" + (" " if len(rule) == 1 else "") + rule + ", " + str(source.line) + ")"
+        node2 = self.add_child((line, sig, fml, cite))
 
         # append bottom right node
         if len(fmls[1]) == 2 and node2:
@@ -599,7 +621,6 @@ class Node(object):
         parameters = list("abcdefghijklmnopqrst")
 
         # find a constant to substitute
-        # all existing constants in the curr. branch
         constants = list(chain(*[node.fml.nonlogs()[0] for node in self.branch]))
         # all constants and parameters
         usable = constants + parameters
@@ -824,10 +845,10 @@ class Node(object):
 
     def infinite(self):
         """
-        A branch is declared infinite if it is 10 or longer.
+        A branch is judged potentially infinite if it is longer than there are symbols in the assumptions.
         """
         # todo smarter implementation (check for loops in rule appls.)
-        if len(self.branch) >= 10:
+        if len(self.branch) >= sum([len(node.fml) for node in self.branch if node.cite == "(A)"]):
             self.add_infinite()
             return True
         return False
@@ -888,10 +909,29 @@ if __name__ == "__main__":
     tab7 = Tableau(fml7, premises=[fml7a])
     print(tab7)
 
-    fml8a = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    fml8 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    tab8 = Tableau(fml8, premises=[fml8a])
-    print(tab8)
+    # fml8a = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+    #                               Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+    #                                                    Atm(Pred("fit"), (Var("x"), Var("y")))))))
+    # fml8 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+    #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+    #                                                   Atm(Pred("fit"), (Var("x"), Var("y")))))))
+    # tab8 = Tableau(fml8, premises=[fml8a])
+    # print(tab8)
+
+    fml9a = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    fml9 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    tab9 = Tableau(fml9, premises=[fml9a])
+    print(tab9)
+
+    # fml10a = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+    #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+    #                                                   Atm(Pred("fit"), (Var("x"), Var("y")))))))
+    # fml10 = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+    #                               Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+    #                                                    Atm(Pred("fit"), (Var("x"), Var("y")))))))
+    # tab10 = Tableau(fml10, premises=[fml10a])
+    # print(tab10)
+    # print(len(tab10))
 
     # fml9 = Biimp(Nec(Prop("p")), Neg(Poss(Neg(Prop("p")))))
     # tab9 = Tableau(fml9, propositional=True, modal=True)
