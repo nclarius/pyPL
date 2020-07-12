@@ -14,10 +14,12 @@ from typing import List, Dict, Set, Tuple
 from itertools import chain
 
 # todo
-# - applicable functions
-# - modal rules
+# - make modal rules work
 # - var for mode in expr
 # - merge with IL
+# - tex
+
+classical = True
 
 
 class Tableau(object):
@@ -25,12 +27,15 @@ class Tableau(object):
     A tableau tree.
     """
 
-    def __init__(self, conclusion=None, premises=[], validity=True, propositional=False, modal=False, vardomain=False):
+    def __init__(self, conclusion=None, premises=[], validity=True,
+                 propositional=False, modal=False, vardomain=False, frame="K"):
         # settings
         self.validity = validity
+        # todo check consistency of settings
         self.propositional = propositional  # todo detect automatically?
         self.modal = modal
         self.vardomain = vardomain
+        self.frame = frame
         sig = [1] if modal else None
 
         # append initial nodes
@@ -51,7 +56,7 @@ class Tableau(object):
             print("ERROR: You may only enter closed formulas.")
             return
 
-        res = "" 
+        res = "\n"
 
         # print info
         if self.validity:
@@ -74,7 +79,7 @@ class Tableau(object):
                 res += "The " + ("inference" if self.premises else "formula") + " is valid.\n"
             else:
                 res += "The " + ("set of sentences is inconsistent\n." if self.premises else
-                                    "formula is unsatisfiable.\n")
+                                 "formula is unsatisfiable.\n")
         elif self.open():
             res += "The tableau is open:\n"
             if self.validity:
@@ -92,12 +97,12 @@ class Tableau(object):
 
         # generate and print models
         if models := self.models():
-            res += "\nCounter models:" if self.validity else "\nModels:"
+            res += "\nCounter models:\n" if self.validity else "\nModels:\n"
             for model in models:
                 res += "\n"
                 res += str(model) + "\n"
 
-        res += "\n" + 80 * "-" + "\n"
+        res += "\n" + 80 * "-"
         return res
     
     def tex(self):
@@ -186,9 +191,8 @@ class Tableau(object):
                             for leaf in self.root.leaves() if leaf.applicable]))
         # print(appl)
         # todo improve prioritization
-        rule_order = {r: i for (i, r) in enumerate(["alpha", "delta", "nu", "gamma", "mu", "beta"])}
-        #                    num_appls,  rc_line,  targ_line, rule_type
-        # sort_v1 = lambda i: (len(i[3]), i[1].line, i[0].line, rule_order[i[2]])
+        rule_order = {r: i for (i, r) in enumerate(["alpha", "beta", "delta", "gamma", "epsilon", "zeta", "mu", "nu"])}
+        #                    num_appls, src_line,  targ_line, rule_type
         sort_v1 = lambda i: (len(i[4]), i[1].line, i[0].line, rule_order[i[3]])
         #                    rule_type,        num_appls, src_line,  targ_line
         sort_v2 = lambda i: (rule_order[i[3]], len(i[4]), i[1].line, i[0].line)
@@ -246,9 +250,12 @@ class Tableau(object):
                 name = "M" + str(count)
 
                 if self.modal:
-                    sigs = [node.sig for node in branch]
-                    w = {".".join(sig) for sig in sigs}
-                    r = {(".".join(sig[:-1]), sig[-1]) for sig in sigs if len(sig) > 1}
+                    sigs = {node.sig for node in branch}
+                    # w1, ..., wn as names for worlds instead of signatures
+                    worlds = {sig: "w" + str(i+1) for (i, sig) in enumerate(sigs)}
+                    w = {worlds[sig] for sig in sigs}
+                    r_ = {(sig[:-1], sig[-1]) for sig in sigs if len(sig) > 1}
+                    r = {(worlds[sig1], worlds[sig2]) for (sig1, sig2) in r_}
 
                 if self.propositional:
 
@@ -650,7 +657,7 @@ class Node(object):
 
     def rule_mu(self, source, rule, args):
         """
-        Expand the source node according with a new signature in this branch.
+        Expand the source node in this branch by extending the signature with a new signature.
         """
         # todo not tested yet
         fml = args
@@ -659,7 +666,7 @@ class Node(object):
 
         # find a signature
         # all signature extensions for the source signature existing in the current branch
-        signatures = [node.sig for node in self.branch if node.sig[:-1] == source.sig]
+        signatures = {node.sig for node in self.branch if node.sig[:-1] == source.sig}
         # all parameters already used with this rule
         used = self.get_applicable(source, rule)[3]
         # choose a signature that does not already occur in this branch
@@ -680,7 +687,7 @@ class Node(object):
 
     def rule_nu(self, source, rule, args):
         """
-        Expand the source node with an existing signature in this branch.
+        Expand the source node in this branch by extending the signature with an existing signature.
         """
         # todo not tested yet
         fml = args
@@ -689,7 +696,7 @@ class Node(object):
 
         # find a signature
         # all signature extensions for the source signature existing in the current branch
-        signatures = [node.sig for node in self.branch if node.sig[:-1] == source.sig]
+        signatures = {node.sig for node in self.branch if node.sig[:-1] == source.sig}
         # all parameters already used with this rule
         used = self.get_applicable(source, rule)[3]
         if signatures:
@@ -708,6 +715,61 @@ class Node(object):
         line += 1
         cite = "(" + (" " if len(rule) == 1 else "") + rule + str(source.line) + ", " + \
                "⟨" + ".".join([str(s) for s in source.sig]) + ", " + ".".join([str(s) for s in sig]) + "⟩" + ")"
+        node = self.add_child((line, sig, fml, cite))
+
+        # self is now no longer leaf, so has no applicable rules
+        self.empty_applicable()
+
+    def rule_zeta(self, source, rule, args):
+        """
+        Expand the source node in this branch by reducing the signature.
+        """
+        # todo actual name for this rule type?
+        fml = args
+        max_line = max([node.line for node in self.root().nodes() if node.line])
+        line = max_line
+
+        # number of times the rule has already been used
+        used = self.get_applicable(source, rule)[3]
+        if len(source.sig) < 2:
+            # the signature can not be reduced: the rule is not applicable; delay it
+            self.set_applicable(source, rule, "zeta", used, True)
+            return
+        # reduce the signature
+        sig = source.sig[:-1]
+
+        # rule is now being applied; remember usage
+        self.set_applicable(source, rule, "zeta", used + [1])
+
+        # add node
+        line += 1
+        cite = "(" + (" " if len(rule) == 1 else "") + rule + str(source.line) + ")"
+        node = self.add_child((line, sig, fml, cite))
+
+        # self is now no longer leaf, so has no applicable rules
+        self.empty_applicable()
+
+    def rule_epsilon(self, source, rule, args):
+        """
+        Expand the source node in this branch by repeating the signature.
+        """
+        # todo actual name for this rule type?
+
+        fml = args
+        max_line = max([node.line for node in self.root().nodes() if node.line])
+        line = max_line
+
+        # number of times the rule has already been used
+        used = self.get_applicable(source, rule)[3]
+        # signature is source signature
+        sig = source.sig
+
+        # rule is now being applied; remember usage
+        self.set_applicable(source, rule, "epsilon", used + [1])
+
+        # add node
+        line += 1
+        cite = "(" + (" " if len(rule) == 1 else "") + rule + str(source.line) + ")"
         node = self.add_child((line, sig, fml, cite))
 
         # self is now no longer leaf, so has no applicable rules
@@ -745,6 +807,7 @@ class Node(object):
         """
         A branch is declared infinite if it is 10 or longer.
         """
+        # todo smarter implementation (check for loops in rule appls.)
         if len(self.branch) >= 10:
             self.add_infinite()
             return True

@@ -12,6 +12,9 @@ from structure import *
 
 from typing import List, Dict, Set, Tuple
 
+# classical = True
+frame = ""
+
 
 class Expr:
     """
@@ -1375,7 +1378,7 @@ class Poss(Formula):
     ◇φ
 
     @attr phi: the formula to apply the modal operator to
-    @type phi: Expr
+    @type phi: Formula
     """
     def __init__(self, phi: Formula):
         self.phi = phi
@@ -1459,7 +1462,8 @@ class Poss(Formula):
 
         where σ.n is new
         """
-        return [("◇", mu, self.phi)]
+        rules = [("◇", mu, self.phi)]
+        return rules
 
     def tableau_neg(self):
         """
@@ -1468,8 +1472,21 @@ class Poss(Formula):
         σ.n ¬φ
 
         where σ.n is old
+
+        # todo doc for other rules
         """
-        return [("¬", nu, Neg(self.phi))]
+        rules = [("¬", nu, Neg(self.phi))]
+        if frame in ["D"]:
+            rules.append(("¬D", "epsilon", ([Neg(Nec(self.phi))])))
+        if frame in ["T", "B", "S4", "S5"]:
+            rules.append(("¬T", "epsilon", ([Neg(self.phi)])))
+        if frame in ["B"]:
+            rules.append(("¬B", "zeta", ([Neg(self.phi)])))
+        if frame in ["K4","S4", "S5"]:
+            rules.append(("¬4", "nu", ([Neg(Poss(self.phi))])))
+        if frame in ["S5"]:
+            rules.append(("¬4r", "zeta", ([Neg(Poss(self.phi))])))
+        return rules
 
 
 class Nec(Formula):
@@ -1478,7 +1495,7 @@ class Nec(Formula):
     ◻φ
 
     @attr phi: the formula to apply the modal operator to
-    @type phi: Expr
+    @type phi: Formula
     """
 
     def __init__(self, phi: Formula):
@@ -1561,8 +1578,21 @@ class Nec(Formula):
         σ.n φ
 
         where σ.n is old
+
+        # todo doc for other rules
         """
-        return [("◻", nu, self.phi)]
+        rules = [("◻", nu, self.phi)]
+        if frame in ["D"]:
+            rules.append(("D", "epsilon", ([Poss(self.phi)])))
+        if frame in ["T", "B", "S4", "S5"]:
+            rules.append(("T", "epsilon", ([self.phi])))
+        if frame in ["B"]:
+            rules.append(("B", "zeta", ([self.phi])))
+        if frame in ["K4","S4", "S5"]:
+            rules.append(("4", "nu", ([Nec(self.phi)])))
+        if frame in ["S5"]:
+            rules.append(("4r", "zeta", ([Nec(self.phi)])))
+        return rules
 
     def tableau_neg(self):
         """
@@ -1572,7 +1602,8 @@ class Nec(Formula):
 
         where σ.n is new
         """
-        return [("¬◻", mu, Neg(self.phi))]
+        rules = [("¬◻", mu, Neg(self.phi))]
+        return rules
 
 
 class Closed(Formula):
