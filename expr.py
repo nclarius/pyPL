@@ -12,7 +12,7 @@ from structure import *
 
 from typing import List, Dict, Set, Tuple
 
-frame = ""
+frame = "K"
 
 
 class Expr:
@@ -552,34 +552,38 @@ class Formula(Expr):
         """
         pass
 
-    def tableau_contradiction_pos(self, node):
+    def tableau_contradiction_pos(self, other):
         """
         The cases where the unnegated formula leads to a contradiction in the branch.
-        """
-        for other in node.branch[:-1]:  # contradiction to another formula in the same branch
-            #  φ        ¬φ
-            #  ⋮    or    ⋮
-            # ¬φ         φ
-            if Neg(self) == other.fml or self == Neg(other.fml):
-                node.add_closed([other.line, node.line])
-                return True
-        return False
 
-    def tableau_contradiction_neg(self, node):
+         φ        ¬φ
+         ⋮    or    ⋮
+        ¬φ         φ
+
+        @param other: the other formula
+        @type other: Formula
+        @return True iff self contradicts other
+        @rtype bool
         """
-        The cases where the unnegated formula leads to a contradiction in the branch.
+        return Neg(self) == other or self == Neg(other)
+
+    def tableau_contradiction_neg(self, other):
         """
-        for other in node.branch[:-1]:  # contradiction to another formula in the same branch
-            #  φ        ¬φ
-            #  ⋮    or    ⋮
-            # ¬φ         φ
-            if self == other.fml:
-                node.add_closed([other.line, node.line])
-                return True
-        return False
+        The cases where the negated formula leads to a contradiction in the branch.
+
+         φ        ¬φ
+         ⋮    or    ⋮
+        ¬φ         φ
+
+        @param other: the other formula
+        @type other: Formula
+        @return True iff self is logically equivalent to other
+        @rtype bool
+        """
+        return self == other
 
 # define short names for tableau rule names
-alpha, beta, gamma, delta, mu, nu = "alpha", "beta", "gamma", "delta", "mu", "nu"
+alpha, beta, gamma, delta, mu, nu, xi = "alpha", "beta", "gamma", "delta", "mu", "nu", "xi"
 
 class Verum(Formula):
     """
@@ -628,11 +632,16 @@ class Verum(Formula):
     def tableau_neg(self):
         return []
 
-    def tableau_contradiction_pos(self, node):
+    def tableau_contradiction_pos(self, other):
+        """
+        An unnegated verum is never contradictory.
+        """
         return False
 
-    def tableau_contradiction_neg(self, node):
-        node.add_closed(node.line)
+    def tableau_contradiction_neg(self, other):
+        """
+        A negated verum is always contradictory.
+        """
         return True
 
 
@@ -685,10 +694,15 @@ class Falsum(Formula):
         return []
 
     def tableau_contradiction_pos(self, node):
-        node.add_closed(node.line)
+        """
+        An unnegated falsum is always contradictory.
+        """
         return True
 
     def tableau_contradiction_neg(self, node):
+        """
+        A negated falsum is never contradictory.
+        """
         return False
 
 
@@ -805,17 +819,17 @@ class Eq(Formula):
     def tableau_neg(self):
         return []
 
-    def tableau_contradiction_pos(self, node):
-        if str(self.t1) != str(self.t2):
-            node.add_closed([node.line])
-            return True
-        return False
+    def tableau_contradiction_pos(self, other):
+        """
+        t1 = t2
+        """
+        return str(self.t1) != str(self.t2)
 
-    def tableau_contradiction_neg(self, node):
-        if str(self.t1) == str(self.t2):
-            node.add_closed([node.line])
-            return True
-        return False
+    def tableau_contradiction_neg(self, other):
+        """
+        t ≠ t
+        """
+        return str(self.t1) == str(self.t2)
 
 
 class Atm(Formula):
@@ -971,8 +985,8 @@ class Neg(Formula):
         # If the negation is itself negated, apply the double negation elimination rule on the double negated formula.
         return [("¬¬", alpha, [self.phi])]
 
-    def tableau_contradiction_pos(self, node):
-        return self.phi.tableau_contradiction_neg(node)
+    def tableau_contradiction_pos(self, other):
+        return self.phi.tableau_contradiction_neg(other)
 
 
 class Conj(Formula):
@@ -1644,17 +1658,17 @@ class Poss(Formula):
         σ.n ¬φ    σ ¬◻φ     σ  ¬φ      σ ¬φ     σ.n ¬◇φ    σ ¬◇φ
         where σ and σ.n are old
         """
-        rules = [("¬", nu, Neg(self.phi))]
+        rules = [("¬◇", nu, Neg(self.phi))]
         if frame in ["D"]:
             rules.append(("¬D", "alpha", ([Neg(Nec(self.phi))])))
         if frame in ["T", "B", "S4", "S5"]:
             rules.append(("¬T", "alpha", ([Neg(self.phi)])))
         if frame in ["B"]:
-            rules.append(("¬B", "zeta", ([Neg(self.phi)])))
+            rules.append(("¬B", "xi", ([Neg(self.phi)])))
         if frame in ["K4", "S4", "S5"]:
             rules.append(("¬4", "nu", ([Neg(Poss(self.phi))])))
         if frame in ["S5"]:
-            rules.append(("¬4r", "zeta", ([Neg(Poss(self.phi))])))
+            rules.append(("¬4r", "xi", ([Neg(Poss(self.phi))])))
         return rules
 
 
@@ -1760,11 +1774,11 @@ class Nec(Formula):
         if frame in ["T", "B", "S4", "S5"]:
             rules.append(("T", "alpha", ([self.phi])))
         if frame in ["B"]:
-            rules.append(("B", "zeta", ([self.phi])))
+            rules.append(("B", "xi", ([self.phi])))
         if frame in ["K4", "S4", "S5"]:
             rules.append(("4", "nu", ([Nec(self.phi)])))
         if frame in ["S5"]:
-            rules.append(("4r", "zeta", ([Nec(self.phi)])))
+            rules.append(("4r", "xi", ([Nec(self.phi)])))
         return rules
 
     def tableau_neg(self):

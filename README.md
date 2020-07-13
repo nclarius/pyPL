@@ -1,6 +1,6 @@
-A naive model checker and -generator with analytic tableaux for classical non-modal and modal propositional and first-order logic and intuitionistic non-modal propositional and first-order logic.  
+A naive model checker and -generator with analytic tableaux for some combinations of classical and intuitionistic, non-modal and modal, propositional and first-order logic.  
 This tool can compute the denotation (truth value) of a given logical expression in a given structure, and an analytic tableau with associated (counter) models for a given inference.   
-**Intuitionistic logic, tableau computation and model generation currently under construction.**  
+**Tableau computation and model generation currently under construction.**  
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
 License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/). 
 
@@ -24,7 +24,7 @@ Features
         - of PL with valuation function
         - of FOL with domain, interpretation function and variable assignments
         - accepts non-modal structures, modal structures with constant domains and modal structures with varying domains
-    - of intuitionistic logic (Kripke structures with sets of states)  -- currently under construction
+    - of intuitionistic logic (Kripke structures with sets of states)
         - of PL with valuation function
         - of FOL with domain, interpretation function and variable assignments
  - analytic tableau proofs -- currently under construction
@@ -67,8 +67,7 @@ To run this tool locally on your machine:
 3. Execute `main.py` in a terminal.
 
 Running this program requires Python (version >= 3.8) to be installed on your machine.  
-How to 'install python', 'edit .py file', 'execute .py script in terminal' and 'clone github repository'
-is all easily googleable for your respective operating system.
+How to 'clone github repository', 'install python', 'edit .py file' and 'execute .py script in terminal' is all easily googleable for your respective operating system.
 
 ### Specifying input
 **This tool is not equipped with an interactive user interface; input has to be specified in the source code.**  
