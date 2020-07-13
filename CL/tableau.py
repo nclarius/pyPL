@@ -621,7 +621,7 @@ class Node(object):
         parameters = list("abcdefghijklmnopqrst")
 
         # find a constant to substitute
-        constants = list(chain(*[node.fml.nonlogs()[0] for node in self.branch]))
+        constants = list(dict.fromkeys(chain(*[node.fml.nonlogs()[0] for node in self.branch])))
         # all constants and parameters
         usable = constants + parameters
         # all parameters already used with this rule
@@ -637,8 +637,10 @@ class Node(object):
         if self.tableau.modal and not self.tableau.propositional and self.tableau.vardomain:
             subscript = ".".join([str(s) for s in source.sig])
         # choose first symbol from constants and parameters that has not already been used with this particular rule
-        const_symbol = usable[(min([i for i in range(len(usable))
-                                    if usable[i] + subscript not in used]))] + subscript
+        const_symbol = ((usable[(min([i for i in range(len(usable))
+                                      if usable[i] + subscript not in used]))] + subscript)
+                        if len(usable) > len(used) else
+                        "c" + str(len(usable)+1) + subscript)
         const = Const(const_symbol)
 
         # rule is now being applied; add chosen constant to already used ones
@@ -668,7 +670,7 @@ class Node(object):
 
         # find a constant to substitue
         # all existing constants in the curr. branch
-        constants = list(chain(*[node.fml.nonlogs()[0] for node in self.branch]))
+        constants = list(dict.fromkeys(chain(*[node.fml.nonlogs()[0] for node in self.branch])))
         # all parameters already used with this rule
         used = self.get_applicable(source, rule)[3]
         # for modal predicate logic with varying domains: add signature subscript to constant
@@ -676,8 +678,10 @@ class Node(object):
         if self.tableau.modal and not self.tableau.propositional and self.tableau.vardomain:
             subscript = ".".join([str(s) for s in source.sig])
         # choose first symbol from list of parameters that does not yet occur in this branch
-        const_symbol = parameters[(min([i for i in range(len(parameters))
-                                        if parameters[i] + subscript not in constants]))] + subscript
+        const_symbol = ((parameters[(min([i for i in range(len(parameters))
+                                          if parameters[i] + subscript not in constants]))] + subscript)
+                        if len(parameters) > len(constants) else
+                        "c" + str(len(constants) + 1) + subscript)
         const = Const(const_symbol)
 
         # rule is now being applied; add chosen constant to already used ones
@@ -845,10 +849,13 @@ class Node(object):
 
     def infinite(self):
         """
-        A branch is judged potentially infinite if it is longer than there are symbols in the assumptions.
+        A branch is judged potentially infinite
+        if there have been more than twice as many constants introduced as there are symbols in the assumptions.
         """
         # todo smarter implementation (check for loops in rule appls.)
-        if len(self.branch) >= sum([len(node.fml) for node in self.branch if node.cite == "(A)"]):
+        # if len(self.branch) > \
+        if sum([sum(len(appl[3]) for appl in node.applicable) for node in self.branch]) > \
+                2 * sum([len(node.fml) for node in self.branch if node.cite == "(A)"]):
             self.add_infinite()
             return True
         return False
@@ -935,4 +942,9 @@ if __name__ == "__main__":
 
     # fml9 = Biimp(Nec(Prop("p")), Neg(Poss(Neg(Prop("p")))))
     # tab9 = Tableau(fml9, propositional=True, modal=True)
-    # tab9.generate()
+    # print(tab9)
+
+    # fml = Biimp(Forall(Var("x"), Forall(Var("y"), Atm(Pred("P"), (Var("x"), Var("y"))))),
+    #             Forall(Var("y"), Forall(Var("x"), Atm(Pred("P"), (Var("y"), Var("x"))))))
+    # tab = Tableau(fml)
+    # print(tab)

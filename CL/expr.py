@@ -1644,7 +1644,7 @@ class Nec(Formula):
             rules.append(("T", "epsilon", ([self.phi])))
         if frame in ["B"]:
             rules.append(("B", "zeta", ([self.phi])))
-        if frame in ["K4","S4", "S5"]:
+        if frame in ["K4", "S4", "S5"]:
             rules.append(("4", "nu", ([Nec(self.phi)])))
         if frame in ["S5"]:
             rules.append(("4r", "zeta", ([Nec(self.phi)])))
