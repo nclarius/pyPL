@@ -1,8 +1,9 @@
-A naive model checker and -generator for classical non-modal and modal propositional and first-order logic and intuitionistic non-modal propositional and first-order logic.
-This tool can compute the denotation (truth value) of a given logical expression in a given structure, 
-and an analytic tableau with (counter) models for a given inference (the latter is currently under construction).  
+A naive model checker and -generator with analytic tableaux for classical non-modal and modal propositional and first-order logic and intuitionistic non-modal propositional and first-order logic.
+This tool can compute the denotation (truth value) of a given logical expression in a given structure.   
+and an analytic tableau with associated (counter) models for a given inference.  
+**Intuitionistic logic, tableau computation and model generation currently under construction.**
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
-License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).  
+License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/). 
 
 Disclaimer
 ----------
@@ -24,11 +25,11 @@ Features
         - of PL with valuation function
         - of FOL with domain, interpretation function and variable assignments
         - accepts non-modal structures, modal structures with constant domains and modal structures with varying domains
-    - of intuitionistic logic (Kripke structures with sets of states)  -- **currently under construction**
+    - of intuitionistic logic (Kripke structures with sets of states)  -- currently under construction
         - of PL with valuation function
         - of FOL with domain, interpretation function and variable assignments
- - analytic tableau proofs -- **currently under construction**
- - model generation -- **currently under construction**
+ - analytic tableau proofs -- currently under construction
+ - model generation -- currently under construction
 
 Restrictions
 ------------
