@@ -213,10 +213,11 @@ class Tableau(object):
         # print(appl)
         # todo improve prioritization
         rule_order = {r: i for (i, r) in enumerate(["alpha", "beta", "delta", "gamma", "epsilon", "zeta", "mu", "nu"])}
-        pos = {node: i for (i, node) in enumerate(self.root.nodes())}  # enumerate the nodes breadth-first
-        #                    num_appls, src pos,    targ pos,   rule_type
+        # enumerate the nodes level-order so nodes can be prioritized by position in the tree
+        pos = {node: i for (i, node) in enumerate(self.root.nodes())}
+        #                    num appls, src pos,    targ pos,   rule type
         sort_v1 = lambda i: (len(i[4]), pos[i[1]], pos[i[0]], rule_order[i[3]])
-        #                    rule_type,        num_appls, src_line,  targ_line
+        #                    rule type,        num appls, src pos,  targ pos
         sort_v2 = lambda i: (rule_order[i[3]], len(i[4]), pos[i[1]], pos[i[0]])
         appl_sorted = [itm for itm in sorted(appl, key=sort_v1)]
         # print("applicable:")
@@ -456,22 +457,17 @@ class Node(object):
             res += indent + "\n"
         return res
 
-    def nodes(self):
+    def nodes(self, root=True):
         """
         Level-order traversal:
         First the nodes on a level from left to right, then recurse through the nodes' children.
         """
         res = []
-        # visit root
-        queue = [self]
-        while queue:
-            # visit front of queue
-            res.append(queue[0])
-            # go to next element
-            node = queue.pop(0)
-            # visit children
-            for child in node.children:
-                queue.append(child)
+        if root:
+            res.append(self)
+        for child in self.children:
+            res.append(child)
+            res += child.nodes(False)
         return res
 
         # """
@@ -492,20 +488,9 @@ class Node(object):
 
     def leaves(self):
         """
-        Get the leave nodes descending from the this node.
+        Get the leaf nodes descending from the this node.
         """
-        leaves = []
-
-        def collect_leaves(node):
-            if node is not None:
-                if not node.children:
-                    leaves.append(node)
-                else:
-                    for child in node.children:
-                        collect_leaves(child)
-
-        collect_leaves(self)
-        return leaves
+        return [node for node in self.nodes() if not node.children]
 
     def root(self):
         """
@@ -518,7 +503,7 @@ class Node(object):
         Add a child to the current node.
         """
         # todo sometimes adds None nodes (?)
-        # don't add children to branches that are already closed, open or declard infinite
+        # don't add children to branches that are already closed, open or declared infinite
         if self.children and (isinstance(self.children[0].fml, Closed) or isinstance(self.children[0].fml, Open) or
                               isinstance(self.children[0].fml, Infinite)):
             return
@@ -537,13 +522,6 @@ class Node(object):
                 if rules := child.rules():
                     for rule in rules:
                         child.set_applicable(child, rule[0], rule[1])
-                # print("adding:")
-                # print(str(self) + " + " + str(child))
-                # print(self.applicable, child.applicable)
-                # print("children:")
-                # print("\n".join([str(node) + ": " + str(node.children) for node in self.root().preorder()]))
-                # print()
-                # print(self.root().treestr())
                 # todo generically handle reset of parent applicable rules after all children have been added?
         return child
 
@@ -564,8 +542,8 @@ class Node(object):
             # check if expansion leaves open branches
             for leaf in self.leaves():
                 if not (isinstance(leaf.fml, Closed) or isinstance(leaf.fml, Open) or isinstance(leaf.fml, Infinite)):
-                    # if the child has no applicable or only delayed rules, the branch is open
-                    if not leaf.applicable or all([appl[4] for appl in leaf.applicable]):
+                    # if the child has no undelayed unapplied or undelayed gamma rules, the branch is open
+                    if not any([not appl[4] and (len(appl[3]) < 1 or appl[2] == "gamma") for appl in leaf.applicable]):
                         leaf.add_open()
         else:
             print("ERROR: rule " + rule + " for " + str(source) + " on " + str(self) + " not found")

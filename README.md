@@ -1,7 +1,6 @@
-A naive model checker and -generator with analytic tableaux for classical non-modal and modal propositional and first-order logic and intuitionistic non-modal propositional and first-order logic.
-This tool can compute the denotation (truth value) of a given logical expression in a given structure.   
-and an analytic tableau with associated (counter) models for a given inference.  
-**Intuitionistic logic, tableau computation and model generation currently under construction.**
+A naive model checker and -generator with analytic tableaux for classical non-modal and modal propositional and first-order logic and intuitionistic non-modal propositional and first-order logic.  
+This tool can compute the denotation (truth value) of a given logical expression in a given structure, and an analytic tableau with associated (counter) models for a given inference.   
+**Intuitionistic logic, tableau computation and model generation currently under construction.**  
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
 License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/). 
 
@@ -55,7 +54,7 @@ Wish list
 Usage notes
 -----------
 
-Usage instructions are currently only available for the model checking feature, as the tableau and model generation program is still under construction.
+(Usage instructions currently only apply to the model checking feature, as the tableau and model generation program is still under construction.)  
 
 ### Try it out
 **You can try this tool out [here](https://trinket.io/python3/757871dd18).**  

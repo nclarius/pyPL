@@ -880,6 +880,13 @@ class Atm(Formula):
                     True in [self.denot(m, w_, v) for k_ in m.past(w) - {w}])
 
     def tableau_pos(self):
+        """
+        IL:
+         σ p
+          |
+        σ.n p
+        where σ.n is old
+        """
         return []
 
     def tableau_neg(self):
@@ -944,17 +951,22 @@ class Neg(Formula):
 
     def tableau_pos(self):
         """
-        ¬φ
-         ⋮
+        CL + IL:    IL:
+        ¬φ           σ ¬φ
+         ⋮             |
+                    σ.n ¬φ
+                    where σ.n is old
         """
         # If the negation does not occur under another neg., apply the negative tableau rule on the negative formula.
         return self.phi.tableau_neg()
 
     def tableau_neg(self):
         """
-        ¬¬φ
-         |
-         φ
+        CL:    IL:
+        ¬¬φ    σ ¬¬φ
+         |       |
+         φ     σ.n φ
+               where σ.n is new
         """
         # If the negation is itself negated, apply the double negation elimination rule on the double negated formula.
         return [("¬¬", alpha, [self.phi])]
@@ -1155,20 +1167,26 @@ class Imp(Formula):
 
     def tableau_pos(self):
         """
-        (φ→ψ)
-         /  \
-        ¬φ  ψ
+        CL:      IL:
+        (φ→ψ)        σ (φ→ψ)
+         /  \         /   \
+        ¬φ  ψ    σ.n ¬φ  σ.n ψ
+                 where σ.n is old
         """
+        # todo IL
         return [("→", beta, ([Neg(self.phi)], [self.psi]))]
 
     def tableau_neg(self):
         """
-        ¬(φ→ψ)
-           |
-           φ
-           |
-          ¬ψ
+        CL:      IL:
+        ¬(φ→ψ)   σ ¬(φ→ψ)
+           |        |
+           φ     σ.n φ
+           |        |
+          ¬ψ     σ.n ¬ψ
+                 where σ.n is new
         """
+        # todo IL
         return [("¬→", alpha, ([self.phi, Neg(self.psi)]))]
 
 
@@ -1230,21 +1248,25 @@ class Biimp(Formula):
 
     def tableau_pos(self):
         """
-         (φ↔ψ)
-         /  \
-        φ   ¬φ
-        |    <
-        ψ   ¬ψ
+        CL:        IL:
+         (φ↔ψ)         σ (φ→ψ)
+         /  \          /     \
+        φ   ¬φ     σ.n φ   σ.n ¬φ
+        |    |       |        |
+        ψ   ¬ψ     σ.n ψ   σ.n ¬ψ
+                   where σ.n is old
         """
         return [("↔", beta, ([self.phi, self.psi], [Neg(self.phi), Neg(self.psi)]))]
 
     def tableau_neg(self):
         """
-         (φ↔ψ)
-          /  \
-         φ   ¬φ
-         |    |
-        ¬ψ    ψ
+        CL:         IL:
+         ¬(φ↔ψ)         σ ¬(φ↔ψ)
+          /  \            /   \
+         φ   ¬φ      σ.n φ    σ.n ¬φ
+         |    |         |        |
+        ¬ψ    ψ      σ.n ¬ψ   σ.n ψ
+                    where σ.n is new
         """
         return [("¬↔", beta, ([self.phi, Neg(self.psi)], [Neg(self.phi), self.psi]))]
 
@@ -1494,18 +1516,22 @@ class Forall(Formula):
 
     def tableau_pos(self):
         """
-         ∀vφ
-          |
-        φ[v/c]
+        CL:       IL:
+         ∀vφ         σ ∀vφ
+          |            |
+        φ[v/c]    σ.n φ[v/c]
+                  where σ.n is old
         where c is arbitrary
         """
         return [("∀", gamma, (self.phi, self.u))]
 
     def tableau_neg(self):
         """
-        ¬∀vφ
-          |
-        ¬φ[x/c]
+        CL:        IL:
+        ¬∀vφ          σ ¬∀vφ
+          |             |
+        ¬φ[x/c]    σ.n ¬φ[x/c]
+                   where σ.n is new
         where c is new
         """
         return [("¬∀", delta, (Neg(self.phi), self.u))]
