@@ -1,4 +1,4 @@
-A naive model checker and -generator for classical non-modal and propositional and first-order logic and intuitionistic non-modal propositional and first-order logic.
+A naive model checker and -generator for classical non-modal and modal propositional and first-order logic and intuitionistic non-modal propositional and first-order logic.
 This tool can compute the denotation (truth value) of a given logical expression in a given structure, 
 and an analytic tableau with (counter) models for a given inference (the latter is currently under construction).  
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
@@ -54,6 +54,8 @@ Wish list
 Usage notes
 -----------
 
+Usage instructions are currently only available for the model checking feature, as the tableau and model generation program is still under construction.
+
 ### Try it out
 **You can try this tool out [here](https://trinket.io/python3/757871dd18).**  
 If you want to dive in deeper, I recommend downloading pyPL to your own computer.
@@ -61,8 +63,8 @@ If you want to dive in deeper, I recommend downloading pyPL to your own computer
 ### Installation and execution
 To run this tool locally on your machine:
 1. Clone this repository.
-2. *Optional:* To specify custom input (see next subsection), edit the file `CL/main.py` in a text editor of your choice.
-3. Execute `CL/main.py` in a terminal.
+2. *Optional:* To specify custom input (see next subsection), edit the file `main.py` in a text editor of your choice.
+3. Execute `main.py` in a terminal.
 
 Running this program requires Python (version >= 3.8) to be installed on your machine.  
 How to 'install python', 'edit .py file', 'execute .py script in terminal' and 'clone github repository'
