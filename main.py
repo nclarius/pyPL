@@ -1,17 +1,21 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-  (classes `Exists` and `Forall` in `expr.py`).
+
 
 """Main module. Input specification and program execution are defined here."""
-from functools import reduce
+
+# todo adapt readme for IL
 
 from expr import *
 from structure import *
 # from tableau import *
 
+from functools import reduce
+
 
 # settings
 denots = [8, 9, 10]  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
-tableaus = [1, 2] # set here which tableaus to include in the output (see def.s in fnc. 'compute_denots')
+tableaus = [1, 2]  # set here which tableaus to include in the output (see def.s in fnc. 'compute_denots')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
 
@@ -453,9 +457,123 @@ def compute_denots():
 
         print()
 
-    #############################
-    print("\n---------------------------------\n")
-    #############################
+    # todo IL doesn't work yet
+
+    if 11 in denots:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+        print("Example 11: IL -- counter model of p v -p and --p -> p")
+    
+        k11 = {"k0", "k1"}
+        r11 = {("k0", "k1")}
+        v11 = {"k0": {"p": False},
+               "k1": {"p": True}}
+        m11 = KripkePropStructure("M11", k11, r11, v11)
+    
+        print(m11)
+        print(m11.r)
+
+        e11 = {
+            11: Disj(Prop("p"), Neg(Prop("p"))),
+            2: Imp(Neg(Neg(Prop("p"))), Prop("p")),
+            3: Neg(Neg(Disj(Prop("p"), Neg(Prop("p"))))),
+            4: Prop("p"),
+            5: Neg(Prop("p")),
+            6: Neg(Neg(Prop("p")))
+        }
+    
+        for nr, e in e11.items():
+            print()
+            print("[[" + str(e) + "]]^M11 =")
+            print(e.denotK(m11))
+            depth = 0
+            print()
+            print("[[" + str(e) + "]]^M11,k0 =")
+            print(e.denotV(m11, "k0"))
+            depth = 0
+            print()
+            print("[[" + str(e) + "]]^M10,k1 =")
+            print(e.denotV(m10, "k1"))
+            depth = 0
+    
+    if 12 in denots:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+        print("Example 12: IL -- counter model of (p -> q) v (q -> p)")
+    
+        k12 = {"k0", "k1", "k12"}
+        r12 = {("k0", "k1"), ("k0", "k12")}
+        d12 = {}
+        v12 = {"k0": {"p": False, "q": False},
+               "k1": {"p": True, "q": False},
+               "k12": {"p": False, "q": True}}
+        m12 = KripkePropStructure("M12", k12, r12, d12, v12)
+    
+        print(m12)
+        print(m12.r)
+
+        e12 = {
+            1: Disj(Imp(Prop("p"), Prop("q")), Imp(Prop("q"), Prop("p")))
+        }
+    
+        for nr, e in e12.items():
+            print()
+            print("[[" + str(e) + "]]^M12 =")
+            print(e.denotK(m12))
+            depth = 0
+
+    if 13 in denots:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+        print("Example 13: IL -- counter model of (p -> q) -> (-p v q)")
+    
+        k13 = {"k0", "k1", "k2", "k3"}
+        r13 = {("k0", "k1"), ("k0", "k2"), ("k1", "k13"), ("k2", "k3")}
+        v13 = {"k0": {"p": False, "q": False},
+               "k1": {"p": False, "q": True},
+               "k2": {"p": True, "q": True},
+               "k3": {"p": True, "q": True}
+               }
+        m13 = KripkePropStructure("M113", k13, r13, v13)
+    
+        print(m13)
+        print(m13.r)
+
+        e13 = {
+            1: Imp(Imp(Prop("p"), Prop("q")), Disj(Neg(Prop("p")), Prop("q"))),
+            2: Imp(Prop("p"), Prop("q")),
+            13: Disj(Neg(Prop("p")), Prop("q")),
+            4: Neg(Prop("p")),
+            5: Prop("q")
+        }
+    
+        for nr, e in e13.items():
+            print()
+            if nr in [1]:
+                print("[[" + str(e) + "]]^M13 =")
+                print(e.denotK(m13))
+                depth = 0
+            elif nr in [2]:
+                print("[[" + str(e) + "]]^M13,k13 =")
+                print(e.denotV(m13, "k13"))
+                depth = 0
+                print("[[" + str(e) + "]]^M13,k1 =")
+                print(e.denotV(m13, "k1"))
+                depth = 0
+                print("[[" + str(e) + "]]^M13,k0 =")
+                print(e.denotV(m13, "k0"))
+                depth = 0
+            elif nr in [13, 4, 5]:
+                print("[[" + str(e) + "]]^M13,k0 =")
+                print(e.denotV(m13, "k0"))
+                depth = 0
+    
+        #############################
+        print("\n---------------------------------\n")
+        #############################
 
 
 def compute_tableaus():

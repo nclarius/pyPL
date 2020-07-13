@@ -19,8 +19,6 @@ from itertools import chain
 # - merge with IL
 # - tex
 
-classical = True
-
 
 class Tableau(object):
     """
@@ -38,7 +36,7 @@ class Tableau(object):
         self.modal = modal
         self.vardomain = vardomain
         self.frame = frame
-        sig = [1] if modal else None
+        sig = [1] if modal or not classical else None
 
         # append initial nodes
         root_fml = conclusion if conclusion else premises[0]
@@ -273,78 +271,113 @@ class Tableau(object):
                 count += 1
                 name = "M" + str(count)
 
-                if self.modal:
+                if self.classical:  # classical logic
+
+                    if self.modal:  # clsasical modal logic
+                        sigs = {node.sig for node in branch}
+                        # use w1, ..., wn as names for worlds instead of signatures
+                        worlds = {sig: "w" + str(i + 1) for (i, sig) in enumerate(sigs)}
+                        w = {worlds[sig] for sig in sigs}
+                        r_ = {(sig[:-1], sig[-1]) for sig in sigs if len(sig) > 1}
+                        r = {(worlds[sig1], worlds[sig2]) for (sig1, sig2) in r_}
+
+                    if self.propositional:  # classical propositional logic
+
+                        if not self.modal:  # classical non-modal propositional logic
+                            # atoms = all unnegated propositional variables
+                            atoms = [node.fml.p for node in branch if isinstance(node.fml, Prop)]
+                            # valuation = make all positive propositional variables true and all others false
+                            v = {p: (True if p in atoms else False) for p in self.root.fml.propvars()}
+                            model = PropStructure(name, v)
+                            res.append(model)
+
+                        else:  # classical modal propositional logic
+                            # atoms = all unnegated propositional variables
+                            atoms = {sig: [node.fml.p for node in branch if isinstance(node.fml, Prop) and node.sig == sig]
+                                     for sig in sigs}
+                            # valuation = make all positive propositional variables true and all others false
+                            v = {sig: {p: (True if p in atoms[sig] else False) for p in self.root.fml.propvars()}
+                                 for sig in sigs}
+                            model = PropModalStructure(name, w, r, v)
+                            res.append(model)
+
+
+                    else:  # classical predicate logic
+                        # predicates = all predicates occurring in the conclusion and premises
+                        constants = set(chain(self.root.fml.nonlogs()[0],
+                                              *[prem.fml.nonlogs()[0] for prem in self.premises]))
+                        # todo show constants in interpret.?
+                        funcsymbs = set(chain(self.root.fml.nonlogs()[1],
+                                              *[prem.fml.nonlogs()[1] for prem in self.premises]))
+                        # todo take care of function symbols in domain and interpretation
+                        predicates = set(chain(self.root.fml.nonlogs()[2],
+                                               *[prem.fml.nonlogs()[2] for prem in self.premises]))
+
+                        if not self.modal:  # classical non-modal predicate logic
+                            # atoms = all unnegated atomic predications
+                            atoms = [(node.fml.pred, node.fml.terms) for node in branch if isinstance(node.fml, Atm)]
+                            # domain = all const.s occurring in formulas
+                            d = set(list(chain(*[node.fml.nonlogs()[0] for node in branch if node.fml.nonlogs()])))
+                            # interpretation = make all unnegated predications true and all others false
+                            i = {p: {tuple([str(t) for t in a[1]]) for a in atoms if (Pred(p), a[1]) in atoms}
+                                 for p in predicates}
+                            model = PredStructure(name, d, i)
+                            res.append(model)
+
+                        else:  # classical modal predicate logic
+                            # atoms = all unnegated atomic predications
+                            atoms = {sig: [(node.fml.pred, node.fml.terms) for node in branch
+                                           if isinstance(node.fml, Atm) and node.sig == sig]
+                                     for sig in sigs}
+                            i = {sig: {p: {tuple([str(t) for t in a[1]]) for a in atoms[sig]
+                                           if (Pred(p), a[1]) in atoms[sig]}
+                                       for p in predicates}
+                                 for sig in sigs}
+
+                            if not self.vardomain:  # classical modal predicate logic with constant domains
+                                d = set(chain(*[node.fml.nonlogs()[0] for node in branch]))
+                                model = ConstModalStructure(name, w, r, d, i)
+                                res.append(model)
+
+                            else:  # classical modal predicate logic with varying domains
+                                d = {sig: set(chain(*[node.fml.nonlogs()[0] for node in branch
+                                                      if node.sig == sig]))
+                                     for sig in sigs}
+                                model = VarModalStructure(name, w, r, d, i)
+                                res.append(model)
+
+                else:  # intuitionistic logic
                     sigs = {node.sig for node in branch}
-                    # w1, ..., wn as names for worlds instead of signatures
-                    worlds = {sig: "w" + str(i + 1) for (i, sig) in enumerate(sigs)}
-                    w = {worlds[sig] for sig in sigs}
+                    # use k1, ..., kn as names for states instead of signatures
+                    states = {sig: "k" + str(i + 1) for (i, sig) in enumerate(sigs)}
+                    k = {states[sig] for sig in sigs}
                     r_ = {(sig[:-1], sig[-1]) for sig in sigs if len(sig) > 1}
-                    r = {(worlds[sig1], worlds[sig2]) for (sig1, sig2) in r_}
+                    r = {(states[sig1], states[sig2]) for (sig1, sig2) in r_}
 
-                if self.propositional:
-
-                    if not self.modal:  # non-modal propositional
-                        # atoms = all unnegated propositional variables
-                        atoms = [node.fml.p for node in branch if isinstance(node.fml, Prop)]
-                        # valuation = make all positive propositional variables true and all others false
-                        v = {p: (True if p in atoms else False) for p in self.root.fml.propvars()}
-                        model = PropStructure(name, v)
-                        res.append(model)
-
-                    else:  # modal propositional
+                    if self.propositional:  # intuitionstic propositional logic
                         # atoms = all unnegated propositional variables
                         atoms = {sig: [node.fml.p for node in branch if isinstance(node.fml, Prop) and node.sig == sig]
                                  for sig in sigs}
                         # valuation = make all positive propositional variables true and all others false
                         v = {sig: {p: (True if p in atoms[sig] else False) for p in self.root.fml.propvars()}
                              for sig in sigs}
-                        model = PropModalStructure(name, w, r, v)
+                        model = KripkePropStructure(name, k, r, v)
                         res.append(model)
 
-
-                else:
-                    # predicates = all predicates occurring in the conclusion and premises
-                    constants = set(chain(self.root.fml.nonlogs()[0],
-                                          *[prem.fml.nonlogs()[0] for prem in self.premises]))
-                    # todo show constants in interpret.?
-                    funcsymbs = set(chain(self.root.fml.nonlogs()[1],
-                                          *[prem.fml.nonlogs()[1] for prem in self.premises]))
-                    # todo take care of function symbols in domain and interpretation
-                    predicates = set(chain(self.root.fml.nonlogs()[2],
-                                           *[prem.fml.nonlogs()[2] for prem in self.premises]))
-
-                    if not self.modal:  # non-modal predicational
-                        # atoms = all unnegated atomic predications
-                        atoms = [(node.fml.pred, node.fml.terms) for node in branch if isinstance(node.fml, Atm)]
-                        # domain = all const.s occurring in formulas
-                        d = set(list(chain(*[node.fml.nonlogs()[0] for node in branch if node.fml.nonlogs()])))
-                        # interpretation = make all unnegated predications true and all others false
-                        i = {p: {tuple([str(t) for t in a[1]]) for a in atoms if (Pred(p), a[1]) in atoms}
-                             for p in predicates}
-                        model = PredStructure(name, d, i)
-                        res.append(model)
-
-                    else:
+                    else:  # intuitionistic predicate logic
                         # atoms = all unnegated atomic predications
                         atoms = {sig: [(node.fml.pred, node.fml.terms) for node in branch
                                        if isinstance(node.fml, Atm) and node.sig == sig]
                                  for sig in sigs}
+                        d = {sig: set(chain(*[node.fml.nonlogs()[0] for node in branch
+                                              if node.sig == sig]))
+                             for sig in sigs}
                         i = {sig: {p: {tuple([str(t) for t in a[1]]) for a in atoms[sig]
                                        if (Pred(p), a[1]) in atoms[sig]}
                                    for p in predicates}
                              for sig in sigs}
-
-                        if not self.vardomain:  # modal predicational with constant domain
-                            d = set(chain(*[node.fml.nonlogs()[0] for node in branch]))
-                            model = ConstModalStructure(name, w, r, d, i)
-                            res.append(model)
-
-                        else:  # modal predicational with varying domain
-                            d = {sig: set(chain(*[node.fml.nonlogs()[0] for node in branch
-                                                  if node.sig == sig]))
-                                 for sig in sigs}
-                            model = VarModalStructure(name, w, r, d, i)
-                            res.append(model)
+                        model = KripkePredStructure(name, k, r, d, i)
+                        res.append(model)
 
         return res
 
@@ -621,17 +654,18 @@ class Node(object):
         parameters = list("abcdefghijklmnopqrst")
 
         # find a constant to substitute
+        # all constants already occurring in this branch
         constants = list(dict.fromkeys(chain(*[node.fml.nonlogs()[0] for node in self.branch])))
-        # all constants and parameters
-        usable = constants + parameters
         # all parameters already used with this rule
         used = self.get_applicable(source, rule)[3]
-        # alternative formulation: only use constants that already occur in the branch, no parameters
-        # usable = [c for c in (constants if constants else parmeters[0]) if c not in used]
+        # all constants and parameters
+        usable = constants + parameters
+        # # alternative formulation: only use constants that already occur in the branch, no parameters
+        # usable = [c for c in (constants if constants else parameters[0]) if c not in used]
         # if not usable:
-        #     # # all constants have already been used: rule can not be applied at this point; delay it
-        #     # self.set_applicable(source, rule, "gamma", used, True)
-        #     # return
+        #     # all constants have already been used: rule can not be applied at this point; delay it
+        #     self.set_applicable(source, rule, "gamma", used, True)
+        #     return
         # for modal predicate logic with varying domains: add signature subscript to constant
         subscript = ""
         if self.tableau.modal and not self.tableau.propositional and self.tableau.vardomain:
@@ -648,11 +682,10 @@ class Node(object):
 
         # add node
         line += 1
-        sig = source.sig
         fml = phi.subst(var, const)  # substitute the constant for the variable
         cite = "(" + (" " if len(rule) == 1 else "") + rule + ", " + str(source.line) + ", " + \
                "[" + var.u + "/" + const.c + "]" + ")"
-        node = self.add_child((line, source.sig, fml, cite))
+        node = self.add_child((line, sig, fml, cite))
 
         # self is now no longer leaf, so has no applicable rules
         self.empty_applicable()
@@ -668,7 +701,7 @@ class Node(object):
         line = max_line
         parameters = list("abcdefghijklmnopqrst")
 
-        # find a constant to substitue
+        # find a constant to substitute
         # all existing constants in the curr. branch
         constants = list(dict.fromkeys(chain(*[node.fml.nonlogs()[0] for node in self.branch])))
         # all parameters already used with this rule
@@ -687,7 +720,7 @@ class Node(object):
         # rule is now being applied; add chosen constant to already used ones
         self.set_applicable(source, rule, "delta", used + [const_symbol])
         # alternative formulation: rule may only be applied once; remove from applicable
-        # self.remove_applicable(source, "rule_delta")
+        # self.remove_applicable(source, rule)
 
         # add node
         line += 1
@@ -854,6 +887,7 @@ class Node(object):
         """
         # todo smarter implementation (check for loops in rule appls.)
         # if len(self.branch) > \
+        # alternative more than twice as many distinct params as variables and constants in the assumptions?
         if sum([sum(len(appl[3]) for appl in node.applicable) for node in self.branch]) > \
                 2 * sum([len(node.fml) for node in self.branch if node.cite == "(A)"]):
             self.add_infinite()

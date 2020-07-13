@@ -161,7 +161,7 @@ class Const(Term):
         The denotation of a constant is that individual that the interpretation function f assigns it.
         """
         i = m.i
-        if isinstance(m, ModalStructure):
+        if isinstance(m, ModalStructure) or isinstance(m, KripkeStructure):
             i = m.i[w]
         return i[self.c]
 
@@ -262,7 +262,7 @@ class Func(Expr):
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
         i = m.i
-        if isinstance(m, ModalStructure):
+        if isinstance(m, ModalStructure) or isinstance(m, KripkeStructure):
             i = m.i[w]
         return i[self.i]
 
@@ -324,7 +324,7 @@ class FuncTerm(Term):
         interpretation function f assigns to the application.
         """
         i = m.i
-        if isinstance(m, ModalStructure):
+        if isinstance(m, ModalStructure) or isinstance(m, KripkeStructure):
             i = m.i[w]
         return i[self.f.f][tuple([t.denot(m, v, w) for t in self.terms])]
 
@@ -373,7 +373,7 @@ class Pred(Expr):
         assigns it.
         """
         i = m.i
-        if isinstance(m, ModalStructure):
+        if isinstance(m, ModalStructure) or isinstance(m, KripkeStructure):
             i = m.i[w]
         return i[self.p]
 
@@ -412,6 +412,9 @@ class Formula(Expr):
         @return: the truth value of self in m
         @rtype: bool
         """
+        if isinstance(m, PropStructure) or isinstance(m, KripkePropStructure):
+            return self.denot(m, w)
+
         global depth
         # for efficiency, restrict the domain of the assignment functions o the vars that actually occur in the formula
         var_occs = self.freevars() | self.boundvars()
@@ -509,6 +512,21 @@ class Formula(Expr):
                 depth -= 1
                 return False
         return True
+
+    def denotK(self, m):
+        """
+        The truth value of a formula relative to a structure M (without reference to a particular state).
+        A formula is true in a structure M iff it is true in M in the root state.
+
+        @param m: a structure
+        @type m: KripkeStructure
+        @return: the truth value of self in m
+        @rtype: bool
+        """
+        global depth
+
+        # a formula is true in a structure M iff it is true in the root state k0
+        return self.denotV(m, "k0")
 
     def tableau_pos(self):
         """
@@ -717,8 +735,12 @@ class Prop(Formula):
         """
         The denotation of a propositional variable is the truth value the valuation function V assigns it.
         """
-        v = m.v
-        return v[self.p]
+        if not isinstance(m, KripkeStructure):
+            v = m.v
+            return v[self.p]
+        else:
+            return (m.v[w][self.p] or
+                    True in [self.denot(m, w_, v) for w_ in m.past(w) - {w}])
 
     def tableau_pos(self):
         return []
@@ -851,7 +873,11 @@ class Atm(Formula):
         The denotation of an atomic predication P(t1, ..., tn) is true iff the tuple of the denotation of the terms is
         an element of the interpretation of the predicate.
         """
-        return tuple([t.denot(m, v, w) for t in self.terms]) in self.pred.denot(m, v, w)
+        if not isinstance(m, KripkeStructure):
+            return tuple([t.denot(m, v, w) for t in self.terms]) in self.pred.denot(m, v, w)
+        else:
+            return (tuple([t.denot(m, w, v) for t in self.terms]) in self.pred.denot(m, w, v) or
+                    True in [self.denot(m, w_, v) for k_ in m.past(w) - {w}])
 
     def tableau_pos(self):
         return []
@@ -906,9 +932,15 @@ class Neg(Formula):
 
     def denot(self, m, v=None, w=None):
         """
-        The denotation of a negated formula Neg(phi) is true iff phi is false.
+        In CL, the denotation of a negated formula Neg(phi) is true iff phi is false.
+
+        In IL, the denotation of a negated formula Neg(phi) is true iff phi is false at all subsequent states k' >= k.
+
         """
-        return not self.phi.denot(m, v, w)
+        if not isinstance(m, KripkeStructure):  # CL
+            return not self.phi.denot(m, v, w)
+        else:  # IL
+            return True not in [self.phi.denot(m, w_, v) for w_ in m.future(w)]
 
     def tableau_pos(self):
         """
@@ -1111,9 +1143,15 @@ class Imp(Formula):
 
     def denot(self, m, v=None, w=None):
         """
-        The denotation of an implicational formula Imp(phi,psi) is true iff phi is false or psi is true.
+        In CL, the denotation of an implicational formula Imp(phi,psi) is true iff phi is false or psi is true.
+
+        In IL, the denotation of an implicational formula Imp(phi,psi) is true at k iff
+        at all subsequent states k' >= k, either phi is false or psi is true at k'.
         """
-        return not self.phi.denot(m, v, w) or self.psi.denot(m, v, w)
+        if not isinstance(self, KripkeStructure):  # CL
+            return not self.phi.denot(m, v, w) or self.psi.denot(m, v, w)
+        else:  # IL
+            return False not in [(not self.phi.denot(m, w_, v) or self.psi.denot(m, w_, v)) for w_ in m.future(w)]
 
     def tableau_pos(self):
         """
@@ -1179,9 +1217,16 @@ class Biimp(Formula):
 
     def denot(self, m, v=None, w=None):
         """
-        The denotation of an biimplicational formula Biimp(phi,psi) is true iff phi and psi have the same truth value.
+        In CL, the denotation of an biimplicational formula Biimp(phi,psi) is true iff
+        phi and psi have the same truth value.
+
+        In IL, the denotation of an biimplicational formula Biimp(phi,psi) is true at k iff
+        at all subsequent states k' >= k, phi and psi have the same truth value.
         """
-        return self.phi.denot(m, v, w) == self.psi.denot(m, v, w)
+        if not isinstance(m, KripkeStructure):  # CL
+            return self.phi.denot(m, v, w) == self.psi.denot(m, v, w)
+        else:  # IL
+            return False not in [(self.phi.denot(m, w_, v) == self.psi.denot(m, w_, v)) for w_ in m.future(w)]
 
     def tableau_pos(self):
         """
@@ -1255,7 +1300,7 @@ class Exists(Formula):
         """
         global verbose
         d = m.d
-        if isinstance(m, VarModalStructure):
+        if isinstance(m, VarModalStructure) or isinstance(m, KripkeStructure):
             d = m.d[w]
 
         # short version
@@ -1277,7 +1322,7 @@ class Exists(Formula):
             print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_) + " ...")
             witness = self.phi.denot(m, v_, w)
 
-            # if yes, we found a witness, the existential statement is true, and we can stop checking (return)
+            # if yes, we found a witness, the existential statement is true and we can stop checking (return)
             if witness:
                 print((depth * 2 * " ") + "✓")
                 depth -= 1
@@ -1297,7 +1342,6 @@ class Exists(Formula):
          ∃vφ
           |
         φ[v/c]
-
         where c is new
         """
         return [("∃", delta, (self.phi, self.u))]
@@ -1307,7 +1351,6 @@ class Exists(Formula):
          ¬∃vφ
            |
         ¬φ[v/c]
-
         where c is arbitrary
         """
         return [("¬∃", gamma, (Neg(self.phi), self.u))]
@@ -1359,54 +1402,101 @@ class Forall(Formula):
 
     def denot(self, m, v=None, w=None):
         """
-        The denotation of universally quantified formula Forall(x, phi) is true iff
+        In CL, the denotation of universally quantified formula Forall(x, phi) is true iff
         phi is true under all x-variants of v.
+
+        In IL, the denotation of universally quantified formula Forall(x, phi) is true at k iff
+        at all subsequent states k' >= k, phi is true under all x-alternatives v' of v at k'.
         """
         global verbose
+        global depth
+        depth += 1
         d = m.d
         if isinstance(w, VarModalStructure):
             d = m.d[w]
 
-        # short version
-        if not verbose:
-            return all([self.phi.denot(m, {**v, self.u.u: d_}) for d_ in d])
+        if not isinstance(m, KripkeStructure):  # CL
 
-        # long version
-        global depth
-        depth += 1
+            # short version
+            if not verbose:
+                return all([self.phi.denot(m, {**v, self.u.u: d_}) for d_ in d])
 
-        # iterate through the individuals in the domain
-        for d_ in sorted(d):
+            # long version
 
-            # compute the x-variant v' of v
-            v_ = v  # v' is just like v, except...
-            v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
+            # iterate through the individuals in the domain
+            for d_ in sorted(d):
 
-            # check whether the current x-variant under consideration makes phi true
-            print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_) + " ...")
-            witness = self.phi.denot(m, v_, w)
+                # compute the x-variant v' of v
+                v_ = v  # v' is just like v, except...
+                v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
 
-            # if yes, everything is fine until now, we do nothing and go check the next one (continue)
-            if witness:
-                print((depth * 2 * " ") + "✓")
-                continue
+                # check whether the current x-variant under consideration makes phi true
+                print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_) + " ...")
+                witness = self.phi.denot(m, v_, w)
 
-            # if not, we found a counter witness, the universal statement is false, and we can stop checking (return)
-            else:
-                print((depth * 2 * " ") + "✗")
+                # if yes, everything is fine until now, we do nothing and go check the next one (continue)
+                if witness:
+                    print((depth * 2 * " ") + "✓")
+                    continue
+
+                # if not, we found a counter witness, the universal statement is false and we can stop checking (return)
+                else:
+                    print((depth * 2 * " ") + "✗")
+                    depth -= 1
+                    return False
+
+            # if we reach the end, then no counter witness has been found, and the universal statement is true
+            depth -= 1
+            return True
+
+        else:  # IL
+
+            # short version
+            if not verbose:
+                return all([all([self.phi.denot(m, w_, {**v, self.u.u: d_}) for d_ in m.d[w_]]) for w_ in m.future(w)])
+
+            # long version
+
+            # quantify over the subsequent states
+            for w_ in m.future(w):
+                d = m.d[w_]
+                depth += 1
+
+                # iterate through the individuals in the domain of the future state
+                for d_ in d:
+
+                    # compute the x-variant v' of v
+                    v_ = v  # v' is just like v, except...
+                    v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
+
+                    # check whether the current indiv. d under consideration makes phi true at k'
+                    print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(
+                        d_) + " ...")
+                    witness = self.phi.denot(m, w_, v_)
+
+                    # if yes, everything is fine until now, we do nothing and go check the next one (continue)
+                    if witness:
+                        print(((depth + 1) * 2 * " ") + "✓")
+
+                    # if not, we found a counter witness, the universal statement is false, and we can stop checking
+                    else:
+                        print(((depth + 1) * 2 * " ") + "✗")
+                        print(((depth + 1) * 2 * " ") + "counter witness: k' = " + str(w_) + ", " +
+                              "v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_))
+                        return False
+
+                # if no counter witness has been found, the universal statement is true at k'
                 depth -= 1
-                return False
 
-        # if we reach the end, then no counter witness has been found, and the universal statement is true
-        depth -= 1
-        return True
+            # if no counter state has been found, the universal statement is true at k
+            depth -= 1
+            return True
 
     def tableau_pos(self):
         """
          ∀vφ
           |
         φ[v/c]
-
         where c is arbitrary
         """
         return [("∀", gamma, (self.phi, self.u))]
@@ -1416,7 +1506,6 @@ class Forall(Formula):
         ¬∀vφ
           |
         ¬φ[x/c]
-
         where c is new
         """
         return [("¬∀", delta, (Neg(self.phi), self.u))]
@@ -1462,7 +1551,7 @@ class Poss(Formula):
 
     def denot(self, m, v, w):
         """
-        The denotation of a possiblity formula is true iff
+        In CL, the denotation of a possiblity formula is true iff
         phi is true at at least one world accessible from w.
 
         @param m: the structure to evaluate the formula in
@@ -1473,6 +1562,9 @@ class Poss(Formula):
         @type w: str
         @return: the denotation of Poss(phi)
         """
+        if isinstance(m, KripkeStructure):
+            return  # not implemented
+
         # all possible worlds w' which are accessible from w
         neighbors = [w_ for w_ in m.w if (w, w_) in m.r]
 
@@ -1509,10 +1601,10 @@ class Poss(Formula):
 
     def tableau_pos(self):
         """
-        σ  ◇φ
+        Rule K:
+         σ ◇φ
           |
         σ.n φ
-
         where σ.n is new
         """
         rules = [("◇", mu, self.phi)]
@@ -1520,13 +1612,11 @@ class Poss(Formula):
 
     def tableau_neg(self):
         """
-        σ  ¬◇φ
-           |
-        σ.n ¬φ
-
-        where σ.n is old
-
-        # todo doc for other rules
+        Rule K:   Rule D:   Rule T:   Rule B:   Rule 4:   Rule 4r:
+         σ ¬◇φ    σ ¬◇φ     σ ¬◇φ     σ.n ¬◇φ    σ ¬◇φ    σ.n ¬◇φ
+           |         |         |         |         |          |
+        σ.n ¬φ    σ ¬◻φ     σ  ¬φ      σ ¬φ     σ.n ¬◇φ    σ ¬◇φ
+        where σ and σ.n are old
         """
         rules = [("¬", nu, Neg(self.phi))]
         if frame in ["D"]:
@@ -1535,7 +1625,7 @@ class Poss(Formula):
             rules.append(("¬T", "epsilon", ([Neg(self.phi)])))
         if frame in ["B"]:
             rules.append(("¬B", "zeta", ([Neg(self.phi)])))
-        if frame in ["K4","S4", "S5"]:
+        if frame in ["K4", "S4", "S5"]:
             rules.append(("¬4", "nu", ([Neg(Poss(self.phi))])))
         if frame in ["S5"]:
             rules.append(("¬4r", "zeta", ([Neg(Poss(self.phi))])))
@@ -1583,7 +1673,7 @@ class Nec(Formula):
 
     def denot(self, m, v, w):
         """
-        The denotation of a necessity formula is true iff
+        In CL, the denotation of a necessity formula is true iff
         phi is true at all worlds accessible from w.
 
         @param m: the structure to evaluate the formula in
@@ -1593,6 +1683,9 @@ class Nec(Formula):
         @param v: the assignment function to evaluate the formula in
         @type v: dict[str,str]
         """
+        if isinstance(m, KripkeStructure):
+            return  # not implemented
+
         # all possible worlds w' which are accessible from w
         neighbors = [w_ for w_ in m.w if (w, w_) in m.r]
 
@@ -1629,13 +1722,11 @@ class Nec(Formula):
 
     def tableau_pos(self):
         """
-        σ  ◻φ
-          |
-        σ.n φ
-
+        Rule K:   Rule D:   Rule T:   Rule B:   Rule 4:   Rule 4r:
+        σ ◻φ      σ ◻φ      σ ◻φ      σ.n ◻φ     σ ◻φ     σ.n ◻φ
+          |         |         |          |         |        |
+        σ.n φ     σ ◇φ       σ φ       σ ¬φ     σ.n ◻φ     σ ◻φ
         where σ.n is old
-
-        # todo doc for other rules
         """
         rules = [("◻", nu, self.phi)]
         if frame in ["D"]:
@@ -1652,10 +1743,10 @@ class Nec(Formula):
 
     def tableau_neg(self):
         """
-        σ  ¬◻φ
+        Rule K:
+         σ ¬◻φ
            |
         σ.n ¬φ
-
         where σ.n is new
         """
         rules = [("¬◻", mu, Neg(self.phi))]
