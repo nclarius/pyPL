@@ -1,7 +1,6 @@
-A naive model checker and generator for classical and intuitionistic propositional and first-order logic 
-with an extension to modal logic.  
+A naive model checker and -generator for classical non-modal and propositional and first-order logic and intuitionistic non-modal propositional and first-order logic.
 This tool can compute the denotation (truth value) of a given logical expression in a given structure, 
-and an analytic tableau with (counter) models for a given inference.  
+and an analytic tableau with (counter) models for a given inference (the latter is currently under construction).  
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
 License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).  
 
@@ -21,22 +20,26 @@ Features
     - in a language of first-order logic (aka predicate logic, quantifier logic)
     - accepts languages with with zero-place predicates, function symbols, term equality and modal operators ◻, ◇
  - specification of structures (aka models, interpretations)
-    - of PL with valuation function
-    - of FOL with domain, interpretation function and variable assignments
-    - accepts non-modal structures, modal structures with constant domains and modal structures with varying domains
+    - of classical logic
+        - of PL with valuation function
+        - of FOL with domain, interpretation function and variable assignments
+        - accepts non-modal structures, modal structures with constant domains and modal structures with varying domains
+    - of intuitionistic logic (Kripke structures with sets of states)  -- **currently under construction**
+        - of PL with valuation function
+        - of FOL with domain, interpretation function and variable assignments
  - analytic tableau proofs -- **currently under construction**
+ - model generation -- **currently under construction**
 
 Restrictions
 ------------
  - works only on structures with finite domains and languages with a finite set of propositional or individual variables
- - can't infer universal validity, logical inference etc., only truth in a given structure
+ - search strategy for tableaus is sometimes inefficient
+ - no modal logic available for intuitionistic logic
 
 Known issues
 ------------
  - global variables are bad
  - depth has to be reset manually after each call of `denot`
- - name of variable assignment and world is not systematically recognized,
-   instead always 'M', 'D', 'I', 'v', 'w' used in printout
  - efficiency: assignment functions have to be specified on all variables of the language;
    the domain is not restricted expression-wise to those variables that actually occur in the expression
 
