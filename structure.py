@@ -113,7 +113,7 @@ class PredStructure(Structure):
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D)
         dprod = list(product(list(d), repeat=len(indiv_vars)))
         # all variable assignment functions
-        self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
+        self.gs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
     def __str__(self):
         return "Structure " + self.m + "  = ⟨D,I⟩ with\n" \
@@ -236,7 +236,7 @@ class ConstModalStructure(ModalStructure):
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D)
         dprod = list(product(list(d), repeat=len(indiv_vars)))
         # all variable assignment functions
-        self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
+        self.gs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
     def __str__(self):
         return "Structure " + self.m + " = ⟨W,R,D,I⟩ with\n" \
@@ -306,7 +306,7 @@ class VarModalStructure(ModalStructure):
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D) per world
         dprods = {w: list(product(list(self.d[w]), repeat=len(indiv_vars))) for w in self.w}
         # all variable assignment functions per world
-        self.vs = {w: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[w]] for w in self.w}
+        self.gs = {w: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[w]] for w in self.w}
 
     def __str__(self):
         return "Structure " + self.m + " = ⟨W,R,D,F⟩ with\n" \
@@ -539,7 +539,7 @@ class KripkePredStructure(KripkeStructure):
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D) per state
         dprods = {k: list(product(list(self.d[k]), repeat=len(indiv_vars))) for k in self.k} if d else {}
         # all variable assignment functions
-        self.vs = {k: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[k]] for k in self.k} if d else {}
+        self.gs = {k: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[k]] for k in self.k} if d else {}
 
         # compute the relfexive and transitive closure of R
         closure = set(self.r)

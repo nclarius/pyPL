@@ -102,7 +102,7 @@ After specifying your input in the source code, execute `main.py` in a terminal 
 - 'M' = structure/model (aka 'A')
 - 'D' = domain of discourse (aka 'M')
 - 'I' = interpretation function for non-logical symbols (aka 'F')
-- 'v' = variable assignment function for individual variables (aka 'g')
+- 'g' = variable assignment function for individual variables (aka 'v')
 - 'V' = valuation function for propositional variables
 
 ### Have fun!

@@ -110,7 +110,7 @@ class Term(Expr):
         """
         pass
 
-    def denot(self, m, v=None, w=None) -> str:
+    def denot(self, m, g=None, w=None) -> str:
         """
         @rtype: str
         """
@@ -156,7 +156,7 @@ class Const(Term):
     def subst(self, u, t):
         return self
 
-    def denot(self, m, v=None, w=None):
+    def denot(self, m, g=None, w=None):
         """
         The denotation of a constant is that individual that the interpretation function f assigns it.
         """
@@ -211,11 +211,11 @@ class Var(Term):
         else:
             return self
 
-    def denot(self, m, v=None, w=None):
+    def denot(self, m, g=None, w=None):
         """
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
-        return v[self.u]
+        return g[self.u]
 
 
 class Func(Expr):
@@ -257,7 +257,7 @@ class Func(Expr):
     def subst(self, u, t):
         return self
 
-    def denot(self, m, v=None, w=None) -> str:
+    def denot(self, m, g=None, w=None) -> str:
         """
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
@@ -318,7 +318,7 @@ class FuncTerm(Term):
     def subst(self, u, t):
         return FuncTerm(self.f, tuple([term.subst(u, t) for term in self.terms]))
 
-    def denot(self, m, v=None, w=None) -> str:
+    def denot(self, m, g=None, w=None) -> str:
         """
         The denotation of a function symbol applied to an appropriate number of terms is that individual that the
         interpretation function f assigns to the application.
@@ -326,7 +326,7 @@ class FuncTerm(Term):
         i = m.i
         if isinstance(m, ModalStructure) or isinstance(m, KripkeStructure):
             i = m.i[w]
-        return i[self.f.f][tuple([t.denot(m, v, w) for t in self.terms])]
+        return i[self.f.f][tuple([t.denot(m, g, w) for t in self.terms])]
 
 
 class Pred(Expr):
@@ -367,7 +367,7 @@ class Pred(Expr):
     def subst(self, u, t):
         return self
 
-    def denot(self, m, v=None, w=None) -> Set[Tuple[str]]:
+    def denot(self, m, g=None, w=None) -> Set[Tuple[str]]:
         """
         The denotation of a predicate is the set of ordered tuples of individuals that the interpretation function f
         assigns it.
@@ -394,13 +394,13 @@ class Formula(Expr):
         """
         pass
 
-    def denot(self, m: Structure, v=None, w=None) -> bool:
+    def denot(self, m: Structure, g=None, w=None) -> bool:
         """
         @rtype: bool
         """
         pass
 
-    def denotV(self, m: Structure, w: str = None) -> bool:
+    def denotG(self, m: Structure, w: str = None) -> bool:
         """
         The truth value of a formula relative to a structure M (without reference to a particular assignment).
         A formula is true in a structure M iff it is true in M under all assignment functions g.
@@ -413,27 +413,27 @@ class Formula(Expr):
         @rtype: bool
         """
         if isinstance(m, PropStructure) or isinstance(m, KripkePropStructure):
-            return self.denot(m, w)
+            return self.denot(m, None, w)
 
         global depth
         # for efficiency, restrict the domain of the assignment functions o the vars that actually occur in the formula
         var_occs = self.freevars() | self.boundvars()
-        vs__ = m.vs
+        gs__ = m.gs
         if isinstance(m, VarModalStructure):
             vs__ = m.vs[w]
-        vs_ = [{u: v[u] for u in v if u in var_occs} for v in vs__]
-        vs = [dict(tpl) for tpl in {tuple(v.items()) for v in vs_}]  # filter out now duplicate assignment functions
+        gs_ = [{u: g[u] for u in g if u in var_occs} for g in gs__]
+        gs = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]  # filter out now duplicate assignment functions
 
         if not self.freevars():  # if the formula is closed,
             # spare yourself the quantification over all assignment functions and pick an arbitrary assignment
             # (here: the first)
-            return self.denot(m, vs[0], w)
+            return self.denot(m, gs[0], w)
 
-        for v in vs:  # otherwise, check the denotation for all assignment functions
+        for g in gs:  # otherwise, check the denotation for all assignment functions
             depth += 1
             if verbose:
-                print((depth * " ") + "checking v := " + str(v) + " ...")
-            witness = self.denot(m, v, w)
+                print((depth * " ") + "checking v := " + str(g) + " ...")
+            witness = self.denot(m, g, w)
             if witness:
                 if verbose:
                     print((depth * 2 * " ") + "✓")
@@ -441,12 +441,12 @@ class Formula(Expr):
             else:
                 if verbose:
                     print((depth * 2 * " ") + "✗")
-                    print((depth * " ") + "counter assignment: v := " + str(v))
+                    print((depth * " ") + "counter assignment: v := " + str(g))
                 depth -= 1
                 return False
         return True
 
-    def denotW(self, m: Structure, v: Dict[str,str]) -> bool:
+    def denotW(self, m: ModalStructure, g: Dict[str,str]) -> bool:
         """
         The truth value of a formula relative to a structure M and assmnt. g (without reference to a particular world).
         A formula is true in a structure M iff it is true in M and g in all possible worlds w.
@@ -454,21 +454,21 @@ class Formula(Expr):
         @param m: a structure
         @type m: ModalStructure
         @attr g: an assignment function
-        @type v: dict[str,str]
+        @type g: dict[str,str]
         @return: the truth value of self in m under g
         @rtype: bool
         """
         global depth
         # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
         var_occs = self.freevars() | self.boundvars()
-        vs_ = [{u: v[u] for u in v if u in var_occs} for v in m.vs]
-        m.vs_ = [dict(tpl) for tpl in {tuple(v.items()) for v in vs_}]  # filter out duplicate assignment functions
+        gs_ = [{u: v[u] for u in v if u in var_occs} for g in m.gs]
+        m.vg_ = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]  # filter out duplicate assignment functions
 
         for w in m.w:
             depth += 1
             if verbose:
                 print((depth * "  ") + "checking w := " + str(w) + " ...")
-            witness = self.denot(m, v, w)
+            witness = self.denot(m, g, w)
             if witness:
                 if verbose:
                     print((depth * 2 * " ") + "✓")
@@ -481,7 +481,7 @@ class Formula(Expr):
                 return False
         return True
 
-    def denotVW(self, m: Structure) -> bool:
+    def denotGW(self, m: ModalStructure) -> bool:
         """
         The truth value of a formula relative to a structure M (without reference to a particular assignment and world).
         A formula is true in a structure M iff it is true in M and g under all assignments g and all possible worlds w.
@@ -489,7 +489,7 @@ class Formula(Expr):
         @param m: a structure
         @type m: ModalStructure
         @attr g: an assignment function
-        @type v: dict[str,str]
+        @type g: dict[str,str]
         @return: the truth value of self in m under g
         @rtype: bool
         """
@@ -500,7 +500,7 @@ class Formula(Expr):
             depth += 1
             if verbose:
                 print((depth * " ") + "checking w := " + str(w) + " ...")
-            witness = self.denotV(m, w)
+            witness = self.denotG(m, w)
             if witness:
                 if verbose:
                     print((depth * 2 * " ") + "✓")
@@ -526,7 +526,7 @@ class Formula(Expr):
         global depth
 
         # a formula is true in a structure M iff it is true in the root state k0
-        return self.denotV(m, "k0")
+        return self.denotG(m, "k0")
 
     def tableau_pos(self):
         """
@@ -616,7 +616,7 @@ class Verum(Formula):
     def subst(self, u, t):
         return self
 
-    def denot(self, m, v=None, w=None):
+    def denot(self, m, g=None, w=None):
         """
         The denotation of the verum is always true.
         """
@@ -672,7 +672,7 @@ class Falsum(Formula):
     def subst(self, u, t):
         return self
 
-    def denot(self, m, v=None, w=None):
+    def denot(self, m, g=None, w=None):
         """
         The denotation of the falsum is always false.
         """
@@ -731,7 +731,7 @@ class Prop(Formula):
     def subst(self, u, t):
         return self
 
-    def denot(self, m, v=None, w=None):
+    def denot(self, m, g=None, w=None):
         """
         The denotation of a propositional variable is the truth value the valuation function V assigns it.
         """
@@ -740,7 +740,7 @@ class Prop(Formula):
             return v[self.p]
         else:
             return (m.v[w][self.p] or
-                    True in [self.denot(m, w_, v) for w_ in m.past(w) - {w}])
+                    True in [self.denot(m, g, w_) for w_ in m.past(w) - {w}])
 
     def tableau_pos(self):
         return []
@@ -793,11 +793,11 @@ class Eq(Formula):
     def subst(self, u, t):
         return Eq(self.t1.subst(u, t), self.t2.subst(u, t))
 
-    def denot(self, m, v=None, w=None):
+    def denot(self, m, g=None, w=None):
         """
         The denotation of a term equality t1 = t2 is true iff t1 and t2 denote the same individual.
         """
-        return self.t1.denot(m, v, w) == self.t2.denot(m, v, w)
+        return self.t1.denot(m, g, w) == self.t2.denot(m, g, w)
 
     def tableau_pos(self):
         return []
@@ -868,16 +868,16 @@ class Atm(Formula):
     def subst(self, u, t):
         return Atm(self.pred, tuple([term.subst(u, t) for term in self.terms]))
 
-    def denot(self, m, v=None, w=None):
+    def denot(self, m, g=None, w=None):
         """
         The denotation of an atomic predication P(t1, ..., tn) is true iff the tuple of the denotation of the terms is
         an element of the interpretation of the predicate.
         """
         if not isinstance(m, KripkeStructure):
-            return tuple([t.denot(m, v, w) for t in self.terms]) in self.pred.denot(m, v, w)
+            return tuple([t.denot(m, g, w) for t in self.terms]) in self.pred.denot(m, g, w)
         else:
-            return (tuple([t.denot(m, w, v) for t in self.terms]) in self.pred.denot(m, w, v) or
-                    True in [self.denot(m, w_, v) for k_ in m.past(w) - {w}])
+            return (tuple([t.denot(m, g, w) for t in self.terms]) in self.pred.denot(m, g, w) or
+                    True in [self.denot(m, g, w_) for w_ in m.past(w) - {w}])
 
     def tableau_pos(self):
         """
@@ -937,7 +937,7 @@ class Neg(Formula):
     def subst(self, u, t):
         return Neg(self.phi.subst(u, t))
 
-    def denot(self, m, v=None, w=None):
+    def denot(self, m, g=None, w=None):
         """
         In CL, the denotation of a negated formula Neg(phi) is true iff phi is false.
 
@@ -945,9 +945,9 @@ class Neg(Formula):
 
         """
         if not isinstance(m, KripkeStructure):  # CL
-            return not self.phi.denot(m, v, w)
+            return not self.phi.denot(m, g, w)
         else:  # IL
-            return True not in [self.phi.denot(m, w_, v) for w_ in m.future(w)]
+            return True not in [self.phi.denot(m, g, w_) for w_ in m.future(w)]
 
     def tableau_pos(self):
         """
@@ -1018,11 +1018,11 @@ class Conj(Formula):
     def subst(self, u, t):
         return Conj(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, v=None, w=None):
+    def denot(self, m, g=None, w=None):
         """
         The denotation of a conjoined formula Con(phi,psi) is true iff phi is true and psi is true.
         """
-        return self.phi.denot(m, v, w) and self.psi.denot(m, v, w)
+        return self.phi.denot(m, g, w) and self.psi.denot(m, g, w)
 
     def tableau_pos(self):
         """
@@ -1085,11 +1085,11 @@ class Disj(Formula):
     def subst(self, u, t):
         return Disj(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, v=None, w=None):
+    def denot(self, m, g=None, w=None):
         """
         The denotation of a conjoined formula Disj(phi,psi) is true iff phi is true or psi is true.
         """
-        return self.phi.denot(m, v, w) or self.psi.denot(m, v, w)
+        return self.phi.denot(m, g, w) or self.psi.denot(m, g, w)
 
     def tableau_pos(self):
         """
@@ -1153,7 +1153,7 @@ class Imp(Formula):
     def subst(self, u, t):
         return Imp(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, v=None, w=None):
+    def denot(self, m, g=None, w=None):
         """
         In CL, the denotation of an implicational formula Imp(phi,psi) is true iff phi is false or psi is true.
 
@@ -1161,9 +1161,9 @@ class Imp(Formula):
         at all subsequent states k' >= k, either phi is false or psi is true at k'.
         """
         if not isinstance(self, KripkeStructure):  # CL
-            return not self.phi.denot(m, v, w) or self.psi.denot(m, v, w)
+            return not self.phi.denot(m, g, w) or self.psi.denot(m, g, w)
         else:  # IL
-            return False not in [(not self.phi.denot(m, w_, v) or self.psi.denot(m, w_, v)) for w_ in m.future(w)]
+            return False not in [(not self.phi.denot(m, g, w_) or self.psi.denot(m, g, w_)) for w_ in m.future(w)]
 
     def tableau_pos(self):
         """
@@ -1233,7 +1233,7 @@ class Biimp(Formula):
     def subst(self, u, t):
         return Biimp(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, m, v=None, w=None):
+    def denot(self, m, g=None, w=None):
         """
         In CL, the denotation of an biimplicational formula Biimp(phi,psi) is true iff
         phi and psi have the same truth value.
@@ -1242,9 +1242,9 @@ class Biimp(Formula):
         at all subsequent states k' >= k, phi and psi have the same truth value.
         """
         if not isinstance(m, KripkeStructure):  # CL
-            return self.phi.denot(m, v, w) == self.psi.denot(m, v, w)
+            return self.phi.denot(m, g, w) == self.psi.denot(m, g, w)
         else:  # IL
-            return False not in [(self.phi.denot(m, w_, v) == self.psi.denot(m, w_, v)) for w_ in m.future(w)]
+            return False not in [(self.phi.denot(m, g, w_) == self.psi.denot(m, g, w_)) for w_ in m.future(w)]
 
     def tableau_pos(self):
         """
@@ -1315,7 +1315,7 @@ class Exists(Formula):
         else:
             return Exists(self.u, self.phi.subst(u, t))
 
-    def denot(self, m, v=None, w=None):
+    def denot(self, m, g=None, w=None):
         """
         The denotation of an existentially quantified formula Exists(x, phi) is true
         iff phi is true under at least one x-variant of v.
@@ -1327,7 +1327,7 @@ class Exists(Formula):
 
         # short version
         if not verbose:
-            return any([self.phi.denot(m, {**v, self.u.u: d_}) for d_ in d])
+            return any([self.phi.denot(m, {**g, self.u.u: d_}) for d_ in d])
 
         # long version
         global depth
@@ -1336,13 +1336,13 @@ class Exists(Formula):
         # iterate through the individuals in the domain
         for d_ in sorted(d):
 
-            # compute the x-variant v' of v
-            v_ = v  # v' is just like v, except...
-            v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
+            # compute the x-variant g' of g
+            g_ = g  # g' is just like g, except...
+            g_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
 
             # check whether the current x-variant under consideration makes phi true
             print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_) + " ...")
-            witness = self.phi.denot(m, v_, w)
+            witness = self.phi.denot(m, g_, w)
 
             # if yes, we found a witness, the existential statement is true and we can stop checking (return)
             if witness:
@@ -1422,7 +1422,7 @@ class Forall(Formula):
         else:
             return Forall(self.u, self.phi.subst(u, t))
 
-    def denot(self, m, v=None, w=None):
+    def denot(self, m, g=None, w=None):
         """
         In CL, the denotation of universally quantified formula Forall(x, phi) is true iff
         phi is true under all x-variants of v.
@@ -1449,12 +1449,12 @@ class Forall(Formula):
             for d_ in sorted(d):
 
                 # compute the x-variant v' of v
-                v_ = v  # v' is just like v, except...
-                v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
+                g_ = g  # g' is just like g, except...
+                g_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
 
                 # check whether the current x-variant under consideration makes phi true
                 print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_) + " ...")
-                witness = self.phi.denot(m, v_, w)
+                witness = self.phi.denot(m, g_, w)
 
                 # if yes, everything is fine until now, we do nothing and go check the next one (continue)
                 if witness:
@@ -1475,7 +1475,7 @@ class Forall(Formula):
 
             # short version
             if not verbose:
-                return all([all([self.phi.denot(m, w_, {**v, self.u.u: d_}) for d_ in m.d[w_]]) for w_ in m.future(w)])
+                return all([all([self.phi.denot(m, w_, {**g, self.u.u: d_}) for d_ in m.d[w_]]) for w_ in m.future(w)])
 
             # long version
 
@@ -1488,13 +1488,13 @@ class Forall(Formula):
                 for d_ in d:
 
                     # compute the x-variant v' of v
-                    v_ = v  # v' is just like v, except...
+                    v_ = g  # v' is just like v, except...
                     v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
 
                     # check whether the current indiv. d under consideration makes phi true at k'
                     print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(
                         d_) + " ...")
-                    witness = self.phi.denot(m, w_, v_)
+                    witness = self.phi.denot(m, g, w_)
 
                     # if yes, everything is fine until now, we do nothing and go check the next one (continue)
                     if witness:
@@ -1516,23 +1516,23 @@ class Forall(Formula):
 
     def tableau_pos(self):
         """
-        CL:       IL:
+        CL:*      IL:**
          ∀vφ         σ ∀vφ
           |            |
         φ[v/c]    σ.n φ[v/c]
-                  where σ.n is old
-        where c is arbitrary
+        * where c is arbitrary
+        ** where c is arbitrary and σ.n is old
         """
         return [("∀", gamma, (self.phi, self.u))]
 
     def tableau_neg(self):
         """
-        CL:        IL:
+        CL:*       IL:**
         ¬∀vφ          σ ¬∀vφ
           |             |
         ¬φ[x/c]    σ.n ¬φ[x/c]
-                   where σ.n is new
-        where c is new
+        * where c is new
+        ** where c is new and σ.n is new
         """
         return [("¬∀", delta, (Neg(self.phi), self.u))]
 
@@ -1646,9 +1646,9 @@ class Poss(Formula):
         """
         rules = [("¬", nu, Neg(self.phi))]
         if frame in ["D"]:
-            rules.append(("¬D", "epsilon", ([Neg(Nec(self.phi))])))
+            rules.append(("¬D", "alpha", ([Neg(Nec(self.phi))])))
         if frame in ["T", "B", "S4", "S5"]:
-            rules.append(("¬T", "epsilon", ([Neg(self.phi)])))
+            rules.append(("¬T", "alpha", ([Neg(self.phi)])))
         if frame in ["B"]:
             rules.append(("¬B", "zeta", ([Neg(self.phi)])))
         if frame in ["K4", "S4", "S5"]:
@@ -1756,9 +1756,9 @@ class Nec(Formula):
         """
         rules = [("◻", nu, self.phi)]
         if frame in ["D"]:
-            rules.append(("D", "epsilon", ([Poss(self.phi)])))
+            rules.append(("D", "alpha", ([Poss(self.phi)])))
         if frame in ["T", "B", "S4", "S5"]:
-            rules.append(("T", "epsilon", ([self.phi])))
+            rules.append(("T", "alpha", ([self.phi])))
         if frame in ["B"]:
             rules.append(("B", "zeta", ([self.phi])))
         if frame in ["K4", "S4", "S5"]:

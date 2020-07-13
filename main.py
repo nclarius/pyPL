@@ -14,7 +14,7 @@ from functools import reduce
 
 
 # settings
-denots = [8, 9, 10]  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
+denots = [8, 9, 10, 11, 12, 13]  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
 tableaus = [1, 2]  # set here which tableaus to include in the output (see def.s in fnc. 'compute_denots')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
@@ -75,7 +75,7 @@ def compute_denots():
             if nr > 3:
                 print()
                 print("⟦" + str(e) + "⟧^M1 =")
-                print(e.denotV(m1))
+                print(e.denotG(m1))
                 depth = 0
 
 
@@ -231,7 +231,7 @@ def compute_denots():
             if 4 <= nr <= 16:
                 print()
                 print("⟦" + str(e) + "⟧^M4 =")
-                print(e.denotV(m4))
+                print(e.denotG(m4))
                 depth = 0
             # if nr == 14:
             #     print(e.freevars())
@@ -405,7 +405,7 @@ def compute_denots():
         for nr, e in e9.items():
             print()
             print("⟦" + str(e) + "⟧^M9 =")
-            print(e.denotV(m9a))
+            print(e.denotG(m9a))
             depth = 0
 
         print()
@@ -421,7 +421,7 @@ def compute_denots():
         for nr, e in e9.items():
             print()
             print("⟦" + str(e) + "⟧^M9' =")
-            print(e.denotV(m9b))
+            print(e.denotG(m9b))
             depth = 0
 
     if 10 in denots:
@@ -452,7 +452,7 @@ def compute_denots():
         for nr, e in e10.items():
             print()
             print("⟦" + str(e) + "⟧^M10 =")
-            print(e.denotV(m10))
+            print(e.denotG(m10))
             depth = 0
 
         print()
@@ -490,11 +490,11 @@ def compute_denots():
             depth = 0
             print()
             print("[[" + str(e) + "]]^M11,k0 =")
-            print(e.denotV(m11, "k0"))
+            print(e.denotG(m11, "k0"))
             depth = 0
             print()
-            print("[[" + str(e) + "]]^M10,k1 =")
-            print(e.denotV(m10, "k1"))
+            print("[[" + str(e) + "]]^M11,k1 =")
+            print(e.denotG(m11, "k1"))
             depth = 0
     
     if 12 in denots:
@@ -505,11 +505,10 @@ def compute_denots():
     
         k12 = {"k0", "k1", "k12"}
         r12 = {("k0", "k1"), ("k0", "k12")}
-        d12 = {}
         v12 = {"k0": {"p": False, "q": False},
                "k1": {"p": True, "q": False},
                "k12": {"p": False, "q": True}}
-        m12 = KripkePropStructure("M12", k12, r12, d12, v12)
+        m12 = KripkePropStructure("M12", k12, r12, v12)
     
         print(m12)
         print(m12.r)
@@ -557,18 +556,18 @@ def compute_denots():
                 print(e.denotK(m13))
                 depth = 0
             elif nr in [2]:
-                print("[[" + str(e) + "]]^M13,k13 =")
-                print(e.denotV(m13, "k13"))
+                print("[[" + str(e) + "]]^M13,k3 =")
+                print(e.denotG(m13, "k3"))
                 depth = 0
                 print("[[" + str(e) + "]]^M13,k1 =")
-                print(e.denotV(m13, "k1"))
+                print(e.denotG(m13, "k1"))
                 depth = 0
                 print("[[" + str(e) + "]]^M13,k0 =")
-                print(e.denotV(m13, "k0"))
+                print(e.denotG(m13, "k0"))
                 depth = 0
             elif nr in [13, 4, 5]:
                 print("[[" + str(e) + "]]^M13,k0 =")
-                print(e.denotV(m13, "k0"))
+                print(e.denotG(m13, "k0"))
                 depth = 0
     
         #############################
