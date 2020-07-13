@@ -13,6 +13,17 @@ I am happy to learn about any bugs or improvement suggestions.
 
 Features
 --------
+```
+ |                 classical                 |               intutionistic               |
+ |    propositional    |    predicational    |    propositional    |    predicational    |
+ | non-modal |  modal  | non-modal |  modal  | non-modal |  modal  | non-modal |  modal  |  
+ |           |         |           | CD | VD |           |         |           | CD | VD |
+ | MC |  MG  | MC | MG | MC |  MG  | MC | MG | MC |  MG  | MC | MG | MC |  MG  | MC | MG |
+ |-------------------------------------------|-------------------------------------------|
+ | 🗸  |  🗸  |  🗸 | 🗸  | 🗸  |  🗸  | 🗸  | 🗸 |  🗸  |  ✗  |  ✗ | ✗  | 🗸  |  ✗   | ✗  | ✗  |
+(MC = model checking, MG = model generation + tableaux; CD = constant domains, MG = varying domains; 
+ modal logic for K frames)
+```
  - evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
    relative to structures, variable assignments and possible worlds
  - specification of expressions
