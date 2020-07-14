@@ -379,6 +379,7 @@ class Pred(Expr):
 
 
 depth = 0  # keep track of the level of nesting
+# todo depth has to be reset manually after each call of `denot`
 
 
 class Formula(Expr):
@@ -388,6 +389,8 @@ class Formula(Expr):
 
     @method denotV: the truth value of a formula relative to a structure m (without reference to a particular assignment)
     """
+    # todo efficiency: assignment functions have to be specified on all variables of the language;
+    #  the domain is not restricted expression-wise to those variables that actually occur in the expression
     def subst(self, u, t):
         """
         @rtype: Formula

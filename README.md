@@ -1,6 +1,8 @@
 A naive model checker and -generator with analytic tableaux for some combinations of classical and intuitionistic, non-modal and modal, propositional and first-order logic.  
-This tool can compute the denotation (truth value) of a given logical expression in a given structure, and an analytic tableau with associated (counter) models for a given inference.   
-**Tableau computation and model generation currently under construction.**  
+This tool can compute  
+- the denotation (truth value) of a given logical expression in a given structure,  
+- an analytic tableau with associated (counter) models for a given inference.   
+**Tableau computation and model generation are currently under construction.**  
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
 License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/). 
 
@@ -20,9 +22,10 @@ Features
  |           |         |           | CD | VD |           |         |           | CD | VD |
  | MC |  MG  | MC | MG | MC |  MG  | MC | MG | MC |  MG  | MC | MG | MC |  MG  | MC | MG |
  |-------------------------------------------|-------------------------------------------|
- | 🗸  |  🗸  |  🗸 | 🗸  | 🗸  |  🗸  | 🗸  | 🗸 |  🗸  |  ✗  |  ✗ | ✗  | 🗸  |  ✗   | ✗  | ✗  |
-(MC = model checking, MG = model generation + tableaux; CD = constant domains, MG = varying domains; 
- modal logic for K frames)
+ | 🗸  |  🗸  |  🗸 | 🗸  | 🗸  |  🗸  | 🗸  | 🗸 |  🗸  |  ✗  |  ✗ | ✗  |  🗸 |  ✗   | ✗  | ✗  |
+MC = model checking, MG = model generation + tableau calculus; 
+CD = with constant domains, VD = with varying domains;  
+modal MG only for K frames.
 ```
  - evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
    relative to structures, variable assignments and possible worlds
@@ -44,28 +47,29 @@ Features
 Restrictions
 ------------
  - works only on structures with finite domains and languages with a finite set of propositional or individual variables
- - search strategy for tableaus is sometimes inefficient
- - no modal logic available for intuitionistic logic
+ - no model generation and modal logic available for intuitionistic logic
 
 Known issues
 ------------
  - global variables are bad
- - depth has to be reset manually after each call of `denot`
- - efficiency: assignment functions have to be specified on all variables of the language;
-   the domain is not restricted expression-wise to those variables that actually occur in the expression
+ - search strategy for tableaus is sometimes inefficient
+ - tableaus and modal generation non-K frames not working properly
 
 Wish list
 ---------
- - print out detailed derivation rather than just final result of evaluation, possibly with LaTeX mode
- - more user-friendly input:
+ - more user-friendly input and output:
    - expression parser instead of the cumbersome prefix notation
    - interactive mode/API instead of need to edit source code in order to set up input
- - model generation?
+   - LaTeX output
+ - in model checking, print out detailed derivation rather than just final result of evaluation
+- more modal logics
+- model generation for intuitionistic logic
+- modal logic for intuitionistic logic
 
 Usage notes
 -----------
 
-(Usage instructions currently only apply to the model checking feature, as the tableau and model generation program is still under construction.)  
+(Usage instructions currently only apply to the model checking feature.)
 
 ### Try it out
 **You can try this tool out [here](https://trinket.io/python3/757871dd18).**  
