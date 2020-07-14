@@ -1,8 +1,10 @@
-A naive model checker and -generator with analytic tableaux for some combinations of classical and intuitionistic, non-modal and modal, propositional and first-order logic.  
+A naive model checker, model generator and theorem prover   
+for some combinations of classical and intuitionistic, non-modal and modal, propositional and first-order logic.  
+
 This tool can compute  
 - the denotation (truth value) of a given logical expression in a given structure,  
-- an analytic tableau with associated (counter) models for a given inference.   
-**Tableau computation and model generation are currently under construction.**  
+- an analytic tableau with associated (counter) models for a given inference (**currently under construction.**).   
+
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
 License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/). 
 
