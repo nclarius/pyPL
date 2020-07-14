@@ -11,14 +11,13 @@ from expr import *
 from structure import *
 
 from typing import List, Dict, Set, Tuple
-import itertools
 from itertools import chain
 
-# todo make settings available for expression class
-# todo better model generation
+
+# todo documentation
+# todo improve model generation
 # todo make non-K modal logics work
 # todo tableaux for IL
-# todo LaTeX for tableau trees and structures
 
 
 class Tableau(object):
@@ -28,7 +27,7 @@ class Tableau(object):
 
     def __init__(self, conclusion=None, premises=[], validity=True,
                  classical=True, propositional=False, modal=False, vardomain=False, frame="K"):
-        # todo documentation
+        # todo make settings available to expression module
         # settings
         self.validity = validity
         # todo check consistency of settings
@@ -47,6 +46,7 @@ class Tableau(object):
                 self.root.set_applicable(self.root, rule[0], rule[1])
         self.premises = [self.root.leaves()[0].add_child((i + 2, sig, premise, "(A)"))
                          for i, premise in (enumerate(premises) if conclusion else enumerate(premises[1:]))]
+        # todo formulas with free variables?
 
     def __str__(self):
         """
@@ -200,12 +200,13 @@ class Tableau(object):
 
         @rtype: list[tuple[node,node]]
         """
-        #                   (0: target, 1: source, 2: rule, 3: rule_type, 4: params, 5: delayed)
+        # todo improve search strategy
+
+        #                   (0: target, 1: source, 2: rule, 3: rule type, 4: intsts, 5: delayed)
         appl = list(chain(*[[(leaf, *appl)
                              for appl in leaf.applicable]
                             for leaf in self.root.leaves() if leaf.applicable]))
         # print(appl)
-        # todo improve prioritization
         rule_order = {r: i for (i, r) in enumerate(["alpha", "beta", "delta", "gamma", "xi", "mu", "nu"])}
         # enumerate the nodes level-order so nodes can be prioritized by position in the tree
         pos = {node: i for (i, node) in enumerate(self.root.nodes())}
@@ -214,11 +215,11 @@ class Tableau(object):
         #                    rule type,        num appls, src pos,  targ pos
         sort_v2 = lambda i: (rule_order[i[3]], len(i[4]), pos[i[1]], pos[i[0]])
         appl_sorted = [itm for itm in sorted(appl, key=sort_v1)]
-        # reset delayed labels on applicable rules
-        self.root.reset_delayed()  # todo happens early enough?
         # print("applicable:")
         # print("\n".join([", ".join([str(itm[0].line), str(itm[1].line), itm[2], str(itm[4]), str(itm[5])])
         #                  for itm in appl_sorted]) + "\n")
+        # reset delayed labels on applicable rules
+        self.root.reset_delayed()  # todo happens early enough?
         return [itm[:3] for itm in appl_sorted]
 
     def closed(self) -> bool:
@@ -256,7 +257,6 @@ class Tableau(object):
         @return The models associated with the open branches the tableau.
         @rtype set[Structure]
         """
-        # todo minimal models
         res = []
         count = 0
         for leaf in self.root.leaves():
@@ -270,7 +270,7 @@ class Tableau(object):
 
                 if self.classical:  # classical logic
 
-                    if self.modal:  # clsasical modal logic
+                    if self.modal:  # classical modal logic
                         sigs = [tuple(node.sig) for node in branch]
                         # use w1, ..., wn as names for worlds instead of signatures
                         worlds = {sig: "w" + str(i) for (i, sig) in enumerate(sigs)}
@@ -279,7 +279,6 @@ class Tableau(object):
                         r = {(worlds[sig1], worlds[sig2]) for (sig1, sig2) in r_}
 
                     if self.propositional:  # classical propositional logic
-
                         if not self.modal:  # classical non-modal propositional logic
                             # atoms = all unnegated propositional variables
                             atoms = [node.fml.p for node in branch if isinstance(node.fml, Prop)]
@@ -289,6 +288,7 @@ class Tableau(object):
                             res.append(model)
 
                         else:  # classical modal propositional logic
+
                             # atoms = all unnegated propositional variables
                             atoms = {sig: [node.fml.p for node in branch if isinstance(node.fml, Prop) and node.sig == sig]
                                      for sig in sigs}
@@ -321,6 +321,7 @@ class Tableau(object):
                             res.append(model)
 
                         else:  # classical modal predicate logic
+                            # todo test
                             # atoms = all unnegated atomic predications
                             atoms = {sig: [(node.fml.pred, node.fml.terms) for node in branch
                                            if isinstance(node.fml, Atm) and node.sig == sig]
@@ -391,7 +392,7 @@ class Node(object):
         self.branch = (parent.branch if parent else []) + [self]
         self.children = []
         self.tableau = tableau
-        self.applicable = []  # (0: source, 1: rule, 2: rule_type, 3: params, 4. delayed)
+        self.applicable = []  # (0: source, 1: rule, 2: rule type, 3: insts, 4. delayed)
 
     def __str__(self):
         """
@@ -415,8 +416,6 @@ class Node(object):
         """
         String representation of the tree whose root is this node.
         """
-        # todo non-rotated visualization?
-
         # compute lengths of columns
         len_line = max([len(str(node.line)) for node in self.root().nodes()]) + 1
         len_sig = max([len(".".join([str(s) for s in node.sig])) for node in self.root().nodes() if node.sig]) + 1 \
@@ -705,7 +704,7 @@ class Node(object):
         """
         Expand the source node in this branch by extending the signature with a new signature.
         """
-        # todo not tested yet
+        # todo test more
         fml = args
         max_line = max([node.line for node in self.root().nodes() if node.line])
         line = max_line
@@ -738,7 +737,7 @@ class Node(object):
         """
         Expand the source node in this branch by extending the signature with an existing signature.
         """
-        # todo not tested yet
+        # todo test more
         fml = args
         max_line = max([node.line for node in self.root().nodes() if node.line])
         line = max_line
@@ -802,36 +801,81 @@ class Node(object):
         self.empty_applicable()
 
     def get_applicable(self, source, rule):
+        """
+        Get the specified applicable rule for this node.
+
+        @param source: the source node of the rule to retrieve
+        @type source: Node
+        @param rule: the name of the rule to retrieve
+        @type rule: str
+        @return the specified applicable rule: (source, rule, rule type, inst, delayed)
+        @rtype Tuple[Node,str,str,List[Any],bool]
+        """
         candidates = [tpl for tpl in self.applicable if tpl[0] == source and tpl[1] == rule]
         if candidates:
             return candidates[0]
 
-    def set_applicable(self, source, rule, rule_type, params=[], delayed=False):
+    def set_applicable(self, source, rule, rule_type, insts=[], delayed=False):
+        """
+        Set the specified applicable rule for this node.
+
+        @param source: the source node of the rule to set
+        @type source: Node
+        @param rule: the name of the rule to set
+        @type rule: str
+        @param rule_type: the type of the rule (alpha, beta, ...)
+        @type rule_type: str
+        @param insts: instantiation info on previous applications of the rule (parameters/signatures used, num appl.s)
+        @type insts: List[Any]
+        @param delayed: rule is currently not applicable but may become applicable at a later stage
+        @type delayed: bool
+        @return the specified applicable rule: (source, rule, rule type, insts, delayed)
+        @rtype Tuple[Node,str,str,List[Any],bool]
+        """
         self.remove_applicable(source, rule)
-        self.applicable.append((source, rule, rule_type, params, delayed))
+        self.applicable.append((source, rule, rule_type, insts, delayed))
 
     def remove_applicable(self, source, rule):
+        """
+        Remove the specified rule from the list of applicable rules for this node.
+
+        @param source: the source node of the rule to remove
+        @type source: Node
+        @param rule: the name of the rule to remove
+        @type rule: str
+        """
+        self.remove_applicable(source, rule)
         candidates = [tpl for tpl in self.applicable if tpl[0] == source and tpl[1] == rule]
         for candidate in candidates:
             self.applicable.remove(candidate)
 
     def empty_applicable(self):
+        """
+        Remove all items from the list of applicable rules for this node.
+        """
+        # todo doesn't always fire (?)
         self.applicable = []
 
-    def reset_delayed(self):  # todo doesn't work (?)
+    def reset_delayed(self):
+        """
+        Reset the 'delayed' label to 'False' for all nodes.
+        """
         # print("update applicable:")
         for node in self.nodes():
             # print(node)
             # print(node.applicable)
-            for (source, rule, rule_type, params, delayed) in node.applicable:
-                node.set_applicable(source, rule, rule_type, params, False)
+            for (source, rule, rule_type, insts, delayed) in node.applicable:
+                node.set_applicable(source, rule, rule_type, insts, False)
             # print("->")
             # print(node.applicable)
         # print()
 
     def closed(self):
         """
-        Check for a contradiction with this node.
+        Check for a contradiction with this node and i.a. add a respective label to the branch.
+
+        @return: True iff there is a contradiction in this node or between this node and some other node on the branch
+        @rtype bool
         """
         for node in self.branch:
             if self.fml.tableau_contradiction_pos(node.fml):
@@ -842,7 +886,11 @@ class Node(object):
 
     def open(self):
         """
-        Check if a branch is terminally open.
+        Check if a branch is terminally open and i.a. add a respective label to the branch.
+        A branch is terminally open if it has no undelayed unapplied or undelayed gamma rules.
+
+        @return: True if the branch is not closed and there are no more rules applicable
+        @rtype bool
         """
         if not (isinstance(self.fml, Closed) or isinstance(self.fml, Open) or isinstance(self.fml, Infinite)):
             # if the child has no undelayed unapplied or undelayed gamma rules, the branch is open
@@ -853,15 +901,17 @@ class Node(object):
 
     def infinite(self):
         """
-        Check if a branch is potentially infinite.
-
+        Check if a branch is potentially infinite and i.a. add a respective label to the branch.
         A branch is judged potentially infinite
         iff there have been more than twice as many constants introduced as there are symbols in the assumptions.
+
+        @return: True if the branch is potentially infinite
+        @rtype bool
         """
         # todo smarter implementation (check for loops in rule appls.)
         # simple alternatives:
         # - length of branch
-        # - more than 2 times as many distinct params as variables and constants in the assumptions?
+        # - more than 2 times as many distinct parameters as variables and constants in the assumptions?
         # - more than 4 times quantifier rank
         if sum([sum(len(appl[3]) for appl in node.applicable) for node in self.branch]) > \
                 2 * sum([len(node.fml) for node in self.branch if node.cite == "(A)"]):

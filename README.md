@@ -24,7 +24,7 @@ Features
  |           |         |           | CD | VD |           |         |           | CD | VD |
  | MC |  MG  | MC | MG | MC |  MG  | MC | MG | MC |  MG  | MC | MG | MC |  MG  | MC | MG |
  |-------------------------------------------|-------------------------------------------|
- | 🗸  |  🗸  |  🗸 | 🗸  | 🗸  |  🗸  | 🗸  | 🗸 |  🗸  |  ✗  |  ✗ | ✗  |  🗸 |  ✗   | ✗  | ✗  |
+ | 🗸  |  🗸  |  🗸 | 🗸  | 🗸  |  🗸  | 🗸  | 🗸  |  🗸 |  ✗  |  ✗ | ✗  |  🗸 |  ✗   | ✗  | ✗  |
 MC = model checking, MG = model generation + tableau calculus; 
 CD = with constant domains, VD = with varying domains;  
 modal MG only for K frames.
@@ -56,13 +56,13 @@ Known issues
 ------------
  - global variables are bad
  - search strategy for tableaus is sometimes inefficient
- - tableaus and modal generation non-K frames not working properly
+ - tableaus and modal generation for non-K frames not working properly
 
 Wish list
 ---------
  - more user-friendly input and output:
    - expression parser instead of the cumbersome prefix notation
-   - interactive mode/API instead of need to edit source code in order to set up input
+   - interactive mode/file input instead of need to edit source code in order to set up input
    - LaTeX output
  - in model checking, print out detailed derivation rather than just final result of evaluation
 - more modal logics
