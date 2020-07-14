@@ -29,8 +29,6 @@ MC = model checking, MG = model generation + tableau calculus;
 CD = with constant domains, VD = with varying domains;  
 modal MG only for K frames.
 ```
- - evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
-   relative to structures, variable assignments and possible worlds
  - accepts languages
    - of propositional logic
    - of first-order logic with zero-place predicates, function symbols and term equality
@@ -44,6 +42,8 @@ modal MG only for K frames.
     - of intuitionistic logic (Kripke structures with sets of states)
         - of PL with valuation function
         - of FOL with domain, interpretation function and variable assignments
+ - model checking: evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
+   relative to structures, variable assignments and possible worlds
  - analytic tableau proofs -- currently under construction
  - model generation -- currently under construction
 
