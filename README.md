@@ -3,7 +3,7 @@ for some combinations of classical and intuitionistic, non-modal and modal, prop
 
 This tool can compute  
 - the denotation (truth value) of a given logical expression in a given structure,  
-- an analytic tableau with associated (counter) models for a given inference (**currently under construction.**).   
+- an analytic tableau with associated (counter) models for a given inference (**currently under construction**).   
 
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
 License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/). 
