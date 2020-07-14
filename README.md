@@ -3,7 +3,7 @@ for some combinations of classical and intuitionistic, non-modal and modal, prop
 
 This tool can compute  
 - the denotation (truth value) of a given logical expression in a given structure,  
-- an analytic tableau with associated (counter) models for a given inference (**currently under construction.**).   
+- an analytic tableau with associated (counter) models for a given inference (**currently under construction**).   
 
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
 License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/). 
@@ -31,15 +31,16 @@ modal MG only for K frames.
 ```
  - evaluation of expressions (non-log. symbols, terms, open formulas, closed formulas)
    relative to structures, variable assignments and possible worlds
- - specification of expressions
-    - in a language of propositional logic (aka statement logic)
-    - in a language of first-order logic (aka predicate logic, quantifier logic)
-    - accepts languages with with zero-place predicates, function symbols, term equality and modal operators ◻, ◇
+ - accepts languages
+   - of propositional logic
+   - of first-order logic with zero-place predicates, function symbols and term equality
+   - with modal operators ◻, ◇
  - specification of structures (aka models, interpretations)
     - of classical logic
         - of PL with valuation function
+          - with and without possible worlds
         - of FOL with domain, interpretation function and variable assignments
-        - accepts non-modal structures, modal structures with constant domains and modal structures with varying domains
+          - without possible worlds, with possible worlds with constant domains and possible worlds with varying domains
     - of intuitionistic logic (Kripke structures with sets of states)
         - of PL with valuation function
         - of FOL with domain, interpretation function and variable assignments
