@@ -20,9 +20,12 @@ from itertools import chain
 # todo make non-K modal logics work
 # todo tableaux for IL
 
+debug = False
+
 
 rule_names = {"α": "alpha", "β": "beta", "γ": "gamma", "δ": "delta", "η": "eta", "θ": "theta",
               "μ": "mu", "ν": "nu", "π": "pi", "ξ": "xi", "χ": "chi", "ο": "omicron", "u": "ypsilon", "ω": "omega"}
+parameters = list("abcdefghijklmnopqrst")
 
 
 class Tableau(object):
@@ -240,10 +243,12 @@ class Tableau(object):
 
                         elif rule_type in ["η"]:
                             # the rule can only be applied to nodes and constants it has not already been applied with,
-                            # and only if there are constants in the branch yet to be instantiated
+                            # and only if there are constants in the branch yet to be instantiated;
+                            # except there are no constants at all, then it may be applied with an arbitrary parameter
                             if any([not any([node.inst[1] == c
                                              for node in branch if applied(node)])
-                                    for c in occurring]):
+                                    for c in occurring]) or \
+                                    not any(occurring):
                                 applicable.append((target, source, rule_name, rule_type, fmls, args))
 
                 elif rule_type in ["θ"]:
@@ -355,20 +360,25 @@ class Tableau(object):
         """
         Recursively expand all nodes in the tableau.
         """
-        global rule_names
         while applicable := self.applicable():
-            # print("applicable:")
-            # print("\n".join([", ".join([str(i), str(itm[0].line), str(itm[1].line), itm[2], str(itm[3]), str(itm[5])])
-            #                  for i, itm in enumerate(applicable)]) + "\n")
+            if debug:
+                print("applicable:")
+                print("\n".join([", ".join([str(i), str(itm[0].line), str(itm[1].line), itm[2], str(itm[3]), str(itm[5])])
+                                 for i, itm in enumerate(applicable)]))
             # get first applicable rule from prioritized list
             (target, source, rule_name, rule_type, fmls, args) = applicable[0]
             rule_func = getattr(self, "rule_" + rule_names[rule_type])
             # apply the rule
-            # input()
-            # print("expanding:")
-            # print(str(target), " with ", rule_name, " from ", str(source))
+            if debug:
+                input()
+                print("expanding:")
+                print(str(target), " with ", rule_name, " from ", str(source))
             rule_func(target, source, rule_name, fmls, args)
-            # print("--------")
+            if debug:
+                print()
+                print(self.root.treestr())
+                print("--------")
+                print()
 
     def rule_alpha(self, target, source, rule, fmls, args):
         """
@@ -416,7 +426,6 @@ class Tableau(object):
         used, occurring, indexed = args
         line = max([node.line for node in self.root.nodes() if node.line])
         sig = tuple([s for s in source.sig]) if source.sig else None
-        parameters = list("abcdefghijklmnopqrst")
 
         # find a constant to substitute
         usable = list(dict.fromkeys(occurring + parameters))
@@ -429,9 +438,11 @@ class Tableau(object):
                         "c" + str(len(used) + 1) + subscript)
         const = Const(const_symbol)
 
-        # add node
-        fml = phi.subst(var, const)
+        # compute formula
         inst = (str(var), str(const))
+        fml = phi.subst(var, const)
+
+        # add node
         target.add_child((line+1, sig, fml, rule, source, inst))
 
     def rule_delta(self, target, source, rule, fmls, args):
@@ -443,7 +454,6 @@ class Tableau(object):
         used, occurring, indexed = args
         line = max([node.line for node in self.root.nodes() if node.line])
         sig = tuple([s for s in source.sig]) if source.sig else None
-        parameters = list("abcdefghijklmnopqrst")
 
         # find a constant to substitute
         # for modal predicate logic with varying domains: add signature subscript to constant
@@ -455,9 +465,11 @@ class Tableau(object):
                         "c" + str(len(occurring) + 1) + subscript)
         const = Const(const_symbol)
 
-        # add node
-        fml = phi.subst(var, const)
+        # compute formula
         inst = (str(var), str(const))
+        fml = phi.subst(var, const)
+
+        # add node
         target.add_child((line+1, sig, fml, rule, source, inst))
 
     def rule_eta(self, target, source, rule, fmls, args):
@@ -481,9 +493,11 @@ class Tableau(object):
                         "c" + str(len(usable)+1) + subscript)
         const = Const(const_symbol)
 
-        # add node
-        fml = phi.subst(var, const)
+        # compute formula
         inst = (str(var), str(const))
+        fml = phi.subst(var, const)
+
+        # add node
         target.add_child((line+1, sig, fml, rule, source, inst))
 
     def rule_theta(self, target, source, rule, fmls, args):
@@ -495,7 +509,6 @@ class Tableau(object):
         used, occurring, indexed = args
         line = max([node.line for node in self.root.nodes() if node.line])
         sig = tuple([s for s in source.sig]) if source.sig else None
-        parameters = list("abcdefghijklmnopqrst")
 
         # find a constant to substitute
         usable = occurring + parameters
@@ -508,9 +521,11 @@ class Tableau(object):
                         "c" + str(len(usable)+1) + subscript)
         const = Const(const_symbol)
 
-        # add node (the rule branches on the source rather than the leaves)
-        fml = phi.subst(var, const)
+        # compute formula
         inst = (str(var), str(const))
+        fml = phi.subst(var, const)
+
+        # add node (the rule branches on the source rather than the leaves)
         target.add_child((line+1, sig, fml, rule, source, inst))
 
     def rule_mu(self, target, source, rule, fmls, args):
@@ -521,7 +536,6 @@ class Tableau(object):
         used, occurring, extensions = args
         line = max([node.line for node in self.root.nodes() if node.line])
 
-        # find a signature
         # choose a signature that does not already occur in this branch
         sig = None
         for i in range(1, 100):
@@ -546,7 +560,6 @@ class Tableau(object):
         max_line = max([node.line for node in self.root.nodes() if node.line])
         line = max_line
 
-        # find a signature
         # choose the first signature that already occurs in this branch but has not already been used with this rule
         sig = None
         for i in range(1, 100):
@@ -587,35 +600,66 @@ class Tableau(object):
         ξ
         Branch binary with a new signature.
         """
-        pass  # todo
+        used, occurring, extensions = args
+        line = max([node.line for node in self.root.nodes() if node.line])
+
+        # find a signature that does not already occur in this branch
+        sig = None
+        for i in range(1, 100):
+            if (sig_ := tuple([s for s in source.sig]) + (i,)) not in used:
+                sig = sig_
+                break
+        inst = (source.sig, sig)
+
+        # add left node
+        left = target.add_child((line := line+1, sig, fmls[0], rule, source, inst))
+
+        # add right node
+        right = target.add_child((line := line+1, sig, fmls[1], rule, source, inst))
 
     def rule_chi(self, target, source, rule, fmls, args):
         """
         χ
         Branch binary with an existing signature.
         """
-        pass  # todo
+        used, occurring, extensions = args
+        max_line = max([node.line for node in self.root.nodes() if node.line])
+        line = max_line
+
+        # choose the first signature that already occurs in this branch but has not already been used with this rule
+        sig = None
+        for i in range(1, 100):
+            if (sig_ := tuple([s for s in source.sig]) + (i,)) in extensions and sig_ not in used:
+                sig = sig_
+                break
+        inst = (source.sig, sig)
+
+        # add left node
+        left = target.add_child((line := line+1, sig, fmls[0], rule, source, inst))
+
+        # add right node
+        right = target.add_child((line := line+1, sig, fmls[1], rule, source, inst))
 
     def rule_omicron(self, target, source, rule, fmls, args):
         """
         ο
-        Branch binary with an existing signature and an arbitrary constant.
+        Branch unary with an existing signature and an arbitrary constant.
         """
-        pass  # todo
+        pass  # todo implement omicron rule
 
     def rule_upsilon(self, target, source, rule, fmls, args):
         """
         υ
-        Branch binary with a new signature and a new constant.
+        Branch unary with a new signature and a new constant.
         """
-        pass  # todo
+        pass  # todo implement upsilon rule
 
     def rule_omega(self, target, source, rule, fmls, args):
         """
         ω
         Branch unary with an existing signature and an existing constant.
         """
-        pass  # todo
+        pass  # todo implement omega rule
 
     def closed(self) -> bool:
         """
@@ -652,6 +696,7 @@ class Tableau(object):
         @return The models associated with the open branches the tableau.
         @rtype set[Structure]
         """
+        # todo let user query for more models after minimal ones have been found?
         res = []
         count = 0
         for leaf in self.root.leaves():
@@ -934,7 +979,7 @@ class Node(object):
 
     def rules(self, mode):
         return self.fml.tableau_pos(mode) if self.fml.tableau_pos(mode) else dict()
-    
+
     def closed(self):
         """
         Check for a contradiction with this node and i.a. add a respective label to the branch.
@@ -992,92 +1037,123 @@ class Node(object):
 if __name__ == "__main__":
     pass
 
-    # fml1 = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
-    # tab1 = Tableau(fml1, propositional=True)
-    # print(tab1)
+    fml = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
+    tab = Tableau(fml, propositional=True)
+    print(tab)
+
+    fml = Conj(Imp(Prop("p"), Prop("q")), Prop("r"))
+    tab = Tableau(fml, validity=True, propositional=True)
+    print(tab)
+
+    # fml1 = Imp(Prop("p"), Prop("q"))
+    # fml2 = Imp(Prop("q"), Prop("r"))
+    # fml = Imp(Prop("p"), Prop("r"))
+    # tab = Tableau(fml, premises=[fml1, fml2], propositional=True)
+    # print(tab)
+
+    # fml1 = Atm(Pred("P"), (Const("a"), Const("a")))
+    # fml2 = Neg(Eq(Const("a"), Const("a")))
+    # tab = Tableau(premises=[fml1, fml2], validity=False)
+    # print(tab)
     #
-    # fml2a = Imp(Prop("p"), Prop("q"))
-    # fml2b = Imp(Prop("q"), Prop("r"))
-    # fml2 = Imp(Prop("p"), Prop("r"))
-    # tab2 = Tableau(fml2, premises=[fml2a, fml2b], propositional=True)
-    # print(tab2)
-    #
-    # fml3 = Neg(Conj(Imp(Prop("p"), Prop("q")), Prop("r")))
-    # tab3 = Tableau(fml3, validity=False, propositional=True)
-    # print(tab3)
-    #
-    # fml4a = Atm(Pred("P"), (Const("a"), Const("a")))
-    # fml4b = Neg(Eq(Const("a"), Const("a")))
-    # tab4 = Tableau(premises=[fml4a, fml4b], validity=False)
-    # print(tab4)
-    # #
-    # fml5a = Imp(Atm(Pred("P"), (Const("a"), Const("b"))), Atm(Pred("Q"), (Const("a"), Const("c"))))
-    # fml5 = Atm(Pred("R"), (Const("a"), Const("a")))
-    # tab5 = Tableau(fml5, premises=[fml5a])
-    # print(tab5)
-    #
-    # fml6 = Biimp(Forall(Var("x"), Atm(Pred("P"), (Var("x"),))), Neg(Exists(Var("x"), Neg(Atm(Pred("P"), (Var("x"),))))))
-    # tab6 = Tableau(fml6)
-    # print(tab6)
-    #
-    # fml7a = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # fml7 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # tab7 = Tableau(fml7, premises=[fml7a])
-    # print(tab7)
-    #
-    # fml8a = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+    # fml1 = Imp(Atm(Pred("P"), (Const("a"), Const("b"))), Atm(Pred("Q"), (Const("a"), Const("c"))))
+    # fml = Atm(Pred("R"), (Const("a"), Const("a")))
+    # tab = Tableau(fml, premises=[fml1])
+    # print(tab)
+
+    # fml = Biimp(Forall(Var("x"), Atm(Pred("P"), (Var("x"),))), Neg(Exists(Var("x"), Neg(Atm(Pred("P"), (Var("x"),))))))
+    # tab = Tableau(fml)
+    # print(tab)
+
+    fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    fml = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    tab = Tableau(fml, premises=[fml1])
+    print(tab)
+
+    # fml1 = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
     #                               Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
     #                                                    Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    # fml8 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+    # fml = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
     #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
     #                                                   Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    # tab8 = Tableau(fml8, premises=[fml8a])
-    # print(tab8)
-    #
-    # fml9a = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # fml9 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # tab9 = Tableau(fml9, premises=[fml9a])
-    # print(tab9)
-    #
-    # fml10a = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+    # tab = Tableau(fml, preises=[fml1])
+    # print(tab)
+
+    fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    fml = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    tab = Tableau(fml, premises=[fml1])
+    print(tab)
+
+    # fml1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
     #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
     #                                                   Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    # fml10 = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+    # fml = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
     #                               Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
     #                                                    Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    # tab10 = Tableau(fml10, premises=[fml10a])
-    # print(tab10)
-    # print(len(tab10))
-    #
-    # fml11 = Biimp(Nec(Prop("p")), Neg(Poss(Neg(Prop("p")))))
-    # tab11 = Tableau(fml11, propositional=True, modal=True)
-    # print(tab11)
-    #
-    # fml12a = Nec(Prop("p"))
-    # fml12 = Poss(Prop("p"))
-    # tab12 = Tableau(fml12, premises=[fml12a], propositional=True, modal=True)
-    # print(tab12)
-    #
-    # fml13a = Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),))))
-    # fml13 = Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),))))
-    # tab13 = Tableau(fml13, premises=[fml13a], modal=True)
-    # print(tab13)
-    #
+    # tab = Tableau(fml, premises=[fml1])
+    # print(tab)
+    # print(len(tab))
+
+    # fml = Biimp(Nec(Prop("p")), Neg(Poss(Neg(Prop("p")))))
+    # tab = Tableau(fml, propositional=True, modal=True)
+    # print(tab)
+
+    fml1 = Nec(Prop("p"))
+    fml = Poss(Prop("p"))
+    tab = Tableau(fml, premises=[fml1], propositional=True, modal=True)
+    print(tab)
+
+    fml1 = Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),))))
+    fml = Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),))))
+    tab = Tableau(fml, premises=[fml1], modal=True)
+    print(tab)
+
     # fml = Biimp(Forall(Var("x"), Forall(Var("y"), Atm(Pred("P"), (Var("x"), Var("y"))))),
     #             Forall(Var("y"), Forall(Var("x"), Atm(Pred("P"), (Var("y"), Var("x"))))))
     # tab = Tableau(fml)
     # print(tab)
-    #
-    ax1 = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)), Atm(Pred("human"), (Var("x"),))))
-    ax2 = Forall(Var("x"), Imp(Atm(Pred("book"), (Var("x"),)), Atm(Pred("object"), (Var("x"),))))
-    ax3 = Forall(Var("x"), Biimp(Atm(Pred("human"), (Var("x"),)), Neg(Atm(Pred("object"), (Var("x"),)))))
-    fml = Exists(Var("x"), Conj(Atm(Pred("student"), (Var("x"),)),
-                                Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
-                                                      Atm(Pred("read"), (Var("x"), Var("y")))))))
-    tab = Tableau(fml, axioms=[ax1, ax2, ax3], validity=False)
+
+    fml = Exists(Var("x"), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y")))))
+    tab = Tableau(fml, validity=False)
     print(tab)
 
-    # fml = Exists(Var("x"), Exists(Var("y"),
-    #                               Conj(Neg(Eq(Var("x"), (Var("y")))), Atm(Pred("love"), (Var("x"), Var("y"))))))
-    # tab = Tableau(fml, validity=False)
+    fml = Exists(Var("x"), Exists(Var("y"),
+                                  Conj(Neg(Eq(Var("x"), (Var("y")))), Atm(Pred("love"), (Var("x"), Var("y"))))))
+    tab = Tableau(fml, validity=False)
+    print(tab)
+
+    fml = Forall(Var("x"), Conj(Atm(Pred("student"), (Var("x"),)),
+                                Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
+                                                      Atm(Pred("read"), (Var("x"), Var("y")))))))
+    fml1 = Exists(Var("x"), Atm(Pred("student"), (Var("x"),)))
+    tab = Tableau(fml, premises=[fml1], validity=False)
+    print(tab)
+
+    ax1 = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)), Atm(Pred("human"), (Var("x"),))))
+    ax2 = Forall(Var("x"), Imp(Atm(Pred("book"), (Var("x"),)), Atm(Pred("object"), (Var("x"),))))
+    ax3 = Forall(Var("x"), Imp(Atm(Pred("human"), (Var("x"),)), Neg(Atm(Pred("object"), (Var("x"),)))))
+    ax4 = Forall(Var("x"), Imp(Atm(Pred("object"), (Var("x"),)), Neg(Atm(Pred("human"), (Var("x"),)))))
+    prem1 = Atm(Pred("student"), (Const("m"),))
+    prem2 = Atm(Pred("student"), (Const("p"),))
+    fml = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)),
+                               Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
+                                                     Atm(Pred("read"), (Var("x"), Var("y")))))))
+    tab = Tableau(fml, premises=[prem1, prem2], axioms=[ax1, ax2, ax3, ax4], validity=False)
+    print(tab)
+
+    # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("know"), (Var("x"), Var("y")))))
+    # fml2 = Neg(Exists(Var("y"), Forall(Var("x"), Atm(Pred("know"), (Var("x"), Var("y"))))))
+    # tab = Tableau(None, premises=[fml1, fml2], validity=False)
+    # print(tab)
+
+    # ax1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)), Neg(Atm(Pred("lid"), (Var("x"),)))))
+    # ax2 = Forall(Var("x"), Imp(Atm(Pred("lid"), (Var("x"),)), Neg(Atm(Pred("tupperbox"), (Var("x"),)))))
+    # fml1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+    #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+    #                                                   Atm(Pred("fit"), (Var("x"), Var("y")))))))
+    # fml2 = Neg(Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+    #                             Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+    #                                                    Atm(Pred("fit"), (Var("x"), Var("y"))))))))
+    # fml3 = Exists(Var("x"), Atm(Pred("tupperbox"), (Var("x"),)))
+    # tab = Tableau(None, premises=[fml1, fml2, fml3], axioms=[ax1, ax2], validity=False)
     # print(tab)

@@ -981,11 +981,11 @@ class Neg(Formula):
                     σ.n ¬φ
                     where σ.n is old
         """
-        if mode["classical"]:
-            # If the negation does not occur under another neg., apply the negative tableau rule on the negative formula.
-            return self.phi.tableau_neg(mode)
-        else:
-            return {"¬": ("ν", [self])}
+        # If the negation does not occur under another neg., apply the negative tableau rule on the negative formula.
+        rules = self.phi.tableau_neg(mode)
+        if not mode["classical"]:
+            rules["¬"] = ("ν", [self])
+        return rules
 
     def tableau_neg(self, mode):
         """
