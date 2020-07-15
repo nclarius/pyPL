@@ -30,7 +30,7 @@ class Tableau(object):
     A tableau tree.
     """
 
-    def __init__(self, conclusion=None, premises=[], validity=True,
+    def __init__(self, conclusion=None, premises=[], axioms=[], validity=True,
                  classical=True, propositional=False, modal=False, vardomains=False, frame="K"):
         # settings
         # todo nicer specification of settings?
@@ -55,6 +55,9 @@ class Tableau(object):
         self.root = Node(None, line, sig, fml, rule, source, insts)
         self.premises = [self.root.leaves()[0].add_child((i + 2, sig, premise, rule, source, insts))
                          for i, premise in (enumerate(premises) if conclusion else enumerate(premises[1:]))]
+        max_line = max([node.line for node in self.root.nodes() if node.line])
+        self.axioms = [self.root.leaves()[0].add_child((i + max_line + 1, sig, axiom, "Ax", source, insts))
+                       for i, axiom in enumerate(axioms)]
         # todo formulas with free variables?
 
     def __str__(self):
@@ -76,10 +79,11 @@ class Tableau(object):
                ".\n\n"
         if self.mode["validity"]:
             res += "Tableau for " + \
-                   ", ".join([str(premise.fml) for premise in self.premises]) + " ⊨ " + str(self.root.fml.phi) + ":\n\n"
+                   ", ".join([str(premise.fml) for premise in self.axioms + self.premises]) + \
+                   " ⊨ " + str(self.root.fml.phi) + ":\n\n"
         else:
             res += "Tableau for " + \
-                   ", ".join([str(node.fml) for node in [self.root] + self.premises]) + " ⊭ ⊥:\n\n"
+                   ", ".join([str(node.fml) for node in [self.root] + self.premises + self.axioms]) + " ⊭ ⊥:\n\n"
 
         # recursively apply the rules
         self.expand()
@@ -692,13 +696,13 @@ class Tableau(object):
                     else:  # classical predicate logic
                         # predicates = all predicates occurring in the conclusion and premises
                         constants = set(chain(self.root.fml.nonlogs()[0],
-                                              *[prem.fml.nonlogs()[0] for prem in self.premises]))
+                                              *[ass.fml.nonlogs()[0] for ass in [self.root] + self.premises]))
                         # todo show constants in interpret.?
                         funcsymbs = set(chain(self.root.fml.nonlogs()[1],
-                                              *[prem.fml.nonlogs()[1] for prem in self.premises]))
+                                              *[ass.fml.nonlogs()[1] for ass in [self.root] + self.premises]))
                         # todo take care of function symbols in domain and interpretation
                         predicates = set(chain(self.root.fml.nonlogs()[2],
-                                               *[prem.fml.nonlogs()[2] for prem in self.premises]))
+                                               *[ass.fml.nonlogs()[2] for ass in [self.root] + self.premises]))
 
                         if not self.mode["modal"]:  # classical non-modal predicate logic
                             # atoms = all unnegated atomic predications
@@ -753,6 +757,13 @@ class Tableau(object):
                         res.append(model)
 
                     else:  # intuitionistic predicate logic
+                        # predicates = all predicates occurring in the conclusion and premises
+                        constants = set(chain(self.root.fml.nonlogs()[0],
+                                              *[ass.fml.nonlogs()[0] for ass in [self.root] + self.premises]))
+                        funcsymbs = set(chain(self.root.fml.nonlogs()[1],
+                                              *[ass.fml.nonlogs()[1] for ass in [self.root] + self.premises]))
+                        predicates = set(chain(self.root.fml.nonlogs()[2],
+                                               *[ass.fml.nonlogs()[2] for ass in [self.root] + self.premises]))
                         # atoms = all unnegated atomic predications
                         atoms = {sig: [(node.fml.pred, node.fml.terms) for node in branch
                                        if isinstance(node.fml, Atm) and node.sig == sig]
@@ -802,15 +813,17 @@ class Node(object):
         str_sig = "{:<{len}}".format(".".join([str(s) for s in self.sig]) if self.sig else "", len=len_sig) \
             if len_sig else ""
         str_fml = "{:^{len}}".format(str(self.fml), len=len_fml)
-        str_cite = ""
-        if not (isinstance(self.fml, Open) or isinstance(self.fml, Infinite)):
+        if isinstance(self.fml, Open) or isinstance(self.fml, Infinite):
+            str_cite = ""
+        elif self.rule in ["A", "Ax"]:
+            str_cite = "(" + self.rule + ")"
+        else:
             str_rule = "{:>{len}}".format((str(self.rule) if self.rule else ""), len=len_rule)
             str_comma = ", " if self.rule and self.source else ""
             str_source = "{:>{len}}".format(str(self.source.line) if self.source else "", len=len_source)
             str_inst = ", " + "[" + str(self.inst[0]) + "/" + str(self.inst[1]) + "]" \
                 if self.inst and isinstance(self.inst[0], str) else ""
-            str_cite = "(" + str_rule + str_comma + str_source + str_inst + ")" \
-                if not self.rule == "A" else "(A)"
+            str_cite = "(" + str_rule + str_comma + str_source + str_inst + ")"
         # compute str
         return str_line + str_sig + str_fml + str_cite
 
@@ -1061,9 +1074,8 @@ if __name__ == "__main__":
     fml = Exists(Var("x"), Conj(Atm(Pred("student"), (Var("x"),)),
                                 Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
                                                       Atm(Pred("read"), (Var("x"), Var("y")))))))
-    tab = Tableau(fml, premises=[ax1, ax2, ax3], validity=False)
+    tab = Tableau(fml, axioms=[ax1, ax2, ax3], validity=False)
     print(tab)
-    print(len(tab))
 
     # fml = Exists(Var("x"), Exists(Var("y"),
     #                               Conj(Neg(Eq(Var("x"), (Var("y")))), Atm(Pred("love"), (Var("x"), Var("y"))))))
