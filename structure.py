@@ -188,7 +188,7 @@ class PropModalStructure(ModalStructure):
                "V : " + ", \n    ".join([str(w) + " ↦ \n" +
                             ", \n".join(["           " + str(p) + " ↦ " + str(tv)
                             for (p, tv) in sorted(self.v[w].items())])
-                        for w in sorted(self.w)])
+                        for (w, vw) in sorted(self.v.items())])
 
 
 class ConstModalStructure(ModalStructure):
@@ -253,9 +253,9 @@ class ConstModalStructure(ModalStructure):
                            ("{" +
                             ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in valI]) +
                             "}")))
-                        for (keyI, valI) in self.i[w].items()]) + \
+                        for (keyI, valI) in self.i[w].items() if w in self.i]) + \
                         "\n    "
-                    for (w, fw) in sorted(self.i.items())])
+                    for (w, iw) in sorted(self.i.items())])
 
 
 class VarModalStructure(ModalStructure):
@@ -328,7 +328,7 @@ class VarModalStructure(ModalStructure):
                                     "}")))
                                  for (keyI, valI) in sorted(self.i[w].items())]) + \
                             "\n    }"
-                            for (w, fw) in sorted(self.i.items())])
+                            for (w, iw) in sorted(self.i.items())])
 
 class KripkeStructure(Structure):
     """
@@ -369,7 +369,7 @@ class KripkeStructure(Structure):
                "V : " + ", \n    ".join([str(k) + " ↦ \n" +
                             ", \n".join(["           " + str(p) + " ↦ " + str(tv)
                             for (p, tv) in sorted(self.v[k].items())])
-                        for k in sorted(self.k)])
+                        for (k, vk) in sorted(self.v.items())])
 
 
 class KripkePropStructure(KripkeStructure):
@@ -453,7 +453,7 @@ class KripkePropStructure(KripkeStructure):
                "V : " + ", \n    ".join([str(k) + " ↦ \n" +
                             ", \n".join(["           " + str(p) + " ↦ " + str(tv)
                             for (p, tv) in sorted(self.v[k].items())])
-                        for k in sorted(self.k)])
+                        for (k, vk) in sorted(self.v.items())])
 
 
 class KripkePredStructure(KripkeStructure):
@@ -597,6 +597,6 @@ class KripkePredStructure(KripkeStructure):
                                   )
                                  for (keyF, valF) in self.i[k].items()]) + \
                             "\n           }"
-                            for (k, fk) in self.i.items()]) + \
+                            for (k, ik) in self.i.items()]) + \
                     "\n    }"
 

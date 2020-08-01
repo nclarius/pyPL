@@ -1705,7 +1705,10 @@ class Poss(Formula):
         σ.n φ
         where σ.n is new
         """
-        rules = {"◇": ("μ", [self.phi])}
+        if mode["validity"]:
+            rules = {"◇": ("μ", [self.phi])}
+        else:
+            rules = {"◇": ("κ", [self.phi])}
         return rules
 
     def tableau_neg(self, mode):
@@ -1716,7 +1719,10 @@ class Poss(Formula):
         σ.n ¬φ    σ ¬◻φ     σ  ¬φ      σ ¬φ     σ.n ¬◇φ    σ ¬◇φ
         where σ and σ.n are old
         """
-        rules = {"¬◇": ("ν", [Neg(self.phi)])}
+        if mode["validity"]:
+            rules = {"¬◇": ("ν", [Neg(self.phi)])}
+        else:
+            rules = {"¬◇": ("λ", [Neg(self.phi)])}
         if mode["frame"] in ["D"]:
             rules["¬D"] = ("α", [Neg(Nec(self.phi))])
         if mode["frame"] in ["T", "B", "S4", "S5"]:
@@ -1826,7 +1832,10 @@ class Nec(Formula):
         σ.n φ     σ ◇φ       σ φ       σ ¬φ     σ.n ◻φ     σ ◻φ
         where σ.n is old
         """
-        rules = {"◻": ("ν", [self.phi])}
+        if mode["validity"]:
+            rules = {"◻": ("ν", [self.phi])}
+        else:
+            rules = {"◻": ("λ", [self.phi])}
         if mode["frame"] in ["D"]:
             rules["D"] = ("α", [Poss(self.phi)])
         if mode["frame"] in ["T", "B", "S4", "S5"]:
@@ -1847,7 +1856,10 @@ class Nec(Formula):
         σ.n ¬φ
         where σ.n is new
         """
-        rules = {"¬◻": ("μ", [Neg(self.phi)])}
+        if mode["validity"]:
+            rules = {"¬◻": ("μ", [Neg(self.phi)])}
+        else:
+            rules = {"¬◻": ("κ", [Neg(self.phi)])}
         return rules
 
 class Closed(Formula):
