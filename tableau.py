@@ -118,11 +118,11 @@ class Tableau(object):
                        " may or may not be satisfiable.\n"
 
         # generate and print models
-        if models := self.models():
-            res += "\nCounter models:\n" if self.mode["validity"] else "\nModels:\n"
-            for model in models:
-                res += "\n"
-                res += str(model) + "\n"
+        # if models := self.models():
+        #     res += "\nCounter models:\n" if self.mode["validity"] else "\nModels:\n"
+        #     for model in models:
+        #         res += "\n"
+        #         res += str(model) + "\n"
 
         res += "\n" + 80 * "-"
         return res
@@ -246,7 +246,8 @@ class Tableau(object):
                             list(dict.fromkeys([str(node.inst[1]) for node in siblings]))
                         # collect the constants occurring in the branch
                         occurring = list(dict.fromkeys(chain(*[
-                            [str(c) for c in node.fml.nonlogs()[0]] for node in branch])))
+                            [str(c)[:str(c).index("_")] if "_" in str(c) else str(c)
+                             for c in node.fml.nonlogs()[0]] for node in branch])))
                         # check if indexed constants are required (for modal PL with var. domains and IL)
                         indexed = self.mode["modal"] and not self.mode["propositional"] and self.mode["vardomains"] or \
                                   not self.mode["classical"]
@@ -438,13 +439,13 @@ class Tableau(object):
         subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         # choose first symbol from constants and parameters that has not already been used with this particular rule
         const_symbol = ((usable[(min([i for i in range(len(usable))
-                                      if usable[i] + subscript not in used]))] + subscript)
+                                      if usable[i] not in used]))])
                         if len(usable) > len(used) else
-                        "c" + str(len(used) + 1) + subscript)
-        const = Const(const_symbol)
+                        "c" + str(len(used) + 1))
+        const = Const(const_symbol + subscript)
 
         # compute formula
-        inst = (str(var), str(const))
+        inst = (str(var), const_symbol)
         fml = phi.subst(var, const)
 
         # add node
@@ -465,13 +466,13 @@ class Tableau(object):
         subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         # choose first symbol from list of parameters that does not yet occur in this branch
         const_symbol = ((parameters[(min([i for i in range(len(parameters))
-                                          if parameters[i] + subscript not in occurring]))] + subscript)
+                                          if parameters[i] not in occurring]))])
                         if len(parameters) > len(occurring) else
-                        "c" + str(len(occurring) + 1) + subscript)
-        const = Const(const_symbol)
+                        "c" + str(len(occurring) + 1))
+        const = Const(const_symbol + subscript)
 
         # compute formula
-        inst = (str(var), str(const))
+        inst = (str(var), const_symbol)
         fml = phi.subst(var, const)
 
         # add node
@@ -493,13 +494,13 @@ class Tableau(object):
         subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         # choose first symbol from occurring that has not already been used with this particular rule
         const_symbol = ((usable[(min([i for i in range(len(usable))
-                                      if usable[i] + subscript not in used]))] + subscript)
+                                      if usable[i] not in used]))])
                         if len(usable) > len(used) else
-                        "c" + str(len(usable) + 1) + subscript)
-        const = Const(const_symbol)
+                        "c" + str(len(usable) + 1))
+        const = Const(const_symbol + subscript)
 
         # compute formula
-        inst = (str(var), str(const))
+        inst = (str(var), const_symbol)
         fml = phi.subst(var, const)
 
         # add node
@@ -521,13 +522,13 @@ class Tableau(object):
         subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         # choose first symbol from occurring and parameters that has not already been used with this particular rule
         const_symbol = ((usable[(min([i for i in range(len(usable))
-                                      if usable[i] + subscript not in used]))] + subscript)
+                                      if usable[i] not in used]))])
                         if len(usable) > len(used) else
-                        "c" + str(len(usable) + 1) + subscript)
-        const = Const(const_symbol)
+                        "c" + str(len(usable) + 1))
+        const = Const(const_symbol + subscript)
 
         # compute formula
-        inst = (str(var), str(const))
+        inst = (str(var), const_symbol)
         fml = phi.subst(var, const)
 
         # add node (the rule branches on the source rather than the leaves)
@@ -608,6 +609,7 @@ class Tableau(object):
         λ
         Branch unary with an existing signature.
         """
+        # todo modal rules not yet fully minimal (signature extensions are still treated as new worlds)
         used, occurring, extensions = args
         max_line = max([node.line for node in self.root.nodes() if node.line])
         line = max_line
@@ -1073,19 +1075,25 @@ class Node(object):
         """
         Check if a branch is potentially infinite and i.a. add a respective label to the branch.
         A branch or level is judged potentially infinite iff
-        there are more constants in it than there are symbols in the assumptions.
+        there are more constants or signatures in it than there are symbols in the assumptions.
 
         @return: True if the branch is potentially infinite
         @rtype bool
         """
         # todo smarter implementation (check for loops in rule appls.)
         len_assumptions = sum([len(str(node.fml)) for node in self.branch if node.rule == "A"])
-        num_consts_vertical = len(dict.fromkeys(chain(*[node.fml.nonlogs()[0] for node in self.branch])))
-        num_consts_horizontal = len(dict.fromkeys(chain(*[node.fml.nonlogs()[0] for node in self.branch[-2].children])))
-        if num_consts_vertical > len_assumptions:
+        num_consts_vertical = len(dict.fromkeys(chain(*[node.fml.nonlogs()[0]
+                                                        for node in self.branch if node.fml.nonlogs()])))
+        num_consts_horizontal = len(dict.fromkeys(chain(*[node.fml.nonlogs()[0]
+                                                          for node in self.branch[-2].children if node.fml.nonlogs()])))
+        num_sigs_vertical = len(dict.fromkeys([node.sig
+                                               for node in self.branch if node.sig if node.sig]))
+        num_sigs_horizontal = len(dict.fromkeys([node.sig
+                                                 for node in self.branch[-2].children if node.sig]))
+        if num_consts_vertical > len_assumptions or num_sigs_vertical > len_assumptions:
             self.add_child((None, None, Infinite(), None, None, None))
             return True
-        if num_consts_horizontal > len_assumptions:
+        if num_consts_horizontal > len_assumptions or num_sigs_horizontal > len_assumptions:
             self.branch[-2].add_child((None, None, Infinite(), None, None, None))
             return True
         return False
@@ -1166,10 +1174,45 @@ if __name__ == "__main__":
     # tab = Tableau(fml, premises=[fml1], propositional=True, modal=True)
     # print(tab)
     #
-    # fml1 = Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),))))
-    # fml = Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),))))
-    # tab = Tableau(fml, premises=[fml1], modal=True)
-    # print(tab)
+    fml1 = Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),))))
+    fml = Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),))))
+    tab = Tableau(fml, premises=[fml1], modal=True)
+    print(tab)
+
+    fml = Imp(Forall(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))), Nec(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))))
+    tab = Tableau(fml, modal=True)
+    print(tab)
+
+    fml = Imp(Exists(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))), Nec(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))))
+    tab = Tableau(fml, modal=True)
+    print(tab)
+
+    fml = Imp(Nec(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))), Exists(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))))
+    tab = Tableau(fml, modal=True)
+    print(tab)
+    tab = Tableau(Neg(fml), modal=True, validity=False)
+    print(tab)
+
+    fml = Exists(Var("x"), Poss(Imp(Nec(Atm(Pred("P"), (Var("x"),))), Forall(Var("x"), Atm(Pred("P"), (Var("x"),))))))
+    tab = Tableau(fml, modal=True, vardomains=True)
+    print(tab)
+    tab = Tableau(Neg(fml), validity=False, modal=True, vardomains=True)
+    print(tab)
+
+    fml = Imp(Exists(Var("x"), Forall(Var("y"), Nec(Atm(Pred("Q"), (Var("x"), Var("y")))))),
+              Forall(Var("y"), Nec(Exists(Var("x"), Atm(Pred("Q"), (Var("x"), (Var("y"))))))))
+    tab = Tableau(fml, modal=True, vardomains=True)
+    print(tab)
+    tab = Tableau(Neg(fml), validity=False, modal=True, vardomains=True)
+    print(tab)
+
+    fml = Imp(Conj(Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))),
+                   Nec(Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)), Atm(Pred("R"), (Var("x"),)))))),
+              Exists(Var("x"), Poss(Atm(Pred("R"), (Var("x"),)))))
+    tab = Tableau(fml, modal=True, vardomains=True)
+    print(tab)
+    tab = Tableau(Neg(fml), validity=False, modal=True, vardomains=True)
+    print(tab)
 
     # fml = Biimp(Forall(Var("x"), Forall(Var("y"), Atm(Pred("P"), (Var("x"), Var("y"))))),
     #             Forall(Var("y"), Forall(Var("x"), Atm(Pred("P"), (Var("y"), Var("x"))))))
@@ -1228,3 +1271,5 @@ if __name__ == "__main__":
     fml = Conj(Poss(Prop("p")), Poss(Neg(Prop("p"))))
     tab = Tableau(fml, propositional=True, modal=True, validity=False)
     print(tab)
+
+
