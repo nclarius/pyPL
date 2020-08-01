@@ -1,0 +1,5 @@
+{
+  "human": ["Mary", "John", "Peter", "Susan"],
+  "student": ["Mary", "John", "Peter"],
+  "book": ["Harry Potter", "Mathematical Methods in Linguistics", "the Bible", "Pride and Prejudice"]
+}
