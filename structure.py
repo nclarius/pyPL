@@ -312,11 +312,11 @@ class VarModalStructure(ModalStructure):
         return "Structure " + self.m + " = ⟨W,R,D,F⟩ with\n" \
                "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" \
                "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n" \
-               "D : " + ", \n".join([str(w) + " ↦ " + \
-                            ", ".join([str(d) for d in sorted(self.d[w])]) + "}"
-                    for w in self.w]) +\
-                    \
-               "I : " + ", \n    ".join([str(w) + " ↦ " +\
+               "D : " + "\n    ".join([str(w) + " ↦ " + \
+                            "{" + ", ".join([str(d) for d in sorted(self.d[w])]) + "}"
+                    for w in sorted(self.w)]) +\
+                    "\n"\
+               "I : " + "\n    ".join([str(w) + " ↦ \n" +\
                             ", \n".join(
                                 ["         " + str(keyI) + " ↦ " +
                                  (str(valI) if isinstance(valI, str) else
@@ -327,7 +327,7 @@ class VarModalStructure(ModalStructure):
                                     ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in valI]) +
                                     "}")))
                                  for (keyI, valI) in sorted(self.i[w].items())]) + \
-                            "\n    }"
+                            "\n    "
                             for (w, iw) in sorted(self.i.items())])
 
 class KripkeStructure(Structure):

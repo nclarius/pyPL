@@ -1773,7 +1773,7 @@ class Nec(Formula):
         return self.phi.nonlogs()
 
     def subst(self, u, t):
-        return Poss(self.phi.subst(u, t))
+        return Nec(self.phi.subst(u, t))
 
     def denot(self, m, v, w):
         """
