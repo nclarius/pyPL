@@ -243,7 +243,7 @@ class ConstModalStructure(ModalStructure):
                "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n"\
                "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n"\
                "D = {" + ", ".join([str(d) for d in sorted(self.d)]) + "}\n" \
-               "I : " + ", \n    ".join([str(w) + " ↦ \n" + \
+               "I : " + "\n    ".join([str(w) + " ↦ \n" + \
                         ", \n".join(
                         ["           " + str(keyI) + " ↦ " +
                          (str(valI) if isinstance(valI, str) else

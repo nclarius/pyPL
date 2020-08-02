@@ -24,6 +24,9 @@ class Expr:
     @method denot: denotation of the expression relative to a structure m and assignment g
     """
 
+    def __repr__(self):
+        return str(self)
+
     def tex(self) -> str:
         """
         The expression formatted in LaTeX code.
@@ -1358,7 +1361,7 @@ class Exists(Formula):
         return self.phi.nonlogs()
 
     def subst(self, u, t):
-        if u.u == self.u:
+        if u.u == self.u.u:
             return self
         else:
             return Exists(self.u, self.phi.subst(u, t))
@@ -1474,7 +1477,7 @@ class Forall(Formula):
         return self.phi.nonlogs()
 
     def subst(self, u, t):
-        if u.u == self.u:
+        if u.u == self.u.u:
             return self
         else:
             return Forall(self.u, self.phi.subst(u, t))
