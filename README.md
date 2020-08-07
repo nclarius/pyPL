@@ -116,8 +116,8 @@ After specifying your input in the source code, execute `main.py` in a terminal 
 - Simply ignore all the print statements and anything that looks completely unfamiliar to you (such as `w`/modal stuff).  
 
 ### Notes on notation
-- 'M' = structure/model (aka 'A')
-- 'D' = domain of discourse (aka 'M')
+- 'S' = structure/model (aka 'M')
+- 'D' = domain of discourse (aka 'M', 'A')
 - 'I' = interpretation function for non-logical symbols (aka 'F')
 - 'g' = variable assignment function for individual variables (aka 'v')
 - 'V' = valuation function for propositional variables

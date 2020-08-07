@@ -34,17 +34,17 @@ class PropStructure(Structure):
     A structure M is a function V: VAR -> {True, False}.
     V = {"p": True, "q": False, "r": True}
 
-    @attr m: the name of the structure (such as "M1")
-    @type m: str
+    @attr s: the name of the structure (such as "M1")
+    @type s: str
     @attr v: the valuation function
     @type v: dict[str,bool]
     """
-    def __init__(self, m, v):
-        self.m = m
+    def __init__(self, s, v):
+        self.s = s
         self.v = v
 
     def __str__(self):
-        return "Structure " + self.m + " = V with V: " + \
+        return "Structure " + self.s + " = ⟨V⟩ with V: " + \
                ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v.items())])
 
 
@@ -96,8 +96,8 @@ class PredStructure(Structure):
 
     ---------
 
-    @attr m: the name of the structure (such as "M1")
-    @type m: str
+    @attr s: the name of the structure (such as "M1")
+    @type s: str
     @attr d: the domain of discourse
     @type d: set[str]
     @attr i: the interpretation function assigning denotations to the non-logical symbols
@@ -106,8 +106,8 @@ class PredStructure(Structure):
     @type vs: list[dict[str,str]]]
     """
 
-    def __init__(self, m, d, i):
-        self.m = m
+    def __init__(self, s, d, i):
+        self.s = s
         self.d = d
         self.i = i
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D)
@@ -116,7 +116,7 @@ class PredStructure(Structure):
         self.gs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
     def __str__(self):
-        return "Structure " + self.m + "  = ⟨D,I⟩ with\n" \
+        return "Structure " + self.s + "  = ⟨D,I⟩ with\n" \
                "D = {" + ", ".join([str(d) for d in sorted(self.d)]) + "}\n" \
                "I : " + ", \n    ".join([str(key) + " ↦ " +
                                         (str(val) if isinstance(val, str) else
@@ -133,8 +133,8 @@ class ModalStructure(Structure):
     """
     A modal of (modal) predicate logic.
 
-    @attr m: the name of the structure (such as "M1")
-    @type m: str
+    @attr s: the name of the structure (such as "M1")
+    @type s: str
     @attr w: a set of possible worlds
     @type w: set[str]
     @attr r: an accessibility relation on r
@@ -166,8 +166,8 @@ class PropModalStructure(ModalStructure):
       as values.
       V = {'w1': {'p': True, 'q': False}, {'w2': {'p': False, 'q': False}}, ...}
 
-    @attr m: the name of the structure (such as "M1")
-    @type m: str
+    @attr s: the name of the structure (such as "M1")
+    @type s: str
     @attr w: the set of possible worlds
     @type w: set[str]
     @attr r: the accessibility relation on self.w
@@ -175,14 +175,14 @@ class PropModalStructure(ModalStructure):
     @attr v: the valuation function
     @type v: dict[dict[str,bool]]
     """
-    def __init__(self, m, w, r, v):
-        self.m = m
+    def __init__(self, s, w, r, v):
+        self.s = s
         self.w = w
         self.r = r
         self.v = v
 
     def __str__(self):
-        return "Structure " + self.m + " = (W, V) with\n"\
+        return "Structure " + self.s + " = (W,V) with\n"\
                "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n"\
                "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n"\
                "V : " + ", \n    ".join([str(w) + " ↦ \n" +
@@ -216,8 +216,8 @@ class ConstModalStructure(ModalStructure):
       - and interpretation of the non-logical symbols as values (see Structure.f).
 
 
-    @attr m: the name of the structure (such as "M1")
-    @type m: str @attr w: the set of possible worlds
+    @attr s: the name of the structure (such as "M1")
+    @type s: str @attr w: the set of possible worlds
     @type w: set[str]
     @attr r: the accessibility relation on self.w
     @type r: set[tuple[str,str]]
@@ -227,8 +227,8 @@ class ConstModalStructure(ModalStructure):
     @type i: dict[str,dict[str,Any]]
     """
     # todo doesnt work yet (assignment function)
-    def __init__(self, m, w, r, d, i):
-        self.m = m
+    def __init__(self, s, w, r, d, i):
+        self.s = s
         self.w = w
         self.r = r
         self.d = d
@@ -239,7 +239,7 @@ class ConstModalStructure(ModalStructure):
         self.gs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
     def __str__(self):
-        return "Structure " + self.m + " = ⟨W,R,D,I⟩ with\n" \
+        return "Structure " + self.s + " = ⟨W,R,D,I⟩ with\n" \
                "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n"\
                "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n"\
                "D = {" + ", ".join([str(d) for d in sorted(self.d)]) + "}\n" \
@@ -285,8 +285,8 @@ class VarModalStructure(ModalStructure):
       - and interpretation of the non-logical symbols (see Structure.f) as values.
 
 
-    @attr m: the name of the structure (such as "M1")
-    @type m: str
+    @attr s: the name of the structure (such as "M1")
+    @type s: str
     @attr w: the set of possible worlds
     @type w: set[str]
     @attr r: the accessibility relation on self.w
@@ -297,8 +297,8 @@ class VarModalStructure(ModalStructure):
     @type i: dict[str,dict[str,Any]]
     """
 
-    def __init__(self, m, w, r, d, i):
-        self.m = m
+    def __init__(self, s, w, r, d, i):
+        self.s = s
         self.w = w
         self.r = r
         self.d = d
@@ -309,7 +309,7 @@ class VarModalStructure(ModalStructure):
         self.gs = {w: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[w]] for w in self.w}
 
     def __str__(self):
-        return "Structure " + self.m + " = ⟨W,R,D,F⟩ with\n" \
+        return "Structure " + self.s + " = ⟨W,R,D,F⟩ with\n" \
                "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" \
                "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n" \
                "D : " + "\n    ".join([str(w) + " ↦ " + \
@@ -334,8 +334,8 @@ class KripkeStructure(Structure):
     """
     A Kripke structure of intuitionistic logic.
 
-    @attr m: the name of the structure (such as "M1")
-    @type m: str
+    @attr s: the name of the structure (such as "M1")
+    @type s: str
     @attr k: a set of possible states
     @type k: set[str]
     @attr r: an accessibility relation on r
@@ -363,7 +363,7 @@ class KripkeStructure(Structure):
         return {k_ for k_ in self.k if (k_, k) in self.r}
 
     def __str__(self):
-        return "Structure " + self.m + " = (W, V) with\n"\
+        return "Structure " + self.s + " = (W, V) with\n"\
                "W = {" + ", ".join([str(k) for k in sorted(self.k)]) + "}\n"\
                "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n"\
                "V : " + ", \n    ".join([str(k) + " ↦ \n" +
@@ -398,8 +398,8 @@ class KripkePropStructure(KripkeStructure):
       as values.
       V = {'k1': {'p': True, 'q': False}, {'k2': {'p': False, 'q': False}}, ...}
 
-    @attr m: the name of the structure
-    @type m: str
+    @attr s: the name of the structure
+    @type s: str
     @attr k: the set of states
     @type k: set[str]
     @attr r: the accessibility relation on self.k
@@ -408,8 +408,8 @@ class KripkePropStructure(KripkeStructure):
     @type v: dict[str,dict[str,bool]]
     """
 
-    def __init__(self, m, k, r, v):
-        self.m = m
+    def __init__(self, s, k, r, v):
+        self.s = s
         self.k = k
         self.r = r
         self.v = v
@@ -447,8 +447,8 @@ class KripkePropStructure(KripkeStructure):
     #     return {k_ for k_ in self.k if (k_, k) in self.r}
 
     def __str__(self):
-        return "Structure " + self.m + " = (W, V) with\n"\
-               "W = {" + ", ".join([str(k) for k in sorted(self.k)]) + "}\n"\
+        return "Structure " + self.s + " = (K,V) with\n"\
+               "K = {" + ", ".join([str(k) for k in sorted(self.k)]) + "}\n"\
                "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n"\
                "V : " + ", \n    ".join([str(k) + " ↦ \n" +
                             ", \n".join(["           " + str(p) + " ↦ " + str(tv)
@@ -518,8 +518,8 @@ class KripkePredStructure(KripkeStructure):
 
          I = {'k0':  {'c': 'a', 'P': {('a', )}}, 'k0': {'c': 'a',  'P': {('a', ), ('b', )}}}
 
-    @attr m: the name of the structure
-    @type m: str
+    @attr s: the name of the structure
+    @type s: str
     @attr k: the set of states
     @type k: set[str]
     @attr r: the accessibility relation on self.k
@@ -530,8 +530,8 @@ class KripkePredStructure(KripkeStructure):
     @type i: dict[str,dict[str,Any]]
     """
 
-    def __init__(self, m, k, r, d, i):
-        self.m = m
+    def __init__(self, s, k, r, d, i):
+        self.s = s
         self.k = k
         self.r = r
         self.d = d
@@ -574,7 +574,7 @@ class KripkePredStructure(KripkeStructure):
     #     return {k_ for k_ in self.k if (k_, k) in self.r}
 
     def __str__(self):
-        return "Structure " + self.m + " = (K,R,D,F) with\n" \
+        return "Structure " + self.s + " = (K,R,D,F) with\n" \
                "K = {" + ", ".join([repr(k) for k in self.k]) + "}\n" \
                "R = {" + ", ".join([repr(r) for r in self.r]) + "}\n" \
                "D = {\n" + \
@@ -599,4 +599,3 @@ class KripkePredStructure(KripkeStructure):
                             "\n           }"
                             for (k, ik) in self.i.items()]) + \
                     "\n    }"
-

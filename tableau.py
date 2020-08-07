@@ -830,7 +830,7 @@ class Tableau(object):
             return atom(fml) or isinstance(fml, Neg) and atom(fml.phi)
 
         branch = [node for node in leaf.branch if node.fml]
-        name = "M" + str(len(self.models)+1)
+        name = "S" + str(len(self.models)+1)
 
         if self.mode["classical"]:  # classical logic
 
@@ -1253,6 +1253,10 @@ if __name__ == "__main__":
     # fml = Conj(Imp(Prop("p"), Prop("q")), Prop("r"))
     # tab = Tableau(fml, validity=True, propositional=True)
     # print(tab)
+    # tab = Tableau(fml, validity=False, satisfiability=True, propositional=True)
+    # print(tab)
+    # tab = Tableau(fml, validity=False, satisfiability=False, propositional=True)
+    # print(tab)
 
     # fml1 = Imp(Prop("p"), Prop("q"))
     # fml2 = Imp(Prop("q"), Prop("r"))
@@ -1269,6 +1273,12 @@ if __name__ == "__main__":
     # fml = Atm(Pred("R"), (Const("a"), Const("a")))
     # tab = Tableau(fml, premises=[fml1])
     # print(tab)
+
+    fml = Conj(Exists(Var("x"), Atm(Pred("P"), (Var("x"),))), Neg(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))))
+    tab = Tableau(fml, validity=False, satisfiability=True)
+    print(tab)
+    tab = Tableau(fml, validity=False, satisfiability=False)
+    print(tab)
 
     # fml = Biimp(Forall(Var("x"), Atm(Pred("P"), (Var("x"),))), Neg(Exists(Var("x"), Neg(Atm(Pred("P"), (Var("x"),))))))
     # tab = Tableau(fml)
