@@ -27,7 +27,7 @@ rule_names = {"α": "alpha", "β": "beta",  # connective rules
               "ξ": "xi", "χ": "chi", "ο": "omicron", "u": "ypsilon", "ω": "omega"  # intuitionistic rules
               }
 parameters = list("abcdefghijklmnopqrst") + ["c" + str(i) for i in range(1, 1000)]
-more = 0  # number of additional models
+more = 0  # number of additional models  # todo doesn't properly work yet
 
 
 class Tableau(object):
@@ -35,26 +35,25 @@ class Tableau(object):
     A tableau tree.
     """
 
-    def __init__(self, conclusion=None, premises=[], axioms=[], validity=True,
+    def __init__(self,
+                 conclusion=None, premises=[], axioms=[],
+                 validity=True, satisfiability=True,
                  classical=True, propositional=False, modal=False, vardomains=False, frame="K"):
         # settings
         # todo nicer specification of settings?
         # todo check consistency of settings
         self.mode = {
-            "validity": validity,
-            "classical": classical,
-            "propositional": propositional,
-            "modal": modal,
-            "vardomains": vardomains,
-            "frame": frame
+            "validity": validity, "satisfiability": satisfiability,
+            "classical": classical, "propositional": propositional,
+            "modal": modal, "vardomains": vardomains, "frame": frame
         }
 
         # append initial nodes
         line = 1
         # sig = (1,) if modal or not classical else None
-        world = 1 if modal or not classical else None
+        world = 1 if validity and (modal or not classical) else None
         root_fml = conclusion if conclusion else premises[0]
-        fml = Neg(root_fml) if validity else root_fml
+        fml = Neg(root_fml) if validity or not satisfiability else root_fml
         rule = "A"
         source = None
         inst = tuple()
@@ -64,6 +63,7 @@ class Tableau(object):
         max_line = max([node.line for node in self.root.nodes() if node.line])
         self.axioms = [self.root.leaves()[0].add_child((i + max_line + 1, world, axiom, "Ax", source, inst))
                        for i, axiom in enumerate(axioms)]
+        self.models = []
         # todo formulas with free variables?
 
     def __str__(self):
@@ -88,8 +88,12 @@ class Tableau(object):
                    ", ".join([str(premise.fml) for premise in self.axioms + self.premises]) + \
                    " ⊨ " + str(self.root.fml.phi) + ":\n\n"
         else:
-            res += "Tableau for " + \
-                   ", ".join([str(node.fml) for node in [self.root] + self.premises + self.axioms]) + " ⊭:\n\n"
+            if self.mode["satisfiability"]:
+                res += "Tableau for " + \
+                       ", ".join([str(node.fml) for node in [self.root] + self.premises + self.axioms]) + " ⊭:\n\n"
+            else:
+                res += "Tableau for " + \
+                       "⊭ " + str(self.root.fml.phi) + ":\n\n"
 
         # recursively apply the rules
         self.expand()
@@ -103,26 +107,36 @@ class Tableau(object):
             if self.mode["validity"]:
                 res += "The " + ("inference" if self.premises else "formula") + " is valid.\n"
             else:
-                res += "The " + ("set of sentences" if self.premises else "formula") + " is unsatisfiable.\n"
+                if self.mode["satisfiability"]:
+                    res += "The " + ("set of sentences" if self.premises else "formula") + " is unsatisfiable.\n"
+                else:
+                    res += "The formula is irrefutable.\n"
         elif self.open():
             res += "The tableau is open:\n"
             if self.mode["validity"]:
                 res += "The " + ("inference" if self.premises else "formula") + " is invalid.\n"
             else:
-                res += "The " + ("set of sentences" if self.premises else "formula") + " is satisfiable.\n"
+                if self.mode["satisfiability"]:
+                    res += "The " + ("set of sentences" if self.premises else "formula") + " is satisfiable.\n"
+                else:
+                    res += "The formula is refutable.\n"
         elif self.infinite():
             res += "The tableau is potentially infinite:\n"
             if self.mode["validity"]:
-                res += "The " + ("inference" if self.premises else "formula") + \
-                       " may or may not be valid.\n"
+                res += "The " + ("inference" if self.premises else "formula") + " may or may not be valid.\n"
             else:
-                res += "The " + ("set of sentences" if self.premises else "formula") + \
-                       " may or may not be satisfiable.\n"
+                if self.mode["satisfiability"]:
+                    res += "The " + ("set of sentences" if self.premises else "formula") + \
+                           " may or may not be satisfiable.\n"
+                else:
+                    res += "The formula may or may not be refutable.\n"
 
         # generate and print models
-        if models := self.models():
-            res += "\nCounter models:\n" if self.mode["validity"] else "\nModels:\n"
-            for model in models:
+        if self.models:
+            res += "\nCounter models:\n" \
+                if self.mode["validity"] or not self.mode["validity"] and not self.mode["satisfiability"] \
+                else "\nModels:\n"
+            for model in self.models:
                 res += "\n"
                 res += str(model) + "\n"
 
@@ -207,7 +221,7 @@ class Tableau(object):
         # collect the applicable rules in the tree
         applicable = []
         # traverse all nodes that could be expandable
-        for source in self.root.nodes():
+        for source in [node for node in self.root.nodes() if node.fml]:
             for rule_name, rule in source.rules(self.mode).items():
                 rule_type, fmls = rule
 
@@ -217,7 +231,7 @@ class Tableau(object):
                 # connective rules
                 if rule_type in ["α", "β"]:
                     # the rule is applicable to those branches it has not already been applied on
-                    targets = source.leaves(True)
+                    targets = [node for node in source.leaves(True) if node.fml]
                     for target in targets:
                         branch = target.branch
                         if not any([applied(node) for node in branch]):
@@ -227,7 +241,7 @@ class Tableau(object):
 
                 # quantifier rules
                 elif rule_type in ["γ", "δ", "η", "θ"]:
-                    targets = source.leaves(True)
+                    targets = [node for node in source.leaves(True) if node.fml]
                     if rule_type in ["θ"]:
                         # the rule branches on the source line rather than the leaves
                         # find nodes which are expansions of this source and their parents
@@ -241,11 +255,11 @@ class Tableau(object):
                             targets = parents
 
                     for target in targets:
-                        branch = target.branch
+                        branch = [node for node in target.branch if node.fml]
                         # collect the constants this rule has been instantiated with in the branch/level
                         used = list(dict.fromkeys([str(node.inst[1]) for node in branch if applied(node)])) \
                             if rule_type not in ["θ"] else \
-                            list(dict.fromkeys([str(node.inst[1]) for node in siblings]))
+                            list(dict.fromkeys([str(node.inst[1]) for node in siblings if node.inst]))
                         # collect the constants occurring in the branch
                         occurring = list(dict.fromkeys(chain(*[[str(c)
                                                                for c in node.fml.nonlogs()[0]] for node in branch])))
@@ -273,7 +287,7 @@ class Tableau(object):
 
                 # modal rules
                 elif rule_type in ["μ", "ν", "π", "κ", "λ"]:
-                    targets = source.leaves(True)
+                    targets = [node for node in source.leaves(True) if node.fml]
                     if rule_type in ["κ"]:
                         # the rule branches on the source line rather than the leaves
                         # find nodes which are expansions of this source and their parents
@@ -287,7 +301,7 @@ class Tableau(object):
                             targets = parents
 
                     for target in targets:
-                        branch = target.branch
+                        branch = [node for node in target.branch if node.fml]
                         # # collect the signatures this rule has been instantiated with in the branch/on this level
                         # used = list(dict.fromkeys([node.inst[1] for node in branch if applied(node)])) \
                         #     if rule_type not in ["κ"] else \
@@ -301,17 +315,21 @@ class Tableau(object):
                         # collect the worlds this rule has been instantiated with in the branch/on this level
                         used = list(dict.fromkeys([node.inst[1] for node in branch if applied(node)])) \
                             if rule_type not in ["κ"] else \
-                            list(dict.fromkeys([node.inst[1] for node in siblings]))
+                            list(dict.fromkeys([node.inst[1] for node in siblings if node.inst]))
                         # collect the worlds occurring in the branch
                         occurring = list(dict.fromkeys([node.world for node in branch if node.world]))
+                        # additional worlds to use
+                        fresh = [i for i in range(1, 100) if i not in occurring]
                         # collect the signatures occurring in the branch that are accessible from the source world
                         extensions = list(dict.fromkeys([node.inst[1] for node in branch
-                                                         if node.inst and node.inst[0] == source.world]))
+                                                         if node.inst and node.inst[0] == source.world])) \
+                            if rule_name != "A" else fresh
+                        # # for model finding, add at least one world
+                        # if not self.mode["validity"] and not extensions:
+                        #     extensions = occurring[:1]
                         # collect the signatures occurring in the branch that the source world is accessible from
                         reductions = list(dict.fromkeys([node.inst[0] for node in branch
                                                          if node.inst and node.inst[1] == source.world]))
-                        # additional worlds to use
-                        fresh = [i for i in range(1, 100) if i not in occurring]
                         # compose the arguments
                         args = used, occurring, extensions, reductions
                         # count instantiations
@@ -334,22 +352,30 @@ class Tableau(object):
                         elif rule_type in ["λ"]:
                             # the rule can only be applied to nodes and signatures it has not already been applied with,
                             # and only if there are extensions occurring in the branch or needed for additional models
-                            # yet to be instantiated
+                            # yet to be instantiated,
+                            # except when there are no signatures in the branch at all and the rule is an assumption
+                            # todo add extensions in satisfiability mode
                             if any([not any([node.inst[1] == w
                                              for node in branch if applied(node)])
-                                    for w in extensions + fresh[:more]]):
+                                    for w in extensions + fresh[:more]]) or \
+                                    rule_name == "A" and not occurring:
                                 applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
 
                 # intuitionistic rules
                 elif rule_type in ["ξ", "χ", "ο", "u", "ω"]:
                     pass  # not yet implemented
 
-        # if the only rules applicable to a non-contradictory branch are already applied δ, η, θ, κ or λ rules,
+        # if the only rules applicable to a non-contradictory branch are already applied δ, θ or κ rules,
         # it is declared open and its applicable rules cleared
-        for leaf in self.root.leaves():
-            if all([appl[6] > more and appl[3] in ["δ", "η", "θ", "κ", "λ"]
+        # print("applicable:")
+        # print("\n".join([", ".join([
+        #     str(i), str(itm[0].line), str(itm[1].line), itm[2], str(itm[3]), str(itm[5]), str(itm[6])])
+        #     for i, itm in enumerate(applicable)]))
+        for leaf in [node for node in self.root.leaves(True) if node.fml]:
+            if all([appl[6] > more and appl[3] in ["δ", "θ", "κ"]
                     for appl in applicable if appl[0] in leaf.branch]):
                 leaf.open()
+                self.models.append(self.model(leaf))
                 applicable = [appl for appl in applicable if appl[0] not in leaf.branch]
 
         # define a preference order for rule types
@@ -513,8 +539,8 @@ class Tableau(object):
         # for modal predicate logic with varying domains: add signature subscript to constant
         # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         subscript = "_" + str(source.world) if indexed else ""
-        usable = [c + (subscript if "_" not in c else "") for c in occurring + parameters[:more]]
-        usable += ["a"] if not usable else []
+        usable = [c + (subscript if "_" not in c else "")
+                  for c in (occurring + parameters[:more] if occurring + parameters[:more] else ["a"])]
         # choose first symbol from occurring that has not already been used with this particular rule
         const_symbol = usable[(min([i for i in range(len(usable)) if usable[i] not in used]))]
         const = Const(const_symbol)
@@ -552,7 +578,9 @@ class Tableau(object):
         inst = (str(var), str(const), new)
         fml = phi.subst(var, const)
 
-        # add node (the rule branches on the source rather than the leaves)
+        # add pseudo-node to indicate branching (the rule branches on the source rather than the leaves)
+        target.add_child((None, None, None, rule, source, None))
+        # add node
         target.add_child((line + 1, world, fml, rule, source, inst))
 
     def rule_mu(self, target, source, rule, fmls, args):
@@ -626,6 +654,9 @@ class Tableau(object):
         world = min([i for i in range(1, 100) if i not in used])
         new = True if world not in extensions else False
         inst = (source.world, world, new)
+
+        # add pseudo-node to indicate branching (the rule branches on the source rather than the leaves)
+        target.add_child((None, None, None, rule, source, None))
 
         # add (top) node
         top = target.add_child((line := line + 1, world, fmls[0], rule, source, inst))
@@ -784,7 +815,7 @@ class Tableau(object):
         """
         return any([isinstance(leaf.fml, Infinite) for leaf in self.root.leaves()])
 
-    def models(self) -> Set[Structure]:
+    def model(self, leaf) -> Structure:
         """
         The models for a tableau are the models associated with its open branches.
         A model for an open branch is one that satisfies all atoms in the branch.
@@ -798,182 +829,168 @@ class Tableau(object):
         def literal(fml):
             return atom(fml) or isinstance(fml, Neg) and atom(fml.phi)
 
-        res = []
-        count = 0
-        for leaf in self.root.leaves():
+        branch = [node for node in leaf.branch if node.fml]
+        name = "M" + str(len(self.models)+1)
 
-            if isinstance(leaf.fml, Open):
-                # open branch
-                leaf = leaf.branch[-2]
-                branch = leaf.branch
-                count += 1
-                name = "M" + str(count)
+        if self.mode["classical"]:  # classical logic
 
-                if self.mode["classical"]:  # classical logic
+            if self.mode["modal"]:  # classical modal logic
+                # sigs = list(dict.fromkeys([tuple(node.sig) for node in branch]))
+                # sigs_ = list(dict.fromkeys([tuple(node.sig) for node in branch if literal(node.fml)]))
+                # # use w1, ..., wn as names for worlds instead of signatures
+                # worlds = {sig: "w" + str(i) for (i, sig) in enumerate(sigs)}
+                # w = {worlds[sig] for sig in sigs}
+                # r_ = {(sig[:-1], sig) for sig in sigs if len(sig) > 1}
+                # r = {(worlds[sig1], worlds[sig2]) for (sig1, sig2) in r_}
+                worlds = list(dict.fromkeys([node.world for node in branch if node.world]))
+                worlds_ = list(dict.fromkeys([node.world for node in branch if node.world and
+                                              literal(node.fml)]))
+                w = {"w" + str(w) for w in worlds}
+                r_ = list(dict.fromkeys([node.inst for node in branch
+                                         if len(node.inst) > 0 and isinstance(node.inst[0], int)]))
+                r = {("w" + str(tpl[0]), "w" + str(tpl[1])) for tpl in r_}
 
-                    if self.mode["modal"]:  # classical modal logic
-                        # sigs = list(dict.fromkeys([tuple(node.sig) for node in branch]))
-                        # sigs_ = list(dict.fromkeys([tuple(node.sig) for node in branch if literal(node.fml)]))
-                        # # use w1, ..., wn as names for worlds instead of signatures
-                        # worlds = {sig: "w" + str(i) for (i, sig) in enumerate(sigs)}
-                        # w = {worlds[sig] for sig in sigs}
-                        # r_ = {(sig[:-1], sig) for sig in sigs if len(sig) > 1}
-                        # r = {(worlds[sig1], worlds[sig2]) for (sig1, sig2) in r_}
-                        worlds = list(dict.fromkeys([node.world for node in branch]))
-                        worlds_ = list(dict.fromkeys([node.world for node in branch if literal(node.fml)]))
-                        w = {"w" + str(w) for w in worlds}
-                        r_ = list(dict.fromkeys([node.inst for node in branch
-                                                 if len(node.inst) > 0 and isinstance(node.inst[0], int)]))
-                        r = {("w" + str(tpl[0]), "w" + str(tpl[1])) for tpl in r_}
+            if self.mode["propositional"]:  # classical propositional logic
+                if not self.mode["modal"]:  # classical non-modal propositional logic
+                    # atoms = all unnegated propositional variables
+                    atoms = [node.fml.p for node in branch if atom(node.fml)]
+                    # valuation = make all positive propositional variables true and all others false
+                    v = {p: (True if p in atoms else False) for p in self.root.fml.propvars()}
+                    model = PropStructure(name, v)
 
-                    if self.mode["propositional"]:  # classical propositional logic
-                        if not self.mode["modal"]:  # classical non-modal propositional logic
-                            # atoms = all unnegated propositional variables
-                            atoms = [node.fml.p for node in branch if atom(node.fml)]
-                            # valuation = make all positive propositional variables true and all others false
-                            v = {p: (True if p in atoms else False) for p in self.root.fml.propvars()}
-                            model = PropStructure(name, v)
-                            res.append(model)
+                else:  # classical modal propositional logic
 
-                        else:  # classical modal propositional logic
+                    # # atoms = all unnegated propositional variables
+                    # atoms = {
+                    #     sig: [node.fml.p for node in branch if isinstance(node.fml, Prop) and node.sig == sig]
+                    #     for sig in sigs}
+                    # # valuation = make all positive propositional variables true and all others false
+                    # v = {
+                    #     worlds[sig]: {p: (True if p in atoms[sig] else False) for p in self.root.fml.propvars()}
+                    #     for sig in sigs_}
+                    # atoms = all unnegated propositional variables
+                    atoms = {
+                        w: [node.fml.p for node in branch if atom(node.fml) and node.world == w]
+                        for w in worlds}
+                    # valuation = make all positive propositional variables true and all others false
+                    v = {
+                        "w" + str(w): {p: (True if p in atoms[w] else False) for p in self.root.fml.propvars()}
+                        for w in worlds}
+                    model = PropModalStructure(name, w, r, v)
 
-                            # # atoms = all unnegated propositional variables
-                            # atoms = {
-                            #     sig: [node.fml.p for node in branch if isinstance(node.fml, Prop) and node.sig == sig]
-                            #     for sig in sigs}
-                            # # valuation = make all positive propositional variables true and all others false
-                            # v = {
-                            #     worlds[sig]: {p: (True if p in atoms[sig] else False) for p in self.root.fml.propvars()}
-                            #     for sig in sigs_}
-                            # atoms = all unnegated propositional variables
-                            atoms = {
-                                w: [node.fml.p for node in branch if atom(node.fml) and node.world == w]
-                                for w in worlds}
-                            # valuation = make all positive propositional variables true and all others false
-                            v = {
-                                "w" + str(w): {p: (True if p in atoms[w] else False) for p in self.root.fml.propvars()}
-                                for w in worlds}
-                            model = PropModalStructure(name, w, r, v)
-                            res.append(model)
+            else:  # classical predicate logic
+                # predicates = all predicates occurring in the conclusion and premises
+                constants = set(chain(self.root.fml.nonlogs()[0],
+                                      *[ass.fml.nonlogs()[0] for ass in [self.root] + self.premises]))
+                # todo show constants in interpret.?
+                funcsymbs = set(chain(self.root.fml.nonlogs()[1],
+                                      *[ass.fml.nonlogs()[1] for ass in [self.root] + self.premises]))
+                # todo take care of function symbols in domain and interpretation
+                predicates = set(chain(self.root.fml.nonlogs()[2],
+                                       *[ass.fml.nonlogs()[2] for ass in [self.root] + self.premises]))
 
-                    else:  # classical predicate logic
-                        # predicates = all predicates occurring in the conclusion and premises
-                        constants = set(chain(self.root.fml.nonlogs()[0],
-                                              *[ass.fml.nonlogs()[0] for ass in [self.root] + self.premises]))
-                        # todo show constants in interpret.?
-                        funcsymbs = set(chain(self.root.fml.nonlogs()[1],
-                                              *[ass.fml.nonlogs()[1] for ass in [self.root] + self.premises]))
-                        # todo take care of function symbols in domain and interpretation
-                        predicates = set(chain(self.root.fml.nonlogs()[2],
-                                               *[ass.fml.nonlogs()[2] for ass in [self.root] + self.premises]))
+                if not self.mode["modal"]:  # classical non-modal predicate logic
+                    # atoms = all unnegated atomic predications
+                    atoms = [(node.fml.pred, node.fml.terms) for node in branch if atom(node.fml)]
+                    # domain = all const.s occurring in formulas
+                    d = set(list(chain(*[node.fml.nonlogs()[0] for node in branch if node.fml.nonlogs()])))
+                    # interpretation = make all unnegated predications true and all others false
+                    i = {p: {tuple([str(t) for t in a[1]]) for a in atoms if (Pred(p), a[1]) in atoms}
+                         for p in predicates}
+                    model = PredStructure(name, d, i)
 
-                        if not self.mode["modal"]:  # classical non-modal predicate logic
-                            # atoms = all unnegated atomic predications
-                            atoms = [(node.fml.pred, node.fml.terms) for node in branch if atom(node.fml)]
-                            # domain = all const.s occurring in formulas
-                            d = set(list(chain(*[node.fml.nonlogs()[0] for node in branch if node.fml.nonlogs()])))
-                            # interpretation = make all unnegated predications true and all others false
-                            i = {p: {tuple([str(t) for t in a[1]]) for a in atoms if (Pred(p), a[1]) in atoms}
-                                 for p in predicates}
-                            model = PredStructure(name, d, i)
-                            res.append(model)
+                else:  # classical modal predicate logic
+                    # todo test
+                    # atoms = all unnegated atomic predications
+                    # atoms = {sig: [(node.fml.pred, node.fml.terms) for node in branch
+                    #                if isinstance(node.fml, Atm) and node.sig == sig]
+                    #          for sig in sigs}
+                    # i = {worlds[sig]: {p: {tuple([str(t) for t in a[1]]) for a in atoms[sig]
+                    #                        if (Pred(p), a[1]) in atoms[sig]}
+                    #                    for p in predicates}
+                    #      for sig in sigs}
+                    atoms = {w: [(node.fml.pred, node.fml.terms) for node in branch
+                                 if atom(node.fml) and node.world == w]
+                             for w in worlds}
+                    i = {"w" + str(w): {p: {tuple([str(t) for t in a[1]]) for a in atoms[w]
+                                            if (Pred(p), a[1]) in atoms[w]}
+                                        for p in predicates}
+                         for w in worlds}
 
-                        else:  # classical modal predicate logic
-                            # todo test
-                            # atoms = all unnegated atomic predications
-                            # atoms = {sig: [(node.fml.pred, node.fml.terms) for node in branch
-                            #                if isinstance(node.fml, Atm) and node.sig == sig]
-                            #          for sig in sigs}
-                            # i = {worlds[sig]: {p: {tuple([str(t) for t in a[1]]) for a in atoms[sig]
-                            #                        if (Pred(p), a[1]) in atoms[sig]}
-                            #                    for p in predicates}
-                            #      for sig in sigs}
-                            atoms = {w: [(node.fml.pred, node.fml.terms) for node in branch
-                                         if atom(node.fml) and node.world == w]
-                                     for w in worlds}
-                            i = {"w" + str(w): {p: {tuple([str(t) for t in a[1]]) for a in atoms[w]
-                                                    if (Pred(p), a[1]) in atoms[w]}
-                                                for p in predicates}
-                                 for w in worlds}
+                    if not self.mode["vardomains"]:  # classical modal predicate logic with constant domains
+                        d = set(chain(*[node.fml.nonlogs()[0] for node in branch]))
+                        model = ConstModalStructure(name, w, r, d, i)
 
-                            if not self.mode["vardomains"]:  # classical modal predicate logic with constant domains
-                                d = set(chain(*[node.fml.nonlogs()[0] for node in branch]))
-                                model = ConstModalStructure(name, w, r, d, i)
-                                res.append(model)
-
-                            else:  # classical modal predicate logic with varying domains
-                                # d = {worlds[sig]: set(chain(*[node.fml.nonlogs()[0] for node in branch
-                                #                       if node.sig == sig]))
-                                #      for sig in sigs}
-                                d = {"w" + str(w): set(chain(*[node.fml.nonlogs()[0] for node in branch
-                                                               if node.world == w]))
-                                     for w in worlds}
-                                model = VarModalStructure(name, w, r, d, i)
-                                res.append(model)
-
-                else:  # intuitionistic logic
-                    # sigs = [tuple(node.sig) for node in branch]
-                    # # use k1, ..., kn as names for states instead of signatures
-                    # states = {sig: "k" + str(i) for (i, sig) in enumerate(sigs)}
-                    # k = {states[sig] for sig in sigs}
-                    # r_ = {(sig[:-1], sig) for sig in sigs if len(sig) > 1}
-                    # r = {(states[sig1], states[sig2]) for (sig1, sig2) in r_}
-                    states = list(dict.fromkeys([node.world for node in branch]))
-                    states_ = list(dict.fromkeys([node.world for node in branch if literal(node.fml)]))
-                    k = {"k" + str(w) for w in worlds}
-                    r_ = list(dict.fromkeys([node.inst for node in branch if isinstance(node.inst[0], int)]))
-                    r = {("w" + str(tpl[0]), "w" + str(tpl[1])) for tpl in r_}
-
-                    if self.mode["propositional"]:  # intuitionstic propositional logic
-                        # # atoms = all unnegated propositional variables
-                        # atoms = {sig: [node.fml.p for node in branch if isinstance(node.fml, Prop) and node.sig == sig]
-                        #          for sig in sigs}
-                        # # valuation = make all positive propositional variables true and all others false
-                        # v = {states[sig]: {p: (True if p in atoms[sig] else False) for p in self.root.fml.propvars()}
+                    else:  # classical modal predicate logic with varying domains
+                        # d = {worlds[sig]: set(chain(*[node.fml.nonlogs()[0] for node in branch
+                        #                       if node.sig == sig]))
                         #      for sig in sigs}
-                        # atoms = all unnegated propositional variables
-                        atoms = {k: [node.fml.p for node in branch if atom(node.fml) and node.world == k]
-                                 for k in states}
-                        # valuation = make all positive propositional variables true and all others false
-                        v = {k: {p: (True if p in atoms[k] else False) for p in self.root.fml.propvars()}
-                             for k in states}
-                        model = KripkePropStructure(name, k, r, v)
-                        res.append(model)
+                        d = {"w" + str(w): set(chain(*[node.fml.nonlogs()[0] for node in branch
+                                                       if node.world == w]))
+                             for w in worlds}
+                        model = VarModalStructure(name, w, r, d, i)
 
-                    else:  # intuitionistic predicate logic
-                        # predicates = all predicates occurring in the conclusion and premises
-                        constants = set(chain(self.root.fml.nonlogs()[0],
-                                              *[ass.fml.nonlogs()[0] for ass in [self.root] + self.premises]))
-                        funcsymbs = set(chain(self.root.fml.nonlogs()[1],
-                                              *[ass.fml.nonlogs()[1] for ass in [self.root] + self.premises]))
-                        predicates = set(chain(self.root.fml.nonlogs()[2],
-                                               *[ass.fml.nonlogs()[2] for ass in [self.root] + self.premises]))
-                        # # atoms = all unnegated atomic predications
-                        # atoms = {sig: [(node.fml.pred, node.fml.terms) for node in branch
-                        #                if isinstance(node.fml, Atm) and node.sig == sig]
-                        #          for sig in sigs}
-                        # d = {states[sig]: set(chain(*[node.fml.nonlogs()[0] for node in branch
-                        #                               if node.sig == sig]))
-                        #      for sig in sigs}
-                        # i = {states[sig]: {p: {tuple([str(t) for t in a[1]]) for a in atoms[sig]
-                        #                        if (Pred(p), a[1]) in atoms[sig]}
-                        #                    for p in predicates}
-                        #      for sig in sigs}
-                        # atoms = all unnegated atomic predications
-                        atoms = {k: [(node.fml.pred, node.fml.terms) for node in branch
-                                     if isinstance(node.fml, Atm) and node.world == k]
-                                 for k in states}
-                        d = {"k" + str(k): set(chain(*[node.fml.nonlogs()[0] for node in branch
-                                                       if node.world == k]))
-                             for k in states}
-                        i = {"k" + str(k): {p: {tuple([str(t) for t in a[1]]) for a in atoms[k]
-                                                if (Pred(p), a[1]) in atoms[k]}
-                                            for p in predicates}
-                             for k in states}
-                        model = KripkePredStructure(name, k, r, d, i)
-                        res.append(model)
+        else:  # intuitionistic logic
+            # sigs = [tuple(node.sig) for node in branch]
+            # # use k1, ..., kn as names for states instead of signatures
+            # states = {sig: "k" + str(i) for (i, sig) in enumerate(sigs)}
+            # k = {states[sig] for sig in sigs}
+            # r_ = {(sig[:-1], sig) for sig in sigs if len(sig) > 1}
+            # r = {(states[sig1], states[sig2]) for (sig1, sig2) in r_}
+            states = list(dict.fromkeys([node.world for node in branch]))
+            states_ = list(dict.fromkeys([node.world for node in branch if literal(node.fml)]))
+            k = {"k" + str(w) for w in worlds}
+            r_ = list(dict.fromkeys([node.inst for node in branch if isinstance(node.inst[0], int)]))
+            r = {("w" + str(tpl[0]), "w" + str(tpl[1])) for tpl in r_}
 
-        return res
+            if self.mode["propositional"]:  # intuitionstic propositional logic
+                # # atoms = all unnegated propositional variables
+                # atoms = {sig: [node.fml.p for node in branch if isinstance(node.fml, Prop) and node.sig == sig]
+                #          for sig in sigs}
+                # # valuation = make all positive propositional variables true and all others false
+                # v = {states[sig]: {p: (True if p in atoms[sig] else False) for p in self.root.fml.propvars()}
+                #      for sig in sigs}
+                # atoms = all unnegated propositional variables
+                atoms = {k: [node.fml.p for node in branch if atom(node.fml) and node.world == k]
+                         for k in states}
+                # valuation = make all positive propositional variables true and all others false
+                v = {k: {p: (True if p in atoms[k] else False) for p in self.root.fml.propvars()}
+                     for k in states}
+                model = KripkePropStructure(name, k, r, v)
+
+            else:  # intuitionistic predicate logic
+                # predicates = all predicates occurring in the conclusion and premises
+                constants = set(chain(self.root.fml.nonlogs()[0],
+                                      *[ass.fml.nonlogs()[0] for ass in [self.root] + self.premises]))
+                funcsymbs = set(chain(self.root.fml.nonlogs()[1],
+                                      *[ass.fml.nonlogs()[1] for ass in [self.root] + self.premises]))
+                predicates = set(chain(self.root.fml.nonlogs()[2],
+                                       *[ass.fml.nonlogs()[2] for ass in [self.root] + self.premises]))
+                # # atoms = all unnegated atomic predications
+                # atoms = {sig: [(node.fml.pred, node.fml.terms) for node in branch
+                #                if isinstance(node.fml, Atm) and node.sig == sig]
+                #          for sig in sigs}
+                # d = {states[sig]: set(chain(*[node.fml.nonlogs()[0] for node in branch
+                #                               if node.sig == sig]))
+                #      for sig in sigs}
+                # i = {states[sig]: {p: {tuple([str(t) for t in a[1]]) for a in atoms[sig]
+                #                        if (Pred(p), a[1]) in atoms[sig]}
+                #                    for p in predicates}
+                #      for sig in sigs}
+                # atoms = all unnegated atomic predications
+                atoms = {k: [(node.fml.pred, node.fml.terms) for node in branch
+                             if isinstance(node.fml, Atm) and node.world == k]
+                         for k in states}
+                d = {"k" + str(k): set(chain(*[node.fml.nonlogs()[0] for node in branch
+                                               if node.world == k]))
+                     for k in states}
+                i = {"k" + str(k): {p: {tuple([str(t) for t in a[1]]) for a in atoms[k]
+                                        if (Pred(p), a[1]) in atoms[k]}
+                                    for p in predicates}
+                     for k in states}
+                model = KripkePredStructure(name, k, r, d, i)
+
+        return model
 
 
 class Node(object):
@@ -1001,7 +1018,7 @@ class Node(object):
         # len_sig = max(([len(".".join([str(s) for s in node.sig])) for node in self.root().nodes() if node.sig])) + 1 \
         #     if [self.root.sig] else 0
         len_world = max([len(str(node.world)) for node in self.root().nodes() if node.world]) + 2 \
-            if self.root().world else 0
+            if any([node.world for node in self.root().nodes()]) else 0
         len_fml = max([len(str(node.fml)) for node in self.root().nodes()]) + 1
         len_rule = max([len(str(node.rule)) for node in self.root().nodes() if node.rule])
         len_source = max([len(str(node.source.line)) for node in self.root().nodes() if node.source]) \
@@ -1052,7 +1069,8 @@ class Node(object):
         """
         String representation of the tree whose root is this node.
         """
-
+        if not self.fml:
+            return ""
         res = indent
         res += "|--" if binary else ""
         res += str(self) + "\n"
@@ -1148,7 +1166,14 @@ class Node(object):
         return child
 
     def rules(self, mode):
-        return self.fml.tableau_pos(mode) if self.fml.tableau_pos(mode) else dict()
+        # assumption rules for modal satisiability
+        if (not mode["classical"] or mode["modal"]) and not mode["validity"] and not self.world and self.rule == "A":
+            if mode["satisfiability"]:
+                return {"A": ("λ", [self.fml])}
+            else:
+                return {"A": ("κ", [self.fml])}
+        # ordinary rules
+        return self.fml.tableau_pos(mode) if self.fml and self.fml.tableau_pos(mode) else dict()
 
     def closed(self):
         """
@@ -1160,7 +1185,7 @@ class Node(object):
         if self.annotation():
             return
         for node in self.branch:
-            if self.world == node.world and self.fml.tableau_contradiction_pos(node.fml):
+            if self.fml and self.world == node.world and self.fml.tableau_contradiction_pos(node.fml):
                 rule = str(node.line) if node != self else ""
                 source = self
                 self.add_child((None, None, Closed(), rule, source, None))
@@ -1194,11 +1219,13 @@ class Node(object):
         # todo smarter implementation (check for loops in rule appls.)
         len_assumptions = sum([len(str(node.fml)) for node in self.branch if node.rule == "A"])
         num_consts_vertical = len(dict.fromkeys(chain(*[node.fml.nonlogs()[0]
-                                                        for node in self.branch if node.fml.nonlogs()])))
+                                                        for node in self.branch
+                                                        if node.fml and node.fml.nonlogs()])))
         num_consts_horizontal = len(dict.fromkeys(chain(*[node.fml.nonlogs()[0]
-                                                          for node in self.branch[-2].children if node.fml.nonlogs()])))
+                                                          for node in self.branch[-2].children
+                                                          if node.fml and node.fml.nonlogs()])))
         num_worlds_vertical = len(dict.fromkeys([node.world
-                                                 for node in self.branch if node.world if node.world]))
+                                                 for node in self.branch if node.world]))
         num_worlds_horizontal = len(dict.fromkeys([node.world
                                                    for node in self.branch[-2].children if node.world]))
         if num_consts_vertical > len_assumptions or num_worlds_vertical > len_assumptions:
@@ -1304,25 +1331,25 @@ if __name__ == "__main__":
     # tab = Tableau(Neg(fml), modal=True, validity=False)
     # print(tab)
     #
-    fml = Exists(Var("x"), Poss(Imp(Nec(Atm(Pred("P"), (Var("x"),))), Forall(Var("x"), Atm(Pred("P"), (Var("x"),))))))
-    tab = Tableau(fml, modal=True, vardomains=True)
-    print(tab)
-    tab = Tableau(Neg(fml), validity=False, modal=True, vardomains=True)
-    print(tab)
+    # fml = Exists(Var("x"), Poss(Imp(Nec(Atm(Pred("P"), (Var("x"),))), Forall(Var("x"), Atm(Pred("P"), (Var("x"),))))))
+    # tab = Tableau(fml, modal=True, vardomains=True)
+    # print(tab)
+    # tab = Tableau(fml, validity=False, satisfiability=False, modal=True, vardomains=True)
+    # print(tab)
     #
     # fml = Imp(Exists(Var("x"), Forall(Var("y"), Nec(Atm(Pred("Q"), (Var("x"), Var("y")))))),
     #           Forall(Var("y"), Nec(Exists(Var("x"), Atm(Pred("Q"), (Var("x"), (Var("y"))))))))
     # tab = Tableau(fml, modal=True, vardomains=True)
-    # # print(tab)
-    # tab = Tableau(Neg(fml), validity=False, modal=True, vardomains=True)
-    # # print(tab)
+    # print(tab)
+    # tab = Tableau(fml, validity=False, satisfiability=False, modal=True, vardomains=True)
+    # print(tab)
     #
     # fml = Imp(Conj(Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))),
     #                Nec(Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)), Atm(Pred("R"), (Var("x"),)))))),
     #           Exists(Var("x"), Poss(Atm(Pred("R"), (Var("x"),)))))
     # tab = Tableau(fml, modal=True, vardomains=True)
-    # # print(tab)
-    # tab = Tableau(Neg(fml), validity=False, modal=True, vardomains=True)
+    # print(tab)
+    # tab = Tableau(fml, validity=False, satisfiability=False, modal=True, vardomains=True)
     # print(tab)
     #
     # fml = Biimp(Forall(Var("x"), Forall(Var("y"), Atm(Pred("P"), (Var("x"), Var("y"))))),
