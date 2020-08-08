@@ -986,8 +986,6 @@ class Neg(Formula):
         """
         # If the negation does not occur under another neg., apply the negative tableau rule on the negative formula.
         rules = self.phi.tableau_neg(mode)
-        if not mode["classical"]:
-            rules["¬"] = ("ν", [self])
         return rules
 
     def tableau_neg(self, mode):
@@ -1320,6 +1318,96 @@ class Biimp(Formula):
         else:
             return {"¬↔": ("ξ", [self.phi, Neg(self.phi),
                                  Neg(self.psi), self.psi])}
+
+class Xor(Formula):
+    """
+    Exclusive or..
+    (φ⊕ψ)
+
+    @attr phi: the left formula
+    @type phi: Formula
+    @attr psi: the right formula
+    @type psi: Formula
+    """
+    def __init__(self, phi: Formula, psi: Formula):
+        self.phi = phi
+        self.psi = psi
+
+    def __str__(self):
+        return "(" + str(self.phi) + " ⊕  " + str(self.psi) + ")"
+
+    def tex(self):
+        return "(" + self.phi.tex() + " \\oplus " + self.psi.tex() + ")"
+
+    def __eq__(self, other):
+        return isinstance(other, Xor) and self.phi == other.phi and self.psi == other.psi
+
+    def __len__(self):
+        return 1 + len(self.phi) + len(self.psi)
+
+    def propvars(self):
+        return self.phi.propvars() | self.psi.propvars()
+
+    def freevars(self):
+        return self.phi.freevars() | self.psi.freevars()
+
+    def boundvars(self):
+        return self.phi.boundvars() | self.psi.boundvars()
+
+    def nonlogs(self):
+        return self.phi.nonlogs()[0] | self.psi.nonlogs()[0], \
+               self.phi.nonlogs()[1] | self.psi.nonlogs()[1], \
+               self.phi.nonlogs()[2] | self.psi.nonlogs()[2]
+
+    def subst(self, u, t):
+        return Biimp(self.phi.subst(u, t), self.psi.subst(u, t))
+
+    def denot(self, m, g=None, w=None):
+        """
+        In CL, the denotation of an biimplicational formula Biimp(phi,psi) is true iff
+        phi and psi have the same truth value.
+
+        In IL, the denotation of an biimplicational formula Biimp(phi,psi) is true at k iff
+        at all subsequent states k' >= k, phi and psi have the same truth value.
+        """
+        if not isinstance(m, KripkeStructure):  # CL
+            return self.phi.denot(m, g, w) != self.psi.denot(m, g, w)
+        else:  # IL
+            return False not in [(self.phi.denot(m, g, w_) != self.psi.denot(m, g, w_)) for w_ in m.future(w)]
+
+    def tableau_pos(self, mode):
+        """
+        CL:        IL:
+         (φ⊕ψ)         σ (φ⊕ψ)
+         /  \          /     \
+        φ   ¬φ     σ.n φ   σ.n ¬φ
+        |    |       |        |
+        ¬ψ   ψ     σ.n ¬ψ   σ.n ψ
+                   where σ.n is old
+        """
+        if mode["classical"]:
+            return {"⊕": ("β", [self.phi, Neg(self.phi),
+                                Neg(self.psi), self.psi])}
+        else:
+            return {"⊕": ("χ", [self.phi, Neg(self.phi),
+                                Neg(self.psi), self.psi])}
+
+    def tableau_neg(self, mode):
+        """
+        CL:        IL:
+         (φ⊕ψ)         σ (φ⊕ψ)
+         /  \          /     \
+        φ   ¬φ     σ.n φ   σ.n ¬φ
+        |    |       |        |
+        ψ   ¬ψ     σ.n ψ   σ.n ¬ψ
+                   where σ.n is old
+        """
+        if mode["classical"]:
+            return {"⊕": ("β", [self.phi, Neg(self.phi),
+                                self.psi, Neg(self.psi)])}
+        else:
+            return {"⊕s": ("χ", [self.phi, Neg(self.phi),
+                                 self.psi, Neg(self.psi)])}
 
 
 class Exists(Formula):
@@ -1865,7 +1953,152 @@ class Nec(Formula):
             rules = {"¬◻": ("κ", [Neg(self.phi)])}
         return rules
 
-class Closed(Formula):
+class Forces(Formula):
+    """
+    Special pseudo-connective indicating that a formula is true in all worlds of the model.
+     ⊩φ
+
+     @attr phi: the invalid formula
+     @type phi: Formula
+     """
+
+    def __init__(self, phi: Formula):
+        self.phi = phi
+
+    def __str__(self):
+        return str(self.phi)
+
+    def tex(self):
+        return self.phi.tex()
+
+    def __eq__(self, other):
+        return isinstance(other, Forces) and self.phi == other.phi
+
+    def __len__(self):
+        return 1 + len(self.phi)
+
+    def propvars(self):
+        return self.phi.propvars()
+
+    def freevars(self):
+        return self.phi.freevars()
+
+    def boundvars(self):
+        return self.phi.boundvars()
+
+    def nonlogs(self):
+        return self.phi.nonlogs()[0], \
+               self.phi.nonlogs()[1], \
+               self.phi.nonlogs()[2]
+
+    def subst(self, u, t):
+        return Neg(self.phi.subst(u, t))
+
+    def denot(self, m, g=None, w=None):
+        """
+        A formula is true in the model if it is true in all worlds of the model.
+        """
+        return self.phi.denotG(m, g)
+
+    def tableau_pos(self, mode):
+        """
+        CL:       ML, IL:
+        ⊩φ         ⊩φ
+         |          |
+         φ        σ φ
+                  where σ is old
+        """
+        if mode["classical"] and not mode["modal"]:
+            rules = self.phi.tableau_pos(mode)
+        else:
+            rules = {"A": ("λ", [self.phi])}
+        return rules
+
+    def tableau_neg(self, mode):
+        return dict()
+
+class NotForces(Formula):
+    """
+    Special pseudo-connective indicating that a formula is not true in all worlds of the model.
+     ⊮φ
+
+     @attr phi: the invalid formula
+     @type phi: Formula
+     """
+
+    def __init__(self, phi: Formula):
+        self.phi = phi
+
+    def __str__(self):
+        return "¬" + str(self.phi)
+
+    def tex(self):
+        return "\\neg " + self.phi.tex()
+
+    def __eq__(self, other):
+        return isinstance(other, NotForces) and self.phi == other.phi
+
+    def __len__(self):
+        return 1 + len(self.phi)
+
+    def propvars(self):
+        return self.phi.propvars()
+
+    def freevars(self):
+        return self.phi.freevars()
+
+    def boundvars(self):
+        return self.phi.boundvars()
+
+    def nonlogs(self):
+        return self.phi.nonlogs()[0], \
+               self.phi.nonlogs()[1], \
+               self.phi.nonlogs()[2]
+
+    def subst(self, u, t):
+        return Neg(self.phi.subst(u, t))
+
+    def denot(self, m, g=None, w=None):
+        """
+        A formula is not true in the model if it is not true in all worlds of the model.
+        """
+        return not self.phi.denotG(m, g)
+
+    def tableau_pos(self, mode):
+        """
+        CL:       ML, IL:
+        ⊮φ         ⊮φ
+         |          |
+        ¬φ        σ ¬φ
+                  where σ is new
+        """
+        if mode["classical"] and not mode["modal"]:
+            rules = self.phi.tableau_neg(mode)
+        else:
+            rules = {"A": ("κ", [Neg(self.phi)])}
+        return rules
+
+    def tableau_neg(self, mode):
+        return dict()
+
+
+class Pseudo(Formula):
+    """
+    Special pseudo-formulas for tableau annotation.
+    """
+
+class Empty(Formula):
+    """
+    Special empty pseudo-formula to secretly introduce branching.
+    """
+
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return ""
+
+class Closed(Pseudo):
     """
     Special pseudo-formula indicating a branch is closed.
     ×
@@ -1878,7 +2111,7 @@ class Closed(Formula):
         return "×"
 
 
-class Open(Formula):
+class Open(Pseudo):
     """
     Special pseudo-formula indicating a branch is open.
     ○
@@ -1891,7 +2124,7 @@ class Open(Formula):
         return "○"
 
 
-class Infinite(Formula):
+class Infinite(Pseudo):
     """
     Special pseudo-formula indicating a branch is (probably) infinite.
     ...

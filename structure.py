@@ -124,7 +124,7 @@ class PredStructure(Structure):
                                                      for key2, val2 in val.items()])
                                           if isinstance(val, dict) else
                                           ("{" +
-                                           ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in val]) +
+                                           ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in sorted(val)]) +
                                            "}")))
                                         for (key, val) in sorted(self.i.items())])
 

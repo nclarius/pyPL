@@ -14,6 +14,7 @@ from typing import List, Dict, Set, Tuple
 import itertools
 from itertools import chain
 
+# todo count rule applications relative to branch
 # todo documentation
 # todo improve model generation
 # todo make non-K modal logics work
@@ -27,7 +28,8 @@ rule_names = {"α": "alpha", "β": "beta",  # connective rules
               "ξ": "xi", "χ": "chi", "ο": "omicron", "u": "ypsilon", "ω": "omega"  # intuitionistic rules
               }
 parameters = list("abcdefghijklmnopqrst") + ["c" + str(i) for i in range(1, 1000)]
-more = 0  # number of additional models  # todo doesn't properly work yet
+num_mdls = 1  # number of models to generate  # todo doesn't really work
+latex = False
 
 
 class Tableau(object):
@@ -43,6 +45,7 @@ class Tableau(object):
         # todo nicer specification of settings?
         # todo check consistency of settings
         self.mode = {
+            "latex": latex,
             "validity": validity, "satisfiability": satisfiability,
             "classical": classical, "propositional": propositional,
             "modal": modal, "vardomains": vardomains, "frame": frame
@@ -52,164 +55,134 @@ class Tableau(object):
         line = 1
         # sig = (1,) if modal or not classical else None
         world = 1 if validity and (modal or not classical) else None
-        root_fml = conclusion if conclusion else premises[0]
-        fml = Neg(root_fml) if validity or not satisfiability else root_fml
+        signed = True if not classical or modal else False  # todo reimplement with signed formulas
         rule = "A"
         source = None
         inst = tuple()
-        self.root = Node(None, line, world, fml, rule, source, inst)
-        self.premises = [self.root.leaves()[0].add_child((i + 2, world, premise, rule, source, inst))
-                         for i, premise in (enumerate(premises) if conclusion else enumerate(premises[1:]))]
+        negative = True if validity or not validity and not satisfiability else False
+        root_fml, premise_fmls, axiom_fmls = \
+            (conclusion, premises, axioms) if conclusion else (premises[0], premises[1:], axioms)
+        if classical and (not modal or validity):  # default: no forcing sign
+            root_fml = root_fml if not negative else Neg(root_fml)
+        else:  # ML MG and IL: forcing sign
+            root_fml = Forces(root_fml) if not negative else NotForces(root_fml)
+            premise_fmls = [Forces(prem) for prem in premise_fmls]
+            axiom_fmls = [Forces(ax) for ax in axiom_fmls]
+        self.conclusion = conclusion
+        self.root = Node(None, line, world, root_fml, rule, source, inst)
+        self.premises = [self.root.leaves()[0].add_child((i + 2, world, premise_fml, rule, source, inst))
+                         for i, premise_fml in enumerate(premise_fmls)]
         max_line = max([node.line for node in self.root.nodes() if node.line])
         self.axioms = [self.root.leaves()[0].add_child((i + max_line + 1, world, axiom, "Ax", source, inst))
-                       for i, axiom in enumerate(axioms)]
-        self.models = []
+                       for i, axiom in enumerate(axiom_fmls)]
         # todo formulas with free variables?
 
+        self.models = []
+
+        # run the tableau
+        self.run()
+
     def __str__(self):
-        """
-        Expand the tableau, generate the associate models and print some info.
-        """
-        # todo separate generation from printout?
-        res = "\n"
-
-        # print info
-        res += "You are using " + \
-               ("classical " if self.mode["classical"] else "intuitionistic ") + \
-               ("modal " if self.mode["modal"] else "") + \
-               ("propositional " if self.mode["propositional"] else "predicate ") + \
-               "logic" + \
-               (" with " + ("varying " if self.mode["vardomains"] else "constant ") + "domains"
-                if self.mode["modal"] and not self.mode["propositional"] else "") + \
-               (" in a " + self.mode["frame"] + " frame" if self.mode["modal"] else "") + \
-               ".\n\n"
-        if self.mode["validity"]:
-            res += "Tableau for " + \
-                   ", ".join([str(premise.fml) for premise in self.axioms + self.premises]) + \
-                   " ⊨ " + str(self.root.fml.phi) + ":\n\n"
-        else:
-            if self.mode["satisfiability"]:
-                res += "Tableau for " + \
-                       ", ".join([str(node.fml) for node in [self.root] + self.premises + self.axioms]) + " ⊭:\n\n"
-            else:
-                res += "Tableau for " + \
-                       "⊭ " + str(self.root.fml.phi) + ":\n\n"
-
-        # recursively apply the rules
-        self.expand()
-
-        # print the tableau
-        res += self.root.treestr()
-
-        # print result
-        if self.closed():
-            res += "The tableau is closed:\n"
-            if self.mode["validity"]:
-                res += "The " + ("inference" if self.premises else "formula") + " is valid.\n"
-            else:
-                if self.mode["satisfiability"]:
-                    res += "The " + ("set of sentences" if self.premises else "formula") + " is unsatisfiable.\n"
-                else:
-                    res += "The formula is irrefutable.\n"
-        elif self.open():
-            res += "The tableau is open:\n"
-            if self.mode["validity"]:
-                res += "The " + ("inference" if self.premises else "formula") + " is invalid.\n"
-            else:
-                if self.mode["satisfiability"]:
-                    res += "The " + ("set of sentences" if self.premises else "formula") + " is satisfiable.\n"
-                else:
-                    res += "The formula is refutable.\n"
-        elif self.infinite():
-            res += "The tableau is potentially infinite:\n"
-            if self.mode["validity"]:
-                res += "The " + ("inference" if self.premises else "formula") + " may or may not be valid.\n"
-            else:
-                if self.mode["satisfiability"]:
-                    res += "The " + ("set of sentences" if self.premises else "formula") + \
-                           " may or may not be satisfiable.\n"
-                else:
-                    res += "The formula may or may not be refutable.\n"
-
-        # generate and print models
-        if self.models:
-            res += "\nCounter models:\n" \
-                if self.mode["validity"] or not self.mode["validity"] and not self.mode["satisfiability"] \
-                else "\nModels:\n"
-            for model in self.models:
-                res += "\n"
-                res += str(model) + "\n"
-
-        res += "\n" + 80 * "-"
-        return res
-
-    def tex(self):
-        """
-        Expand the tableau, generate the associate models and print some info.
-        """
-        # todo ugly duplication with str method
-        res = "\\documentclass[a4paper]{article}\n\n\\usepackage{amssymb}\n\n\\begin{document}\n\n"
-
-        # print info
-        res += "You are using " + \
-               ("classical " if self.mode["classical"] else "intuitionistic ") + \
-               ("modal " if self.mode["modal"] else "") + \
-               ("propositional " if self.mode["propositional"] else "predicate ") + \
-               "logic" + \
-               (" with " + ("varying " if self.mode["vardomains"] else "constant ") + "domains"
-                if self.mode["modal"] and not self.mode["propositional"] else "") + \
-               (" in a " + self.mode["frame"] + " frame" if self.mode["modal"] else "") + \
-               ".\\\\\\\\\n\n"
-        if self.mode["validity"]:
-            res += "Tableau for " + \
-                   "$" + ", ".join([premise.fml.tex() for premise in self.premises]) + \
-                   " \\vDash " + self.root.fml.phi.tex() + "$:\\\\\n\n"
-        else:
-            res += "Tableau for " + \
-                   "$" + ", ".join([node.fml.tex() for node in [self.root] + self.premises]) + \
-                   " \\not \\vDash \\bot$:\\\\\n\n"
-
-        # recursively apply the rules
-        self.expand()
-
-        # print the tableau
-        res += self.root.treestr()  # todo latex for trees
-
-        # print result
-        if self.closed():
-            res += "The tableau is closed:\\\\\n"
-            if self.mode["validity"]:
-                res += "The " + ("inference" if self.premises else "formula") + " is valid.\\\\\n"
-            else:
-                res += "The " + ("set of sentences is inconsistent.\\\\\n" if self.premises else
-                                 "formula is unsatisfiable.\\\\\n")
-        elif self.open():
-            res += "The tableau is open:\\\\\\n"
-            if self.mode["validity"]:
-                res += "The " + ("inference" if self.premises else "formula") + " is invalid.\\\\\n"
-            else:
-                res += "The " + ("set of sentences is consistent.\\\\\n" if self.premises else
-                                 "formula is satisfiable.\\\\\n")
-        elif self.infinite():
-            res += "The tableau is potentially infinite:\\\\\n"
-            if self.mode["validity"]:
-                res += "The " + ("inference" if self.premises else "formula") + " may or may not be valid.\\\\\n"
-            else:
-                res += "The " + ("set of sentences" if self.premises else "formula") + " may or may not be " + \
-                       ("consistent.\\\\\n" if self.premises else "satisfiable.\\\\\n")
-
-        # generate and print models
-        if models := self.models():
-            res += "\\ \\\\\nCounter models:" if self.mode["validity"] else "\nModels:"
-            for model in models:
-                res += "\\ \\\\"
-                res += str(model)  # todo latex for structures
-
-        res += "\n\\end{document}"
-        return res
+        return self.root.treestr()
 
     def __len__(self):
         return len(self.root.nodes())
+
+    def run(self):
+        """
+        Expand the tableau, generate the associate models and print some info.
+        """
+        # create preamble
+        if latex:
+            preamble = "\\documentclass[a4paper]{article}\n\n\\usepackage{amssymb, amsmath}\n\n\\begin{document}\n\n"
+            print(preamble)
+
+        # print info
+        info = "\n"
+        info += "You are using " + \
+                ("proof search" if self.mode["validity"] else
+                 ("model" if self.mode["satisfiability"] else "countermodel") + " generation") + "\nfor " + \
+                ("classical " if self.mode["classical"] else "intuitionistic ") + \
+                ("modal " if self.mode["modal"] else "") + \
+                ("propositional " if self.mode["propositional"] else "predicate ") + \
+                "logic" + \
+                (" with " + ("varying " if self.mode["vardomains"] else "constant ") + "domains"
+                 if self.mode["modal"] and not self.mode["propositional"] else "") + \
+                (" in a " + self.mode["frame"] + " frame" if self.mode["modal"] else "") + \
+                ".\n\n"
+        if self.mode["validity"]:
+            info += "Tableau for " + \
+                   ", ".join([str(premise.fml) for premise in self.axioms + self.premises]) + \
+                   " ⊨ " + str(self.conclusion) + ":\n"
+        else:
+            info += "Tableau for " + \
+                    ", ".join([str(node.fml) for node in self.premises + self.axioms]) + \
+                    " ⊭" + (" " + str(self.conclusion) if self.conclusion else "") + ":\n\n"
+        info = info.replace("⊩ ", "").replace("⊮ ", "")
+        if latex:
+            info.replace("\n", "\\\\\n")
+        print(info)
+
+        # recursively apply the rules
+        self.expand()
+
+        # print the tableau
+        print(self.root.treestr()[:-1])  # todo latex for trees
+
+        # print result
+        result = ""
+        if self.closed():
+            result += "The tableau is closed:\n"
+            if self.mode["validity"]:
+                result += "The " + ("inference" if self.premises else "formula") + " is valid.\n"
+            else:
+                if self.mode["satisfiability"]:
+                    result += "The " + ("set of sentences" if self.premises else "formula") + " is unsatisfiable.\n"
+                else:
+                    result += "The " + ("inference" if self.premises else "formula") + " is irrefutable.\n"
+        elif self.open():
+            result += "The tableau is open:\n"
+            if self.mode["validity"]:
+                result += "The " + ("inference" if self.premises else "formula") + " is invalid.\n"
+            else:
+                if self.mode["satisfiability"]:
+                    result += "The " + ("set of sentences" if self.premises else "formula") + " is satisfiable.\n"
+                else:
+                    result += "The " + ("inference" if self.premises else "formula") + " is refutable.\n"
+        elif self.infinite():
+            result += "The tableau is potentially infinite:\n"
+            if self.mode["validity"]:
+                result += "The " + ("inference" if self.premises else "formula") + " may or may not be valid.\n"
+            else:
+                if self.mode["satisfiability"]:
+                    result += "The " + \
+                              ("set of sentences" if self.premises else "formula") + \
+                           " may or may not be satisfiable.\n"
+                else:
+                    result += "The " + ("inference" if self.premises else "formula") + " may or may not be refutable.\n"
+        if latex:
+            result.replace("\n", "\\\\\n")
+        print(result)
+
+        # generate and print models
+        if self.models:
+            mdls = ""
+            mdls += "Countermodels:\n" \
+                if self.mode["validity"] or not self.mode["validity"] and not self.mode["satisfiability"] \
+                else "Models:\n"
+            for model in self.models:
+                mdls += "\n"
+                mdls += str(model) + "\n"  # todo latex for models
+            if latex:
+                mdls.replace("\n", "\\\\\n")
+            print(mdls)
+
+        if not latex:
+            sep = "\n" + 80 * "-"
+            print(sep)
+        if latex:
+            postamble = "\\end{document}"
+            print(postamble)
 
     def applicable(self):
         """
@@ -243,23 +216,32 @@ class Tableau(object):
                 elif rule_type in ["γ", "δ", "η", "θ"]:
                     targets = [node for node in source.leaves(True) if node.fml]
                     if rule_type in ["θ"]:
-                        # the rule branches on the source line rather than the leaves
-                        # find nodes which are expansions of this source and their parents
-                        instantiations = [(node, node.branch[-2]) for node in source.nodes()
-                                          if
-                                          node and node.source and node.source.line and node.source.line == source.line]
-                        siblings, parents = zip(*instantiations) if instantiations else ([], [])
-                        if instantiations:
-                            # the rule has already been applied:
-                            # append the other children to all parents of its first child, rather than the leaves
-                            targets = parents
+                        targets = []
+                        for leaf in [leaf for leaf in source.leaves() if leaf.fml]:
+                            # the rule branches on the node of its first instantiation rather than the leaves
+                            # find nodes on the branch which are expansions of this source and their parents
+                            instantiations = [node for node in leaf.branch
+                                              if node and node.source and node.source.line and
+                                              node.source.line == source.line]
+                            if instantiations:
+                                # the rule has already been applied:
+                                # append the parent of the first instantiation as a target,
+                                # but only if the parent is not already declared infinite
+                                parent = instantiations[0].branch[-2]
+                                if not parent.children[-1].pseudo():
+                                    targets.append(parent)
+                            else:
+                                # the rule has not yet been applied:
+                                # add the leaf as a target if it is not finished
+                                if not leaf.pseudo():
+                                    targets.append(leaf)
 
                     for target in targets:
                         branch = [node for node in target.branch if node.fml]
                         # collect the constants this rule has been instantiated with in the branch/level
                         used = list(dict.fromkeys([str(node.inst[1]) for node in branch if applied(node)])) \
                             if rule_type not in ["θ"] else \
-                            list(dict.fromkeys([str(node.inst[1]) for node in siblings if node.inst]))
+                            list(dict.fromkeys([str(node.inst[1]) for node in instantiations if node.inst]))
                         # collect the constants occurring in the branch
                         occurring = list(dict.fromkeys(chain(*[[str(c)
                                                                for c in node.fml.nonlogs()[0]] for node in branch])))
@@ -281,7 +263,7 @@ class Tableau(object):
                             # yet to be instantiated;
                             # except there are no constants at all, then it may be applied with an arbitrary parameter
                             if any([not any([node.inst[1] == c for node in branch if applied(node)])
-                                    for c in occurring + parameters[:more]]) \
+                                    for c in occurring + parameters[:num_mdls-1]]) \
                                     or not occurring:
                                 applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
 
@@ -289,16 +271,25 @@ class Tableau(object):
                 elif rule_type in ["μ", "ν", "π", "κ", "λ"]:
                     targets = [node for node in source.leaves(True) if node.fml]
                     if rule_type in ["κ"]:
-                        # the rule branches on the source line rather than the leaves
-                        # find nodes which are expansions of this source and their parents
-                        instantiations = [(node, node.branch[-2]) for node in source.nodes()
-                                          if
-                                          node and node.source and node.source.line and node.source.line == source.line]
-                        siblings, parents = zip(*instantiations) if instantiations else ([], [])
-                        if instantiations:
-                            # the rule has already been applied:
-                            # append the other children to all parents of its first child, rather than the leaves
-                            targets = parents
+                        targets = []
+                        for leaf in [leaf for leaf in source.leaves() if leaf.fml]:
+                            # the rule branches on the node of its first instantiation rather than the leaves
+                            # find nodes on the branch which are expansions of this source and their parents
+                            instantiations = [node for node in leaf.branch
+                                              if node and node.source and node.source.line and
+                                              node.source.line == source.line]
+                            if instantiations:
+                                # the rule has already been applied:
+                                # append the parent of the first instantiation as a target,
+                                # but only if the parent is not already declared infinite
+                                parent = instantiations[0].branch[-2]
+                                if not isinstance(parent.children[-1].fml, Infinite):
+                                    targets.append(parent)
+                            else:
+                                # the rule has not yet been applied:
+                                # add the leaf as a target if it is not finished
+                                if not leaf.pseudo():
+                                    targets.append(leaf)
 
                     for target in targets:
                         branch = [node for node in target.branch if node.fml]
@@ -315,15 +306,16 @@ class Tableau(object):
                         # collect the worlds this rule has been instantiated with in the branch/on this level
                         used = list(dict.fromkeys([node.inst[1] for node in branch if applied(node)])) \
                             if rule_type not in ["κ"] else \
-                            list(dict.fromkeys([node.inst[1] for node in siblings if node.inst]))
+                            list(dict.fromkeys([node.inst[1] for node in instantiations if node.inst]))
                         # collect the worlds occurring in the branch
                         occurring = list(dict.fromkeys([node.world for node in branch if node.world]))
                         # additional worlds to use
                         fresh = [i for i in range(1, 100) if i not in occurring]
                         # collect the signatures occurring in the branch that are accessible from the source world
                         extensions = list(dict.fromkeys([node.inst[1] for node in branch
-                                                         if node.inst and node.inst[0] == source.world])) \
-                            if rule_name != "A" else fresh
+                                                         if node.inst and node.inst[0] == source.world]))
+                        if not extensions and rule_name == "A":
+                            extensions = fresh
                         # # for model finding, add at least one world
                         # if not self.mode["validity"] and not extensions:
                         #     extensions = occurring[:1]
@@ -354,10 +346,9 @@ class Tableau(object):
                             # and only if there are extensions occurring in the branch or needed for additional models
                             # yet to be instantiated,
                             # except when there are no signatures in the branch at all and the rule is an assumption
-                            # todo add extensions in satisfiability mode
                             if any([not any([node.inst[1] == w
                                              for node in branch if applied(node)])
-                                    for w in extensions + fresh[:more]]) or \
+                                    for w in extensions + fresh[:num_mdls-1]]) or \
                                     rule_name == "A" and not occurring:
                                 applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
 
@@ -365,18 +356,18 @@ class Tableau(object):
                 elif rule_type in ["ξ", "χ", "ο", "u", "ω"]:
                     pass  # not yet implemented
 
-        # if the only rules applicable to a non-contradictory branch are already applied δ, θ or κ rules,
-        # it is declared open and its applicable rules cleared
-        # print("applicable:")
-        # print("\n".join([", ".join([
-        #     str(i), str(itm[0].line), str(itm[1].line), itm[2], str(itm[3]), str(itm[5]), str(itm[6])])
-        #     for i, itm in enumerate(applicable)]))
-        for leaf in [node for node in self.root.leaves(True) if node.fml]:
-            if all([appl[6] > more and appl[3] in ["δ", "θ", "κ"]
+        # if the only rules applicable to an unfinished branch are
+        # δ, θ or κ rules that have already been applied on this branch,
+        # it is declared open and, in the case of validity tableaus, its applicable rules cleared
+        for leaf in [node for node in self.root.leaves() if node.fml
+                     if not (isinstance(node.fml, Closed) or isinstance(node.fml, Infinite))]:
+            if all([appl[6] and appl[3] in ["δ", "θ", "κ"]
                     for appl in applicable if appl[0] in leaf.branch]):
-                leaf.open()
-                self.models.append(self.model(leaf))
-                applicable = [appl for appl in applicable if appl[0] not in leaf.branch]
+                if not leaf.pseudo():
+                    leaf.open()
+                    self.models.append(self.model(leaf))
+                if self.mode["validity"]:
+                    applicable = [appl for appl in applicable if appl[0] not in leaf.branch]
 
         # define a preference order for rule types
         rule_order = {r: i for (i, r) in enumerate(
@@ -408,6 +399,21 @@ class Tableau(object):
         Recursively expand all nodes in the tableau.
         """
         while applicable := self.applicable():
+            len_assumptions = sum([len(str(node.fml)) for node in self.root.nodes()
+                                   if node.rule == "A" and not node.world])
+            num_nodes = len(self.root.nodes(True))
+            # the tree gets too big; stop execution
+            if num_nodes > 3 * len_assumptions:
+                # mark abandoned branches
+                for leaf in self.root.leaves(True):
+                    leaf.add_child((None, None, Infinite(), None, None, None))
+                return
+            if not self.mode["validity"] and len(self.models) >= num_mdls:
+                # enough models have been found; stop the execution
+                # mark abandoned branches
+                for leaf in self.root.leaves(True):
+                    leaf.add_child((None, None, Infinite(), None, None, None))
+                return
             if debug:
                 print("applicable:")
                 print("\n".join([", ".join([
@@ -479,6 +485,8 @@ class Tableau(object):
         world = source.world
 
         # find a constant to substitute
+        # limit the occurring constants to those belong to the domain of the current world
+        occurring = [c for c in occurring if "_" + str(world) in c]
         # for modal predicate logic with varying domains: add signature subscript to constant
         # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         subscript = "_" + str(source.world) if indexed else ""
@@ -540,7 +548,7 @@ class Tableau(object):
         # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         subscript = "_" + str(source.world) if indexed else ""
         usable = [c + (subscript if "_" not in c else "")
-                  for c in (occurring + parameters[:more] if occurring + parameters[:more] else ["a"])]
+                  for c in (occurring + parameters[:num_mdls-1] if occurring + parameters[:num_mdls-1] else ["a"])]
         # choose first symbol from occurring that has not already been used with this particular rule
         const_symbol = usable[(min([i for i in range(len(usable)) if usable[i] not in used]))]
         const = Const(const_symbol)
@@ -681,7 +689,7 @@ class Tableau(object):
         #         sig = sig_
         #         break
         # inst = (source.sig, sig)
-        usable = extensions + [i for i in range(1, 1000)][:more]
+        usable = extensions + [i for i in range(1, 1000)][:num_mdls-1]
         world = min([i for i in usable if i not in used])
         new = True if world not in extensions else False
         inst = (source.world, world, new)
@@ -795,7 +803,7 @@ class Tableau(object):
         @return True if all branches are closed, and False otherwise
         @rtype: bool
         """
-        return all([isinstance(leaf.fml, Closed) for leaf in self.root.leaves()])
+        return all([isinstance(leaf.fml, Closed) for leaf in self.root.leaves() if leaf.fml])
 
     def open(self) -> bool:
         """
@@ -804,7 +812,7 @@ class Tableau(object):
         @return True if at least one branch is open, and False otherwise
         @rtype: bool
         """
-        return any([isinstance(leaf.fml, Open) for leaf in self.root.leaves()])
+        return any([isinstance(leaf.fml, Open) for leaf in self.root.leaves() if leaf.fml])
 
     def infinite(self) -> bool:
         """
@@ -813,7 +821,7 @@ class Tableau(object):
         @return True if all at least one branch is infinite, and False otherwise
         @rtype: bool
         """
-        return any([isinstance(leaf.fml, Infinite) for leaf in self.root.leaves()])
+        return any([isinstance(leaf.fml, Infinite) for leaf in self.root.leaves() if leaf.fml])
 
     def model(self, leaf) -> Structure:
         """
@@ -1019,6 +1027,7 @@ class Node(object):
         #     if [self.root.sig] else 0
         len_world = max([len(str(node.world)) for node in self.root().nodes() if node.world]) + 2 \
             if any([node.world for node in self.root().nodes()]) else 0
+        # len_sign = 2 if self.root().sign else 0
         len_fml = max([len(str(node.fml)) for node in self.root().nodes()]) + 1
         len_rule = max([len(str(node.rule)) for node in self.root().nodes() if node.rule])
         len_source = max([len(str(node.source.line)) for node in self.root().nodes() if node.source]) \
@@ -1028,6 +1037,7 @@ class Node(object):
         # str_sig = "{:<{len}}".format(".".join([str(s) for s in self.sig]) if self.sig else "", len=len_sig) \
         #     if len_sig else ""
         str_world = "{:<{len}}".format("w" + str(self.world) if self.world else "", len=len_world)
+        # str_sign = "{:<{len}}".format(("⊩" if self.sign == "+" else "⊮") if self.sign else "", len=len_sign)
         str_fml = "{:^{len}}".format(str(self.fml), len=len_fml)
         if isinstance(self.fml, Open) or isinstance(self.fml, Infinite):
             str_cite = ""
@@ -1069,7 +1079,7 @@ class Node(object):
         """
         String representation of the tree whose root is this node.
         """
-        if not self.fml:
+        if not self.fml:  # self is empty pseudo-node
             return ""
         res = indent
         res += "|--" if binary else ""
@@ -1091,6 +1101,7 @@ class Node(object):
                     res += childstr2
         else:  # self is leaf
             res += indent + "\n"
+            # res += indent + ("|  " if binary else "") + "\n"
         return res
 
     def nodes(self, root=True, reverse=False):
@@ -1131,14 +1142,14 @@ class Node(object):
         """
         return [leaf.branch for leaf in self.leaves()]
 
-    def leaves(self, excludeannotations=False):
+    def leaves(self, excludepseudo=False):
         """
         Get the leaf nodes descending from the this node.
         """
-        if not excludeannotations:
+        if not excludepseudo:
             return [node for node in self.nodes() if not node.children]
         else:
-            return [node for node in self.nodes() if not node.children and not node.annotation()]
+            return [node for node in self.nodes() if not node.children and not node.pseudo()]
 
     def root(self):
         """
@@ -1152,27 +1163,20 @@ class Node(object):
         """
         # todo sometimes adds None nodes (?)
         # don't add children to branches that are already closed, open or declared infinite
-        if self.children and self.children[0].annotation():
+        if self.children and (self.children[0].pseudo() or self.children[-1].pseudo()):
             return
 
         # add the child
         child = Node(self, *spec)
         self.children.append(child)
 
-        if not child.annotation():
+        if not child.pseudo():
             # check properties of new child
             child.closed()
             child.infinite()
         return child
 
     def rules(self, mode):
-        # assumption rules for modal satisiability
-        if (not mode["classical"] or mode["modal"]) and not mode["validity"] and not self.world and self.rule == "A":
-            if mode["satisfiability"]:
-                return {"A": ("λ", [self.fml])}
-            else:
-                return {"A": ("κ", [self.fml])}
-        # ordinary rules
         return self.fml.tableau_pos(mode) if self.fml and self.fml.tableau_pos(mode) else dict()
 
     def closed(self):
@@ -1182,7 +1186,8 @@ class Node(object):
         @return: True iff there is a contradiction in this node or between this node and some other node on the branch
         @rtype bool
         """
-        if self.annotation():
+        # todo sign
+        if self.pseudo():
             return
         for node in self.branch:
             if self.fml and self.world == node.world and self.fml.tableau_contradiction_pos(node.fml):
@@ -1200,7 +1205,7 @@ class Node(object):
         @return: True if the branch is not closed and there are no more rules applicable
         @rtype bool
         """
-        if self.annotation():
+        if self.pseudo():
             return
         self.add_child((None, None, Open(), None, None, None))
         return True
@@ -1209,35 +1214,49 @@ class Node(object):
         """
         Check if a branch is potentially infinite and i.a. add a respective label to the branch.
         A branch or level is judged potentially infinite iff
-        there are more constants or signatures in it than there are symbols in the assumptions.
+        it there are more constants or worlds introduced than are symbols in the assumptions.
 
         @return: True if the branch is potentially infinite
         @rtype bool
         """
-        if self.annotation():
+        if self.pseudo() or not self.fml:
             return
         # todo smarter implementation (check for loops in rule appls.)
-        len_assumptions = sum([len(str(node.fml)) for node in self.branch if node.rule == "A"])
-        num_consts_vertical = len(dict.fromkeys(chain(*[node.fml.nonlogs()[0]
-                                                        for node in self.branch
-                                                        if node.fml and node.fml.nonlogs()])))
-        num_consts_horizontal = len(dict.fromkeys(chain(*[node.fml.nonlogs()[0]
-                                                          for node in self.branch[-2].children
-                                                          if node.fml and node.fml.nonlogs()])))
-        num_worlds_vertical = len(dict.fromkeys([node.world
-                                                 for node in self.branch if node.world]))
-        num_worlds_horizontal = len(dict.fromkeys([node.world
-                                                   for node in self.branch[-2].children if node.world]))
-        if num_consts_vertical > len_assumptions or num_worlds_vertical > len_assumptions:
+        len_assumptions = sum([len(str(node.fml)) for node in self.branch if node.rule == "A" and not node.world])
+        height = len(self.branch)
+        width = len(self.branch[-2].children)
+        if height > len_assumptions:
             self.add_child((None, None, Infinite(), None, None, None))
             return True
-        if num_consts_horizontal > len_assumptions or num_worlds_horizontal > len_assumptions:
+        if width > len_assumptions:
             self.branch[-2].add_child((None, None, Infinite(), None, None, None))
             return True
+        # num_consts_vertical = len(dict.fromkeys(chain(*[node.fml.nonlogs()[0]
+        #                                                 for node in self.branch
+        #                                                 if node.fml and node.fml.nonlogs()])))
+        # num_consts_horizontal = len(dict.fromkeys(chain(*[node.fml.nonlogs()[0]
+        #                                                   for node in self.branch[-2].children
+        #                                                   if node.fml and node.fml.nonlogs()])))
+        # num_worlds_vertical = len(dict.fromkeys([node.world
+        #                                          for node in self.branch if node.world]))
+        # num_worlds_horizontal = len(dict.fromkeys([node.world
+        #                                            for node in self.branch[-2].children if node.world]))
+        # if num_consts_vertical > len_assumptions or num_worlds_vertical > len_assumptions:
+        #     self.add_child((None, None, Infinite(), None, None, None))
+        #     return True
+        # if num_consts_horizontal > len_assumptions or num_worlds_horizontal > len_assumptions:
+        #     self.branch[-2].add_child((None, None, Infinite(), None, None, None))
+        #     return True
         return False
 
-    def annotation(self):
-        return isinstance(self.fml, Closed) or isinstance(self.fml, Open) or isinstance(self.fml, Infinite)
+    def pseudo(self):
+        """
+        Check if a node is a psuedo-node.
+
+        @return: True if the node is an.pseudo for closed, open, infinite, or an empty node
+        @rtype bool
+        """
+        return isinstance(self.fml, Pseudo)
 
 
 ####################
@@ -1246,143 +1265,146 @@ class Node(object):
 if __name__ == "__main__":
     pass
 
+    #############
+    # Basic examples
+    ############
+
     # fml = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
     # tab = Tableau(fml, propositional=True)
-    # print(tab)
-    #
+    #     #
     # fml = Conj(Imp(Prop("p"), Prop("q")), Prop("r"))
     # tab = Tableau(fml, validity=True, propositional=True)
-    # print(tab)
     # tab = Tableau(fml, validity=False, satisfiability=True, propositional=True)
-    # print(tab)
     # tab = Tableau(fml, validity=False, satisfiability=False, propositional=True)
-    # print(tab)
-
+    # 
     # fml1 = Imp(Prop("p"), Prop("q"))
     # fml2 = Imp(Prop("q"), Prop("r"))
     # fml = Imp(Prop("p"), Prop("r"))
     # tab = Tableau(fml, premises=[fml1, fml2], propositional=True)
-    # print(tab)
-
+    # 
     # fml1 = Atm(Pred("P"), (Const("a"), Const("a")))
     # fml2 = Neg(Eq(Const("a"), Const("a")))
     # tab = Tableau(premises=[fml1, fml2], validity=False)
-    # print(tab)
-    #
+    #     #
     # fml1 = Imp(Atm(Pred("P"), (Const("a"), Const("b"))), Atm(Pred("Q"), (Const("a"), Const("c"))))
     # fml = Atm(Pred("R"), (Const("a"), Const("a")))
     # tab = Tableau(fml, premises=[fml1])
-    # print(tab)
-
-    fml = Conj(Exists(Var("x"), Atm(Pred("P"), (Var("x"),))), Neg(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))))
-    tab = Tableau(fml, validity=False, satisfiability=True)
-    print(tab)
-    tab = Tableau(fml, validity=False, satisfiability=False)
-    print(tab)
-
+    # 
+    # fml = Conj(Exists(Var("x"), Atm(Pred("P"), (Var("x"),))), Neg(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))))
+    # tab = Tableau(fml, validity=True)
+    # tab = Tableau(fml, validity=False, satisfiability=True)
+    # tab = Tableau(fml, validity=False, satisfiability=False)
+    # 
     # fml = Biimp(Forall(Var("x"), Atm(Pred("P"), (Var("x"),))), Neg(Exists(Var("x"), Neg(Atm(Pred("P"), (Var("x"),))))))
     # tab = Tableau(fml)
-    # print(tab)
+    # fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    # fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    # tab = Tableau(fml2, premises=[fml1])
+    # tab = Tableau(fml1, premises=[fml2])
+
+    # commutativity
 
     # fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # fml = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # tab = Tableau(fml, premises=[fml1])
-    # print(tab)
+    # fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    # # tab = Tableau(fml, premises=[fml1])
+    # tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False)
+    #
+    # fml1 = Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
+    #                              Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),
+    #                                                   Atm(Pred("R"), (Var("x"), Var("y")))))))
+    #
+    # fml2 = Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),
+    #                             Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
+    #                                                   Atm(Pred("R"), (Var("x"), Var("y")))))))
+    # fml3 = Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))
+    # tab = Tableau(fml2, premises=[fml1])
+    # tab = Tableau(fml1, premises=[fml2])
+    # tab = Tableau(fml1, premises=[fml2, fml3], validity=False, satisfiability=False)  # todo
 
+    # # commutativity: tupper boxes
     # fml1 = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
     #                               Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
     #                                                    Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    # fml = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+    # fml2 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
     #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
     #                                                   Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    # tab = Tableau(fml, preises=[fml1])
-    # print(tab)
-
-    # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # fml = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # tab = Tableau(fml, premises=[fml1])
-    # print(tab)
-
-    # fml1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
-    #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
-    #                                                   Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    # fml = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+    # tab = Tableau(fml2, premises=[fml1])
+    #
+    # fml1 = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
     #                               Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
     #                                                    Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    # tab = Tableau(fml, premises=[fml1])
-    # print(tab)
-    # print(len(tab))
+    # fml2 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+    #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+    #                                                   Atm(Pred("fit"), (Var("x"), Var("y")))))))
+    # fml3 = Exists(Var("x"), Atm(Pred("tupperbox"), (Var("x"),)))
+    # tab = Tableau(fml1, premises=[fml2])
+    # tab = Tableau(fml1, premises=[fml2, fml3], validity=False, satisfiability=False)
+
+    ###############
+    # Modal logic
+    ###############
 
     # fml = Biimp(Nec(Prop("p")), Neg(Poss(Neg(Prop("p")))))
     # tab = Tableau(fml, propositional=True, modal=True)
-    # print(tab)
-
+    # 
     # fml1 = Nec(Prop("p"))
     # fml = Poss(Prop("p"))
     # tab = Tableau(fml, premises=[fml1], propositional=True, modal=True)
-    # print(tab)
-    #
+    #     #
     # fml1 = Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),))))
     # fml = Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),))))
     # tab = Tableau(fml, premises=[fml1], modal=True)
-    # print(tab)
-
+    # 
     # fml = Imp(Forall(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))), Nec(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))))
     # tab = Tableau(fml, modal=True)
-    # print(tab)
-    #
+    #     #
     # fml = Imp(Exists(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))), Nec(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))))
     # tab = Tableau(fml, modal=True)
-    # print(tab)
-    #
+    #     #
     # fml = Imp(Nec(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))), Exists(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))))
     # tab = Tableau(fml, modal=True)
-    # # print(tab)
-    # tab = Tableau(Neg(fml), modal=True, validity=False)
-    # print(tab)
+    # tab = Tableau(fml, modal=True, validity=False)
+    # tab = Tableau(fml, modal=True, validity=False, satisfiability=False)
     #
     # fml = Exists(Var("x"), Poss(Imp(Nec(Atm(Pred("P"), (Var("x"),))), Forall(Var("x"), Atm(Pred("P"), (Var("x"),))))))
     # tab = Tableau(fml, modal=True, vardomains=True)
-    # print(tab)
+    # tab = Tableau(fml, validity=False, modal=True, vardomains=True)
     # tab = Tableau(fml, validity=False, satisfiability=False, modal=True, vardomains=True)
-    # print(tab)
-    #
+    #     #
     # fml = Imp(Exists(Var("x"), Forall(Var("y"), Nec(Atm(Pred("Q"), (Var("x"), Var("y")))))),
     #           Forall(Var("y"), Nec(Exists(Var("x"), Atm(Pred("Q"), (Var("x"), (Var("y"))))))))
+    # tab = Tableau(fml, modal=True)
     # tab = Tableau(fml, modal=True, vardomains=True)
-    # print(tab)
+    # tab = Tableau(fml, validity=False, modal=True, vardomains=True)
     # tab = Tableau(fml, validity=False, satisfiability=False, modal=True, vardomains=True)
-    # print(tab)
-    #
+    #     #
     # fml = Imp(Conj(Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))),
     #                Nec(Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)), Atm(Pred("R"), (Var("x"),)))))),
     #           Exists(Var("x"), Poss(Atm(Pred("R"), (Var("x"),)))))
     # tab = Tableau(fml, modal=True, vardomains=True)
-    # print(tab)
     # tab = Tableau(fml, validity=False, satisfiability=False, modal=True, vardomains=True)
-    # print(tab)
-    #
+    #     #
     # fml = Biimp(Forall(Var("x"), Forall(Var("y"), Atm(Pred("P"), (Var("x"), Var("y"))))),
     #             Forall(Var("y"), Forall(Var("x"), Atm(Pred("P"), (Var("y"), Var("x"))))))
     # tab = Tableau(fml)
-    # print(tab)
-    #
+    #     #
     # fml = Exists(Var("x"), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y")))))
     # tab = Tableau(fml, validity=False)
-    # print(tab)
-    #
+
+    #####################
+    # Linguistic examples
+    #####################
+
     # fml = Exists(Var("x"), Exists(Var("y"),
     #                               Conj(Neg(Eq(Var("x"), (Var("y")))), Atm(Pred("love"), (Var("x"), Var("y"))))))
     # tab = Tableau(fml, validity=False)
-    # print(tab)
-    #
+    #     #
     # fml = Forall(Var("x"), Conj(Atm(Pred("student"), (Var("x"),)),
     #                             Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
     #                                                   Atm(Pred("read"), (Var("x"), Var("y")))))))
     # fml1 = Exists(Var("x"), Atm(Pred("student"), (Var("x"),)))
     # tab = Tableau(fml, premises=[fml1], validity=False)
-    # print(tab)
-    #
+    #     #
     # ax1 = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)), Atm(Pred("human"), (Var("x"),))))
     # ax2 = Forall(Var("x"), Imp(Atm(Pred("book"), (Var("x"),)), Atm(Pred("object"), (Var("x"),))))
     # ax3 = Forall(Var("x"), Imp(Atm(Pred("human"), (Var("x"),)), Neg(Atm(Pred("object"), (Var("x"),)))))
@@ -1393,13 +1415,11 @@ if __name__ == "__main__":
     #                            Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
     #                                                  Atm(Pred("read"), (Var("x"), Var("y")))))))
     # tab = Tableau(fml, premises=[prem1, prem2], axioms=[ax1, ax2, ax3, ax4], validity=False)
-    # print(tab)
-
+    # 
     # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # fml2 = Neg(Exists(Var("y"), Forall(Var("x"), Atm(Pred("know"), (Var("x"), Var("y"))))))
     # tab = Tableau(None, premises=[fml1, fml2], validity=False)
-    # print(tab)
-
+    #     #
     # ax1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)), Neg(Atm(Pred("lid"), (Var("x"),)))))
     # ax2 = Forall(Var("x"), Imp(Atm(Pred("lid"), (Var("x"),)), Neg(Atm(Pred("tupperbox"), (Var("x"),)))))
     # fml1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
@@ -1410,22 +1430,17 @@ if __name__ == "__main__":
     #                                                    Atm(Pred("fit"), (Var("x"), Var("y"))))))))
     # fml3 = Exists(Var("x"), Atm(Pred("tupperbox"), (Var("x"),)))
     # tab = Tableau(None, premises=[fml1, fml2, fml3], axioms=[ax1, ax2], validity=False)
-    # print(tab)
-    #
+    #     #
     # fml = Nec(Falsum())
     # tab = Tableau(fml, propositional=True, modal=True, validity=False)
-    # print(tab)
-    #
+    #     #
     # fml = Conj(Poss(Prop("p")), Poss(Neg(Prop("p"))))
     # tab = Tableau(fml, propositional=True, modal=True, validity=False)
-    # print(tab)
-
+    # 
     # fml1 = Exists(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)), Atm(Pred("Q"), (Var("x"),))))
     # fml = Imp(Exists(Var("x"), Atm(Pred("P"), (Var("x"),))), Exists(Var("x"), Atm(Pred("Q"), (Var("x"),))))
     # # tab = Tableau(fml, premises=[fml1])
-    # # print(tab)
-    # tab = Tableau(Neg(fml), premises=[fml1], validity=False)
-    # print(tab)
+    # # tab = Tableau(Neg(fml), premises=[fml1], validity=False)
     # fml = Imp(Forall(Var("x"), Atm(Pred("P"), (Var("x"),))), Exists(Var("x"), Atm(Pred("Q"), (Var("x"),))))
     # tab = Tableau(fml, premises=[fml1])
-    # print(tab)
+    # 
