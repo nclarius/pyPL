@@ -199,7 +199,9 @@ class Tableau(object):
                 rule_type, fmls = rule
 
                 def applied(node):  # nodes in the branch that this rule has already been applied on
-                    return node and node.rule == rule_name and node.source and node.source.line == source.line
+                    return node and \
+                           node.rule and node.rule == rule_name and \
+                           node.source and node.source.line and node.source.line == source.line
 
                 # connective rules
                 if rule_type in ["α", "β"]:
@@ -217,31 +219,32 @@ class Tableau(object):
                     targets = [node for node in source.leaves(True) if node.fml]
                     if rule_type in ["θ"]:
                         targets = []
+                        instantiations = dict()
                         for leaf in [leaf for leaf in source.leaves() if leaf.fml]:
                             # the rule branches on the node of its first instantiation rather than the leaves
                             # find nodes on the branch which are expansions of this source and their parents
-                            instantiations = [node for node in leaf.branch
-                                              if node and node.source and node.source.line and
-                                              node.source.line == source.line]
-                            if instantiations:
+                            insts = [node for node in leaf.branch if applied(node)]
+                            if insts:
                                 # the rule has already been applied:
                                 # append the parent of the first instantiation as a target,
                                 # but only if the parent is not already declared infinite
-                                parent = instantiations[0].branch[-2]
+                                parent = insts[0].branch[-2]
                                 if not parent.children[-1].pseudo():
                                     targets.append(parent)
+                                    instantiations[parent] = insts
                             else:
                                 # the rule has not yet been applied:
                                 # add the leaf as a target if it is not finished
                                 if not leaf.pseudo():
                                     targets.append(leaf)
+                                    instantiations[leaf] = insts
 
                     for target in targets:
                         branch = [node for node in target.branch if node.fml]
                         # collect the constants this rule has been instantiated with in the branch/level
                         used = list(dict.fromkeys([str(node.inst[1]) for node in branch if applied(node)])) \
                             if rule_type not in ["θ"] else \
-                            list(dict.fromkeys([str(node.inst[1]) for node in instantiations if node.inst]))
+                            list(dict.fromkeys([str(node.inst[1]) for node in instantiations[target] if node.inst]))
                         # collect the constants occurring in the branch
                         occurring = list(dict.fromkeys(chain(*[[str(c)
                                                                for c in node.fml.nonlogs()[0]] for node in branch])))
@@ -251,7 +254,7 @@ class Tableau(object):
                         # compose the arguments
                         args = used, occurring, indexed
                         # count instantiations
-                        insts = len(used) if rule_type not in ["θ"] else len(instantiations)
+                        insts = len(used)
 
                         if rule_type in ["γ", "δ", "θ"]:
                             # the rule is applied with some constant
@@ -272,24 +275,25 @@ class Tableau(object):
                     targets = [node for node in source.leaves(True) if node.fml]
                     if rule_type in ["κ"]:
                         targets = []
+                        instantitaitons = dict()
                         for leaf in [leaf for leaf in source.leaves() if leaf.fml]:
                             # the rule branches on the node of its first instantiation rather than the leaves
                             # find nodes on the branch which are expansions of this source and their parents
-                            instantiations = [node for node in leaf.branch
-                                              if node and node.source and node.source.line and
-                                              node.source.line == source.line]
-                            if instantiations:
+                            insts = [node for node in leaf.branch if applied(node)]
+                            if insts:
                                 # the rule has already been applied:
                                 # append the parent of the first instantiation as a target,
                                 # but only if the parent is not already declared infinite
-                                parent = instantiations[0].branch[-2]
+                                parent = insts[0].branch[-2]
                                 if not isinstance(parent.children[-1].fml, Infinite):
                                     targets.append(parent)
+                                    instantiations[parent] = insts
                             else:
                                 # the rule has not yet been applied:
                                 # add the leaf as a target if it is not finished
                                 if not leaf.pseudo():
                                     targets.append(leaf)
+                                    instantiations[leaf] = insts
 
                     for target in targets:
                         branch = [node for node in target.branch if node.fml]
@@ -306,7 +310,7 @@ class Tableau(object):
                         # collect the worlds this rule has been instantiated with in the branch/on this level
                         used = list(dict.fromkeys([node.inst[1] for node in branch if applied(node)])) \
                             if rule_type not in ["κ"] else \
-                            list(dict.fromkeys([node.inst[1] for node in instantiations if node.inst]))
+                            list(dict.fromkeys([str(node.inst[1]) for node in instantiations[target] if node.inst]))
                         # collect the worlds occurring in the branch
                         occurring = list(dict.fromkeys([node.world for node in branch if node.world]))
                         # additional worlds to use
@@ -403,7 +407,7 @@ class Tableau(object):
                                    if node.rule == "A" and not node.world])
             num_nodes = len(self.root.nodes(True))
             # the tree gets too big; stop execution
-            if num_nodes > 3 * len_assumptions:
+            if num_nodes > 2 * len_assumptions:
                 # mark abandoned branches
                 for leaf in self.root.leaves(True):
                     leaf.add_child((None, None, Infinite(), None, None, None))
@@ -568,6 +572,7 @@ class Tableau(object):
         """
         phi, var = fmls
         used, occurring, indexed = args
+        # print(used)
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
@@ -1302,34 +1307,29 @@ if __name__ == "__main__":
     # tab = Tableau(fml2, premises=[fml1])
     # tab = Tableau(fml1, premises=[fml2])
 
-    # commutativity
+    #################
+    # quantifier commutativity
+    #################
+    #
+    fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    # tab = Tableau(fml, premises=[fml1])
+    tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False)
 
-    # fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # # tab = Tableau(fml, premises=[fml1])
-    # tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False)
-    #
-    # fml1 = Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
-    #                              Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),
-    #                                                   Atm(Pred("R"), (Var("x"), Var("y")))))))
-    #
-    # fml2 = Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),
-    #                             Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
-    #                                                   Atm(Pred("R"), (Var("x"), Var("y")))))))
-    # fml3 = Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))
-    # tab = Tableau(fml2, premises=[fml1])
-    # tab = Tableau(fml1, premises=[fml2])
-    # tab = Tableau(fml1, premises=[fml2, fml3], validity=False, satisfiability=False)  # todo
+    fml1 = Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
+                                 Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),
+                                                      Atm(Pred("R"), (Var("x"), Var("y")))))))
 
-    # # commutativity: tupper boxes
-    # fml1 = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
-    #                               Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
-    #                                                    Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    # fml2 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
-    #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
-    #                                                   Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    # tab = Tableau(fml2, premises=[fml1])
-    #
+    fml2 = Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),
+                                Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
+                                                      Atm(Pred("R"), (Var("x"), Var("y")))))))
+    fml3 = Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))
+    tab = Tableau(fml2, premises=[fml1])
+    tab = Tableau(fml1, premises=[fml2])
+    tab = Tableau(fml1, premises=[fml2, fml3], validity=False, satisfiability=False)
+
+    # ax1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)), Neg(Atm(Pred("lid"), (Var("x"),)))))
+    # ax2 = Forall(Var("x"), Imp(Atm(Pred("lid"), (Var("x"),)), Neg(Atm(Pred("tupperbox"), (Var("x"),)))))
     # fml1 = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
     #                               Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
     #                                                    Atm(Pred("fit"), (Var("x"), Var("y")))))))
@@ -1337,8 +1337,9 @@ if __name__ == "__main__":
     #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
     #                                                   Atm(Pred("fit"), (Var("x"), Var("y")))))))
     # fml3 = Exists(Var("x"), Atm(Pred("tupperbox"), (Var("x"),)))
+    # tab = Tableau(fml2, premises=[fml1])
     # tab = Tableau(fml1, premises=[fml2])
-    # tab = Tableau(fml1, premises=[fml2, fml3], validity=False, satisfiability=False)
+    # tab = Tableau(fml1, premises=[fml2, fml3], axioms=[ax1, ax2], validity=False, satisfiability=False)
 
     ###############
     # Modal logic
