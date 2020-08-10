@@ -14,20 +14,14 @@ from typing import List, Dict, Set, Tuple
 import itertools
 from itertools import chain
 
-# todo count rule applications relative to branch
 # todo documentation
 # todo improve model generation
 # todo make non-K modal logics work
 # todo tableaux for IL
 
+# global settings
 debug = False
-
-rule_names = {"α": "alpha", "β": "beta",  # connective rules
-              "γ": "gamma", "δ": "delta", "η": "eta", "θ": "theta",  # quantifier rules
-              "μ": "mu", "ν": "nu", "π": "pi", "κ": "kappa", "λ": "lambda",  # modal rules
-              "ξ": "xi", "χ": "chi", "ο": "omicron", "u": "ypsilon", "ω": "omega"  # intuitionistic rules
-              }
-parameters = list("abcdefghijklmnopqrst") + ["c" + str(i) for i in range(1, 1000)]
+size_limit_factor = 1  # size factor after which to give up the further expansion
 num_mdls = 1  # number of models to generate  # todo doesn't really work
 latex = False
 
@@ -36,7 +30,6 @@ class Tableau(object):
     """
     A tableau tree.
     """
-
     def __init__(self,
                  conclusion=None, premises=[], axioms=[],
                  validity=True, satisfiability=True,
@@ -65,15 +58,15 @@ class Tableau(object):
         if classical and (not modal or validity):  # default: no forcing sign
             root_fml = root_fml if not negative else Neg(root_fml)
         else:  # ML MG and IL: forcing sign
-            root_fml = Forces(root_fml) if not negative else NotForces(root_fml)
-            premise_fmls = [Forces(prem) for prem in premise_fmls]
-            axiom_fmls = [Forces(ax) for ax in axiom_fmls]
+            root_fml = AllWorlds(root_fml) if not negative else NotAllWorlds(root_fml)
+            premise_fmls = [AllWorlds(prem) for prem in premise_fmls]
+            axiom_fmls = [AllWorlds(ax) for ax in axiom_fmls]
         self.conclusion = conclusion
-        self.root = Node(None, line, world, root_fml, rule, source, inst)
-        self.premises = [self.root.leaves()[0].add_child((i + 2, world, premise_fml, rule, source, inst))
+        self.root = Node(None, self, line, world, root_fml, rule, source, inst)
+        self.premises = [self.root.leaves()[0].add_child((self, i + 2, world, premise_fml, rule, source, inst))
                          for i, premise_fml in enumerate(premise_fmls)]
         max_line = max([node.line for node in self.root.nodes() if node.line])
-        self.axioms = [self.root.leaves()[0].add_child((i + max_line + 1, world, axiom, "Ax", source, inst))
+        self.axioms = [self.root.leaves()[0].add_child((self, i + max_line + 1, world, axiom, "Ax", source, inst))
                        for i, axiom in enumerate(axiom_fmls)]
         # todo formulas with free variables?
 
@@ -111,14 +104,13 @@ class Tableau(object):
                 (" in a " + self.mode["frame"] + " frame" if self.mode["modal"] else "") + \
                 ".\n\n"
         if self.mode["validity"]:
-            info += "Tableau for " + \
-                   ", ".join([str(premise.fml) for premise in self.axioms + self.premises]) + \
-                   " ⊨ " + str(self.conclusion) + ":\n"
+            info += "Tableau for \n" + \
+                   ", \n".join([str(premise.fml) for premise in self.axioms + self.premises]) + \
+                   "\n⊨ " + str(self.conclusion) + ":\n"
         else:
-            info += "Tableau for " + \
-                    ", ".join([str(node.fml) for node in self.premises + self.axioms]) + \
-                    " ⊭" + (" " + str(self.conclusion) if self.conclusion else "") + ":\n\n"
-        info = info.replace("⊩ ", "").replace("⊮ ", "")
+            info += "Tableau for \n" + \
+                    ", \n".join([str(node.fml) for node in self.premises + self.axioms]) + \
+                    "\n⊭" + (" " + str(self.conclusion) if self.conclusion else "") + ":\n\n"
         if latex:
             info.replace("\n", "\\\\\n")
         print(info)
@@ -184,6 +176,54 @@ class Tableau(object):
             postamble = "\\end{document}"
             print(postamble)
 
+    rule_names = {"α": "alpha", "β": "beta",  # connective rules
+                  "γ": "gamma", "δ": "delta", "η": "eta", "θ": "theta",  # quantifier rules
+                  "μ": "mu", "ν": "nu", "π": "pi", "κ": "kappa", "λ": "lambda",  # modal rules
+                  "ξ": "xi", "χ": "chi", "ο": "omicron", "u": "ypsilon", "ω": "omega"  # intuitionistic rules
+                  }
+
+    def expand(self):
+        """
+        Recursively expand all nodes in the tableau.
+        """
+        while applicable := self.applicable():
+            len_assumptions = sum([len(str(node.fml)) for node in self.root.nodes()
+                                   if node.rule == "A" and not node.world])
+            num_nodes = len(self.root.nodes(True))
+            # the tree gets too big; stop execution
+            if num_nodes > 2 * size_limit_factor * len_assumptions:
+                # mark abandoned branches
+                for leaf in self.root.leaves(True):
+                    leaf.add_child((self, None, None, Infinite(), None, None, None))
+                return
+            if not self.mode["validity"] and len(self.models) >= num_mdls:
+                # enough models have been found; stop the execution
+                # mark abandoned branches
+                for leaf in self.root.leaves(True):
+                    leaf.add_child((self, None, None, Infinite(), None, None, None))
+                return
+            if debug:
+                print("applicable:")
+                print("\n".join([", ".join([
+                    str(i), str(itm[0].line), str(itm[1].line), itm[2], str(itm[3]), str(itm[5]), str(itm[6])])
+                    for i, itm in enumerate(applicable)]))
+            # get first applicable rule from prioritized list
+            (target, source, rule_name, rule_type, fmls, args, insts) = applicable[0]
+            rule_func = getattr(self, "rule_" + Tableau.rule_names[rule_type])
+            # apply the rule
+            if debug:
+                input()
+                print("expanding:")
+                print(str(target), " with ", rule_name, " from ", str(source))
+            rule_func(target, source, rule_name, fmls, args)
+            if debug:
+                print()
+                print(self.root.treestr())
+                print("--------")
+                print()
+
+    parameters = list("abcdefghijklmnopqrst") + ["c" + str(i) for i in range(1, 1000)]
+
     def applicable(self):
         """
         A prioritized list of applicable rules in the tree in the format
@@ -194,7 +234,7 @@ class Tableau(object):
         # collect the applicable rules in the tree
         applicable = []
         # traverse all nodes that could be expandable
-        for source in [node for node in self.root.nodes() if node.fml]:
+        for source in [node for node in self.root.nodes() if not node.pseudo()]:
             for rule_name, rule in source.rules(self.mode).items():
                 rule_type, fmls = rule
 
@@ -203,56 +243,68 @@ class Tableau(object):
                            node.rule and node.rule == rule_name and \
                            node.source and node.source.line and node.source.line == source.line
 
+                targets = [node for node in source.leaves(True) if not node.pseudo()]
+
                 # connective rules
                 if rule_type in ["α", "β"]:
                     # the rule is applicable to those branches it has not already been applied on
-                    targets = [node for node in source.leaves(True) if node.fml]
                     for target in targets:
                         branch = target.branch
                         if not any([applied(node) for node in branch]):
-                            args = ([],)
+                            args = (False,)
                             insts = 0
                             applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
 
                 # quantifier rules
                 elif rule_type in ["γ", "δ", "η", "θ"]:
-                    targets = [node for node in source.leaves(True) if node.fml]
                     if rule_type in ["θ"]:
                         targets = []
                         instantiations = dict()
-                        for leaf in [leaf for leaf in source.leaves() if leaf.fml]:
-                            # the rule branches on the node of its first instantiation rather than the leaves
-                            # find nodes on the branch which are expansions of this source and their parents
-                            insts = [node for node in leaf.branch if applied(node)]
-                            if insts:
+                        for node in source.nodes():
+                            if applied(node):
                                 # the rule has already been applied:
                                 # append the parent of the first instantiation as a target,
-                                # but only if the parent is not already declared infinite
-                                parent = insts[0].branch[-2]
+                                # but only if the parent is not already declared infinite,
+                                # and the node to the instantiations of all its leaves
+                                parent = node.branch[-2]
                                 if not parent.children[-1].pseudo():
-                                    targets.append(parent)
-                                    instantiations[parent] = insts
-                            else:
-                                # the rule has not yet been applied:
-                                # add the leaf as a target if it is not finished
-                                if not leaf.pseudo():
-                                    targets.append(leaf)
-                                    instantiations[leaf] = insts
+                                    if parent not in targets:
+                                        targets.append(parent)
+                                if parent not in instantiations:
+                                    instantiations[parent] = []
+                                if node.inst:
+                                    instantiations[parent].append(node)
+                        for leaf in source.leaves(True):
+                            if not any([node in instantiations for node in leaf.branch]):
+                                # the rule has not yet been applied on this branch:
+                                # add each leaf as a target if it is not finished
+                                targets.append(leaf)
+                                instantiations[leaf] = []
 
                     for target in targets:
-                        branch = [node for node in target.branch if node.fml]
+                        branch = [node for node in target.branch if not node.pseudo()]
                         # collect the constants this rule has been instantiated with in the branch/level
-                        used = list(dict.fromkeys([str(node.inst[1]) for node in branch if applied(node)])) \
-                            if rule_type not in ["θ"] else \
-                            list(dict.fromkeys([str(node.inst[1]) for node in instantiations[target] if node.inst]))
+                        if rule_type not in ["θ"]:
+                            used = list(dict.fromkeys([str(node.inst[1]) for node in branch if applied(node)]))
+                        else:
+                            used = list(dict.fromkeys([str(node.inst[1]) for node in instantiations[target]]))
                         # collect the constants occurring in the branch
                         occurring = list(dict.fromkeys(chain(*[[str(c)
-                                                               for c in node.fml.nonlogs()[0]] for node in branch])))
+                                                               for c in node.fml.nonlogs()[0]]
+                                                               for node in branch
+                                                               if not node.pseudo() and node.fml.nonlogs()])))
+                        # check if the rule requires a new constant to be instantiated
+                        if rule_type in ["γ", "θ"]:
+                            new = len(used) >= len(occurring)
+                        elif rule_type in ["δ"]:
+                            new = True
+                        elif rule_type in ["η"]:
+                            new = len(occurring) == 0
                         # check if indexed constants are required (for modal PL with var. domains and IL)
                         indexed = self.mode["modal"] and not self.mode["propositional"] and self.mode["vardomains"] or \
                                   not self.mode["classical"]
                         # compose the arguments
-                        args = used, occurring, indexed
+                        args = new, indexed, used, occurring
                         # count instantiations
                         insts = len(used)
 
@@ -266,16 +318,15 @@ class Tableau(object):
                             # yet to be instantiated;
                             # except there are no constants at all, then it may be applied with an arbitrary parameter
                             if any([not any([node.inst[1] == c for node in branch if applied(node)])
-                                    for c in occurring + parameters[:num_mdls-1]]) \
+                                    for c in occurring + Tableau.parameters[:num_mdls-1]]) \
                                     or not occurring:
                                 applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
 
                 # modal rules
                 elif rule_type in ["μ", "ν", "π", "κ", "λ"]:
-                    targets = [node for node in source.leaves(True) if node.fml]
                     if rule_type in ["κ"]:
                         targets = []
-                        instantitaitons = dict()
+                        instantiations = dict()
                         for leaf in [leaf for leaf in source.leaves() if leaf.fml]:
                             # the rule branches on the node of its first instantiation rather than the leaves
                             # find nodes on the branch which are expansions of this source and their parents
@@ -296,7 +347,7 @@ class Tableau(object):
                                     instantiations[leaf] = insts
 
                     for target in targets:
-                        branch = [node for node in target.branch if node.fml]
+                        branch = [node for node in target.branch if not node.pseudo()]
                         # # collect the signatures this rule has been instantiated with in the branch/on this level
                         # used = list(dict.fromkeys([node.inst[1] for node in branch if applied(node)])) \
                         #     if rule_type not in ["κ"] else \
@@ -326,8 +377,17 @@ class Tableau(object):
                         # collect the signatures occurring in the branch that the source world is accessible from
                         reductions = list(dict.fromkeys([node.inst[0] for node in branch
                                                          if node.inst and node.inst[1] == source.world]))
+                        # check if the rule requires a new world or accessibility to be instantiated
+                        if rule_type in ["μ"]:
+                            new = True
+                        elif rule_type in ["ν", "π"]:
+                            new = False
+                        elif rule_type in ["κ"]:
+                            new = len(used) >= len(extensions)
+                        elif rule_type in ["λ"]:
+                            new = len(extensions) == 0
                         # compose the arguments
-                        args = used, occurring, extensions, reductions
+                        args = new, used, occurring, extensions, reductions
                         # count instantiations
                         insts = len(used) if rule_type not in ["κ"] else len(instantiations)
 
@@ -363,8 +423,9 @@ class Tableau(object):
         # if the only rules applicable to an unfinished branch are
         # δ, θ or κ rules that have already been applied on this branch,
         # it is declared open and, in the case of validity tableaus, its applicable rules cleared
-        for leaf in [node for node in self.root.leaves() if node.fml
-                     if not (isinstance(node.fml, Closed) or isinstance(node.fml, Infinite))]:
+        for leaf in [node for node in self.root.leaves() if node.fml and
+                     not (isinstance(node.fml, Empty) or
+                          isinstance(node.fml, Closed) or isinstance(node.fml, Infinite))]:
             if all([appl[6] and appl[3] in ["δ", "θ", "κ"]
                     for appl in applicable if appl[0] in leaf.branch]):
                 if not leaf.pseudo():
@@ -376,9 +437,22 @@ class Tableau(object):
         # define a preference order for rule types
         rule_order = {r: i for (i, r) in enumerate(
             ["η", "λ", "α", "β", "δ", "γ", "θ", "π", "μ", "ν", "κ", "ξ", "χ", "ο", "u", "ω"])}
+        branching = {  # rank by branching
+            "α": 0, "β": 1,  # connective rules
+            "γ": 0, "δ": 0, "η": 0, "θ": 1,  # quantifier rules
+            "μ": 0, "ν": 0, "π": 0, "κ": 1, "λ": 0,  # modal rules
+            "ξ": 1, "χ": 1, "ο": 0, "u": 0, "ω": 0  # intuitionistic rules
+        }
+        operator = {  # rank by operator type
+            "α": 0, "β": 0,  # connective rules
+            "γ": 1, "δ": 1, "η": 1, "θ": 1,  # quantifier rules
+            "μ": 2, "ν": 2, "π": 2, "κ": 2, "λ": 2,  # modal rules
+            "ξ": 2, "χ": 2, "ο": 3, "u": 3, "ω": 3  # intuitionistic rules
+        }
         # enumerate the nodes level-order so nodes can be prioritized by position in the tree
         pos = {node: i for (i, node) in enumerate(self.root.nodes())}
         pos_rev = {node: i for (i, node) in enumerate(self.root.nodes(True)[::-1])}
+
         # sort the applicable rules by ...
         sort_v1 = lambda i: (  # for validity tableaus:
             i[6],              # 1. number of times the rule has already been applied on this branch (prefer least used)
@@ -386,57 +460,20 @@ class Tableau(object):
             pos[i[0]],         # 3. position of the target node in the tree (prefer leftmost highest)
             rule_order[i[3]]   # 4. rule type rank (prefer earlier in order)
         )
+        # in competing theta rules, only start to introduce one new constant each?
         sort_v2 = lambda i: (  # for satisfiability tableaus:
             i[6],              # 1. number of times the rule has already been applied on this branch (prefer least used)
-            rule_order[i[3]],  # 2. rule type rank (prefer earlier in order)
-            pos_rev[i[0]],     # 3. position of the target node in the tree (prefer leftmost lowest)
-            pos_rev[i[1]]      # 4. position of the source node in the tree (prefer leftmost lowest)
-
+            i[5][0],           # 2. whether to introduce a new constant or world (prefer not to)
+            branching[i[3]],   # 3. whether the rules branches (prefer non-branching)
+            operator[i[3]],    # 4. what type of operator the rule belongs to (connective > quant. > modal > int.)
+            rule_order[i[3]],  # 5. reamaining rule type rank (prefer earlier in order)
+            pos[i[0]],         # 6. position of the target node in the tree (prefer leftmost highest)
+            pos[i[1]]          # 7. position of the source node in the tree (prefer leftmost highest)
         )
         appl_sorted = list(k for k, _ in itertools.groupby([itm for itm in
                                                             sorted(applicable, key=(
                                                                 sort_v1 if self.mode["validity"] else sort_v2))]))
         return appl_sorted
-
-    def expand(self):
-        """
-        Recursively expand all nodes in the tableau.
-        """
-        while applicable := self.applicable():
-            len_assumptions = sum([len(str(node.fml)) for node in self.root.nodes()
-                                   if node.rule == "A" and not node.world])
-            num_nodes = len(self.root.nodes(True))
-            # the tree gets too big; stop execution
-            if num_nodes > 2 * len_assumptions:
-                # mark abandoned branches
-                for leaf in self.root.leaves(True):
-                    leaf.add_child((None, None, Infinite(), None, None, None))
-                return
-            if not self.mode["validity"] and len(self.models) >= num_mdls:
-                # enough models have been found; stop the execution
-                # mark abandoned branches
-                for leaf in self.root.leaves(True):
-                    leaf.add_child((None, None, Infinite(), None, None, None))
-                return
-            if debug:
-                print("applicable:")
-                print("\n".join([", ".join([
-                    str(i), str(itm[0].line), str(itm[1].line), itm[2], str(itm[3]), str(itm[5]), str(itm[6])])
-                    for i, itm in enumerate(applicable)]))
-            # get first applicable rule from prioritized list
-            (target, source, rule_name, rule_type, fmls, args, insts) = applicable[0]
-            rule_func = getattr(self, "rule_" + rule_names[rule_type])
-            # apply the rule
-            if debug:
-                input()
-                print("expanding:")
-                print(str(target), " with ", rule_name, " from ", str(source))
-            rule_func(target, source, rule_name, fmls, args)
-            if debug:
-                print()
-                print(self.root.treestr())
-                print("--------")
-                print()
 
     def rule_alpha(self, target, source, rule, fmls, args):
         """
@@ -448,11 +485,11 @@ class Tableau(object):
         world = source.world
 
         # append (top) node
-        top = target.add_child((line := line + 1, world, fmls[0], rule, source, []))
+        top = target.add_child((self, line := line + 1, world, fmls[0], rule, source, []))
 
         # append bottom node
         if len(fmls) == 2:
-            bot = top.add_child((line := line + 1, world, fmls[1], rule, source, []))
+            bot = top.add_child((self, line := line + 1, world, fmls[1], rule, source, []))
 
     def rule_beta(self, target, source, rule, fmls, args):
         """
@@ -464,18 +501,18 @@ class Tableau(object):
         world = source.world
 
         # append (top) left node
-        topleft = target.add_child((line := line + 1, world, fmls[0], rule, source, []))
+        topleft = target.add_child((self, line := line + 1, world, fmls[0], rule, source, []))
 
         # append bottom left node
         if len(fmls) == 4 and topleft:
-            botleft = topleft.add_child((line := line + 1, world, fmls[2], rule, source, []))
+            botleft = topleft.add_child((self, line := line + 1, world, fmls[2], rule, source, []))
 
         # append (top) right node
-        topright = target.add_child((line := line + 1, world, fmls[1], rule, source, []))
+        topright = target.add_child((self, line := line + 1, world, fmls[1], rule, source, []))
 
         # append bottom right node
         if len(fmls) == 4 and topright:
-            botright = topright.add_child((line := line + 1, world, fmls[3], rule, source, []))
+            botright = topright.add_child((self, line := line + 1, world, fmls[3], rule, source, []))
 
     def rule_gamma(self, target, source, rule, fmls, args):
         """
@@ -483,7 +520,7 @@ class Tableau(object):
         Branch unary with an arbitrary constant.
         """
         phi, var = fmls
-        used, occurring, indexed = args
+        new, indexed, used, occurring = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
@@ -494,7 +531,7 @@ class Tableau(object):
         # for modal predicate logic with varying domains: add signature subscript to constant
         # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         subscript = "_" + str(source.world) if indexed else ""
-        usable = [c + (subscript if "_" not in c else "") for c in occurring + parameters]
+        usable = [c + (subscript if "_" not in c else "") for c in occurring + Tableau.parameters]
         usable += ["a"] if not usable else []
         # choose first symbol from constants and parameters that has not already been used with this particular rule
         const_symbol = usable[(min([i for i in range(len(usable)) if usable[i] not in used]))]
@@ -506,7 +543,7 @@ class Tableau(object):
         fml = phi.subst(var, const)
 
         # add node
-        target.add_child((line + 1, world, fml, rule, source, inst))
+        target.add_child((self, line + 1, world, fml, rule, source, inst))
 
     def rule_delta(self, target, source, rule, fmls, args):
         """
@@ -514,7 +551,7 @@ class Tableau(object):
         Branch unary with a new constant.
         """
         phi, var = fmls
-        used, occurring, indexed = args
+        new, indexed, used, occurring = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
@@ -523,7 +560,7 @@ class Tableau(object):
         # for modal predicate logic with varying domains: add signature subscript to constant
         # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         subscript = "_" + str(source.world) if indexed else ""
-        usable = [c + (subscript if "_" not in c else "") for c in parameters]
+        usable = [c + (subscript if "_" not in c else "") for c in Tableau.parameters]
         # choose first symbol from list of parameters that does not yet occur in this branch
         const_symbol = usable[(min([i for i in range(len(usable)) if usable[i] not in occurring]))]
         const = Const(const_symbol)
@@ -534,7 +571,7 @@ class Tableau(object):
         fml = phi.subst(var, const)
 
         # add node
-        target.add_child((line + 1, world, fml, rule, source, inst))
+        target.add_child((self, line + 1, world, fml, rule, source, inst))
 
     def rule_eta(self, target, source, rule, fmls, args):
         """
@@ -542,7 +579,7 @@ class Tableau(object):
         Branch unary with an existing constant.
         """
         phi, var = fmls
-        used, occurring, indexed = args
+        new, indexed, used, occurring = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
@@ -552,7 +589,8 @@ class Tableau(object):
         # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         subscript = "_" + str(source.world) if indexed else ""
         usable = [c + (subscript if "_" not in c else "")
-                  for c in (occurring + parameters[:num_mdls-1] if occurring + parameters[:num_mdls-1] else ["a"])]
+                  for c in (occurring + Tableau.parameters[:num_mdls-1]
+                            if occurring + Tableau.parameters[:num_mdls-1] else ["a"])]
         # choose first symbol from occurring that has not already been used with this particular rule
         const_symbol = usable[(min([i for i in range(len(usable)) if usable[i] not in used]))]
         const = Const(const_symbol)
@@ -563,7 +601,7 @@ class Tableau(object):
         fml = phi.subst(var, const)
 
         # add node
-        target.add_child((line + 1, world, fml, rule, source, inst))
+        target.add_child((self, line + 1, world, fml, rule, source, inst))
 
     def rule_theta(self, target, source, rule, fmls, args):
         """
@@ -571,7 +609,7 @@ class Tableau(object):
         Branch n-ay with an arbitrary constant.
         """
         phi, var = fmls
-        used, occurring, indexed = args
+        new, indexed, used, occurring = args
         # print(used)
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
@@ -581,7 +619,7 @@ class Tableau(object):
         # for modal predicate logic varying domains: add signature subscript to constant
         # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         subscript = "_" + str(source.world) if indexed else ""
-        usable = [c + (subscript if "_" not in c else "") for c in occurring + parameters]
+        usable = [c + (subscript if "_" not in c else "") for c in occurring + Tableau.parameters]
         # choose first symbol from occurring and parameters that has not already been used with this particular rule
         const_symbol = usable[(min([i for i in range(len(usable)) if usable[i] not in used]))]
         const = Const(const_symbol)
@@ -591,17 +629,19 @@ class Tableau(object):
         inst = (str(var), str(const), new)
         fml = phi.subst(var, const)
 
-        # add pseudo-node to indicate branching (the rule branches on the source rather than the leaves)
-        target.add_child((None, None, None, rule, source, None))
+        # add pseudo-node to indicate branching
+        if not target.children:
+            target.add_child((self, None, None, Empty(), rule, source, None))
+
         # add node
-        target.add_child((line + 1, world, fml, rule, source, inst))
+        target.add_child((self, line + 1, world, fml, rule, source, inst))
 
     def rule_mu(self, target, source, rule, fmls, args):
         """
         μ
         Branch unary with a new signature.
         """
-        used, occurring, extensions, reductions = args
+        new, used, occurring, extensions, reductions = args
         line = max([node.line for node in self.root.nodes() if node.line])
 
         # choose a signature that does not already occur in this branch
@@ -616,18 +656,18 @@ class Tableau(object):
         inst = (source.world, world, new)
 
         # add (top) node
-        top = target.add_child((line := line + 1, world, fmls[0], rule, source, inst))
+        top = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
 
         # add bottom node
         if len(fmls) == 2 and top:
-            bot = top.add_child((line := line + 1, world, fmls[1], rule, source, inst))
+            bot = top.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
 
     def rule_nu(self, target, source, rule, fmls, args):
         """
         ν
         Branch unary with an existing signature.
         """
-        used, occurring, extensions, reductions = args
+        new, used, occurring, extensions, reductions = args
         max_line = max([node.line for node in self.root.nodes() if node.line])
         line = max_line
 
@@ -643,18 +683,18 @@ class Tableau(object):
         inst = (source.world, world, new)
 
         # add (top) node
-        top = target.add_child((line := line + 1, world, fmls[0], rule, source, inst))
+        top = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
 
         # add bottom node
         if len(fmls) == 2 and top:
-            bot = top.add_child((line := line + 1, world, fmls[1], rule, source, inst))
+            bot = top.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
 
     def rule_kappa(self, target, source, rule, fmls, args):
         """
         κ
         Branch n-ay with an arbitrary signature.
         """
-        used, occurring, extensions, reductions = args
+        new, used, occurring, extensions, reductions = args
         line = max([node.line for node in self.root.nodes() if node.line])
 
         # choose a signature that has not already been used with this rule
@@ -668,22 +708,23 @@ class Tableau(object):
         new = True if world not in extensions else False
         inst = (source.world, world, new)
 
-        # add pseudo-node to indicate branching (the rule branches on the source rather than the leaves)
-        target.add_child((None, None, None, rule, source, None))
+        # add pseudo-node to indicate branching
+        if not target.children:
+            target.add_child((self, None, None, Empty(), rule, source, None))
 
         # add (top) node
-        top = target.add_child((line := line + 1, world, fmls[0], rule, source, inst))
+        top = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
 
         # add bottom node
         if len(fmls) == 2 and top:
-            bot = top.add_child((line := line + 1, world, fmls[1], rule, source, inst))
+            bot = top.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
 
     def rule_lambda(self, target, source, rule, fmls, args):
         """
         λ
         Branch unary with an existing signature.
         """
-        used, occurring, extensions, reductions = args
+        new, used, occurring, extensions, reductions = args
         max_line = max([node.line for node in self.root.nodes() if node.line])
         line = max_line
 
@@ -700,18 +741,18 @@ class Tableau(object):
         inst = (source.world, world, new)
 
         # add (top) node
-        top = target.add_child((line := line + 1, world, fmls[0], rule, source, inst))
+        top = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
 
         # add bottom node
         if len(fmls) == 2 and top:
-            bot = top.add_child((line := line + 1, world, fmls[1], rule, source, inst))
+            bot = top.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
 
     def rule_pi(self, target, source, rule, fmls, args):
         """
         π
         Branch unary with a previous signature.
         """
-        used, occurring, extensions, reductions = args
+        new, used, occurring, extensions, reductions = args
         max_line = max([node.line for node in self.root.nodes() if node.line])
         line = max_line
 
@@ -723,18 +764,18 @@ class Tableau(object):
         inst = (source.world, world, new)
 
         # add (top) node
-        top = target.add_child((line := line + 1, world, fmls[0], rule, source, inst))
+        top = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
 
         # add bottom node
         if len(fmls) == 2 and top:
-            bot = top.add_child((line := line + 1, world, fmls[1], rule, source, inst))
+            bot = top.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
 
     def rule_xi(self, target, source, rule, fmls, args):
         """
         ξ
         Branch binary with a new signature.
         """
-        used, occurring, extensions, reductions = args
+        new, used, occurring, extensions, reductions = args
         line = max([node.line for node in self.root.nodes() if node.line])
 
         # find a signature that does not already occur in this branch
@@ -749,17 +790,17 @@ class Tableau(object):
         inst = (source.world, world, new)
 
         # add left node
-        left = target.add_child((line := line + 1, world, fmls[0], rule, source, inst))
+        left = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
 
         # add right node
-        right = target.add_child((line := line + 1, world, fmls[1], rule, source, inst))
+        right = target.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
 
     def rule_chi(self, target, source, rule, fmls, args):
         """
         χ
         Branch binary with an existing signature.
         """
-        used, occurring, extensions, reductions = args
+        new, used, occurring, extensions, reductions = args
         max_line = max([node.line for node in self.root.nodes() if node.line])
         line = max_line
 
@@ -775,10 +816,10 @@ class Tableau(object):
         inst = (source.world, world, new)
 
         # add left node
-        left = target.add_child((line := line + 1, world, fmls[0], rule, source, inst))
+        left = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
 
         # add right node
-        right = target.add_child((line := line + 1, world, fmls[1], rule, source, inst))
+        right = target.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
 
     def rule_omicron(self, target, source, rule, fmls, args):
         """
@@ -836,20 +877,16 @@ class Tableau(object):
         @return The models associated with the open branches the tableau.
         @rtype set[Structure]
         """
-        def atom(fml):
-            return isinstance(fml, Prop) or isinstance(fml, Atm)
-
-        def literal(fml):
-            return atom(fml) or isinstance(fml, Neg) and atom(fml.phi)
-
-        branch = [node for node in leaf.branch if node.fml]
-        name = "S" + str(len(self.models)+1)
+        
+        branch = [node for node in leaf.branch if not node.pseudo()]
+        # name = "S" + str(len(self.models)+1)
+        name = "S" + str(leaf.line)
 
         if self.mode["classical"]:  # classical logic
 
             if self.mode["modal"]:  # classical modal logic
                 # sigs = list(dict.fromkeys([tuple(node.sig) for node in branch]))
-                # sigs_ = list(dict.fromkeys([tuple(node.sig) for node in branch if literal(node.fml)]))
+                # sigs_ = list(dict.fromkeys([tuple(node.sig) for node in branch if node.fml.liteal()]))
                 # # use w1, ..., wn as names for worlds instead of signatures
                 # worlds = {sig: "w" + str(i) for (i, sig) in enumerate(sigs)}
                 # w = {worlds[sig] for sig in sigs}
@@ -857,7 +894,7 @@ class Tableau(object):
                 # r = {(worlds[sig1], worlds[sig2]) for (sig1, sig2) in r_}
                 worlds = list(dict.fromkeys([node.world for node in branch if node.world]))
                 worlds_ = list(dict.fromkeys([node.world for node in branch if node.world and
-                                              literal(node.fml)]))
+                                              node.fml.liteal()]))
                 w = {"w" + str(w) for w in worlds}
                 r_ = list(dict.fromkeys([node.inst for node in branch
                                          if len(node.inst) > 0 and isinstance(node.inst[0], int)]))
@@ -866,7 +903,7 @@ class Tableau(object):
             if self.mode["propositional"]:  # classical propositional logic
                 if not self.mode["modal"]:  # classical non-modal propositional logic
                     # atoms = all unnegated propositional variables
-                    atoms = [node.fml.p for node in branch if atom(node.fml)]
+                    atoms = [node.fml.p for node in branch if node.fml.atom()]
                     # valuation = make all positive propositional variables true and all others false
                     v = {p: (True if p in atoms else False) for p in self.root.fml.propvars()}
                     model = PropStructure(name, v)
@@ -883,7 +920,7 @@ class Tableau(object):
                     #     for sig in sigs_}
                     # atoms = all unnegated propositional variables
                     atoms = {
-                        w: [node.fml.p for node in branch if atom(node.fml) and node.world == w]
+                        w: [node.fml.p for node in branch if node.fml.atom() and node.world == w]
                         for w in worlds}
                     # valuation = make all positive propositional variables true and all others false
                     v = {
@@ -904,7 +941,7 @@ class Tableau(object):
 
                 if not self.mode["modal"]:  # classical non-modal predicate logic
                     # atoms = all unnegated atomic predications
-                    atoms = [(node.fml.pred, node.fml.terms) for node in branch if atom(node.fml)]
+                    atoms = [(node.fml.pred, node.fml.terms) for node in branch if node.fml.atom()]
                     # domain = all const.s occurring in formulas
                     d = set(list(chain(*[node.fml.nonlogs()[0] for node in branch if node.fml.nonlogs()])))
                     # interpretation = make all unnegated predications true and all others false
@@ -923,7 +960,7 @@ class Tableau(object):
                     #                    for p in predicates}
                     #      for sig in sigs}
                     atoms = {w: [(node.fml.pred, node.fml.terms) for node in branch
-                                 if atom(node.fml) and node.world == w]
+                                 if node.fml.atom() and node.world == w]
                              for w in worlds}
                     i = {"w" + str(w): {p: {tuple([str(t) for t in a[1]]) for a in atoms[w]
                                             if (Pred(p), a[1]) in atoms[w]}
@@ -951,8 +988,8 @@ class Tableau(object):
             # r_ = {(sig[:-1], sig) for sig in sigs if len(sig) > 1}
             # r = {(states[sig1], states[sig2]) for (sig1, sig2) in r_}
             states = list(dict.fromkeys([node.world for node in branch]))
-            states_ = list(dict.fromkeys([node.world for node in branch if literal(node.fml)]))
-            k = {"k" + str(w) for w in worlds}
+            states_ = list(dict.fromkeys([node.world for node in branch if node.fml.liteal()]))
+            k = {"k" + str(w) for w in states}
             r_ = list(dict.fromkeys([node.inst for node in branch if isinstance(node.inst[0], int)]))
             r = {("w" + str(tpl[0]), "w" + str(tpl[1])) for tpl in r_}
 
@@ -964,7 +1001,7 @@ class Tableau(object):
                 # v = {states[sig]: {p: (True if p in atoms[sig] else False) for p in self.root.fml.propvars()}
                 #      for sig in sigs}
                 # atoms = all unnegated propositional variables
-                atoms = {k: [node.fml.p for node in branch if atom(node.fml) and node.world == k]
+                atoms = {k: [node.fml.p for node in branch if node.fml.atom() and node.world == k]
                          for k in states}
                 # valuation = make all positive propositional variables true and all others false
                 v = {k: {p: (True if p in atoms[k] else False) for p in self.root.fml.propvars()}
@@ -1011,7 +1048,8 @@ class Node(object):
     A node in a tree.
     """
 
-    def __init__(self, parent, line: int, world: int, fml: Formula, rule: str, source, inst: Tuple):
+    def __init__(self, parent, tableau: Tableau, line: int, world: int, fml: Formula, rule: str, source, inst: Tuple):
+        self.tableau = tableau
         self.line = line
         # self.sig = sig
         self.world = world
@@ -1026,6 +1064,8 @@ class Node(object):
         """
         String representation of this line.
         """
+        open_branches = [leaf.branch for leaf in self.root().leaves() if isinstance(leaf.fml, Open)]
+
         # compute lengths of columns  # todo inefficient to recalculate for every node
         len_line = max([len(str(node.line)) for node in self.root().nodes() if node.line]) + 2
         # len_sig = max(([len(".".join([str(s) for s in node.sig])) for node in self.root().nodes() if node.sig])) + 1 \
@@ -1038,12 +1078,20 @@ class Node(object):
         len_source = max([len(str(node.source.line)) for node in self.root().nodes() if node.source]) \
             if [node for node in self.root().nodes() if node.source] else 0
         # compute columns
-        str_line = "{:<{len}}".format(str(self.line) + "." if self.line else "", len=len_line)
+        line = str(self.line)
+        if not self.tableau.mode["validity"] and \
+                any([self in branch for branch in open_branches]):
+            line = "\033[4m" + line + "\033[0m"
+        str_line = "{:<{len}}".format(line + "." if self.line else "", len=len_line)
         # str_sig = "{:<{len}}".format(".".join([str(s) for s in self.sig]) if self.sig else "", len=len_sig) \
         #     if len_sig else ""
         str_world = "{:<{len}}".format("w" + str(self.world) if self.world else "", len=len_world)
         # str_sign = "{:<{len}}".format(("⊩" if self.sign == "+" else "⊮") if self.sign else "", len=len_sign)
-        str_fml = "{:^{len}}".format(str(self.fml), len=len_fml)
+        fml = str(self.fml)
+        if not self.tableau.mode["validity"] and \
+                any([self in branch for branch in open_branches]) and self.fml.literal():
+            fml = "\033[4m" + fml + "\033[0m"
+        str_fml = "{:^{len}}".format(fml, len=len_fml)
         if isinstance(self.fml, Open) or isinstance(self.fml, Infinite):
             str_cite = ""
         elif self.rule in ["A", "Ax"]:
@@ -1084,7 +1132,7 @@ class Node(object):
         """
         String representation of the tree whose root is this node.
         """
-        if not self.fml:  # self is empty pseudo-node
+        if isinstance(self.fml, Empty):  # self is empty pseudo-node
             return ""
         res = indent
         res += "|--" if binary else ""
@@ -1106,7 +1154,6 @@ class Node(object):
                     res += childstr2
         else:  # self is leaf
             res += indent + "\n"
-            # res += indent + ("|  " if binary else "") + "\n"
         return res
 
     def nodes(self, root=True, reverse=False):
@@ -1167,8 +1214,10 @@ class Node(object):
         Add a child to the current node.
         """
         # todo sometimes adds None nodes (?)
-        # don't add children to branches that are already closed, open or declared infinite
-        if self.children and (self.children[0].pseudo() or self.children[-1].pseudo()):
+        # don't add children to branches that are empty, already closed, open or declared infinite
+        if self.pseudo() or (self.children and
+                             (self.children[0].pseudo() and not isinstance(self.children[0].fml, Empty) or
+                              self.children[-1].pseudo() and not isinstance(self.children[-1].fml, Empty))):
             return
 
         # add the child
@@ -1198,7 +1247,7 @@ class Node(object):
             if self.fml and self.world == node.world and self.fml.tableau_contradiction_pos(node.fml):
                 rule = str(node.line) if node != self else ""
                 source = self
-                self.add_child((None, None, Closed(), rule, source, None))
+                self.add_child((self.tableau, None, None, Closed(), rule, source, None))
                 return True
         return False
 
@@ -1212,7 +1261,7 @@ class Node(object):
         """
         if self.pseudo():
             return
-        self.add_child((None, None, Open(), None, None, None))
+        self.add_child((self.tableau, None, None, Open(), None, None, None))
         return True
 
     def infinite(self):
@@ -1224,24 +1273,24 @@ class Node(object):
         @return: True if the branch is potentially infinite
         @rtype bool
         """
-        if self.pseudo() or not self.fml:
+        if self.pseudo():
             return
         # todo smarter implementation (check for loops in rule appls.)
         len_assumptions = sum([len(str(node.fml)) for node in self.branch if node.rule == "A" and not node.world])
         height = len(self.branch)
         width = len(self.branch[-2].children)
-        if height > len_assumptions:
-            self.add_child((None, None, Infinite(), None, None, None))
+        if height > size_limit_factor * len_assumptions:
+            self.add_child((self.tableau, None, None, Infinite(), None, None, None))
             return True
-        if width > len_assumptions:
-            self.branch[-2].add_child((None, None, Infinite(), None, None, None))
+        if width > size_limit_factor * len_assumptions:
+            self.branch[-2].add_child((self.tableau, None, None, Infinite(), None, None, None))
             return True
         # num_consts_vertical = len(dict.fromkeys(chain(*[node.fml.nonlogs()[0]
         #                                                 for node in self.branch
-        #                                                 if node.fml and node.fml.nonlogs()])))
+        #                                                 if not node.pseudo() and node.fml.nonlogs()])))
         # num_consts_horizontal = len(dict.fromkeys(chain(*[node.fml.nonlogs()[0]
         #                                                   for node in self.branch[-2].children
-        #                                                   if node.fml and node.fml.nonlogs()])))
+        #                                                   if not node.pseudo() and node.fml.nonlogs()])))
         # num_worlds_vertical = len(dict.fromkeys([node.world
         #                                          for node in self.branch if node.world]))
         # num_worlds_horizontal = len(dict.fromkeys([node.world
@@ -1311,35 +1360,38 @@ if __name__ == "__main__":
     # quantifier commutativity
     #################
     #
-    fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    # fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    # fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
     # tab = Tableau(fml, premises=[fml1])
-    tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False)
-
-    fml1 = Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
-                                 Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),
-                                                      Atm(Pred("R"), (Var("x"), Var("y")))))))
-
-    fml2 = Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),
-                                Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
-                                                      Atm(Pred("R"), (Var("x"), Var("y")))))))
-    fml3 = Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))
-    tab = Tableau(fml2, premises=[fml1])
-    tab = Tableau(fml1, premises=[fml2])
-    tab = Tableau(fml1, premises=[fml2, fml3], validity=False, satisfiability=False)
-
-    # ax1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)), Neg(Atm(Pred("lid"), (Var("x"),)))))
-    # ax2 = Forall(Var("x"), Imp(Atm(Pred("lid"), (Var("x"),)), Neg(Atm(Pred("tupperbox"), (Var("x"),)))))
-    # fml1 = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
-    #                               Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
-    #                                                    Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    # fml2 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
-    #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
-    #                                                   Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    # fml3 = Exists(Var("x"), Atm(Pred("tupperbox"), (Var("x"),)))
+    # tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False)
+    #
+    # fml1 = Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
+    #                              Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),
+    #                                                   Atm(Pred("R"), (Var("x"), Var("y")))))))
+    #
+    # fml2 = Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),
+    #                             Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
+    #                                                   Atm(Pred("R"), (Var("x"), Var("y")))))))
+    # fml3 = Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))
     # tab = Tableau(fml2, premises=[fml1])
     # tab = Tableau(fml1, premises=[fml2])
+    # tab = Tableau(fml1, premises=[fml2, fml3], validity=False, satisfiability=False)
+
+    ax1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)), Neg(Atm(Pred("lid"), (Var("x"),)))))
+    ax2 = Forall(Var("x"), Imp(Atm(Pred("lid"), (Var("x"),)), Neg(Atm(Pred("tupperbox"), (Var("x"),)))))
+    fml1 = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+                                  Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+                                                       Atm(Pred("fit"), (Var("x"), Var("y")))))))
+    fml2 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+                                Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+                                                      Atm(Pred("fit"), (Var("x"), Var("y")))))))
+    fml3 = Exists(Var("x"), Atm(Pred("tupperbox"), (Var("x"),)))
+    # tab = Tableau(fml2, premises=[fml1])
+    # tab = Tableau(fml1, premises=[fml2])
+    # tab = Tableau(fml1, premises=[fml2, fml3], validity=False, satisfiability=False)
+    tab = Tableau(fml1, premises=[fml2, fml3], axioms=[ax1], validity=False, satisfiability=False)
     # tab = Tableau(fml1, premises=[fml2, fml3], axioms=[ax1, ax2], validity=False, satisfiability=False)
+    print(len(tab))
 
     ###############
     # Modal logic
@@ -1444,4 +1496,4 @@ if __name__ == "__main__":
     # # tab = Tableau(Neg(fml), premises=[fml1], validity=False)
     # fml = Imp(Forall(Var("x"), Atm(Pred("P"), (Var("x"),))), Exists(Var("x"), Atm(Pred("Q"), (Var("x"),))))
     # tab = Tableau(fml, premises=[fml1])
-    # 
+    #

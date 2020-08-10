@@ -392,6 +392,14 @@ class Formula(Expr):
     """
     # todo efficiency: assignment functions have to be specified on all variables of the language;
     #  the domain is not restricted expression-wise to those variables that actually occur in the expression
+
+    def atom(self):
+        return isinstance(self, Verum) or isinstance(self, Falsum) or \
+               isinstance(self, Prop) or isinstance(self, Eq) or isinstance(self, Atm)
+
+    def literal(self):
+        return self.atom() or isinstance(self, Neg) and self.phi.atom()
+
     def subst(self, u, t):
         """
         @rtype: Formula
@@ -1953,7 +1961,7 @@ class Nec(Formula):
             rules = {"¬◻": ("κ", [Neg(self.phi)])}
         return rules
 
-class Forces(Formula):
+class AllWorlds(Formula):
     """
     Special pseudo-connective indicating that a formula is true in all worlds of the model.
      ⊩φ
@@ -1972,7 +1980,7 @@ class Forces(Formula):
         return self.phi.tex()
 
     def __eq__(self, other):
-        return isinstance(other, Forces) and self.phi == other.phi
+        return isinstance(other, AllWorlds) and self.phi == other.phi
 
     def __len__(self):
         return 1 + len(self.phi)
@@ -2017,7 +2025,7 @@ class Forces(Formula):
     def tableau_neg(self, mode):
         return dict()
 
-class NotForces(Formula):
+class NotAllWorlds(Formula):
     """
     Special pseudo-connective indicating that a formula is not true in all worlds of the model.
      ⊮φ
@@ -2036,7 +2044,7 @@ class NotForces(Formula):
         return "\\neg " + self.phi.tex()
 
     def __eq__(self, other):
-        return isinstance(other, NotForces) and self.phi == other.phi
+        return isinstance(other, NotAllWorlds) and self.phi == other.phi
 
     def __len__(self):
         return 1 + len(self.phi)
@@ -2087,7 +2095,7 @@ class Pseudo(Formula):
     Special pseudo-formulas for tableau annotation.
     """
 
-class Empty(Formula):
+class Empty(Pseudo):
     """
     Special empty pseudo-formula to secretly introduce branching.
     """
@@ -2096,7 +2104,7 @@ class Empty(Formula):
         pass
 
     def __str__(self):
-        return ""
+        return "ε"
 
 class Closed(Pseudo):
     """
