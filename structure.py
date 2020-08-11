@@ -51,7 +51,8 @@ class PropStructure(Structure):
                " = \\tpl{\\mathcal{V}}$ with \\\\\n" +\
                "\\begin{tabular}{LL}\n" +\
                "\\mathcal{V} : &" + \
-               ", ".join([str(key) + " \\mapsto " + str(val) for key, val in sorted(self.v.items())]) + "\\\\\n"+\
+               ", ".join([str(p) + " \\mapsto " + str(tv.replace("True", "1").replace("False", "0"))
+                          for p, tv in sorted(self.v.items())]) + "\\\\\n"+\
                "\\end{tabuar}"
 
 
@@ -215,15 +216,16 @@ class PropModalStructure(ModalStructure):
 
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
-               " = \\tpl{\\mathcal{W}, \\mathcal{V}}$ with \\\\\n" \
-               "\\begin{tabular}{LLLL}\n" \
+               " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{V}}$ with \\\\\n" \
+               "\\begin{tabular}{LLLLL}\n" \
                "\\mathcal{W} = & " \
-               "\\multicolumn{3}{L}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n"\
+               "\\multicolumn{4}{L}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n"\
                "\\mathcal{R} = &" \
-               "\\multicolumn{3}{L}{\\set{" + ", ".join(
+               "\\multicolumn{4}{L}{\\set{" + ", ".join(
                                   ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n"\
-               "\\mathcal{V} : &" + "\\\\\n    & ".join([str(w) + " & \\mapsto\\\\\n" +
-                            ", \\\\\n &&".join([str(p) + " & \\mapsto " + str(tv)
+               "\\mathcal{V} : &" + "\\\\\n    & ".join([str(w) + " & \\mapsto " +
+                            ", \\\\\n &&&".join([str(p) + " & \\mapsto " +
+                                                str(tv).replace("True", "1").replace("False", "0")
                             for (p, tv) in sorted(self.v[w].items())])
                         for (w, vw) in sorted(self.v.items())]) + "\\\\\n" +\
                "\\end{tabular}"
@@ -298,16 +300,16 @@ class ConstModalStructure(ModalStructure):
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{D}, \\mathcal{I}}$ with \\\\\n" \
-               "\\begin{tabular}{LLLL}\n" \
+               "\\begin{tabular}{LLLLL}\n" \
                "\\mathcal{W} = & " \
-               "\\multicolumn{3}{L}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
+               "\\multicolumn{4}{L}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
                "\\mathcal{R} = &" \
-               "\\multicolumn{3}{L}{\\set{" + ", ".join(
+               "\\multicolumn{4}{L}{\\set{" + ", ".join(
                                  ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" \
                "\\mathcal{D} = & " \
-               "\\multicolumn{3}{L}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" \
+               "\\multicolumn{4}{L}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" \
                "\\mathcal{I} : &" + \
-               "\\\\\n    & ".join([str(w) + " & \\mapsto \\\\\n" + \
+               "\\\\\n    & ".join([str(w) + " & \\mapsto " + \
                         "\\\\\n && ".join(
                         [str(keyI) + " & \\mapsto " +
                          (str(valI) if isinstance(valI, str) else
@@ -398,19 +400,19 @@ class VarModalStructure(ModalStructure):
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{D}, \\mathcal{I}}$ with \\\\\n" \
-               "\\begin{tabular}{LLLL}\n" \
+               "\\begin{tabular}{LLLLL}\n" \
                "\\mathcal{W} = & " \
-               "\\multicolumn{3}{L}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
+               "\\multicolumn{4}{L}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
                "\\mathcal{R} = &" \
-               "\\multicolumn{3}{L}{\\set{" + ", ".join(
+               "\\multicolumn{4}{L}{\\set{" + ", ".join(
                                  ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" \
                "\\mathcal{D} = & " \
                "\\\\\n    ".join([str(w) + " & \\multicolumn{2}{L}{\\mapsto " + \
                             "\\set{" + ", ".join([str(d) for d in sorted(self.d[w])]) + "}}"
                     for w in sorted(self.w)]) +\
-                    "\\\\\n"\
+                    "\\\\\n" +\
                "\\mathcal{I} : &" + \
-               "\\\\\n    & ".join([str(w) + " & \\mapsto \\\\\n" + \
+               "\\\\\n    & ".join([str(w) + " & \\mapsto " + \
                         ", \\\\\n && ".join(
                         [str(keyI) + " & \\mapsto " +
                          (str(valI) if isinstance(valI, str) else
@@ -550,8 +552,9 @@ class KripkePropStructure(KripkeStructure):
                "\\mathcal{R} = &" \
                "\\multicolumn{3}{L}{\\set{" + ", ".join(
                                   ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n"\
-               "\\mathcal{V} : &" + "\\\\\n    & ".join([str(k) + " & \\mapsto\\\\\n" +
-                            ", \\\\\n &&".join([str(p) + " & \\mapsto " + str(tv)
+               "\\mathcal{V} : &" + "\\\\\n    & ".join([str(k) + " & \\mapsto " +
+                            ", \\\\\n &&".join([str(p) + " & \\mapsto " +
+                                                str(tv).replace("True", "1").replace("False", "0")
                             for (p, tv) in sorted(self.v[k].items())])
                         for (k, vk) in sorted(self.v.items())]) + "\\\\\n" +\
                "\\end{tabular}"
@@ -713,7 +716,7 @@ class KripkePredStructure(KripkeStructure):
                     for k in sorted(self.k)]) +\
                     "\\\\\n"\
                "\\mathcal{I} : &" + \
-               "\\\\\n    & ".join([str(k) + " & \\mapsto \\\\\n" + \
+               "\\\\\n    & ".join([str(k) + " & \\mapsto " + \
                         "\\\\\n && ".join(
                         [str(keyI) + " & \\mapsto " +
                          (str(valI) if isinstance(valI, str) else

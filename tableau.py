@@ -28,7 +28,7 @@ size_limit_factor = 2  # size factor after which to give up the further expansio
 num_mdls = 1  # number of models to generate  # todo doesn't always work
 mark_open = True  # in MG: in open branches, underline line numbers and literals in tree outputs
 hide_nonopen = False  # in MG: hide non-open branches in tree output
-latex = True  # generate output in LaTeX instead of plain text format
+latex = False  # generate output in LaTeX instead of plain text format
 
 
 class Tableau(object):
@@ -116,9 +116,9 @@ class Tableau(object):
                 (" in a " + self.mode["frame"] + " frame" if self.mode["modal"] else "") + \
                 "." + ("\\\\" if latex else "") + "\n\n"
         if not latex:
-            axs = [str(node.fml) for node in self.axioms]
-            prems = ([str(self.root.fml)] if not self.conclusion else []) + \
-                    [str(node.fml) for node in self.premises] + \
+            axs = ["  " + str(node.fml) for node in self.axioms]
+            prems = (["  " + str(self.root.fml)] if not self.conclusion else []) + \
+                    ["  " + str(node.fml) for node in self.premises] + \
                     ([str(self.conclusion)]
                      if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else [])
 
@@ -133,8 +133,8 @@ class Tableau(object):
                     (" " if concl else "") + concl + " :" +"\n"
         else:
             axs = [node.fml.tex() for node in self.axioms]
-            prems = ([self.root.fml.tex()] if not self.conclusion else []) + \
-                    [node.fml.tex() for node in self.premises] + \
+            prems = (["\\phantom{\\vDash\ }" + self.root.fml.tex()] if not self.conclusion else []) + \
+                    ["\\phantom{\\vDash\ }" + node.fml.tex() for node in self.premises] + \
                     ([self.conclusion.tex()]
                      if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else [])
 
@@ -144,7 +144,7 @@ class Tableau(object):
             inf = ("\\vDash" if self.mode["validity"] else "\\nvDash")
             info += "Tableau for $\\\\\n" + \
                     ", \\\\\n".join(axs) + (" + \n" if axs and prems else "\n" if axs else "") + \
-                    ", \\\\\n".join(prems) + ("\n" if len(lhs) > 1 else " " if not concl else "") + \
+                    ", \\\\\n".join(prems) + ("\\\\\n" if len(lhs) > 1 else " " if not concl else "") + \
                     inf + \
                     (" " if concl else "") + concl + " :" + "$\\\\\n\n"
         res += info
@@ -204,7 +204,7 @@ class Tableau(object):
                 if not latex:
                     mdls += str(model) + "\n"
                 else:
-                    mdls += model.tex() + "\\\\\\\\\n"
+                    mdls += model.tex() + "\\\\\\\\\n"  # todo doesn't always work (problems with modal PL)
             res += mdls
 
         if latex:
@@ -1237,7 +1237,7 @@ class Node(object):
         else:
             str_rule = "$" + "".join([str2tex[c] if c in str2tex else c for c in str(self.rule)]) + "$"\
                 if self.rule else ""
-            str_comma = " {,} " if self.rule and self.source else ""
+            str_comma = "{,} " if self.rule and self.source else ""
             str_source = str(self.source.line) if self.source else ""
             if self.inst:
                 if isinstance(self.inst[0], str):
@@ -1394,7 +1394,7 @@ class Node(object):
         """
         if isinstance(self.fml, Pseudo):
             return
-        for node in self.branch:
+        for node in self.branch[::-1]:
             if self.fml and self.world == node.world and self.fml.tableau_contradiction_pos(node.fml):
                 rule = str(node.line) if node != self else ""
                 source = self
@@ -1621,9 +1621,9 @@ if __name__ == "__main__":
     # linguistic examples
     #####################
     #
-    # fml = Exists(Var("x"), Exists(Var("y"),
-    #                               Conj(Neg(Eq(Var("x"), (Var("y")))), Atm(Pred("love"), (Var("x"), Var("y"))))))
-    # tab = Tableau(fml, validity=False)
+    fml = Exists(Var("x"), Exists(Var("y"),
+                                  Conj(Neg(Eq(Var("x"), (Var("y")))), Atm(Pred("love"), (Var("x"), Var("y"))))))
+    tab = Tableau(fml, validity=False)
     #
     # fml = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)),
     #                            Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
@@ -1643,8 +1643,8 @@ if __name__ == "__main__":
     # tab = Tableau(fml, premises=[prem1, prem2], axioms=[ax1, ax2, ax3, ax4], validity=False)
     #
     # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("know"), (Var("x"), Var("y")))))
-    # fml2 = Neg(Exists(Var("y"), Forall(Var("x"), Atm(Pred("know"), (Var("x"), Var("y"))))))
-    # tab = Tableau(None, premises=[fml1, fml2], validity=False)
+    # fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("know"), (Var("x"), Var("y")))))
+    # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
     #
     #####################
     # parsing

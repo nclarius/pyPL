@@ -605,7 +605,7 @@ class Verum(Formula):
         return "⊤"
 
     def tex(self):
-        return "⊤"
+        return "\\top"
 
     def __eq__(self, other):
         return isinstance(other, Verum)
@@ -666,7 +666,7 @@ class Falsum(Formula):
         return "⊥"
 
     def tex(self):
-        return "⊥"
+        return "\\bot"
 
     def __eq__(self, other):
         return isinstance(other, Falsum)
