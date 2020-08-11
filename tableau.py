@@ -21,7 +21,7 @@ from itertools import chain
 
 # global settings
 debug = False
-size_limit_factor = 1  # size factor after which to give up the further expansion
+size_limit_factor = 2  # size factor after which to give up the further expansion
 num_mdls = 1  # number of models to generate  # todo doesn't really work
 latex = False
 
@@ -66,8 +66,8 @@ class Tableau(object):
         self.premises = [self.root.leaves()[0].add_child((self, i + 2, world, premise_fml, rule, source, inst))
                          for i, premise_fml in enumerate(premise_fmls)]
         max_line = max([node.line for node in self.root.nodes() if node.line])
-        self.axioms = [self.root.leaves()[0].add_child((self, i + max_line + 1, world, axiom, "Ax", source, inst))
-                       for i, axiom in enumerate(axiom_fmls)]
+        self.axioms = [self.root.leaves()[0].add_child((self, i + max_line + 1, world, axiom_fml, "Ax", source, inst))
+                       for i, axiom_fml in enumerate(axiom_fmls)]
         # todo formulas with free variables?
 
         self.models = []
@@ -103,14 +103,20 @@ class Tableau(object):
                  if self.mode["modal"] and not self.mode["propositional"] else "") + \
                 (" in a " + self.mode["frame"] + " frame" if self.mode["modal"] else "") + \
                 ".\n\n"
-        if self.mode["validity"]:
-            info += "Tableau for \n" + \
-                   ", \n".join([str(premise.fml) for premise in self.axioms + self.premises]) + \
-                   "\n⊨ " + str(self.conclusion) + ":\n"
-        else:
-            info += "Tableau for \n" + \
-                    ", \n".join([str(node.fml) for node in self.premises + self.axioms]) + \
-                    "\n⊭" + (" " + str(self.conclusion) if self.conclusion else "") + ":\n\n"
+        axs = [str(node.fml) for node in self.axioms]
+        prems = ([str(self.root.fml)] if not self.conclusion else []) + \
+                [str(node.fml) for node in self.premises] + \
+                ([str(self.conclusion)]
+                 if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else [])
+
+        concl = str(self.conclusion) if \
+            self.conclusion and self.mode["validity"] or not self.mode["satisfiability"] else ""
+        lhs = axs + prems + ([concl] if concl else [])
+        info += "Tableau for \n" + \
+               ", \n".join(axs) + (" + \n" if axs and prems else "\n" if axs else "") +\
+               ", \n".join(prems) + ("\n" if len(lhs) > 1 else " " if not concl else "") + \
+               ("⊨" if self.mode["validity"] else "⊭") + \
+               (" " if concl else "") + concl + " :\n"
         if latex:
             info.replace("\n", "\\\\\n")
         print(info)
@@ -129,7 +135,7 @@ class Tableau(object):
                 result += "The " + ("inference" if self.premises else "formula") + " is valid.\n"
             else:
                 if self.mode["satisfiability"]:
-                    result += "The " + ("set of sentences" if self.premises else "formula") + " is unsatisfiable.\n"
+                    result += "The " + ("set of formulas" if self.premises else "formula") + " is unsatisfiable.\n"
                 else:
                     result += "The " + ("inference" if self.premises else "formula") + " is irrefutable.\n"
         elif self.open():
@@ -138,17 +144,17 @@ class Tableau(object):
                 result += "The " + ("inference" if self.premises else "formula") + " is invalid.\n"
             else:
                 if self.mode["satisfiability"]:
-                    result += "The " + ("set of sentences" if self.premises else "formula") + " is satisfiable.\n"
+                    result += "The " + ("set of formulas" if self.premises else "formula") + " is satisfiable.\n"
                 else:
                     result += "The " + ("inference" if self.premises else "formula") + " is refutable.\n"
         elif self.infinite():
             result += "The tableau is potentially infinite:\n"
             if self.mode["validity"]:
-                result += "The " + ("inference" if self.premises else "formula") + " may or may not be valid.\n"
+                result += "The " + ("inference" if self.premises else "formula") + " may not be valid.\n"
             else:
                 if self.mode["satisfiability"]:
                     result += "The " + \
-                              ("set of sentences" if self.premises else "formula") + \
+                              ("set of formulas" if self.premises else "formula") + \
                            " may or may not be satisfiable.\n"
                 else:
                     result += "The " + ("inference" if self.premises else "formula") + " may or may not be refutable.\n"
@@ -170,7 +176,7 @@ class Tableau(object):
             print(mdls)
 
         if not latex:
-            sep = "\n" + 80 * "-"
+            sep = 80 * "-"
             print(sep)
         if latex:
             postamble = "\\end{document}"
@@ -186,9 +192,12 @@ class Tableau(object):
         """
         Recursively expand all nodes in the tableau.
         """
+        if debug:
+            print(self.root.treestr())
         while applicable := self.applicable():
+            # check whether to continue expansion
             len_assumptions = sum([len(str(node.fml)) for node in self.root.nodes()
-                                   if node.rule == "A" and not node.world])
+                                   if node.rule == "A" and (self.mode["validity"] or not node.world)])
             num_nodes = len(self.root.nodes(True))
             # the tree gets too big; stop execution
             if num_nodes > 2 * size_limit_factor * len_assumptions:
@@ -202,6 +211,8 @@ class Tableau(object):
                 for leaf in self.root.leaves(True):
                     leaf.add_child((self, None, None, Infinite(), None, None, None))
                 return
+
+            # expand
             if debug:
                 print("applicable:")
                 print("\n".join([", ".join([
@@ -214,7 +225,7 @@ class Tableau(object):
             if debug:
                 input()
                 print("expanding:")
-                print(str(target), " with ", rule_name, " from ", str(source))
+                print(str(source), " with ", rule_name, " on ", str(target))
             rule_func(target, source, rule_name, fmls, args)
             if debug:
                 print()
@@ -327,24 +338,26 @@ class Tableau(object):
                     if rule_type in ["κ"]:
                         targets = []
                         instantiations = dict()
-                        for leaf in [leaf for leaf in source.leaves() if leaf.fml]:
-                            # the rule branches on the node of its first instantiation rather than the leaves
-                            # find nodes on the branch which are expansions of this source and their parents
-                            insts = [node for node in leaf.branch if applied(node)]
-                            if insts:
+                        for node in source.nodes():
+                            if applied(node):
                                 # the rule has already been applied:
                                 # append the parent of the first instantiation as a target,
-                                # but only if the parent is not already declared infinite
-                                parent = insts[0].branch[-2]
-                                if not isinstance(parent.children[-1].fml, Infinite):
-                                    targets.append(parent)
-                                    instantiations[parent] = insts
-                            else:
-                                # the rule has not yet been applied:
-                                # add the leaf as a target if it is not finished
-                                if not leaf.pseudo():
-                                    targets.append(leaf)
-                                    instantiations[leaf] = insts
+                                # but only if the parent is not already declared infinite,
+                                # and the node to the instantiations of all its leaves
+                                parent = node.branch[-2]
+                                if not parent.children[-1].pseudo():
+                                    if parent not in targets:
+                                        targets.append(parent)
+                                if parent not in instantiations:
+                                    instantiations[parent] = []
+                                if node.inst:
+                                    instantiations[parent].append(node)
+                        for leaf in source.leaves(True):
+                            if not any([node in instantiations for node in leaf.branch]):
+                                # the rule has not yet been applied on this branch:
+                                # add each leaf as a target if it is not finished
+                                targets.append(leaf)
+                                instantiations[leaf] = []
 
                     for target in targets:
                         branch = [node for node in target.branch if not node.pseudo()]
@@ -359,9 +372,11 @@ class Tableau(object):
                         #                                  len(node.sig) == len(source.sig) + 1 and
                         #                                  node.sig[:-1] == source.sig]))
                         # collect the worlds this rule has been instantiated with in the branch/on this level
-                        used = list(dict.fromkeys([node.inst[1] for node in branch if applied(node)])) \
-                            if rule_type not in ["κ"] else \
-                            list(dict.fromkeys([str(node.inst[1]) for node in instantiations[target] if node.inst]))
+                        if rule_type not in ["κ"]:
+                            used = list(dict.fromkeys([node.inst[1] for node in branch if applied(node)]))
+                        else:
+                            used = list(dict.fromkeys([node.inst[1] for node in instantiations[target]
+                                                       if node.inst]))
                         # collect the worlds occurring in the branch
                         occurring = list(dict.fromkeys([node.world for node in branch if node.world]))
                         # additional worlds to use
@@ -383,13 +398,13 @@ class Tableau(object):
                         elif rule_type in ["ν", "π"]:
                             new = False
                         elif rule_type in ["κ"]:
-                            new = len(used) >= len(extensions)
+                            new = len(used) >= len(extensions) or rule_name == "A"
                         elif rule_type in ["λ"]:
                             new = len(extensions) == 0
                         # compose the arguments
                         args = new, used, occurring, extensions, reductions
                         # count instantiations
-                        insts = len(used) if rule_type not in ["κ"] else len(instantiations)
+                        insts = len(used)
 
                         if rule_type in ["μ", "κ"]:
                             # the rules can be applied with any new signature extension
@@ -446,12 +461,18 @@ class Tableau(object):
         operator = {  # rank by operator type
             "α": 0, "β": 0,  # connective rules
             "γ": 1, "δ": 1, "η": 1, "θ": 1,  # quantifier rules
-            "μ": 2, "ν": 2, "π": 2, "κ": 2, "λ": 2,  # modal rules
-            "ξ": 2, "χ": 2, "ο": 3, "u": 3, "ω": 3  # intuitionistic rules
+            "μ": 1, "ν": 1, "π": 1, "κ": 1, "λ": 1,  # modal rules
+            "ξ": 1, "χ": 1, "ο": 2, "u": 2, "ω": 2  # intuitionistic rules
         }
         # enumerate the nodes level-order so nodes can be prioritized by position in the tree
         pos = {node: i for (i, node) in enumerate(self.root.nodes())}
         pos_rev = {node: i for (i, node) in enumerate(self.root.nodes(True)[::-1])}
+        pos_by_type = {
+            "α": pos, "β": pos,  # connective rules
+            "γ": pos, "δ": pos, "η": pos_rev, "θ": pos_rev,  # quantifier rules
+            "μ": pos, "ν": pos, "π": pos, "κ": pos_rev, "λ": pos_rev,  # modal rules
+            "ξ": pos, "χ": pos, "ο": pos, "u": pos, "ω": pos  # intuitionistic rules
+        }
 
         # sort the applicable rules by ...
         sort_v1 = lambda i: (  # for validity tableaus:
@@ -460,16 +481,23 @@ class Tableau(object):
             pos[i[0]],         # 3. position of the target node in the tree (prefer leftmost highest)
             rule_order[i[3]]   # 4. rule type rank (prefer earlier in order)
         )
-        # in competing theta rules, only start to introduce one new constant each?
         sort_v2 = lambda i: (  # for satisfiability tableaus:
             i[6],              # 1. number of times the rule has already been applied on this branch (prefer least used)
             i[5][0],           # 2. whether to introduce a new constant or world (prefer not to)
             branching[i[3]],   # 3. whether the rules branches (prefer non-branching)
-            operator[i[3]],    # 4. what type of operator the rule belongs to (connective > quant. > modal > int.)
-            rule_order[i[3]],  # 5. reamaining rule type rank (prefer earlier in order)
-            pos[i[0]],         # 6. position of the target node in the tree (prefer leftmost highest)
-            pos[i[1]]          # 7. position of the source node in the tree (prefer leftmost highest)
+            operator[i[3]],    # 4. what type of operator the rule belongs to (connective > quant., modal > int.)
+            rule_order[i[3]],  # 5. remaining rule type rank (prefer earlier in order)
+            pos_by_type[i[3]][i[1]],    # 6. position of the source node in the tree
+                                        # (prefer leftmost lowest for sat. quant. and mod. rules,
+                                        # leftmost highest for others)
+            pos[i[0]],         # 7. position of the target node in the tree
         )
+        # sort_v2 = lambda i: (  # for satisfiability tableaus:
+        #     i[6],              # 1. number of times the rule has already been applied on this branch (prefer least used)
+        #     rule_order[i[3]],  # 2. rule type rank (prefer earlier in order)
+        #     pos_rev[i[0]],     # 3. position of the target node in the tree (prefer leftmost lowest)
+        #     pos_rev[i[1]]      # 4. position of the source node in the tree (prefer leftmost lowest)
+        # )
         appl_sorted = list(k for k, _ in itertools.groupby([itm for itm in
                                                             sorted(applicable, key=(
                                                                 sort_v1 if self.mode["validity"] else sort_v2))]))
@@ -610,7 +638,6 @@ class Tableau(object):
         """
         phi, var = fmls
         new, indexed, used, occurring = args
-        # print(used)
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
@@ -759,7 +786,7 @@ class Tableau(object):
         # reduce the signature
         # sig = tuple([s for s in source.sig[:-1]])
         # inst = (source.sig, sig)
-        world = min([i for i in occurring if i in reductions])
+        world = min([i for i in occurring if str(i) in reductions])
         new = False
         inst = (source.world, world, new)
 
@@ -785,7 +812,7 @@ class Tableau(object):
         #         sig = sig_
         #         break
         # inst = (source.sig, sig)
-        world = min([i for i in range(1, 1000) if i not in occurring])
+        world = min([i for i in range(1, 1000) if str(i) not in occurring])
         new = True
         inst = (source.world, world, new)
 
@@ -849,7 +876,8 @@ class Tableau(object):
         @return True if all branches are closed, and False otherwise
         @rtype: bool
         """
-        return all([isinstance(leaf.fml, Closed) for leaf in self.root.leaves() if leaf.fml])
+        return all([isinstance(leaf.fml, Closed) for leaf in self.root.leaves()
+                    if leaf.fml and not isinstance(leaf.fml, Empty)])
 
     def open(self) -> bool:
         """
@@ -858,7 +886,8 @@ class Tableau(object):
         @return True if at least one branch is open, and False otherwise
         @rtype: bool
         """
-        return any([isinstance(leaf.fml, Open) for leaf in self.root.leaves() if leaf.fml])
+        return any([isinstance(leaf.fml, Open) for leaf in self.root.leaves()
+                    if leaf.fml and not isinstance(leaf.fml, Empty)])
 
     def infinite(self) -> bool:
         """
@@ -867,7 +896,8 @@ class Tableau(object):
         @return True if all at least one branch is infinite, and False otherwise
         @rtype: bool
         """
-        return any([isinstance(leaf.fml, Infinite) for leaf in self.root.leaves() if leaf.fml])
+        return any([isinstance(leaf.fml, Infinite) for leaf in self.root.leaves()
+                    if leaf.fml and not isinstance(leaf.fml, Empty)])
 
     def model(self, leaf) -> Structure:
         """
@@ -894,7 +924,7 @@ class Tableau(object):
                 # r = {(worlds[sig1], worlds[sig2]) for (sig1, sig2) in r_}
                 worlds = list(dict.fromkeys([node.world for node in branch if node.world]))
                 worlds_ = list(dict.fromkeys([node.world for node in branch if node.world and
-                                              node.fml.liteal()]))
+                                              node.fml.literal()]))
                 w = {"w" + str(w) for w in worlds}
                 r_ = list(dict.fromkeys([node.inst for node in branch
                                          if len(node.inst) > 0 and isinstance(node.inst[0], int)]))
@@ -1078,19 +1108,23 @@ class Node(object):
         len_source = max([len(str(node.source.line)) for node in self.root().nodes() if node.source]) \
             if [node for node in self.root().nodes() if node.source] else 0
         # compute columns
-        line = str(self.line)
+        line = str(self.line) + "."
+        # underline lines of open branches in MG
         if not self.tableau.mode["validity"] and \
                 any([self in branch for branch in open_branches]):
-            line = "\033[4m" + line + "\033[0m"
-        str_line = "{:<{len}}".format(line + "." if self.line else "", len=len_line)
+            line = "\033[4m" + line + "\033[0m" + ((len(line) - 1) * " ")
+        str_line = "{:<{len}}".format((line if self.line else ""), len=len_line)
         # str_sig = "{:<{len}}".format(".".join([str(s) for s in self.sig]) if self.sig else "", len=len_sig) \
         #     if len_sig else ""
         str_world = "{:<{len}}".format("w" + str(self.world) if self.world else "", len=len_world)
         # str_sign = "{:<{len}}".format(("⊩" if self.sign == "+" else "⊮") if self.sign else "", len=len_sign)
         fml = str(self.fml)
+        # underline literals of open branches in MG
         if not self.tableau.mode["validity"] and \
                 any([self in branch for branch in open_branches]) and self.fml.literal():
-            fml = "\033[4m" + fml + "\033[0m"
+            fml = (len(fml) * " ") + \
+                  "\033[4m" + fml + "\033[0m" + \
+                  (len(fml) * " ")  # todo not properly center aligned; to little padding
         str_fml = "{:^{len}}".format(fml, len=len_fml)
         if isinstance(self.fml, Open) or isinstance(self.fml, Infinite):
             str_cite = ""
@@ -1161,7 +1195,7 @@ class Node(object):
         Level-order traversal:
         if not reversed: First visit the nodes on a level from left to right, then recurse through the nodes' children.
         if reversed: First visit the nodes on a level from right to left, then recurse through the nodes' children.
-                     (Afterwards, the obtained list should be reversed to receive an order from bottom to top.)
+                     In the end, reverse the list to receive an order from bottom to top, left to right.
         """
         res = []
         if not reverse:
@@ -1176,6 +1210,8 @@ class Node(object):
             for child in self.children[::-1]:
                 res.append(child)
                 res += child.nodes(False, True)
+            if root:
+                res = res[::-1]
         return res
 
         # """
@@ -1276,7 +1312,8 @@ class Node(object):
         if self.pseudo():
             return
         # todo smarter implementation (check for loops in rule appls.)
-        len_assumptions = sum([len(str(node.fml)) for node in self.branch if node.rule == "A" and not node.world])
+        len_assumptions = sum([len(str(node.fml)) for node in self.branch
+                               if node.rule == "A" and (self.root().tableau.mode["validity"] or not node.world)])
         height = len(self.branch)
         width = len(self.branch[-2].children)
         if height > size_limit_factor * len_assumptions:
@@ -1320,12 +1357,12 @@ if __name__ == "__main__":
     pass
 
     #############
-    # Basic examples
+    # basic examples
     ############
 
     # fml = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
     # tab = Tableau(fml, propositional=True)
-    #     #
+    # 
     # fml = Conj(Imp(Prop("p"), Prop("q")), Prop("r"))
     # tab = Tableau(fml, validity=True, propositional=True)
     # tab = Tableau(fml, validity=False, satisfiability=True, propositional=True)
@@ -1339,7 +1376,7 @@ if __name__ == "__main__":
     # fml1 = Atm(Pred("P"), (Const("a"), Const("a")))
     # fml2 = Neg(Eq(Const("a"), Const("a")))
     # tab = Tableau(premises=[fml1, fml2], validity=False)
-    #     #
+    # 
     # fml1 = Imp(Atm(Pred("P"), (Const("a"), Const("b"))), Atm(Pred("Q"), (Const("a"), Const("c"))))
     # fml = Atm(Pred("R"), (Const("a"), Const("a")))
     # tab = Tableau(fml, premises=[fml1])
@@ -1355,6 +1392,13 @@ if __name__ == "__main__":
     # fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
     # tab = Tableau(fml2, premises=[fml1])
     # tab = Tableau(fml1, premises=[fml2])
+
+    # uniqueness quantifier
+    # fml = Biimp(Exists(Var("x"), Conj(Atm(Pred("P"), (Var("x"),)),
+    #                                   Neg(Exists(Var("y"), Conj(Atm(Pred("P"), (Var("y"),)),
+    #                                                             Neg(Eq(Var("x"), Var("y")))))))),
+    #             Exists(Var("x"), Forall(Var("y"), Biimp(Atm(Pred("P"), (Var("y"),)), Eq(Var("x"), Var("y"))))))
+    # tab = Tableau(fml)
 
     #################
     # quantifier commutativity
@@ -1376,88 +1420,98 @@ if __name__ == "__main__":
     # tab = Tableau(fml2, premises=[fml1])
     # tab = Tableau(fml1, premises=[fml2])
     # tab = Tableau(fml1, premises=[fml2, fml3], validity=False, satisfiability=False)
-
-    ax1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)), Neg(Atm(Pred("lid"), (Var("x"),)))))
-    ax2 = Forall(Var("x"), Imp(Atm(Pred("lid"), (Var("x"),)), Neg(Atm(Pred("tupperbox"), (Var("x"),)))))
-    fml1 = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
-                                  Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
-                                                       Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    fml2 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
-                                Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
-                                                      Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    fml3 = Exists(Var("x"), Atm(Pred("tupperbox"), (Var("x"),)))
+    #
+    # ax1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)), Neg(Atm(Pred("lid"), (Var("x"),)))))
+    # ax2 = Forall(Var("x"), Imp(Atm(Pred("lid"), (Var("x"),)), Neg(Atm(Pred("tupperbox"), (Var("x"),)))))
+    # fml1 = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+    #                               Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+    #                                                    Atm(Pred("fit"), (Var("x"), Var("y")))))))
+    # fml2 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+    #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+    #                                                   Atm(Pred("fit"), (Var("x"), Var("y")))))))
+    # fml3 = Exists(Var("x"), Atm(Pred("tupperbox"), (Var("x"),)))
     # tab = Tableau(fml2, premises=[fml1])
     # tab = Tableau(fml1, premises=[fml2])
     # tab = Tableau(fml1, premises=[fml2, fml3], validity=False, satisfiability=False)
-    tab = Tableau(fml1, premises=[fml2, fml3], axioms=[ax1], validity=False, satisfiability=False)
+    # tab = Tableau(fml1, premises=[fml2, fml3], axioms=[ax1], validity=False, satisfiability=False)
     # tab = Tableau(fml1, premises=[fml2, fml3], axioms=[ax1, ax2], validity=False, satisfiability=False)
-    print(len(tab))
+    # print(len(tab))
 
     ###############
-    # Modal logic
+    # modal logic
     ###############
 
     # fml = Biimp(Nec(Prop("p")), Neg(Poss(Neg(Prop("p")))))
     # tab = Tableau(fml, propositional=True, modal=True)
-    # 
+    #
     # fml1 = Nec(Prop("p"))
     # fml = Poss(Prop("p"))
     # tab = Tableau(fml, premises=[fml1], propositional=True, modal=True)
-    #     #
+    # 
     # fml1 = Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),))))
     # fml = Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),))))
     # tab = Tableau(fml, premises=[fml1], modal=True)
-    # 
+    #
     # fml = Imp(Forall(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))), Nec(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))))
     # tab = Tableau(fml, modal=True)
-    #     #
+    # 
     # fml = Imp(Exists(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))), Nec(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))))
     # tab = Tableau(fml, modal=True)
-    #     #
+    #
+    # fml = Nec(Falsum())
+    # tab = Tableau(fml, propositional=True, modal=True, validity=False)
+    # 
+    # fml = Conj(Poss(Prop("p")), Poss(Neg(Prop("p"))))
+    # tab = Tableau(fml, modal=True)
+    # tab = Tableau(fml, propositional=True, modal=True, validity=False)
+    # # #
     # fml = Imp(Nec(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))), Exists(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))))
     # tab = Tableau(fml, modal=True)
     # tab = Tableau(fml, modal=True, validity=False)
     # tab = Tableau(fml, modal=True, validity=False, satisfiability=False)
     #
     # fml = Exists(Var("x"), Poss(Imp(Nec(Atm(Pred("P"), (Var("x"),))), Forall(Var("x"), Atm(Pred("P"), (Var("x"),))))))
+    # tab = Tableau(fml, modal=True)
     # tab = Tableau(fml, modal=True, vardomains=True)
     # tab = Tableau(fml, validity=False, modal=True, vardomains=True)
     # tab = Tableau(fml, validity=False, satisfiability=False, modal=True, vardomains=True)
-    #     #
+    #
     # fml = Imp(Exists(Var("x"), Forall(Var("y"), Nec(Atm(Pred("Q"), (Var("x"), Var("y")))))),
     #           Forall(Var("y"), Nec(Exists(Var("x"), Atm(Pred("Q"), (Var("x"), (Var("y"))))))))
     # tab = Tableau(fml, modal=True)
     # tab = Tableau(fml, modal=True, vardomains=True)
     # tab = Tableau(fml, validity=False, modal=True, vardomains=True)
     # tab = Tableau(fml, validity=False, satisfiability=False, modal=True, vardomains=True)
-    #     #
+    #
     # fml = Imp(Conj(Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))),
     #                Nec(Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)), Atm(Pred("R"), (Var("x"),)))))),
     #           Exists(Var("x"), Poss(Atm(Pred("R"), (Var("x"),)))))
+    # tab = Tableau(fml, modal=True)
     # tab = Tableau(fml, modal=True, vardomains=True)
+    # tab = Tableau(fml, validity=False, modal=True, vardomains=True)
     # tab = Tableau(fml, validity=False, satisfiability=False, modal=True, vardomains=True)
-    #     #
+    # 
     # fml = Biimp(Forall(Var("x"), Forall(Var("y"), Atm(Pred("P"), (Var("x"), Var("y"))))),
     #             Forall(Var("y"), Forall(Var("x"), Atm(Pred("P"), (Var("y"), Var("x"))))))
     # tab = Tableau(fml)
-    #     #
+    # 
     # fml = Exists(Var("x"), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y")))))
     # tab = Tableau(fml, validity=False)
 
     #####################
     # Linguistic examples
     #####################
-
+    #
     # fml = Exists(Var("x"), Exists(Var("y"),
     #                               Conj(Neg(Eq(Var("x"), (Var("y")))), Atm(Pred("love"), (Var("x"), Var("y"))))))
     # tab = Tableau(fml, validity=False)
-    #     #
-    # fml = Forall(Var("x"), Conj(Atm(Pred("student"), (Var("x"),)),
-    #                             Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
-    #                                                   Atm(Pred("read"), (Var("x"), Var("y")))))))
+    #
+    # fml = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)),
+    #                            Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
+    #                                                  Atm(Pred("read"), (Var("x"), Var("y")))))))
     # fml1 = Exists(Var("x"), Atm(Pred("student"), (Var("x"),)))
     # tab = Tableau(fml, premises=[fml1], validity=False)
-    #     #
+    #
     # ax1 = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)), Atm(Pred("human"), (Var("x"),))))
     # ax2 = Forall(Var("x"), Imp(Atm(Pred("book"), (Var("x"),)), Atm(Pred("object"), (Var("x"),))))
     # ax3 = Forall(Var("x"), Imp(Atm(Pred("human"), (Var("x"),)), Neg(Atm(Pred("object"), (Var("x"),)))))
@@ -1468,32 +1522,7 @@ if __name__ == "__main__":
     #                            Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
     #                                                  Atm(Pred("read"), (Var("x"), Var("y")))))))
     # tab = Tableau(fml, premises=[prem1, prem2], axioms=[ax1, ax2, ax3, ax4], validity=False)
-    # 
+    #
     # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # fml2 = Neg(Exists(Var("y"), Forall(Var("x"), Atm(Pred("know"), (Var("x"), Var("y"))))))
     # tab = Tableau(None, premises=[fml1, fml2], validity=False)
-    #     #
-    # ax1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)), Neg(Atm(Pred("lid"), (Var("x"),)))))
-    # ax2 = Forall(Var("x"), Imp(Atm(Pred("lid"), (Var("x"),)), Neg(Atm(Pred("tupperbox"), (Var("x"),)))))
-    # fml1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
-    #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
-    #                                                   Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    # fml2 = Neg(Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
-    #                             Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
-    #                                                    Atm(Pred("fit"), (Var("x"), Var("y"))))))))
-    # fml3 = Exists(Var("x"), Atm(Pred("tupperbox"), (Var("x"),)))
-    # tab = Tableau(None, premises=[fml1, fml2, fml3], axioms=[ax1, ax2], validity=False)
-    #     #
-    # fml = Nec(Falsum())
-    # tab = Tableau(fml, propositional=True, modal=True, validity=False)
-    #     #
-    # fml = Conj(Poss(Prop("p")), Poss(Neg(Prop("p"))))
-    # tab = Tableau(fml, propositional=True, modal=True, validity=False)
-    # 
-    # fml1 = Exists(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)), Atm(Pred("Q"), (Var("x"),))))
-    # fml = Imp(Exists(Var("x"), Atm(Pred("P"), (Var("x"),))), Exists(Var("x"), Atm(Pred("Q"), (Var("x"),))))
-    # # tab = Tableau(fml, premises=[fml1])
-    # # tab = Tableau(Neg(fml), premises=[fml1], validity=False)
-    # fml = Imp(Forall(Var("x"), Atm(Pred("P"), (Var("x"),))), Exists(Var("x"), Atm(Pred("Q"), (Var("x"),))))
-    # tab = Tableau(fml, premises=[fml1])
-    #

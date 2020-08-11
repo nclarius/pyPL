@@ -255,7 +255,7 @@ class ConstModalStructure(ModalStructure):
                             "}")))
                         for (keyI, valI) in self.i[w].items() if w in self.i]) + \
                         "\n    "
-                    for (w, iw) in sorted(self.i.items())])
+                    for (w, iw) in sorted(self.i.items())]).replace("\n    \n", "\n")
 
 
 class VarModalStructure(ModalStructure):
@@ -328,7 +328,7 @@ class VarModalStructure(ModalStructure):
                                     "}")))
                                  for (keyI, valI) in sorted(self.i[w].items())]) + \
                             "\n    "
-                            for (w, iw) in sorted(self.i.items())])
+                            for (w, iw) in sorted(self.i.items())]).replace("\n    \n", "\n")
 
 class KripkeStructure(Structure):
     """
@@ -450,10 +450,10 @@ class KripkePropStructure(KripkeStructure):
         return "Structure " + self.s + " = (K,V) with\n"\
                "K = {" + ", ".join([str(k) for k in sorted(self.k)]) + "}\n"\
                "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n"\
-               "V : " + ", \n    ".join([str(k) + " ↦ \n" +
+               "D : " + "\n    ".join([str(k) + " ↦ \n" +
                             ", \n".join(["           " + str(p) + " ↦ " + str(tv)
                             for (p, tv) in sorted(self.v[k].items())])
-                        for (k, vk) in sorted(self.v.items())])
+                        for (k, vk) in sorted(self.v.items())]).replace("\n    \n", "\n")
 
 
 class KripkePredStructure(KripkeStructure):
@@ -577,13 +577,11 @@ class KripkePredStructure(KripkeStructure):
         return "Structure " + self.s + " = (K,R,D,F) with\n" \
                "K = {" + ", ".join([repr(k) for k in self.k]) + "}\n" \
                "R = {" + ", ".join([repr(r) for r in self.r]) + "}\n" \
-               "D = {\n" + \
-                    (", \n".join([repr(k) + " ↦ " + \
+               "D : " + "\n    ".join([repr(k) + " ↦ " +\
                             ", ".join([repr(d) for d in self.d[k]]) + "}"
-                    for k in self.k]) if self.d else "") +\
-                    "}\n" \
-               "I = {\n" + \
-                    ", \n".join(["    " + repr(k) + " ↦ {\n" +\
+                    for k in self.k]) if self.d else "" +\
+                    "\n" +\
+               "I : " + "\n    ".join(["    " + repr(k) + " ↦ {\n" +\
                             ", \n".join(
                                 ["            " + repr(keyF) + " ↦ " +
                                  (repr(valF) if isinstance(valF, str) else
@@ -597,5 +595,4 @@ class KripkePredStructure(KripkeStructure):
                                   )
                                  for (keyF, valF) in self.i[k].items()]) + \
                             "\n           }"
-                            for (k, ik) in self.i.items()]) + \
-                    "\n    }"
+                            for (k, ik) in self.i.items()]).replace("\n    \n", "\n")
