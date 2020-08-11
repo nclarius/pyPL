@@ -6,11 +6,12 @@ Tableau proofs and model extraction.
 THIS PART IS STILL UNDER CONSTRUCTION.
 """
 
-from main import *
+from denotation import *
 from expr import *
 from structure import *
 
 from typing import List, Dict, Set, Tuple
+import os
 import itertools
 from itertools import chain
 
@@ -27,7 +28,7 @@ size_limit_factor = 2  # size factor after which to give up the further expansio
 num_mdls = 1  # number of models to generate  # todo doesn't always work
 mark_open = True  # in MG: in open branches, underline line numbers and literals in tree outputs
 hide_nonopen = False  # in MG: hide non-open branches in tree output
-latex = False  # generate output in LaTeX instead of plain text format
+latex = True  # generate output in LaTeX instead of plain text format
 
 
 class Tableau(object):
@@ -92,16 +93,20 @@ class Tableau(object):
         """
         Expand the tableau, generate the associate models and print some info.
         """
+        res = ""
         # create preamble
         if latex:
-            preamble = "\\documentclass[a4paper]{article}\n\n\\usepackage{amssymb, amsmath}\n\n\\begin{document}"
-            print(preamble)
+            with open("preamble.tex") as f:
+                preamble = f.read()
+                preamble += "\n\\begin{document}"
+                res += preamble
 
         # print info
         info = "\n"
         info += "You are using " + \
                 ("proof search" if self.mode["validity"] else
-                 ("model" if self.mode["satisfiability"] else "countermodel") + " generation") + "\nfor " + \
+                 ("model" if self.mode["satisfiability"] else "countermodel") + " generation") + \
+                ("\\\\" if latex else "") + " \nfor " + \
                 ("classical " if self.mode["classical"] else "intuitionistic ") + \
                 ("modal " if self.mode["modal"] else "") + \
                 ("propositional " if self.mode["propositional"] else "predicate ") + \
@@ -109,86 +114,121 @@ class Tableau(object):
                 (" with " + ("varying " if self.mode["vardomains"] else "constant ") + "domains"
                  if self.mode["modal"] and not self.mode["propositional"] else "") + \
                 (" in a " + self.mode["frame"] + " frame" if self.mode["modal"] else "") + \
-                ".\n\n"
-        axs = [str(node.fml) for node in self.axioms]
-        prems = ([str(self.root.fml)] if not self.conclusion else []) + \
-                [str(node.fml) for node in self.premises] + \
-                ([str(self.conclusion)]
-                 if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else [])
+                "." + ("\\\\" if latex else "") + "\n\n"
+        if not latex:
+            axs = [str(node.fml) for node in self.axioms]
+            prems = ([str(self.root.fml)] if not self.conclusion else []) + \
+                    [str(node.fml) for node in self.premises] + \
+                    ([str(self.conclusion)]
+                     if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else [])
 
-        concl = str(self.conclusion) if \
-            self.conclusion and self.mode["validity"] or not self.mode["satisfiability"] else ""
-        lhs = axs + prems + ([concl] if concl else [])
-        info += "Tableau for \n" + \
-                ", \n".join(axs) + (" + \n" if axs and prems else "\n" if axs else "") + \
-                ", \n".join(prems) + ("\n" if len(lhs) > 1 else " " if not concl else "") + \
-                ("⊨" if self.mode["validity"] else "⊭") + \
-                (" " if concl else "") + concl + " :\n"
-        if latex:
-            info.replace("\n", "\\\\\n")
-        print(info)
+            concl = str(self.conclusion) if \
+                self.conclusion and self.mode["validity"] or not self.mode["satisfiability"] else ""
+            lhs = axs + prems + ([concl] if concl else [])
+            inf = ("⊨" if self.mode["validity"] else "⊭")
+            info += "Tableau for \n" + \
+                    ", \n".join(axs) + (" + \n" if axs and prems else "\n" if axs else "") + \
+                    ", \n".join(prems) + ("\n" if len(lhs) > 1 else " " if not concl else "") + \
+                    inf + \
+                    (" " if concl else "") + concl + " :" +"\n"
+        else:
+            axs = [node.fml.tex() for node in self.axioms]
+            prems = ([self.root.fml.tex()] if not self.conclusion else []) + \
+                    [node.fml.tex() for node in self.premises] + \
+                    ([self.conclusion.tex()]
+                     if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else [])
+
+            concl = self.conclusion.tex() if \
+                self.conclusion and self.mode["validity"] or not self.mode["satisfiability"] else ""
+            lhs = axs + prems + ([concl] if concl else [])
+            inf = ("\\vDash" if self.mode["validity"] else "\\nvDash")
+            info += "Tableau for $\\\\\n" + \
+                    ", \\\\\n".join(axs) + (" + \n" if axs and prems else "\n" if axs else "") + \
+                    ", \\\\\n".join(prems) + ("\n" if len(lhs) > 1 else " " if not concl else "") + \
+                    inf + \
+                    (" " if concl else "") + concl + " :" + "$\\\\\n\n"
+        res += info
 
         # recursively apply the rules
         self.expand()
 
         # print the tableau
-        print(self.root.treestr()[:-1])  # todo latex for trees
+        if not latex:
+            res += self.root.treestr()[:-1]
+        else:
+            res += self.root.treetex() + "\n\n"
 
         # print result
         result = ""
         if self.closed():
-            result += "The tableau is closed:\n"
+            result += "The tableau is closed:" + ("\\\\" if latex else "") + "\n"
             if self.mode["validity"]:
-                result += "The " + ("inference" if self.premises else "formula") + " is valid.\n"
+                result += "The " + ("inference" if self.premises else "formula") + " is valid."
             else:
                 if self.mode["satisfiability"]:
-                    result += "The " + ("set of formulas" if self.premises else "formula") + " is unsatisfiable.\n"
+                    result += "The " + ("set of formulas" if self.premises else "formula") + " is unsatisfiable."
                 else:
-                    result += "The " + ("inference" if self.premises else "formula") + " is irrefutable.\n"
+                    result += "The " + ("inference" if self.premises else "formula") + " is irrefutable."
         elif self.open():
-            result += "The tableau is open:\n"
+            result += "The tableau is open:" + ("\\\\" if latex else "") + "\n"
             if self.mode["validity"]:
-                result += "The " + ("inference" if self.premises else "formula") + " is invalid.\n"
+                result += "The " + ("inference" if self.premises else "formula") + " is invalid."
             else:
                 if self.mode["satisfiability"]:
-                    result += "The " + ("set of formulas" if self.premises else "formula") + " is satisfiable.\n"
+                    result += "The " + ("set of formulas" if self.premises else "formula") + " is satisfiable."
                 else:
-                    result += "The " + ("inference" if self.premises else "formula") + " is refutable.\n"
+                    result += "The " + ("inference" if self.premises else "formula") + " is refutable."
         elif self.infinite():
-            result += "The tableau is potentially infinite:\n"
+            result += "The tableau is potentially infinite:" + ("\\\\" if latex else "") + "\n"
             if self.mode["validity"]:
-                result += "The " + ("inference" if self.premises else "formula") + " may not be valid.\n"
+                result += "The " + ("inference" if self.premises else "formula") + " may not be valid."
             else:
                 if self.mode["satisfiability"]:
                     result += "The " + \
                               ("set of formulas" if self.premises else "formula") + \
-                              " may or may not be satisfiable.\n"
+                              " may or may not be satisfiable."
                 else:
-                    result += "The " + ("inference" if self.premises else "formula") + " may or may not be refutable.\n"
-        if latex:
-            result.replace("\n", "\\\\\n")
-        print(result)
+                    result += "The " + ("inference" if self.premises else "formula") + " may or may not be refutable."
+        result += ("\\\\\n" if latex else "") + "\n"
+        res += result
 
         # generate and print models
         if self.models:
             mdls = ""
-            mdls += "Countermodels:\n" \
+            mdls += ("Countermodels:" \
                 if self.mode["validity"] or not self.mode["validity"] and not self.mode["satisfiability"] \
-                else "Models:\n"
+                else "Models:") + ("\\\\" if latex else "") + "\n"
             for model in sorted(self.models, key=lambda m:
                                 {n.line: i for (i, n) in enumerate(self.root.nodes(preorder=True))}[int(m.s[1:])]):
                 mdls += "\n"
-                mdls += str(model) + "\n"  # todo latex for models
-            if latex:
-                mdls.replace("\n", "\\\\\n")
-            print(mdls)
+                if not latex:
+                    mdls += str(model) + "\n"
+                else:
+                    mdls += model.tex() + "\\\\\\\\\n"
+            res += mdls
+
+        if latex:
+            postamble = "\\end{document}\n"
+            res += postamble
+        sep = 80 * "-"
+        res += sep
 
         if not latex:
-            sep = 80 * "-"
-            print(sep)
-        if latex:
-            postamble = "\\end{document}"
-            print(postamble)
+            # print the result in plain tex
+            print(res)
+        else:
+            # generate the tex file and open the compiled pdf
+            dirpath = os.path.join(os.path.dirname(__file__), "output")
+            if not os.path.exists(dirpath):
+                os.mkdir(dirpath)
+            os.chdir(dirpath)
+            texpath = "output.tex"
+            pdfpath = "output.pdf"
+            with open(texpath, "w") as texfile:
+                texfile.write(res)
+            os.system("pdflatex " + texpath)
+            os.system("xdg-open " + pdfpath)
+            os.chdir(os.path.dirname(__file__))
 
     rule_names = {"α": "alpha", "β": "beta",  # connective rules
                   "γ": "gamma", "δ": "delta", "η": "eta", "θ": "theta",  # quantifier rules
@@ -1172,8 +1212,44 @@ class Node(object):
         """
         LaTeX representation of this line.
         """
-        # todo
-        pass
+        str2tex = {
+            "¬": "\\neg ",
+            "∧": "\\wedge",
+            "∨": "\\vee",
+            "→": "\\rightarrow",
+            "↔": "\\leftrightarrow",
+            "⊕": "\\oplus",
+            "∃": "\\exists",
+            "∀": "\\forall",
+            "◇": "\\Box",
+            "◻": "\\Diamond"
+        }
+        str_line = str(self.line) + "." if self.line else ""
+        str_world = "$w" + "_" + str(self.world) + "$" if self.world else ""
+        str_fml = "$" + self.fml.tex().replace(",", "{,}") + "$"
+        str_cite = ""
+        if isinstance(self.fml, Open) or isinstance(self.fml, Infinite):
+            str_cite = ""
+        elif self.rule in ["A", "Ax"]:
+            str_cite = "(" + self.rule + ")"
+        elif not self.rule:
+            str_cite = "(" + str(self.source.line) + ")"
+        else:
+            str_rule = "$" + "".join([str2tex[c] if c in str2tex else c for c in str(self.rule)]) + "$"\
+                if self.rule else ""
+            str_comma = " {,} " if self.rule and self.source else ""
+            str_source = str(self.source.line) if self.source else ""
+            if self.inst:
+                if isinstance(self.inst[0], str):
+                    str_inst = "{,} " + "$\\lbrack " + str(self.inst[0]) + "/" + str(self.inst[1]) + " \\rbrack$" \
+                               + ("*" if self.inst[2] else "")
+                elif isinstance(self.inst[0], int):
+                    str_inst = "{,} " + "$\\tpl{" + str(self.inst[0]) + "{,}" + str(self.inst[1]) + "}$" \
+                               + ("*" if self.inst[2] else "")
+            else:
+                str_inst = ""
+            str_cite = "(" + str_rule + str_comma + str_source + str_inst + ")"
+        return " & ".join([str_line, str_world, str_fml, str_cite])
 
     def __repr__(self):
         """
@@ -1209,14 +1285,41 @@ class Node(object):
             res += indent + "\n"
         return res
 
+    def treetex(self, indent=0, first=True, root=True) -> str:
+        # todo doesn't work yet -- "missing \endscname inserted"
+        res = ""
+        if root:
+            res += "\\begin{forest}\n[\n"
+            indent += 1
+        if first:
+            res += indent * "" + "\\begin{tableaublock}\n"
+        res += indent * "" + self.tex()
+        if self.children:
+            if len(self.children) == 1:  # no branching
+                res += "\\\\\n" + self.children[0].treetex(first=False, root=False)
+            else:  # branching
+                res += indent * "" + "\n\\end{tableaublock}\n"
+                indent += 1
+                for child in self.children:
+                    if child.fml and child.fml.tex() and not isinstance(child.fml, Empty):
+                        res += "[\n"
+                        res += child.treetex(first=True, root=False)
+                        res += "]\n"
+                indent -= 1
+        else:  # leaf
+            res += indent * "" + "\n\\end{tableaublock}\n"
+        if root:
+            indent -= 1
+            res += "]\n\\end{forest}\n"
+        return res
+
     def nodes(self, root=True, reverse=False, preorder=False):
         """
         Pre-order traversal:
           First visit the node itself, then recurse through its children.
         Level-order traversal:
-          if not reversed: First visit the nodes on a level from left to right, then recurse through the nodes' children.
-          if reversed: First visit the nodes on a level from right to left, then recurse through the nodes' children.
-                       In the end, reverse the list to receive an order from bottom to top, left to right.
+          Not reversed: First visit the nodes on a level from left to right, then recurse through the nodes' children.
+          Reversed:     First visit the nodes on a level from left to right, then recurse through the nodes' parents.
         """
         res = []
         if preorder:  # preorder

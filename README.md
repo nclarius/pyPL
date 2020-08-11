@@ -46,6 +46,7 @@ modal MG only for K frames.
    relative to structures, variable assignments and possible worlds
  - analytic tableau proofs -- currently under construction
  - model generation -- currently under construction
+ - output in plain text or LaTeX-generated PDF format
 
 Restrictions
 ------------
@@ -63,11 +64,13 @@ Wish list
  - more user-friendly input and output:
    - expression parser instead of the cumbersome prefix notation
    - interactive mode/file input instead of need to edit source code in order to set up input
-   - LaTeX output
- - in model checking, print out detailed derivation rather than just final result of evaluation
-- more modal logics
-- model generation for intuitionistic logic
-- modal logic for intuitionistic logic
+   - GUI
+- in model checking, print out detailed derivation rather than just final result of evaluation
+- broader coverage:
+  - tableaus with free variables
+  - more frames for modal logic
+  - model generation for intuitionistic logic
+  - modal logic for intuitionistic logic
 
 Usage notes
 -----------

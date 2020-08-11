@@ -5,12 +5,11 @@
 Define the structures of classical (standard and modal) (prepositional and first-order) logic.
 """
 
-# todo latex
 
-
-from main import *
+from denotation import *
 from expr import *
 
+import re
 from itertools import product
 
 
@@ -44,8 +43,16 @@ class PropStructure(Structure):
         self.v = v
 
     def __str__(self):
-        return "Structure " + self.s + " = ⟨V⟩ with V: " + \
-               ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v.items())])
+        return "Structure " + self.s + " = ⟨V⟩ with \n" +\
+               "V: " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v.items())])
+
+    def tex(self):
+        return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
+               " = \\tpl{\\mathcal{V}}$ with \\\\\n" +\
+               "\\begin{tabular}{LL}\n" +\
+               "\\mathcal{V} : &" + \
+               ", ".join([str(key) + " \\mapsto " + str(val) for key, val in sorted(self.v.items())]) + "\\\\\n"+\
+               "\\end{tabuar}"
 
 
 class PredStructure(Structure):
@@ -128,6 +135,22 @@ class PredStructure(Structure):
                                            "}")))
                                         for (key, val) in sorted(self.i.items())])
 
+    def tex(self):
+        return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
+               " = \\tpl{\\mathcal{D}, \\mathcal{I}}$ with \\\\\n" +\
+               "\\begin{tabular}{LLL}\n" +\
+               "\\mathcal{D} = & " \
+               "\\multicolumn{2}{L}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" \
+               "\\mathcal{I} : &" + "\\\\\n    & ".join([str(key) + " & \\mapsto " +
+                                         (str(val) if isinstance(val, str) else
+                                         (", ".join(["\\tpl{" + str(key2) + " \\mapsto " + str(val2) + "}"
+                                                     for key2, val2 in val.items()])
+                                          if isinstance(val, dict) else
+                                          ("\\set{" +
+                                           ", ".join(["\\tpl{" + ", ".join([str(t) for t in s]) + "}" for s in sorted(val)]) +
+                                           "}")))
+                                        for (key, val) in sorted(self.i.items())]) + "\\\\\n" +\
+              "\\end{tabular}"
 
 class ModalStructure(Structure):
     """
@@ -190,6 +213,21 @@ class PropModalStructure(ModalStructure):
                             for (p, tv) in sorted(self.v[w].items())])
                         for (w, vw) in sorted(self.v.items())])
 
+    def tex(self):
+        return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
+               " = \\tpl{\\mathcal{W}, \\mathcal{V}}$ with \\\\\n" \
+               "\\begin{tabular}{LLLL}\n" \
+               "\\mathcal{W} = & " \
+               "\\multicolumn{3}{L}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n"\
+               "\\mathcal{R} = &" \
+               "\\multicolumn{3}{L}{\\set{" + ", ".join(
+                                  ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n"\
+               "\\mathcal{V} : &" + "\\\\\n    & ".join([str(w) + " & \\mapsto\\\\\n" +
+                            ", \\\\\n &&".join([str(p) + " & \\mapsto " + str(tv)
+                            for (p, tv) in sorted(self.v[w].items())])
+                        for (w, vw) in sorted(self.v.items())]) + "\\\\\n" +\
+               "\\end{tabular}"
+
 
 class ConstModalStructure(ModalStructure):
     """
@@ -248,14 +286,41 @@ class ConstModalStructure(ModalStructure):
                         ["           " + str(keyI) + " ↦ " +
                          (str(valI) if isinstance(valI, str) else
                           (", ".join(["(" + str(keyI2) + " ↦ " + str(valI2) + ")"
-                                      for keyI2, valI2 in valI.items()])
+                                      for keyI2, valI2 in sorted(valI.items())])
                            if isinstance(valI, dict) else
                            ("{" +
-                            ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in valI]) +
+                            ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in sorted(valI)]) +
                             "}")))
-                        for (keyI, valI) in self.i[w].items() if w in self.i]) + \
+                        for (keyI, valI) in sorted(self.i[w].items()) if w in self.i]) + \
                         "\n    "
                     for (w, iw) in sorted(self.i.items())]).replace("\n    \n", "\n")
+
+    def tex(self):
+        return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
+               " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{D}, \\mathcal{I}}$ with \\\\\n" \
+               "\\begin{tabular}{LLLL}\n" \
+               "\\mathcal{W} = & " \
+               "\\multicolumn{3}{L}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
+               "\\mathcal{R} = &" \
+               "\\multicolumn{3}{L}{\\set{" + ", ".join(
+                                 ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" \
+               "\\mathcal{D} = & " \
+               "\\multicolumn{3}{L}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" \
+               "\\mathcal{I} : &" + \
+               "\\\\\n    & ".join([str(w) + " & \\mapsto \\\\\n" + \
+                        "\\\\\n && ".join(
+                        [str(keyI) + " & \\mapsto " +
+                         (str(valI) if isinstance(valI, str) else
+                          (", \\\\\n && ".join(["\\tpl{" + str(keyI2) + " \\mapsto " + str(valI2) + "}"
+                                      for keyI2, valI2 in valI.items()])
+                           if isinstance(valI, dict) else
+                           ("\\set{" +
+                            ", ".join(["\\tpl{" + ", ".join([str(t) for t in s]) + "}" for s in sorted(valI)]) +
+                            "}")))
+                        for (keyI, valI) in sorted(self.i[w].items()) if w in self.i]) + \
+                        "\\\\\n    &&"
+                    for (w, iw) in sorted(self.i.items())])  + "\\\\\n" +\
+               "\\end{tabular}"
 
 
 class VarModalStructure(ModalStructure):
@@ -317,7 +382,7 @@ class VarModalStructure(ModalStructure):
                     for w in sorted(self.w)]) +\
                     "\n"\
                "I : " + "\n    ".join([str(w) + " ↦ \n" +\
-                            ", \n".join(
+                            "\n".join(
                                 ["         " + str(keyI) + " ↦ " +
                                  (str(valI) if isinstance(valI, str) else
                                   (", ".join(["(" + str(keyI2) + " ↦ " + str(valI2) + ")"
@@ -329,6 +394,36 @@ class VarModalStructure(ModalStructure):
                                  for (keyI, valI) in sorted(self.i[w].items())]) + \
                             "\n    "
                             for (w, iw) in sorted(self.i.items())]).replace("\n    \n", "\n")
+
+    def tex(self):
+        return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
+               " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{D}, \\mathcal{I}}$ with \\\\\n" \
+               "\\begin{tabular}{LLLL}\n" \
+               "\\mathcal{W} = & " \
+               "\\multicolumn{3}{L}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
+               "\\mathcal{R} = &" \
+               "\\multicolumn{3}{L}{\\set{" + ", ".join(
+                                 ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" \
+               "\\mathcal{D} = & " \
+               "\\\\\n    ".join([str(w) + " & \\multicolumn{2}{L}{\\mapsto " + \
+                            "\\set{" + ", ".join([str(d) for d in sorted(self.d[w])]) + "}}"
+                    for w in sorted(self.w)]) +\
+                    "\\\\\n"\
+               "\\mathcal{I} : &" + \
+               "\\\\\n    & ".join([str(w) + " & \\mapsto \\\\\n" + \
+                        ", \\\\\n && ".join(
+                        [str(keyI) + " & \\mapsto " +
+                         (str(valI) if isinstance(valI, str) else
+                          (", \\\\\n && ".join(["\\tpl{" + str(keyI2) + " \\mapsto " + str(valI2) + "}"
+                                      for keyI2, valI2 in valI.items()])
+                           if isinstance(valI, dict) else
+                           ("\\set{" +
+                            ", ".join(["\\tpl{" + ", ".join([str(t) for t in s]) + "}" for s in sorted(valI)]) +
+                            "}")))
+                        for (keyI, valI) in sorted(self.i[w].items()) if w in self.i]) +\
+                        "\\\\\n    &&"
+                    for (w, iw) in sorted(self.i.items())]) + "\\\\\n" +\
+               "\\end{tabular}"
 
 class KripkeStructure(Structure):
     """
@@ -361,15 +456,6 @@ class KripkeStructure(Structure):
         @rtrype: set[str]
         """
         return {k_ for k_ in self.k if (k_, k) in self.r}
-
-    def __str__(self):
-        return "Structure " + self.s + " = (W, V) with\n"\
-               "W = {" + ", ".join([str(k) for k in sorted(self.k)]) + "}\n"\
-               "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n"\
-               "V : " + ", \n    ".join([str(k) + " ↦ \n" +
-                            ", \n".join(["           " + str(p) + " ↦ " + str(tv)
-                            for (p, tv) in sorted(self.v[k].items())])
-                        for (k, vk) in sorted(self.v.items())])
 
 
 class KripkePropStructure(KripkeStructure):
@@ -454,6 +540,21 @@ class KripkePropStructure(KripkeStructure):
                             ", \n".join(["           " + str(p) + " ↦ " + str(tv)
                             for (p, tv) in sorted(self.v[k].items())])
                         for (k, vk) in sorted(self.v.items())]).replace("\n    \n", "\n")
+
+    def tex(self):
+        return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
+               " = \\tpl{\\mathcal{K}, \\mathcal{V}}$ with \\\\\n" \
+               "\\begin{tabular}{LLLL}\n" \
+               "\\mathcal{K} = & " \
+               "\\multicolumn{3}{L}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n"\
+               "\\mathcal{R} = &" \
+               "\\multicolumn{3}{L}{\\set{" + ", ".join(
+                                  ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n"\
+               "\\mathcal{V} : &" + "\\\\\n    & ".join([str(k) + " & \\mapsto\\\\\n" +
+                            ", \\\\\n &&".join([str(p) + " & \\mapsto " + str(tv)
+                            for (p, tv) in sorted(self.v[k].items())])
+                        for (k, vk) in sorted(self.v.items())]) + "\\\\\n" +\
+               "\\end{tabular}"
 
 
 class KripkePredStructure(KripkeStructure):
@@ -596,3 +697,33 @@ class KripkePredStructure(KripkeStructure):
                                  for (keyF, valF) in self.i[k].items()]) + \
                             "\n           }"
                             for (k, ik) in self.i.items()]).replace("\n    \n", "\n")
+
+    def tex(self):
+        return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
+               " = \\tpl{\\mathcal{K}, \\mathcal{R}, \\mathcal{D}, \\mathcal{I}}$ with \\\\\n" \
+               "\\begin{tabular}{LLLL}\n" \
+               "\\mathcal{K} = & " \
+               "\\multicolumn{3}{L}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" \
+               "\\mathcal{R} = &" \
+               "\\multicolumn{3}{L}{\\set{" + ", ".join(
+                                 ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" \
+               "\\mathcal{D} = & " \
+               "\\\\\n    ".join([str(k) + " & \\multicolumn{2}{L}{\\mapsto " + \
+                            "\\set{" + ", ".join([str(d) for d in sorted(self.d[k])]) + "}}"
+                    for k in sorted(self.k)]) +\
+                    "\\\\\n"\
+               "\\mathcal{I} : &" + \
+               "\\\\\n    & ".join([str(k) + " & \\mapsto \\\\\n" + \
+                        "\\\\\n && ".join(
+                        [str(keyI) + " & \\mapsto " +
+                         (str(valI) if isinstance(valI, str) else
+                          (", \\\\\n && ".join(["\\tpl{" + str(keyI2) + " \\mapsto " + str(valI2) + "}"
+                                      for keyI2, valI2 in valI.items()])
+                           if isinstance(valI, dict) else
+                           ("\\set{" +
+                            ", ".join(["\\tpl{" + ", ".join([str(t) for t in s]) + "}" for s in sorted(valI)]) +
+                            "}")))
+                        for (keyI, valI) in sorted(self.i[k].items()) if k in self.i]) + \
+                        "\\\\\n    &&"
+                    for (k, ik) in sorted(self.i.items())]) + "\\\\\n"+\
+               "\\end{tabular}"

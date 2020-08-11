@@ -1,0 +1,34 @@
+
+You are using model generation\\ 
+for classical predicate logic.\\
+
+Tableau for $\\
+\exists x \forall y (P(x) \wedge R(x,y)) \nvDash :$\\
+\begin{forest}
+[
+\begin{tableaublock}
+1. &  & $\exists x \forall y (P(x) \wedge R(x{,}y))$ & (A)
+\end{tableaublock}
+[
+\begin{tableaublock}
+2. &  & $\forall y (P(a) \wedge R(a{,}y))$ & ($\exists$ {,} 1{,} $\lbrack x/a \rbrack$*)\\
+3. &  & $(P(a) \wedge R(a{,}a))$ & ($\forall$ {,} 2{,} $\lbrack y/a \rbrack$)\\
+4. &  & $P(a)$ & ($\wedge$ {,} 3)\\
+5. &  & $R(a{,}a)$ & ($\wedge$ {,} 3)\\
+ &  & $\circ$ & 
+\end{tableaublock}
+]
+]
+\end{forest}
+The tableau is open:\\
+The formula is satisfiable.\\
+Models:\\
+
+Structure $\mathcal{S}_5 = \tpl{\mathcal{D}, \mathcal{I}}$ with \\
+\begin{tabular}{LLL}
+\mathcal{D} = & \multicolumn{2}{L}{\set{a}}\\
+\mathcal{I} : &P & \mapsto \set{\tpl{a}}\\
+    & R & \mapsto \set{\tpl{a, a}}\\
+\end{tabular}\\\\
+\end{document}
+--------------------------------------------------------------------------------

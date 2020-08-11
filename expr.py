@@ -6,7 +6,7 @@ Define the language and semantics of classical (standard and modal) (preposition
 """
 
 
-from main import *
+from denotation import *
 from structure import *
 # from tableau import *
 
@@ -947,7 +947,7 @@ class Neg(Formula):
     def tex(self):
         if isinstance(self.phi, Eq):
             return self.phi.t1.tex() + " \\neq " + self.phi.t2.tex()
-        return "\\neg" + self.phi.tex()
+        return "\\neg " + self.phi.tex()
 
     def __eq__(self, other):
         return isinstance(other, Neg) and self.phi == other.phi
@@ -2106,6 +2106,9 @@ class Empty(Pseudo):
     def __str__(self):
         return "ε"
 
+    def tex(self):
+        return "\\varepsilon"
+
 class Closed(Pseudo):
     """
     Special pseudo-formula indicating a branch is closed.
@@ -2117,6 +2120,9 @@ class Closed(Pseudo):
 
     def __str__(self):
         return "×"
+
+    def tex(self):
+        return "\\times"
 
 
 class Open(Pseudo):
@@ -2131,6 +2137,9 @@ class Open(Pseudo):
     def __str__(self):
         return "○"
 
+    def tex(self):
+        return "\\circ"
+
 
 class Infinite(Pseudo):
     """
@@ -2143,3 +2152,6 @@ class Infinite(Pseudo):
 
     def __str__(self):
         return "⋮"
+
+    def tex(self):
+        return "\\vdots"
