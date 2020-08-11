@@ -12,6 +12,8 @@ from structure import *
 
 from typing import List, Dict, Set, Tuple
 import os
+from subprocess import DEVNULL, STDOUT, check_call
+from datetime import datetime
 import itertools
 from itertools import chain
 
@@ -28,7 +30,7 @@ size_limit_factor = 2  # size factor after which to give up the further expansio
 num_mdls = 1  # number of models to generate  # todo doesn't always work
 mark_open = True  # in MG: in open branches, underline line numbers and literals in tree outputs
 hide_nonopen = False  # in MG: hide non-open branches in tree output
-latex = False  # generate output in LaTeX instead of plain text format
+latex = True  # generate output in LaTeX instead of plain text format
 
 
 class Tableau(object):
@@ -115,13 +117,13 @@ class Tableau(object):
                  if self.mode["modal"] and not self.mode["propositional"] else "") + \
                 (" in a " + self.mode["frame"] + " frame" if self.mode["modal"] else "") + \
                 "." + ("\\\\" if latex else "") + "\n\n"
+
         if not latex:
             axs = ["  " + str(node.fml) for node in self.axioms]
-            prems = (["  " + str(self.root.fml)] if not self.conclusion else []) + \
-                    ["  " + str(node.fml) for node in self.premises] + \
-                    ([str(self.conclusion)]
-                     if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else [])
-
+            prems = ["  " + str(self.root.fml)] if not self.conclusion else [] + \
+                    ["  " + str(node.fml) for node in self.premises]
+            prems += [("  " if len(prems) > 0 else "") + str(self.conclusion)] \
+                if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else []
             concl = str(self.conclusion) if \
                 self.conclusion and self.mode["validity"] or not self.mode["satisfiability"] else ""
             lhs = axs + prems + ([concl] if concl else [])
@@ -132,18 +134,17 @@ class Tableau(object):
                     inf + \
                     (" " if concl else "") + concl + " :" +"\n"
         else:
-            axs = [node.fml.tex() for node in self.axioms]
-            prems = (["\\phantom{\\vDash\ }" + self.root.fml.tex()] if not self.conclusion else []) + \
-                    ["\\phantom{\\vDash\ }" + node.fml.tex() for node in self.premises] + \
-                    ([self.conclusion.tex()]
-                     if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else [])
-
+            axs = ["\\phantom{\\vDash\ }" + node.fml.tex() for node in self.axioms]
+            prems = ["\\phantom{\\vDash\ }" + self.root.fml.tex()] if not self.conclusion else [] + \
+                    ["\\phantom{\\vDash\ }" + node.fml.tex() for node in self.premises]
+            prems += [("\\phantom{\\vDash\ }" if len(prems) > 0 else "") + self.conclusion.tex()] \
+                if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else []
             concl = self.conclusion.tex() if \
                 self.conclusion and self.mode["validity"] or not self.mode["satisfiability"] else ""
             lhs = axs + prems + ([concl] if concl else [])
             inf = ("\\vDash" if self.mode["validity"] else "\\nvDash")
             info += "Tableau for $\\\\\n" + \
-                    ", \\\\\n".join(axs) + (" + \n" if axs and prems else "\n" if axs else "") + \
+                    ", \\\\\n".join(axs) + (" + \\\\\n" if axs and prems else "\\\\\n" if axs else "") + \
                     ", \\\\\n".join(prems) + ("\\\\\n" if len(lhs) > 1 else " " if not concl else "") + \
                     inf + \
                     (" " if concl else "") + concl + " :" + "$\\\\\n\n"
@@ -204,7 +205,7 @@ class Tableau(object):
                 if not latex:
                     mdls += str(model) + "\n"
                 else:
-                    mdls += model.tex() + "\\\\\\\\\n"  # todo doesn't always work (problems with modal PL)
+                    mdls += model.tex() + "\\\\\\\\\n"
             res += mdls
 
         if latex:
@@ -222,12 +223,16 @@ class Tableau(object):
             if not os.path.exists(dirpath):
                 os.mkdir(dirpath)
             os.chdir(dirpath)
-            texpath = "output.tex"
-            pdfpath = "output.pdf"
+            timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
+            texpath = "output_" + timestamp + ".tex"
+            pdfpath = "output_" + timestamp + ".pdf"
             with open(texpath, "w") as texfile:
                 texfile.write(res)
-            os.system("pdflatex " + texpath)
-            os.system("xdg-open " + pdfpath)
+            check_call(["pdflatex", texpath], stdout=DEVNULL, stderr=STDOUT)
+            check_call(["xdg-open", pdfpath], stdout=DEVNULL, stderr=STDOUT)
+            for file in os.listdir(dirpath):
+                if file.endswith(".log") or file.endswith(".aux"):
+                    os.remove(file)
             os.chdir(os.path.dirname(__file__))
 
     rule_names = {"α": "alpha", "β": "beta",  # connective rules
@@ -238,7 +243,7 @@ class Tableau(object):
 
     def expand(self):
         """
-        Recursively expand all nodes in the tableau.
+        Recursively expand all nodes in the tableau.check_
         """
         if debug:
             print(self.root.treestr())
@@ -1212,6 +1217,7 @@ class Node(object):
         """
         LaTeX representation of this line.
         """
+        open_branches = [leaf.branch for leaf in self.root().leaves() if isinstance(leaf.fml, Open)]
         str2tex = {
             "¬": "\\neg ",
             "∧": "\\wedge",
@@ -1225,8 +1231,16 @@ class Node(object):
             "◻": "\\Diamond"
         }
         str_line = str(self.line) + "." if self.line else ""
+        # underline lines of open branches in MG
+        if mark_open and not hide_nonopen and not self.tableau.mode["validity"] and \
+                any([self in branch for branch in open_branches]):
+            str_line = "\\underline{" + str_line + "}"
         str_world = "$w" + "_" + str(self.world) + "$" if self.world else ""
         str_fml = "$" + self.fml.tex().replace(",", "{,}") + "$"
+        # underline literals of open branches in MG
+        if mark_open and not self.tableau.mode["validity"] and \
+                any([self in branch for branch in open_branches]) and self.fml.literal():
+            str_fml = "\\underline{" + str_fml + "}"
         str_cite = ""
         if isinstance(self.fml, Open) or isinstance(self.fml, Infinite):
             str_cite = ""
@@ -1573,13 +1587,7 @@ if __name__ == "__main__":
     # tab = Tableau(fml, modal=True, vardomains=True)
     # tab = Tableau(fml, validity=False, modal=True, vardomains=True)
     # tab = Tableau(fml, validity=False, satisfiability=False, modal=True, vardomains=True)
-    # 
-    # fml = Biimp(Forall(Var("x"), Forall(Var("y"), Atm(Pred("P"), (Var("x"), Var("y"))))),
-    #             Forall(Var("y"), Forall(Var("x"), Atm(Pred("P"), (Var("y"), Var("x"))))))
-    # tab = Tableau(fml)
-    # 
-    # fml = Exists(Var("x"), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y")))))
-    # tab = Tableau(fml, validity=False)
+    #
 
     #################
     # quantifier commutativity
@@ -1620,10 +1628,13 @@ if __name__ == "__main__":
     #####################
     # linguistic examples
     #####################
+
+    # fml = Exists(Var("x"), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y")))))
+    # tab = Tableau(fml, validity=False)
     #
-    fml = Exists(Var("x"), Exists(Var("y"),
-                                  Conj(Neg(Eq(Var("x"), (Var("y")))), Atm(Pred("love"), (Var("x"), Var("y"))))))
-    tab = Tableau(fml, validity=False)
+    # fml = Exists(Var("x"), Exists(Var("y"),
+    #                               Conj(Neg(Eq(Var("x"), (Var("y")))), Atm(Pred("love"), (Var("x"), Var("y"))))))
+    # tab = Tableau(fml, validity=False)
     #
     # fml = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)),
     #                            Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
