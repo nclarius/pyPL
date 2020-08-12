@@ -117,55 +117,6 @@ class Term(Expr):
         """
         pass
 
-
-class Const(Term):
-    """
-    Individual constant.
-    a, b, c, c1, c2, ...
-
-    @attr c: the constant name
-    @type c: str
-    """
-
-    def __init__(self, c: str):
-        self.c = c
-
-    def __str__(self):
-        return self.c
-
-    def tex(self):
-        return self.c
-
-    def __eq__(self, other):
-        return isinstance(other, Const) and self.c == other.c
-
-    def __len__(self):
-        return 1
-
-    def propvars(self):
-        return set()
-
-    def freevars(self):
-        return set()
-
-    def boundvars(self):
-        return set()
-
-    def nonlogs(self):
-        return {self.c}, set(), set()
-
-    def subst(self, u, t):
-        return self
-
-    def denot(self, m, g=None, w=None):
-        """
-        The denotation of a constant is that individual that the interprηtion function f assigns it.
-        """
-        i = m.i
-        if isinstance(m, ModalStructure) or isinstance(m, KripkeStructure):
-            i = m.i[w]
-        return i[self.c]
-
 class Var(Term):
     """
     Individual variable.
@@ -217,6 +168,55 @@ class Var(Term):
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
         return g[self.u]
+
+
+class Const(Term):
+    """
+    Individual constant.
+    a, b, c, c1, c2, ...
+
+    @attr c: the constant name
+    @type c: str
+    """
+
+    def __init__(self, c: str):
+        self.c = c
+
+    def __str__(self):
+        return self.c
+
+    def tex(self):
+        return self.c
+
+    def __eq__(self, other):
+        return isinstance(other, Const) and self.c == other.c
+
+    def __len__(self):
+        return 1
+
+    def propvars(self):
+        return set()
+
+    def freevars(self):
+        return set()
+
+    def boundvars(self):
+        return set()
+
+    def nonlogs(self):
+        return {self.c}, set(), set()
+
+    def subst(self, u, t):
+        return self
+
+    def denot(self, m, g=None, w=None):
+        """
+        The denotation of a constant is that individual that the interprηtion function f assigns it.
+        """
+        i = m.i
+        if isinstance(m, ModalStructure) or isinstance(m, KripkeStructure):
+            i = m.i[w]
+        return i[self.c]
 
 
 class Func(Expr):
@@ -593,6 +593,220 @@ class Formula(Expr):
         """
         return self == other
 
+class Prop(Formula):
+    """
+    Propositional variable.
+    p, q, ...
+
+    @attr p: the propositional variable
+    @type p: str
+    """
+
+    def __init__(self, p: str):
+        self.p = p
+
+    def __str__(self):
+        return self.p
+
+    def tex(self):
+        return self.p
+
+    def __eq__(self, other):
+        return isinstance(other, Prop) and self.p == other.p
+
+    def __len__(self):
+        return 1
+
+    def propvars(self):
+        return {self.p}
+
+    def freevars(self):
+        return set()
+
+    def boundvars(self):
+        return set()
+
+    def nonlogs(self):
+        return set(), set(), set()
+
+    def subst(self, u, t):
+        return self
+
+    def denot(self, m, g=None, w=None):
+        """
+        The denotation of a propositional variable is the truth value the valuation function V assigns it.
+        """
+        if not isinstance(m, KripkeStructure):
+            v = m.v
+            return v[self.p]
+        else:
+            return (m.v[w][self.p] or
+                    True in [self.denot(m, g, w_) for w_ in m.past(w) - {w}])
+
+    def tableau_pos(self, mode):
+        """
+        IL:
+          σ p
+           |
+        σ.n p
+        where σ.n is old
+        """
+        if mode["classical"]:
+            return dict()
+        else:
+            return {"p": ("ν", [self], )}
+
+    def tableau_neg(self, mode):
+        return dict()
+
+
+class Atm(Formula):
+    """
+    Atomic formula (predicate symbol applied to a number of terms).
+    P(t1, ..., tn)
+
+    Note that 1-place predications have to be specified as
+    Atm('P', (t1, ))
+    rather than
+    Atm('P', (t))
+    or
+    Atm('P', t1).
+
+    @attr pred: the predicate symbol
+    @type pred: Pred
+    @attr terms: the terms to apply the predicate symbol to
+    @type terms: tuple[Term]
+    """
+    def __init__(self, pred: Pred, terms: Tuple[Term]):
+        self.pred = pred
+        self.terms = terms
+
+    def __str__(self):
+        return str(self.pred) + "(" + ",".join([str(t) for t in self.terms]) + ")"
+
+    def tex(self):
+        return self.pred.tex() + "(" + ",".join([t.tex() for t in self.terms]) + ")"
+
+    def __eq__(self, other):
+        return isinstance(other, Atm) and self.pred == other.pred and self.terms == other.terms
+
+    def __len__(self):
+        return len(self.pred) + sum([len(t) for t in self.terms])
+
+    def propvars(self):
+        return set()
+
+    def freevars(self):
+        return set().union(*[t.freevars() for t in self.terms])
+
+    def boundvars(self):
+        return set().union(*[t.boundvars() for t in self.terms])
+
+    def nonlogs(self):
+        return set().union(*[t.nonlogs()[0] for t in self.terms]), \
+               set().union(*[t.nonlogs()[1] for t in self.terms]), \
+               {self.pred.p}
+
+    def subst(self, u, t):
+        return Atm(self.pred, tuple([term.subst(u, t) for term in self.terms]))
+
+    def denot(self, m, g=None, w=None):
+        """
+        The denotation of an atomic predication P(t1, ..., tn) is true iff the tuple of the denotation of the terms is
+        an element of the interprηtion of the predicate.
+        """
+        if not isinstance(m, KripkeStructure):
+            return tuple([t.denot(m, g, w) for t in self.terms]) in self.pred.denot(m, g, w)
+        else:
+            return (tuple([t.denot(m, g, w) for t in self.terms]) in self.pred.denot(m, g, w) or
+                    True in [self.denot(m, g, w_) for w_ in m.past(w) - {w}])
+
+    def tableau_pos(self, mode):
+        """
+        IL:
+         σ P(...)
+             |
+        σ.n P(...)
+        where σ.n is old
+        """
+        if mode["classical"]:
+            return dict()
+        else:
+            return {"P": ("μ", [self])}
+
+    def tableau_neg(self, mode):
+        return dict()
+
+
+class Eq(Formula):
+    """
+    Equality between terms.
+    t1 = t2
+
+    @attr t1: the left equality term
+    @type t1: Term
+    @attr t2: the right equality term
+    @type t2: Term
+    """
+
+    def __init__(self, t1: Term, t2: Term):
+        self.t1 = t1
+        self.t2 = t2
+
+    def __str__(self):
+        return str(self.t1) + " = " + str(self.t2)
+
+    def tex(self):
+        return self.t1.tex() + " = " + self.t2.tex()
+
+    def __eq__(self, other):
+        return isinstance(other, Eq) and self.t1 == other.t1 and self.t2 == other.t2
+
+    def __len__(self):
+        return 1 + len(self.t1) + len(self.t2)
+
+    def propvars(self):
+        return set()
+
+    def freevars(self):
+        return self.t1.freevars() | self.t2.freevars()
+
+    def boundvars(self):
+        return self.t1.boundvars() | self.t2.boundvars()
+
+    def nonlogs(self):
+        return self.t1.nonlogs()[0] | self.t2.nonlogs()[0], \
+               self.t1.nonlogs()[1] | self.t2.nonlogs()[1], \
+               set()
+
+    def subst(self, u, t):
+        return Eq(self.t1.subst(u, t), self.t2.subst(u, t))
+
+    def denot(self, m, g=None, w=None):
+        """
+        The denotation of a term equality t1 = t2 is true iff t1 and t2 denote the same individual.
+        """
+        return self.t1.denot(m, g, w) == self.t2.denot(m, g, w)
+
+    def tableau_pos(self, mode):
+        return dict()
+
+    def tableau_neg(self, mode):
+        return dict()
+
+    def tableau_contradiction_pos(self, other):
+        """
+        t1 = t2
+        """
+        return str(self.t1) != str(self.t2)
+
+    def tableau_contradiction_neg(self, other):
+        """
+        t ≠ t
+        """
+        return str(self.t1) == str(self.t2)
+
+
 class Verum(Formula):
     """
     Verum.
@@ -712,220 +926,6 @@ class Falsum(Formula):
         A negated falsum is never contradictory.
         """
         return False
-
-
-class Prop(Formula):
-    """
-    Propositional variable.
-    p, q, ...
-
-    @attr p: the propositional variable
-    @type p: str
-    """
-
-    def __init__(self, p: str):
-        self.p = p
-
-    def __str__(self):
-        return self.p
-
-    def tex(self):
-        return self.p
-
-    def __eq__(self, other):
-        return isinstance(other, Prop) and self.p == other.p
-
-    def __len__(self):
-        return 1
-
-    def propvars(self):
-        return {self.p}
-
-    def freevars(self):
-        return set()
-
-    def boundvars(self):
-        return set()
-
-    def nonlogs(self):
-        return set(), set(), set()
-
-    def subst(self, u, t):
-        return self
-
-    def denot(self, m, g=None, w=None):
-        """
-        The denotation of a propositional variable is the truth value the valuation function V assigns it.
-        """
-        if not isinstance(m, KripkeStructure):
-            v = m.v
-            return v[self.p]
-        else:
-            return (m.v[w][self.p] or
-                    True in [self.denot(m, g, w_) for w_ in m.past(w) - {w}])
-
-    def tableau_pos(self, mode):
-        """
-        IL:
-          σ p
-           |
-        σ.n p
-        where σ.n is old
-        """
-        if mode["classical"]:
-            return dict()
-        else:
-            return {"p": ("ν", [self], )}
-
-    def tableau_neg(self, mode):
-        return dict()
-
-
-class Eq(Formula):
-    """
-    Equality between terms.
-    t1 = t2
-
-    @attr t1: the left equality term
-    @type t1: Term
-    @attr t2: the right equality term
-    @type t2: Term
-    """
-
-    def __init__(self, t1: Term, t2: Term):
-        self.t1 = t1
-        self.t2 = t2
-
-    def __str__(self):
-        return str(self.t1) + " = " + str(self.t2)
-
-    def tex(self):
-        return self.t1.tex() + " = " + self.t2.tex()
-
-    def __eq__(self, other):
-        return isinstance(other, Eq) and self.t1 == other.t1 and self.t2 == other.t2
-
-    def __len__(self):
-        return 1 + len(self.t1) + len(self.t2)
-
-    def propvars(self):
-        return set()
-
-    def freevars(self):
-        return self.t1.freevars() | self.t2.freevars()
-
-    def boundvars(self):
-        return self.t1.boundvars() | self.t2.boundvars()
-
-    def nonlogs(self):
-        return self.t1.nonlogs()[0] | self.t2.nonlogs()[0], \
-               self.t1.nonlogs()[1] | self.t2.nonlogs()[1], \
-               set()
-
-    def subst(self, u, t):
-        return Eq(self.t1.subst(u, t), self.t2.subst(u, t))
-
-    def denot(self, m, g=None, w=None):
-        """
-        The denotation of a term equality t1 = t2 is true iff t1 and t2 denote the same individual.
-        """
-        return self.t1.denot(m, g, w) == self.t2.denot(m, g, w)
-
-    def tableau_pos(self, mode):
-        return dict()
-
-    def tableau_neg(self, mode):
-        return dict()
-
-    def tableau_contradiction_pos(self, other):
-        """
-        t1 = t2
-        """
-        return str(self.t1) != str(self.t2)
-
-    def tableau_contradiction_neg(self, other):
-        """
-        t ≠ t
-        """
-        return str(self.t1) == str(self.t2)
-
-
-class Atm(Formula):
-    """
-    Atomic formula (predicate symbol applied to a number of terms).
-    P(t1, ..., tn)
-
-    Note that 1-place predications have to be specified as
-    Atm('P', (t1, ))
-    rather than
-    Atm('P', (t))
-    or
-    Atm('P', t1).
-
-    @attr pred: the predicate symbol
-    @type pred: Pred
-    @attr terms: the terms to apply the predicate symbol to
-    @type terms: tuple[Term]
-    """
-    def __init__(self, pred: Pred, terms: Tuple[Term]):
-        self.pred = pred
-        self.terms = terms
-
-    def __str__(self):
-        return str(self.pred) + "(" + ",".join([str(t) for t in self.terms]) + ")"
-
-    def tex(self):
-        return self.pred.tex() + "(" + ",".join([t.tex() for t in self.terms]) + ")"
-
-    def __eq__(self, other):
-        return isinstance(other, Atm) and self.pred == other.pred and self.terms == other.terms
-
-    def __len__(self):
-        return len(self.pred) + sum([len(t) for t in self.terms])
-
-    def propvars(self):
-        return set()
-
-    def freevars(self):
-        return set().union(*[t.freevars() for t in self.terms])
-
-    def boundvars(self):
-        return set().union(*[t.boundvars() for t in self.terms])
-
-    def nonlogs(self):
-        return set().union(*[t.nonlogs()[0] for t in self.terms]), \
-               set().union(*[t.nonlogs()[1] for t in self.terms]), \
-               {self.pred.p}
-
-    def subst(self, u, t):
-        return Atm(self.pred, tuple([term.subst(u, t) for term in self.terms]))
-
-    def denot(self, m, g=None, w=None):
-        """
-        The denotation of an atomic predication P(t1, ..., tn) is true iff the tuple of the denotation of the terms is
-        an element of the interprηtion of the predicate.
-        """
-        if not isinstance(m, KripkeStructure):
-            return tuple([t.denot(m, g, w) for t in self.terms]) in self.pred.denot(m, g, w)
-        else:
-            return (tuple([t.denot(m, g, w) for t in self.terms]) in self.pred.denot(m, g, w) or
-                    True in [self.denot(m, g, w_) for w_ in m.past(w) - {w}])
-
-    def tableau_pos(self, mode):
-        """
-        IL:
-         σ P(...)
-             |
-        σ.n P(...)
-        where σ.n is old
-        """
-        if mode["classical"]:
-            return dict()
-        else:
-            return {"P": ("μ", [self])}
-
-    def tableau_neg(self, mode):
-        return dict()
 
 
 class Neg(Formula):

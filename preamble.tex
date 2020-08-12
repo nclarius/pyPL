@@ -1,4 +1,4 @@
-\documentclass{article}
+\documentclass[a4paper]{article}
 
 % layout
 \usepackage{fullpage}  % small margins
@@ -9,11 +9,10 @@
 \usepackage{amssymb, amsmath, amstext}
 
 % tableau trees
-\usepackage{forest}
-\forestset{qtree/.style={for tree={parent anchor=south: 
-           child anchor=north,align=center,inner sep=0pt}}}
+\usepackage[linguistics]{forest}
+\renewcommand{\arraystretch}{1.125}
 
-% alignment for structures
+% structures
 \usepackage{array}
 \newcolumntype{L}{>{$}l<{$}}
 

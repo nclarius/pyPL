@@ -200,12 +200,13 @@ class Tableau(object):
         # generate and print models
         if self.models:
             mdls = ""
-            if latex:
-                mdls += "% alignment for structures\n"
-                mdls += "\\setlength{\\tabcolsep}{1.5pt}\n\n"
             mdls += ("Countermodels:" \
                 if self.mode["validity"] or not self.mode["validity"] and not self.mode["satisfiability"] \
-                else "Models:") + ("\\\\" if latex else "") + "\n"
+                else "Models:") + ("\\\\" if latex else "") + "\n\n"
+            if latex:
+                mdls += "% alignment for structures\n"
+                mdls += "\\renewcommand{\\arraystretch}{1}  % decrease spacing between rows\n"
+                mdls += "\\setlength{\\tabcolsep}{1.5pt}  % decrease spacing between columns\n"
             for model in sorted(self.models, key=lambda m:
                                 {n.line: i for (i, n) in enumerate(self.root.nodes(preorder=True))}[int(m.s[1:])]):
                 mdls += "\n"
@@ -1681,8 +1682,8 @@ if __name__ == "__main__":
     # fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
 
-    fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("P"), (Var("x"), Var("y")))))
-    fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("P"), (Var("x"), Var("y")))))
+    fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
     tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
     #
     #####################
