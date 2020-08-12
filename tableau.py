@@ -6,9 +6,9 @@ Tableau proofs and model extraction.
 THIS PART IS STILL UNDER CONSTRUCTION.
 """
 
-from denotation import *
-from expr import *
 from structure import *
+from expr import *
+from parser import Parser as parser
 
 from typing import List, Dict, Set, Tuple
 import os
@@ -31,7 +31,7 @@ size_limit_factor = 5  # size factor after which to give up the further expansio
 num_mdls = 1  # number of models to generate  # todo doesn't always work
 mark_open = True  # in MG: in open branches, underline line numbers and literals in tree outputs
 hide_nonopen = False  # in MG: hide non-open branches in tree output
-latex = True  # generate output in LaTeX instead of plain text format
+latex = True  # generate output in LaTeX instead of plain text format  # todo wrong output for ML
 
 
 class Tableau(object):
@@ -119,7 +119,8 @@ class Tableau(object):
                 "logic" + \
                 (" with " + ("varying " if self.mode["vardomains"] else "constant ") + "domains"
                  if self.mode["modal"] and not self.mode["propositional"] else "") + \
-                (" in a " + self.mode["frame"] + " frame" if self.mode["modal"] else "") + \
+                (" in a " + ("$\\mathsf{" if latex else "") + self.mode["frame"] + ("}$" if latex else "") + " frame"
+                 if self.mode["modal"] else "") + \
                 "." + ("\\\\" if latex else "") + "\n\n"
 
         if not latex:
@@ -236,8 +237,10 @@ class Tableau(object):
             pdfpath = "output_" + timestamp + ".pdf"
             with open(texpath, "w") as texfile:
                 texfile.write(res)
+            # generate LaTeX output
             check_call(["pdflatex", texpath], stdout=DEVNULL, stderr=STDOUT)
             check_call(["xdg-open", pdfpath], stdout=DEVNULL, stderr=STDOUT)
+            # cleanup
             for file in os.listdir(dirpath) + os.listdir(os.path.dirname(__file__)):
                 if os.path.exists(file) and file.endswith(".log") or file.endswith(".aux"):
                     os.remove(file)
@@ -256,6 +259,7 @@ class Tableau(object):
         if debug:
             print(self.root.treestr())
         while applicable := self.applicable():
+            # todo stop search when only contradictions found found after all new instantiations?
             # check whether to continue expansion
             len_assumptions = sum([len(str(node.fml)) for node in self.root.nodes()
                                    if node.rule == "A" and (self.mode["validity"] or not node.world)])
@@ -1243,7 +1247,7 @@ class Node(object):
         if mark_open and not hide_nonopen and not self.tableau.mode["validity"] and \
                 any([self in branch for branch in open_branches]):
             str_line = "\\underline{" + str_line + "}"
-        str_world = "$w" + "_" + str(self.world) + "$" if self.world else ""
+        str_world = "$w" + "_" + "{" + str(self.world) + "}" + "$" if self.world else ""
         str_fml = "$" + self.fml.tex().replace(",", "{,}\\ \\!") + "$"
         # underline literals of open branches in MG
         if mark_open and not self.tableau.mode["validity"] and \
@@ -1265,7 +1269,7 @@ class Node(object):
                     str_inst = "{,}\\ " + "\\lbrack " + str(self.inst[0]) + "/" + str(self.inst[1]) + " \\rbrack" \
                                + ("*" if self.inst[2] else "")
                 elif isinstance(self.inst[0], int):
-                    str_inst = "{,}\\ " + "\\tpl{" + str(self.inst[0]) + "\\ \\!" + str(self.inst[1]) + "}$" \
+                    str_inst = "{,}\\ " + "\\tpl{" + str(self.inst[0]) + "\\ \\!" + str(self.inst[1]) + "}" \
                                + ("*" if self.inst[2] else "")
             else:
                 str_inst = ""
@@ -1602,6 +1606,7 @@ if __name__ == "__main__":
     # tab = Tableau(fml, modal=True, vardomains=True)
     # tab = Tableau(fml, validity=False, modal=True, vardomains=True)
     # tab = Tableau(fml, validity=False, satisfiability=False, modal=True, vardomains=True)
+    # todo results correct?
     #
     # Barcan formulas
     # fml1 = Imp(Forall(Var("x"), Nec(Atm(Pred("A"), (Var("x"),)))), Nec(Forall(Var("x"), Atm(Pred("A"), (Var("x"),)))))
@@ -1681,15 +1686,15 @@ if __name__ == "__main__":
     # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
+    #
+    # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    # fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
 
-    fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
-    #
     #####################
-    # parsing
+    # parser
     #####################
-    #
-    # fml_str = 'Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))'
-    # fml = eval(fml_str)
-    # print(str(fml))
+    test = r"((\all x \nec P(x) v \exi y (P(y) ^ R(c,y))) -> \falsum)"
+    print(test)
+    res = parser.parse(test)
+    print(res)

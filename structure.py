@@ -220,11 +220,11 @@ class PropModalStructure(ModalStructure):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{V}}$ with \\\\\n" \
                "\\begin{tabular}{LLLLL}\n" \
-               "\\mathcal{W} = & " \
+               "\\mathcal{W} = & " +\
                "\\multicolumn{4}{L}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n"\
-               "\\mathcal{R} = &" \
+               "\\mathcal{R} = &" +\
                "\\multicolumn{4}{L}{\\set{" + ", ".join(
-                                  ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n"\
+                                  ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" +\
                "\\mathcal{V} : &" + "\\\\\n    & ".join([str(w) + " & \\mapsto " +
                             ", \\\\\n &&&".join([str(p) + " & \\mapsto " +
                                                 str(tv).replace("True", "1").replace("False", "0")

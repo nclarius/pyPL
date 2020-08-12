@@ -291,10 +291,10 @@ class FuncTerm(Term):
         self.terms = terms
 
     def __str__(self):
-        return str(self.f) + "(" + ", ".join([str(t) for t in self.terms]) + ")"
+        return str(self.f) + "(" + ",".join([str(t) for t in self.terms]) + ")"
 
     def tex(self):
-        return self.f.tex() + "(" + ", ".join([t.tex() for t in self.terms]) + ")"
+        return self.f.tex() + "(" + ",".join([t.tex() for t in self.terms]) + ")"
 
     def __eq__(self, other):
         return isinstance(other, FuncTerm) and self.f == other.f and self.terms == other.terms
