@@ -231,7 +231,8 @@ class Parser:
 
 if __name__ == "__main__":
     parser = Parser()
-    test = r"((\all x \nec P(x) v \exi y (P(y) ^ R(c,y))) -> \falsum)"
+    test = r"((\all x \nec P(x) v \exi y (P(y) ^ ~ \poss R(c,y))) -> \falsum)"
     print(test)
     res = parser.parse(test)
     print(res)
+    print(type(res))

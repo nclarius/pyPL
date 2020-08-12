@@ -1691,10 +1691,10 @@ if __name__ == "__main__":
     # fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
     # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
 
-    #####################
-    # parser
-    #####################
-    test = r"((\all x \nec P(x) v \exi y (P(y) ^ R(c,y))) -> \falsum)"
-    print(test)
-    res = parser.parse(test)
-    print(res)
+    ####################
+    parser
+    ####################
+    # test = r"((\all x \nec P(x) v \exi y (P(y) ^ R(c,y))) -> \falsum)"
+    # print(test)
+    # res = parser.parse(test)
+    # print(res)
