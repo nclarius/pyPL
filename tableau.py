@@ -26,7 +26,8 @@ from itertools import chain
 
 # global settings
 debug = False
-size_limit_factor = 2  # size factor after which to give up the further expansion
+# todo when size limit factor is not high enough and no model is found, result will be "closed" rather than "pot. inf."
+size_limit_factor = 5  # size factor after which to give up the further expansion
 num_mdls = 1  # number of models to generate  # todo doesn't always work
 mark_open = True  # in MG: in open branches, underline line numbers and literals in tree outputs
 hide_nonopen = False  # in MG: hide non-open branches in tree output
@@ -100,6 +101,9 @@ class Tableau(object):
         if latex:
             with open("preamble.tex") as f:
                 preamble = f.read()
+                # for s in list(dict.fromkeys(chain([chain(node.fml.nonlogs())
+                #                             for node in self.axioms + self.premises + [self.conclusion]]))):
+                #     preamble += "\\DeclareMathOperator{\\nl" + str(s) + "}{" + str(s) + "}"
                 preamble += "\n\\begin{document}"
                 res += preamble
 
@@ -132,7 +136,7 @@ class Tableau(object):
                     ", \n".join(axs) + (" + \n" if axs and prems else "\n" if axs else "") + \
                     ", \n".join(prems) + ("\n" if len(lhs) > 1 else " " if not concl else "") + \
                     inf + \
-                    (" " if concl else "") + concl + " :" +"\n"
+                    (" " if concl else "") + concl + ":" +"\n"
         else:
             axs = ["\\phantom{\\vDash\ }" + node.fml.tex() for node in self.axioms]
             prems = ["\\phantom{\\vDash\ }" + self.root.fml.tex()] if not self.conclusion else [] + \
@@ -147,7 +151,7 @@ class Tableau(object):
                     ", \\\\\n".join(axs) + (" + \\\\\n" if axs and prems else "\\\\\n" if axs else "") + \
                     ", \\\\\n".join(prems) + ("\\\\\n" if len(lhs) > 1 else " " if not concl else "") + \
                     inf + \
-                    (" " if concl else "") + concl + " :" + "$\\\\\n\n"
+                    (" " if concl else "") + concl + ":" + "$\\\\\n\n"
         res += info
 
         # recursively apply the rules
@@ -155,7 +159,7 @@ class Tableau(object):
 
         # print the tableau
         if not latex:
-            res += self.root.treestr()[:-1]
+            res += self.root.treestr()
         else:
             res += self.root.treetex() + "\n\n"
 
@@ -196,6 +200,9 @@ class Tableau(object):
         # generate and print models
         if self.models:
             mdls = ""
+            if latex:
+                mdls += "% alignment for structures\n"
+                mdls += "\\setlength{\\tabcolsep}{1.5pt}\n\n"
             mdls += ("Countermodels:" \
                 if self.mode["validity"] or not self.mode["validity"] and not self.mode["satisfiability"] \
                 else "Models:") + ("\\\\" if latex else "") + "\n"
@@ -230,8 +237,8 @@ class Tableau(object):
                 texfile.write(res)
             check_call(["pdflatex", texpath], stdout=DEVNULL, stderr=STDOUT)
             check_call(["xdg-open", pdfpath], stdout=DEVNULL, stderr=STDOUT)
-            for file in os.listdir(dirpath):
-                if file.endswith(".log") or file.endswith(".aux"):
+            for file in os.listdir(dirpath) + os.listdir(os.path.dirname(__file__)):
+                if os.path.exists(file) and file.endswith(".log") or file.endswith(".aux"):
                     os.remove(file)
             os.chdir(os.path.dirname(__file__))
 
@@ -1236,7 +1243,7 @@ class Node(object):
                 any([self in branch for branch in open_branches]):
             str_line = "\\underline{" + str_line + "}"
         str_world = "$w" + "_" + str(self.world) + "$" if self.world else ""
-        str_fml = "$" + self.fml.tex().replace(",", "{,}") + "$"
+        str_fml = "$" + self.fml.tex().replace(",", "{,}\\ \\!") + "$"
         # underline literals of open branches in MG
         if mark_open and not self.tableau.mode["validity"] and \
                 any([self in branch for branch in open_branches]) and self.fml.literal():
@@ -1249,21 +1256,22 @@ class Node(object):
         elif not self.rule:
             str_cite = "(" + str(self.source.line) + ")"
         else:
-            str_rule = "$" + "".join([str2tex[c] if c in str2tex else c for c in str(self.rule)]) + "$"\
-                if self.rule else ""
-            str_comma = "{,} " if self.rule and self.source else ""
+            str_rule = "".join([str2tex[c] if c in str2tex else c for c in str(self.rule)]) if self.rule else ""
+            str_comma = "{,}\\ " if self.rule and self.source else ""
             str_source = str(self.source.line) if self.source else ""
             if self.inst:
                 if isinstance(self.inst[0], str):
-                    str_inst = "{,} " + "$\\lbrack " + str(self.inst[0]) + "/" + str(self.inst[1]) + " \\rbrack$" \
+                    str_inst = "{,}\\ " + "\\lbrack " + str(self.inst[0]) + "/" + str(self.inst[1]) + " \\rbrack" \
                                + ("*" if self.inst[2] else "")
                 elif isinstance(self.inst[0], int):
-                    str_inst = "{,} " + "$\\tpl{" + str(self.inst[0]) + "{,}" + str(self.inst[1]) + "}$" \
+                    str_inst = "{,}\\ " + "\\tpl{" + str(self.inst[0]) + "\\ \\!" + str(self.inst[1]) + "}$" \
                                + ("*" if self.inst[2] else "")
             else:
                 str_inst = ""
-            str_cite = "(" + str_rule + str_comma + str_source + str_inst + ")"
-        return " & ".join([str_line, str_world, str_fml, str_cite])
+            str_cite = "($" + str_rule + str_comma + str_source + str_inst + "$)"
+        return " & ".join([str_line, str_world, str_fml, str_cite]) \
+            if not self.tableau.mode["classical"] or self.tableau.mode["modal"] \
+            else " & ".join([str_line, str_fml, str_cite])
 
     def __repr__(self):
         """
@@ -1299,32 +1307,37 @@ class Node(object):
             res += indent + "\n"
         return res
 
-    def treetex(self, indent=0, first=True, root=True) -> str:
-        # todo doesn't work yet -- "missing \endscname inserted"
+    def treetex(self, indent="", first=True, root=True) -> str:
+        colspec = "{llcl}" if not self.tableau.mode["classical"] or self.tableau.mode["modal"] else "{lcl}"
         res = ""
         if root:
-            res += "\\begin{forest}\n[\n"
-            indent += 1
+            res += "\\begin{forest}\n"
+            indent += "    "
+            res += indent + "[\n"
         if first:
-            res += indent * "" + "\\begin{tableaublock}\n"
-        res += indent * "" + self.tex()
+            res += indent + "\\begin{tabular}{" + colspec + "}\n"
+        res += indent + self.tex()
         if self.children:
             if len(self.children) == 1:  # no branching
-                res += "\\\\\n" + self.children[0].treetex(first=False, root=False)
+                res += "\\\\\n"
+                res += self.children[0].treetex(indent, first=False, root=False)
             else:  # branching
-                res += indent * "" + "\n\\end{tableaublock}\n"
-                indent += 1
+                res += "\n"
+                res += indent + "\\end{tabular}\n"
                 for child in self.children:
                     if child.fml and child.fml.tex() and not isinstance(child.fml, Empty):
-                        res += "[\n"
-                        res += child.treetex(first=True, root=False)
-                        res += "]\n"
-                indent -= 1
+                        indent += "    "
+                        res += indent + "[\n"
+                        res += child.treetex(indent, first=True, root=False)
+                        res += indent + "]\n"
+                        indent = indent[:-4]
         else:  # leaf
-            res += indent * "" + "\n\\end{tableaublock}\n"
+            res += "\n"
+            res += indent + "\\end{tabular}\n"
         if root:
-            indent -= 1
-            res += "]\n\\end{forest}\n"
+            res += "]\n"
+            indent = indent[:-4]
+            res += "\\end{forest}\n"
         return res
 
     def nodes(self, root=True, reverse=False, preorder=False):
@@ -1506,7 +1519,8 @@ if __name__ == "__main__":
     # tab = Tableau(fml, validity=False, satisfiability=True)
     # tab = Tableau(fml, validity=False, satisfiability=False)
     # 
-    # fml = Biimp(Forall(Var("x"), Atm(Pred("P"), (Var("x"),))), Neg(Exists(Var("x"), Neg(Atm(Pred("P"), (Var("x"),))))))
+    # fml = Biimp(Forall(Var("x"), Atm(Pred("P"), (Var("x"),))),
+    #             Neg(Exists(Var("x"), Neg(Atm(Pred("P"), (Var("x"),))))))
     # tab = Tableau(fml)
     # fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
     # fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
@@ -1588,6 +1602,16 @@ if __name__ == "__main__":
     # tab = Tableau(fml, validity=False, modal=True, vardomains=True)
     # tab = Tableau(fml, validity=False, satisfiability=False, modal=True, vardomains=True)
     #
+    # Barcan formulas
+    # fml1 = Imp(Forall(Var("x"), Nec(Atm(Pred("A"), (Var("x"),)))), Nec(Forall(Var("x"), Atm(Pred("A"), (Var("x"),)))))
+    # fml2 = Imp(Poss(Exists(Var("x"), Atm(Pred("A"), (Var("x"),)))), Exists(Var("x"), Poss(Atm(Pred("A"), (Var("x"),)))))
+    # fml3 = Imp(Nec(Forall(Var("x"), Atm(Pred("A"), (Var("x"),)))), Forall(Var("x"), Nec(Atm(Pred("A"), (Var("x"),)))))
+    # fml4 = Imp(Exists(Var("x"), Poss(Atm(Pred("A"), (Var("x"),)))), Poss(Exists(Var("x"), Atm(Pred("A"), (Var("x"),)))))
+    # tab1 = Tableau(fml1, modal=True)
+    # tab2 = Tableau(fml1, modal=True)
+    # tab3 = Tableau(fml2, modal=True, validity=False, satisfiability=False, vardomains=True)
+    # tab4 = Tableau(fml4, modal=True, validity=False, satisfiability=False, vardomains=True)
+    # # todo wrong result
 
     #################
     # quantifier commutativity
@@ -1595,7 +1619,7 @@ if __name__ == "__main__":
     #
     # fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
     # fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # tab = Tableau(fml, premises=[fml1])
+    # tab = Tableau(fml2, premises=[fml1])
     # tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False)
     #
     # fml1 = Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
@@ -1656,6 +1680,10 @@ if __name__ == "__main__":
     # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
+
+    fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("P"), (Var("x"), Var("y")))))
+    fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("P"), (Var("x"), Var("y")))))
+    tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
     #
     #####################
     # parsing

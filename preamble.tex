@@ -12,13 +12,6 @@
 \usepackage{forest}
 \forestset{qtree/.style={for tree={parent anchor=south: 
            child anchor=north,align=center,inner sep=0pt}}}
-\newenvironment{tableau}%
-    {\begin{forest}%
-    for tree={anchor=north, parent anchor=south, child anchor=north}}%
-    {\end{forest}}
-\newenvironment{tableaublock}
-    {\begin{tabular}{llcl}}
-    {\end{tabular}} 
 
 % alignment for structures
 \usepackage{array}
