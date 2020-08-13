@@ -8,19 +8,17 @@ CURRENTLY UNDER CONSTRUCTION.
 
 import re
 
-debug = True
+debug = False
 
 class Parser:
     """
     Parse a formula given as string into an Expr object.
     """
+    # todo finish impl. of inference parsing
 
     def __init__(self):
         self.stacks = [[], []]
-        self.mode = dict()   # todo process
-        self.axioms = []
-        self.premises = []
-        self.conclusion = []
+        self.mode = dict()
 
     def parse(self, inp):
         tokens = self.lex(inp)
@@ -39,7 +37,6 @@ class Parser:
             "Semic":  r";",
             "Dsemic": r";;",
             "Period": r"\.",
-            # todo flag for mode
             # meta symbols
             "Inf":    r"(\|=||\\vDash|\\models|\\linf)",
             "Noninf": r"(\|/=||\\nvDash|\\nmodels|\\lninf)",
@@ -68,7 +65,7 @@ class Parser:
             "Forall": r"(∀|\\forall|\\all|\\fa)",
             # modal operators
             "Poss":   r"(◇|\\Diamond|\\poss)",
-            "Nec":    r"(◻|\\Box||\\nec)"
+            "Nec":    r"(◻|#|\\Box||\\nec)"
         }
         regex2token = {v: k for k, v in token2regex.items()}
 
@@ -106,7 +103,6 @@ class Parser:
         """
         Parse a list of tokens into an Expr object.
         """
-        # todo parse meta symbols
         # process tokens
         for token in tokens:
             if debug:
@@ -116,7 +112,9 @@ class Parser:
         if debug:
             input()
         self.update_stacks(True)
-        return self.stacks[0][1:], self.mode
+        inf = self.stacks[0][1:] if len(self.stacks[0]) > 2 else self.stacks[0][1]
+        mode = self.mode
+        return inf, mode
 
     def add_symbol(self, token):
         t, s = token
@@ -233,7 +231,7 @@ class Parser:
             return self.stacks
 
     def update_stacks(self, final=False):
-        # todo check well-formedness of expressions
+        # todo check well-formedness of expressions?
         # operator precedence
         prec = {"Nec": 1, "Poss": 1, "Neg": 1, "Conj": 2, "Disj": 3, "Imp": 4, "Biimp": 5, "Xor": 6}
 
@@ -315,9 +313,9 @@ class Parser:
 
 if __name__ == "__main__":
     parser = Parser()
-    # test = r"~ p ^ q <-> ~(\nec p v ~ q v r)"
+    test = r"~ p ^ q <-> ~(\nec p v ~ q v r)"
     # test = r"R(f(a,b),y)"
-    test = "~ p v q |= p -> q"
+    # test = "~ p v q |= p -> q"
     print(test)
-    res = parser.parse(test)
+    res = parser.parse(test)[0]
     print(res)
