@@ -209,9 +209,7 @@ class Parser:
                     e = c(o, curr_stack[2:-1])
                     prev_stack.append(e)
                     stacks = stacks[:-1]
-                else:
-                    stacks[i] = stacks[i][:-1]  # remove "#" symbol
-                continue
+                    continue
 
             # operator: close if appropriate number of args is given, else resolve ambiguity
 
@@ -233,8 +231,8 @@ class Parser:
 
             # binary operator
             if bot in ["Eq", "Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall"]:
-                mid = curr_stack[1]
 
+                mid = curr_stack[1]
                 # operator ambiguity
                 if mid in ["Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall",
                            "Neg", "Poss", "Nec"]:  # operator clash: resolve ambiguiy
@@ -253,7 +251,7 @@ class Parser:
                         stack[i] = curr_stack
 
                 # subformula finished
-                elif len(curr_stack) == 3 and (top == "#" or final):
+                elif len(curr_stack) == 4 and top == "#" or final:
                     c = getattr(expr, bot)
                     e = c(curr_stack[1], curr_stack[2])
                     prev_stack.append(e)
