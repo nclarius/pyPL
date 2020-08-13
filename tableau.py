@@ -6,9 +6,8 @@ Tableau proofs and model extraction.
 THIS PART IS STILL UNDER CONSTRUCTION.
 """
 
-from structure import *
 from expr import *
-# from parser import Parser as parser
+from parser import Parser as parser
 
 from typing import List, Dict, Set, Tuple
 import os
@@ -30,7 +29,7 @@ size_limit_factor = 5  # size factor after which to give up the further expansio
 num_mdls = 1  # number of models to generate  # todo doesn't always work
 mark_open = True  # in MG: in open branches, underline line numbers and literals in tree outputs
 hide_nonopen = False  # in MG: hide non-open branches in tree output
-latex = True  # generate output in LaTeX instead of plain text format  # todo wrong output for ML
+latex = False  # generate output in LaTeX instead of plain text format  # todo wrong output for ML
 
 
 class Tableau(object):
@@ -367,8 +366,9 @@ class Tableau(object):
                         occurring = list(dict.fromkeys(chain(*[[str(c)
                                                                 for c in node.fml.nonlogs()[0]]
                                                                for node in branch
-                                                               if not isinstance(node.fml, Pseudo) and node.fml.nonlogs()])))
+                                                        if not isinstance(node.fml, Pseudo) and node.fml.nonlogs()])))
                         # check if the rule requires a new constant to be instantiated
+                        # marking is incorrect
                         if rule_type in ["γ", "θ"]:
                             new = len(used) >= len(occurring)
                         elif rule_type in ["δ"]:
@@ -511,13 +511,14 @@ class Tableau(object):
                 if self.mode["validity"]:
                     applicable = [appl for appl in applicable if appl[0] not in leaf.branch]
         # if all nodes have been applied and every theta/kappa formula has been inst. with a new constant/world,
-        # and the branch is still contradictory,
+        # as in a validity tableau, and the branch is still contradictory,
         # then the sequent is unsatisfiable, and the appplicable rules of the entire tree are cleared
-        for leaf in [node for node in self.root.leaves() if isinstance(node.fml, Closed)]:
-            appl_on_branch = [appl for appl in applicable if appl[0] in leaf.branch]
-            nary_on_branch = [node for node in leaf.branch if node.rule in ["∃", "¬∀", "◇", "¬◻"]]
-            if all([appl[6] for appl in appl_on_branch]) and all([node.inst[2] for node in nary_on_branch]):
-                applicable = []
+        # todo correct implementation
+        # for leaf in [node for node in self.root.leaves() if isinstance(node.fml, Closed)]:
+        #     appl_on_branch = [appl for appl in applicable if appl[0] in leaf.branch]
+        #     nary_on_branch = [node for node in leaf.branch if node.rule in ["∃", "¬∀", "◇", "¬◻"]]
+        #     if all([appl[6] for appl in appl_on_branch]) and all([node.inst[2] for node in nary_on_branch]):
+        #         applicable = []
 
         # define a preference order for rule types
         rule_order = {r: i for (i, r) in enumerate(
@@ -624,8 +625,10 @@ class Tableau(object):
         world = source.world
 
         # find a constant to substitute
+        # for modal predicate logic with varying domains:
         # limit the occurring constants to those belong to the domain of the current world
-        occurring = [c for c in occurring if "_" + str(world) in c]
+        if self.mode["modal"] and self.mode["vardomains"] or not self.mode["classical"]:
+            occurring = [c for c in occurring if "_" + str(world) in c]
         # for modal predicate logic with varying domains: add signature subscript to constant
         # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         subscript = "_" + str(source.world) if indexed else ""
@@ -1585,10 +1588,10 @@ if __name__ == "__main__":
     # tab = Tableau(fml, modal=True)
     # tab = Tableau(fml, propositional=True, modal=True, validity=False)
     # # #
-    fml = Imp(Nec(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))), Exists(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))))
-    tab = Tableau(fml, modal=True)
-    tab = Tableau(fml, modal=True, validity=False)
-    tab = Tableau(fml, modal=True, validity=False, satisfiability=False)
+    # fml = Imp(Nec(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))), Exists(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))))
+    # tab = Tableau(fml, modal=True)
+    # tab = Tableau(fml, modal=True, validity=False)
+    # tab = Tableau(fml, modal=True, validity=False, satisfiability=False)
     #
     # fml = Exists(Var("x"), Poss(Imp(Nec(Atm(Pred("P"), (Var("x"),))), Forall(Var("x"), Atm(Pred("P"), (Var("x"),))))))
     # tab = Tableau(fml, modal=True)
@@ -1630,6 +1633,7 @@ if __name__ == "__main__":
     # fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
     # fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
     # tab = Tableau(fml2, premises=[fml1])
+    # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
     # tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False)
     #
     # fml1 = Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
@@ -1676,16 +1680,16 @@ if __name__ == "__main__":
     # fml1 = Exists(Var("x"), Atm(Pred("student"), (Var("x"),)))
     # tab = Tableau(fml, premises=[fml1], validity=False)
     #
-    # ax1 = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)), Atm(Pred("human"), (Var("x"),))))
-    # ax2 = Forall(Var("x"), Imp(Atm(Pred("book"), (Var("x"),)), Atm(Pred("object"), (Var("x"),))))
-    # ax3 = Forall(Var("x"), Imp(Atm(Pred("human"), (Var("x"),)), Neg(Atm(Pred("object"), (Var("x"),)))))
-    # ax4 = Forall(Var("x"), Imp(Atm(Pred("object"), (Var("x"),)), Neg(Atm(Pred("human"), (Var("x"),)))))
-    # prem1 = Atm(Pred("student"), (Const("m"),))
-    # prem2 = Atm(Pred("student"), (Const("p"),))
-    # fml = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)),
-    #                            Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
-    #                                                  Atm(Pred("read"), (Var("x"), Var("y")))))))
-    # tab = Tableau(fml, premises=[prem1, prem2], axioms=[ax1, ax2, ax3, ax4], validity=False)
+    ax1 = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)), Atm(Pred("human"), (Var("x"),))))
+    ax2 = Forall(Var("x"), Imp(Atm(Pred("book"), (Var("x"),)), Atm(Pred("object"), (Var("x"),))))
+    ax3 = Forall(Var("x"), Imp(Atm(Pred("human"), (Var("x"),)), Neg(Atm(Pred("object"), (Var("x"),)))))
+    ax4 = Forall(Var("x"), Imp(Atm(Pred("object"), (Var("x"),)), Neg(Atm(Pred("human"), (Var("x"),)))))
+    prem1 = Atm(Pred("student"), (Const("m"),))
+    prem2 = Atm(Pred("student"), (Const("p"),))
+    fml = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)),
+                               Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
+                                                     Atm(Pred("read"), (Var("x"), Var("y")))))))
+    tab = Tableau(fml, premises=[prem1, prem2], axioms=[ax1, ax2, ax3, ax4], validity=False)
     #
     # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("know"), (Var("x"), Var("y")))))

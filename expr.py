@@ -5,10 +5,7 @@
 Define the language and semantics of classical (standard and modal) (prepositional and first-order) logic.
 """
 
-
-from denotation import *
 from structure import *
-# from tableau import *
 
 from typing import List, Dict, Set, Tuple
 

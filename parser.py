@@ -20,10 +20,15 @@ class Parser:
         self.stacks = [[], []]
         self.mode = dict()
 
-    def parse(self, inp):
+    def parse_fml(self, inp):
         tokens = self.lex(inp)
-        parsedstring = self.synt(tokens)
-        return parsedstring
+        parse = self.synt(tokens)
+        return parse[0]
+
+    def parse_inf(self, inp):
+        tokens = self.lex(inp)
+        parse = self.synt(tokens)
+        return parse
 
     def lex(self, inp):
         """
@@ -258,6 +263,7 @@ class Parser:
 
             prev_stack = stacks[i-1]
             bot = curr_stack[0]
+            mid = curr_stack[1] if len(curr_stack) > 1 else None
             top = curr_stack[-1]
 
             # function or predicate expression: close if closure symbol is on top
@@ -278,12 +284,11 @@ class Parser:
                 continue
 
             # binary operator: close if closure symbol is on top, else resolve ambiguity
-            if bot in ["Eq", "Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall"]:
+            if bot in ["Eq", "Conj", "Disj", "Imp", "Biimp", "Xor",]:
 
-                mid = curr_stack[1]
                 # operator ambiguity
-                if mid in ["Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall",
-                           "Neg", "Poss", "Nec"]:  # operator clash: resolve ambiguiy
+                if mid and mid in ["Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall",
+                                   "Neg", "Poss", "Nec"]:  # operator clash: resolve ambiguiy
                     # first op has precedence over second op: take current stack as subformula. to second op
                     # ops have equal precedence: apply left-associativity
                     if prec[mid] < prec[bot] or prec[mid] == prec[bot]:
@@ -306,6 +311,14 @@ class Parser:
                     stacks = stacks[:-1]
                     continue
 
+            # quantifier: clsoe if appropriate number of args is given
+            if bot in ["Exists", "Forall"] and len(curr_stack) == 3:
+                c = getattr(expr, bot)
+                e = c(mid, top)
+                prev_stack.append(e)
+                stacks = stacks[:-1]
+                continue
+
         self.stacks = stacks
         if debug:
             print("stacks after: ", stacks)
@@ -313,9 +326,10 @@ class Parser:
 
 if __name__ == "__main__":
     parser = Parser()
-    test = r"~ p ^ q <-> ~(\nec p v ~ q v r)"
+    # test = r"~ p ^ q <-> ~(\nec p v ~ q v r)"
     # test = r"R(f(a,b),y)"
     # test = "~ p v q |= p -> q"
+    test = r"\exi x \all y R(x,y) -> \all y \exi x R(x,y)"
     print(test)
     res = parser.parse(test)[0]
     print(res)

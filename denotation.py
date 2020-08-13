@@ -7,8 +7,6 @@
 # todo adapt readme for IL
 
 from expr import *
-from structure import *
-# from tableau import *
 
 from functools import reduce
 

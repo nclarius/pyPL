@@ -7,7 +7,6 @@ Define the structures of classical (standard and modal) (prepositional and first
 
 
 from denotation import *
-from expr import *
 
 import re
 from itertools import product
