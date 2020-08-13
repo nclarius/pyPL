@@ -8,7 +8,7 @@ CURRENTLY UNDER CONSTRUCTION.
 
 import re
 
-debug = False
+debug = True
 
 class Parser:
     """
@@ -16,10 +16,14 @@ class Parser:
     """
 
     def __init__(self):
-        self.stacks = [[]]
+        self.stacks = [[], []]
+        self.mode = dict()   # todo process
+        self.axioms = []
+        self.premises = []
+        self.conclusion = []
 
     def parse(self, inp):
-        tokens = self.lex(inp)[0]
+        tokens = self.lex(inp)
         parsedstring = self.synt(tokens)
         return parsedstring
 
@@ -34,9 +38,14 @@ class Parser:
             "Comma":  r",",
             "Semic":  r";",
             "Dsemic": r";;",
+            "Period": r"\.",
+            # todo flag for mode
             # meta symbols
             "Inf":    r"(\|=||\\vDash|\\models|\\linf)",
             "Noninf": r"(\|/=||\\nvDash|\\nmodels|\\lninf)",
+            # flags for mode
+            "!Int":   r"!int",
+            "!VD":    r"!vd",
             # term symbols
             "Var":    r"(x|y|z)(_?\d+)?",
             "Const":  r"(([a-e]|[i-o])(_?\d+)?)",
@@ -63,39 +72,35 @@ class Parser:
         }
         regex2token = {v: k for k, v in token2regex.items()}
 
-        # preprocces the input string
-        # todo doesn't alwyays work (?)
-        inp = re.sub("([^\s])(\(|\)|,|;)", r"\1 \2", inp)  # insert whitespace left to aux. symbols
-        inp = re.sub("(\(|\)|,|;)([^\s])", r"\1 \2", inp)  # insert whitespace right to aux. symbols
-        inp = re.sub(";\s;", ";;", inp)  # restore split up double semicolons
-        inp = re.sub("\s+", " ", inp)  # remove redundant whitespace
+        # add whitespace around auxiliary symbols and end of input symbol
+        inp = inp.replace("(", " ( ").replace(")", " ) ").replace(",", " , ").replace(";", " ; ").replace("; ;", ";;")
+        inp = re.sub("\s+", " ", inp) + " ."
 
         # process the input string split by whitespace
         tokens = []
-        for symbol in inp.split(" "):
-            found = 0
+        for symbol in [s for s in inp.split() if s]:
             # find a matching regex and append the respective token
-            for regex in regex2token:
-                pattern = re.compile("^" + regex + "$")
-                if pattern.match(symbol):
-                    found += 1
-                    token = regex2token[regex]
-                    tokens.append((token, symbol))
-                    if debug:
-                        print(token, symbol)
-            if found < 1:
-                print(symbol, "no matches found")
-            elif found > 1:
-                print(symbol, "multiple matches found")
+            candidates = [regex for regex in regex2token if re.compile("^" + regex + "$").match(symbol)]
+            if not candidates:
+                print("expression '" + symbol + "' did not match any token")
+                break
+            if len(candidates) > 1:
+                print("expression '" + symbol + "' matched more than one token")
+                break
+            regex = candidates[0]
+            token = regex2token[regex]
+            tokens.append((token, symbol))
+            if debug:
+                print(token, symbol)
 
         # detect mode
-        # todo process
-        mode = dict()
-        mode["validity"] = True if "noninf" not in [t[0] for t in tokens] else False
-        mode["propositional"] = True if any([t[0] in ["prop"] for t in tokens]) else False
-        mode["modal"] = True if any([t[0] in ["poss", "nec"] for t in tokens]) else False
+        self.mode["classical"] = True if "!Int" not in [t[0] for t in tokens] else False
+        self.mode["validity"] = True if "Noninf" not in [t[0] for t in tokens] else False
+        self.mode["propositional"] = True if any([t[0] in ["prop"] for t in tokens]) else False
+        self.mode["modal"] = True if any([t[0] in ["poss", "nec"] for t in tokens]) else False
+        self.mode["vardomains"] = False if "!VD" not in [t[0] for t in tokens] else False
 
-        return tokens, mode
+        return tokens
 
     def synt(self, tokens):
         """
@@ -108,13 +113,16 @@ class Parser:
                 input()
             self.add_symbol(token)
             self.update_stacks()
+        if debug:
+            input()
         self.update_stacks(True)
-        return self.stacks[0][0]
+        return self.stacks[0][1:], self.mode
 
     def add_symbol(self, token):
         t, s = token
         stacks = self.stacks
         curr_stack = stacks[-1] if stacks else None
+        root_stack = stacks[0]
         top = curr_stack[-1] if curr_stack else None
         bot = curr_stack[0] if curr_stack else None
         expr = __import__("expr")
@@ -127,23 +135,66 @@ class Parser:
             if bot not in ["Atm", "FuncTerm"]:
                 new_stack = []
                 stacks.append(new_stack)
-            return stacks
+                self.stacks = stacks
+                return
 
         # closing bracket: add closure symbol to current stack
         if t in ["Rbrack"]:
             curr_stack.append("#")
-            return stacks
+            self.stacks = stacks
+            return
 
         # comma: continue
         if t in [","]:
-            return stacks
+            self.stacks = stacks
+            return
+
+        # semicolon: move formula to premise or axiom stack and clear stack for next premise
+        if t in [";"]:
+            curr_fml = curr_stack[0]
+            root_stack[-1].append(curr_fml)
+            stacks[0] = root_stack
+            stacks[-1] = []
+            self.stacks = stacks
+            return
+
+        # double semicolon: create axiom stack, move formula to premise stack and clear stack for next axiom
+        if t in [";;"]:
+            curr_fml = curr_stack[0]
+            root_stack[0].append(curr_fml)
+            root_stack.append([])
+            stacks[0] = root_stack
+            stacks[-1] = []
+            self.stacks = stacks
+            return
+
+        # inference symbol: switch from premises to conclusion
+        if t in ["Inf", "Noninf"]:
+            root_stack.insert(0, t)
+            stacks[0] = root_stack
+            stacks[-1] = []
+            self.stacks = stacks
+            return
+
+        # period: add closure symbol
+        if t in ["Period"]:
+            curr_stack.append("#")
+            root_stack.insert(0, ".")
+            self.stacks = stacks
+            return
+
+        # flag: ignore
+        if t.startswith("!"):
+            self.stacks = stacks
+            return
 
         # atomic expression: add to current stack
         if t in ["Var", "Const", "Prop"]:
             c = getattr(expr, t)
             e = c(s)
             curr_stack.append(e)
-            return stacks
+            self.stacks = stacks
+            return
 
         # function symbol: start new stack with functerm
         if t in ["Func"]:
@@ -151,7 +202,8 @@ class Parser:
             e = c(s)
             stack_ = ["FuncTerm", e]
             stacks.append(stack_)
-            return stacks
+            self.stacks = stacks
+            return
 
         # predicate symbol: start new stack with atm
         if t in ["Pred"]:
@@ -159,7 +211,16 @@ class Parser:
             e = c(s)
             stack_ = ["Atm", e]
             stacks.append(stack_)
-            return stacks
+            self.stacks = stacks
+            return
+
+        # atomic formula: add to current stack
+        if t in ["Verum", "Falsum"]:
+            c = getattr(expr, t)
+            e = c()
+            curr_stack.append(e)
+            self.stacks = stacks
+            return
 
         # prefix operator: start new stack
         if t in ["Verum", "Falsum", "Neg", "Exists", "Forall", "Poss", "Nec"]:
@@ -188,7 +249,7 @@ class Parser:
                 continue
 
             if len(stacks) == 1:
-                if len(stack) == 1:   # stacks are finished; return
+                if stacks[0][0] == ".":   # stacks are finished; return
                     break
                 else:  # outer brackets ommmited; move content to new stack
                     new_stack = [e for e in stack]
@@ -202,34 +263,23 @@ class Parser:
             top = curr_stack[-1]
 
             # function or predicate expression: close if closure symbol is on top
-            if top == "#":
+            if bot in ["Atm", "FuncTerm"] and top == "#":
                 o = curr_stack[1]
-                if bot in ["Atm", "FuncTerm"]:
-                    c = getattr(expr, bot)
-                    e = c(o, curr_stack[2:-1])
-                    prev_stack.append(e)
-                    stacks = stacks[:-1]
-                    continue
-
-            # operator: close if appropriate number of args is given, else resolve ambiguity
-
-            # nullary operator
-            if bot in ["Verum", "Falsum"] and len(curr_stack) == 1:
                 c = getattr(expr, bot)
-                e = c()
+                e = c(o, curr_stack[2:-1])
                 prev_stack.append(e)
                 stacks = stacks[:-1]
                 continue
 
-            # unary operator
+            # unary operator: close if appropriate number of args is given
             if bot in ["Neg", "Poss", "Nec"] and len(curr_stack) == 2:
                 c = getattr(expr, bot)
-                e = c(curr_stack[1])
+                e = c(top)
                 prev_stack.append(e)
                 stacks = stacks[:-1]
                 continue
 
-            # binary operator
+            # binary operator: close if closure symbol is on top, else resolve ambiguity
             if bot in ["Eq", "Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall"]:
 
                 mid = curr_stack[1]
@@ -265,7 +315,9 @@ class Parser:
 
 if __name__ == "__main__":
     parser = Parser()
-    test = r"~ p ^ q <-> ~(\nec p v ~ q v r)"
+    # test = r"~ p ^ q <-> ~(\nec p v ~ q v r)"
+    # test = r"R(f(a,b),y)"
+    test = "~ p v q |= p -> q"
     print(test)
     res = parser.parse(test)
     print(res)
