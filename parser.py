@@ -104,8 +104,11 @@ class Parser:
         # todo parse meta symbols
         # process tokens
         for token in tokens:
+            if debug:
+                input()
             self.add_symbol(token)
             self.update_stacks()
+        self.update_stacks(True)
         return self.stacks[0][0]
 
     def add_symbol(self, token):
@@ -168,8 +171,11 @@ class Parser:
             curr_stack.insert(0, t)
             return self.stacks
 
-    def update_stacks(self):
+    def update_stacks(self, final=False):
         # todo check well-formedness of expressions
+        # operator precedence
+        prec = {"Nec": 1, "Poss": 1, "Neg": 1, "Conj": 2, "Disj": 3, "Imp": 4, "Biimp": 5, "Xor": 6}
+
         stacks = self.stacks
         expr = __import__("expr")
         if debug:
@@ -180,8 +186,17 @@ class Parser:
             curr_stack = stack
             if not stack:  # skip empty stacks
                 continue
-            if len(stacks) == 1:  # stack is finished: return
-                break
+
+            if len(stacks) == 1:
+                if len(stack) == 1:   # stacks are finished; return
+                    break
+                else:  # outer brackets ommmited; move content to new stack
+                    new_stack = [e for e in stack]
+                    stacks.append(new_stack)
+                    stacks[i] = []
+                    i += 1
+                    curr_stack = stacks[i]
+
             prev_stack = stacks[i-1]
             bot = curr_stack[0]
             top = curr_stack[-1]
@@ -198,7 +213,7 @@ class Parser:
                     stacks[i] = stacks[i][:-1]  # remove "#" symbol
                 continue
 
-            # operator: close if appropriate number of args is given
+            # operator: close if appropriate number of args is given, else resolve ambiguity
 
             # nullary operator
             if bot in ["Verum", "Falsum"] and len(curr_stack) == 1:
@@ -217,12 +232,33 @@ class Parser:
                 continue
 
             # binary operator
-            if bot in ["Eq", "Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall"] and len(curr_stack) == 3:
-                c = getattr(expr, bot)
-                e = c(curr_stack[1], curr_stack[2])
-                prev_stack.append(e)
-                stacks = stacks[:-1]
-                continue
+            if bot in ["Eq", "Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall"]:
+                mid = curr_stack[1]
+
+                # operator ambiguity
+                if mid in ["Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall",
+                           "Neg", "Poss", "Nec"]:  # operator clash: resolve ambiguiy
+                    # first op has precedence over second op: take current stack as subformula. to second op
+                    # ops have equal precedence: apply left-associativity
+                    if prec[mid] < prec[bot] or prec[mid] == prec[bot]:
+                        c = getattr(expr, mid)
+                        e = c(*curr_stack[2:])
+                        curr_stack = [bot, e]
+                        stacks[i] = curr_stack
+                    # second op has precedence over first op: move to new stack
+                    else:
+                        new_stack = [bot, curr_stack[3]]
+                        stacks.append(new_stack)
+                        curr_stack = [mid, curr_stack[2]]
+                        stack[i] = curr_stack
+
+                # subformula finished
+                elif len(curr_stack) == 3 and (top == "#" or final):
+                    c = getattr(expr, bot)
+                    e = c(curr_stack[1], curr_stack[2])
+                    prev_stack.append(e)
+                    stacks = stacks[:-1]
+                    continue
 
         self.stacks = stacks
         if debug:
@@ -231,8 +267,7 @@ class Parser:
 
 if __name__ == "__main__":
     parser = Parser()
-    test = r"((\all x \nec P(x) v \exi y (P(y) ^ ~ \poss R(c,y))) -> \falsum)"
+    test = r"~ p ^ q <-> ~(\nec p v ~ q v r)"
     print(test)
     res = parser.parse(test)
     print(res)
-    print(type(res))
