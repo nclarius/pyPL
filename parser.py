@@ -248,7 +248,7 @@ class Parser:
                         new_stack = [bot, curr_stack[3]]
                         stacks.append(new_stack)
                         curr_stack = [mid, curr_stack[2]]
-                        stack[i] = curr_stack
+                        stacks[i] = curr_stack
 
                 # subformula finished
                 elif len(curr_stack) == 4 and top == "#" or final:
