@@ -8,7 +8,7 @@ THIS PART IS STILL UNDER CONSTRUCTION.
 
 from structure import *
 from expr import *
-from parser import Parser as parser
+# from parser import Parser as parser
 
 from typing import List, Dict, Set, Tuple
 import os
@@ -19,7 +19,6 @@ from itertools import chain
 
 # todo documentation
 # todo GUI
-# todo file and LaTeX output
 # todo make non-K modal logics work
 # todo tableaux for IL
 # todo formulas with free variables?
@@ -259,7 +258,7 @@ class Tableau(object):
         if debug:
             print(self.root.treestr())
         while applicable := self.applicable():
-            # todo stop search when only contradictions found found after all new instantiations?
+            # todo stop search when only contradictions found after all new instantiations?
             # check whether to continue expansion
             len_assumptions = sum([len(str(node.fml)) for node in self.root.nodes()
                                    if node.rule == "A" and (self.mode["validity"] or not node.world)])
@@ -503,10 +502,7 @@ class Tableau(object):
         # if the only rules applicable to an unfinished branch are
         # δ, θ or κ rules that have already been applied on this branch,
         # it is declared open and, in the case of validity tableaus, its applicable rules cleared
-        for leaf in [node for node in self.root.leaves() if node.fml and
-                                                            not (isinstance(node.fml, Empty) or
-                                                                 isinstance(node.fml, Closed) or isinstance(node.fml,
-                                                                                                            Infinite))]:
+        for leaf in [node for node in self.root.leaves() if node.fml and not (isinstance(node.fml, Pseudo))]:
             if all([appl[6] and appl[3] in ["δ", "θ", "κ"]
                     for appl in applicable if appl[0] in leaf.branch]):
                 if not isinstance(leaf.fml, Pseudo):
@@ -514,6 +510,14 @@ class Tableau(object):
                     self.models.append(self.model(leaf))
                 if self.mode["validity"]:
                     applicable = [appl for appl in applicable if appl[0] not in leaf.branch]
+        # if all nodes have been applied and every theta/kappa formula has been inst. with a new constant/world,
+        # and the branch is still contradictory,
+        # then the sequent is unsatisfiable, and the appplicable rules of the entire tree are cleared
+        for leaf in [node for node in self.root.leaves() if isinstance(node.fml, Closed)]:
+            appl_on_branch = [appl for appl in applicable if appl[0] in leaf.branch]
+            nary_on_branch = [node for node in leaf.branch if node.rule in ["∃", "¬∀", "◇", "¬◻"]]
+            if all([appl[6] for appl in appl_on_branch]) and all([node.inst[2] for node in nary_on_branch]):
+                applicable = []
 
         # define a preference order for rule types
         rule_order = {r: i for (i, r) in enumerate(
@@ -920,21 +924,21 @@ class Tableau(object):
         ο
         Branch unary with an existing signature and an arbitrary constant.
         """
-        pass  # todo implement omicron rule
+        pass
 
     def rule_upsilon(self, target, source, rule, fmls, args):
         """
         υ
         Branch unary with a new signature and a new constant.
         """
-        pass  # todo implement upsilon rule
+        pass
 
     def rule_omega(self, target, source, rule, fmls, args):
         """
         ω
         Branch unary with an existing signature and an existing constant.
         """
-        pass  # todo implement omega rule
+        pass
 
     def closed(self) -> bool:
         """
@@ -1164,7 +1168,7 @@ class Node(object):
         open_branches = [leaf.branch for leaf in self.root().leaves() if isinstance(leaf.fml, Open)]
         # hide non-open branches
         if hide_nonopen and not self.tableau.mode["validity"] and not any([self in branch for branch in open_branches]):
-            return ""  # todo improve (sometimes shows branches with empty content)
+            return ""
 
         # compute lengths of columns  # todo inefficient to recalculate for every node
         len_line = max([len(str(node.line)) for node in self.root().nodes() if node.line]) + 2
@@ -1581,10 +1585,10 @@ if __name__ == "__main__":
     # tab = Tableau(fml, modal=True)
     # tab = Tableau(fml, propositional=True, modal=True, validity=False)
     # # #
-    # fml = Imp(Nec(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))), Exists(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))))
-    # tab = Tableau(fml, modal=True)
-    # tab = Tableau(fml, modal=True, validity=False)
-    # tab = Tableau(fml, modal=True, validity=False, satisfiability=False)
+    fml = Imp(Nec(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))), Exists(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))))
+    tab = Tableau(fml, modal=True)
+    tab = Tableau(fml, modal=True, validity=False)
+    tab = Tableau(fml, modal=True, validity=False, satisfiability=False)
     #
     # fml = Exists(Var("x"), Poss(Imp(Nec(Atm(Pred("P"), (Var("x"),))), Forall(Var("x"), Atm(Pred("P"), (Var("x"),))))))
     # tab = Tableau(fml, modal=True)
@@ -1692,7 +1696,7 @@ if __name__ == "__main__":
     # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
 
     ####################
-    parser
+    # parser
     ####################
     # test = r"((\all x \nec P(x) v \exi y (P(y) ^ R(c,y))) -> \falsum)"
     # print(test)

@@ -14,7 +14,7 @@ class Parser:
     """
     Parse a formula given as string into an Expr object.
     """
-    # todo finish impl. of inference parsing
+    # todo extend from formulas to inferences
 
     def __init__(self):
         self.stacks = [[], []]
@@ -64,7 +64,7 @@ class Parser:
             "Exists": r"(∃|\\exists|\\exi|\\ex)",
             "Forall": r"(∀|\\forall|\\all|\\fa)",
             # modal operators
-            "Poss":   r"(◇|\\Diamond|\\poss)",
+            "Poss":   r"(◇|\*|\\Diamond|\\poss)",
             "Nec":    r"(◻|#|\\Box||\\nec)"
         }
         regex2token = {v: k for k, v in token2regex.items()}
