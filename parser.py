@@ -14,21 +14,14 @@ class Parser:
     """
     Parse a formula given as string into an Expr object.
     """
-    # todo extend from formulas to inferences
 
     def __init__(self):
-        self.stacks = [[], []]
-        self.mode = dict()
+        self.stacks = [[]]
 
-    def parse_fml(self, inp):
+    def parse(self, inp):
         tokens = self.lex(inp)
-        parse = self.synt(tokens)
-        return parse[0]
-
-    def parse_inf(self, inp):
-        tokens = self.lex(inp)
-        parse = self.synt(tokens)
-        return parse
+        parsedstring = self.synt(tokens)
+        return parsedstring
 
     def lex(self, inp):
         """
@@ -41,13 +34,9 @@ class Parser:
             "Comma":  r",",
             "Semic":  r";",
             "Dsemic": r";;",
-            "Period": r"\.",
             # meta symbols
             "Inf":    r"(\|=||\\vDash|\\models|\\linf)",
             "Noninf": r"(\|/=||\\nvDash|\\nmodels|\\lninf)",
-            # flags for mode
-            "!Int":   r"!int",
-            "!VD":    r"!vd",
             # term symbols
             "Var":    r"(x|y|z)(_?\d+)?",
             "Const":  r"(([a-e]|[i-o])(_?\d+)?)",
@@ -69,19 +58,18 @@ class Parser:
             "Exists": r"(∃|\\exists|\\exi|\\ex)",
             "Forall": r"(∀|\\forall|\\all|\\fa)",
             # modal operators
-            "Poss":   r"(◇|\*|\\Diamond|\\poss)",
-            "Nec":    r"(◻|#|\\Box||\\nec)"
+            "Poss":   r"(◇|\\Diamond|\\poss)",
+            "Nec":    r"(◻|\\Box||\\nec)"
         }
         regex2token = {v: k for k, v in token2regex.items()}
 
-        # add whitespace around auxiliary symbols and end of input symbol
+        # add whitespace around auxiliary symbols
         inp = inp.replace("(", " ( ").replace(")", " ) ").replace(",", " , ").replace(";", " ; ").replace("; ;", ";;")
-        inp = re.sub("\s+", " ", inp) + " ."
+        inp = re.sub("\s+", " ", inp)
 
         # process the input string split by whitespace
         tokens = []
         for symbol in [s for s in inp.split() if s]:
-            # find a matching regex and append the respective token
             candidates = [regex for regex in regex2token if re.compile("^" + regex + "$").match(symbol)]
             if not candidates:
                 print("expression '" + symbol + "' did not match any token")
@@ -96,30 +84,28 @@ class Parser:
                 print(token, symbol)
 
         # detect mode
-        self.mode["classical"] = True if "!Int" not in [t[0] for t in tokens] else False
-        self.mode["validity"] = True if "Noninf" not in [t[0] for t in tokens] else False
-        self.mode["propositional"] = True if any([t[0] in ["prop"] for t in tokens]) else False
-        self.mode["modal"] = True if any([t[0] in ["poss", "nec"] for t in tokens]) else False
-        self.mode["vardomains"] = False if "!VD" not in [t[0] for t in tokens] else False
-
+        # todo process
+        mode = dict()
+        mode["classical"] = True if "!Int" not in [t[0] for t in tokens] else False
+        mode["validity"] = True if "Noninf" not in [t[0] for t in tokens] else False
+        mode["propositional"] = True if any([t[0] in ["prop"] for t in tokens]) else False
+        mode["modal"] = True if any([t[0] in ["poss", "nec"] for t in tokens]) else False
+        mode["vardomains"] = False if "!VD" not in [t[0] for t in tokens] else False
         return tokens
 
     def synt(self, tokens):
         """
         Parse a list of tokens into an Expr object.
         """
+        # todo parse meta symbols
         # process tokens
         for token in tokens:
             if debug:
                 input()
             self.add_symbol(token)
             self.update_stacks()
-        if debug:
-            input()
         self.update_stacks(True)
-        inf = self.stacks[0][1:] if len(self.stacks[0]) > 2 else self.stacks[0][1]
-        mode = self.mode
-        return inf, mode
+        return self.stacks[0][0]
 
     def add_symbol(self, token):
         t, s = token
@@ -149,40 +135,6 @@ class Parser:
 
         # comma: continue
         if t in [","]:
-            self.stacks = stacks
-            return
-
-        # semicolon: move formula to premise or axiom stack and clear stack for next premise
-        if t in [";"]:
-            curr_fml = curr_stack[0]
-            root_stack[-1].append(curr_fml)
-            stacks[0] = root_stack
-            stacks[-1] = []
-            self.stacks = stacks
-            return
-
-        # double semicolon: create axiom stack, move formula to premise stack and clear stack for next axiom
-        if t in [";;"]:
-            curr_fml = curr_stack[0]
-            root_stack[0].append(curr_fml)
-            root_stack.append([])
-            stacks[0] = root_stack
-            stacks[-1] = []
-            self.stacks = stacks
-            return
-
-        # inference symbol: switch from premises to conclusion
-        if t in ["Inf", "Noninf"]:
-            root_stack.insert(0, t)
-            stacks[0] = root_stack
-            stacks[-1] = []
-            self.stacks = stacks
-            return
-
-        # period: add closure symbol
-        if t in ["Period"]:
-            curr_stack.append("#")
-            root_stack.insert(0, ".")
             self.stacks = stacks
             return
 
@@ -236,7 +188,7 @@ class Parser:
             return self.stacks
 
     def update_stacks(self, final=False):
-        # todo check well-formedness of expressions?
+        # todo check well-formedness of expressions
         # operator precedence
         prec = {"Nec": 1, "Poss": 1, "Neg": 1, "Conj": 2, "Disj": 3, "Imp": 4, "Biimp": 5, "Xor": 6}
 
@@ -252,7 +204,7 @@ class Parser:
                 continue
 
             if len(stacks) == 1:
-                if stacks[0][0] == ".":   # stacks are finished; return
+                if len(stack) == 1:   # stacks are finished; return
                     break
                 else:  # outer brackets ommmited; move content to new stack
                     new_stack = [e for e in stack]
@@ -284,7 +236,7 @@ class Parser:
                 continue
 
             # binary operator: close if closure symbol is on top, else resolve ambiguity
-            if bot in ["Eq", "Conj", "Disj", "Imp", "Biimp", "Xor",]:
+            if bot in ["Eq", "Conj", "Disj", "Imp", "Biimp", "Xor"]:
 
                 # operator ambiguity
                 if mid and mid in ["Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall",
@@ -323,13 +275,14 @@ class Parser:
         if debug:
             print("stacks after: ", stacks)
 
-
 if __name__ == "__main__":
     parser = Parser()
     # test = r"~ p ^ q <-> ~(\nec p v ~ q v r)"
     # test = r"R(f(a,b),y)"
     # test = "~ p v q |= p -> q"
-    test = r"\exi x \all y R(x,y) -> \all y \exi x R(x,y)"
+    # test = r"\exi x \all y R(x,y) -> \all y \exi x R(x,y)"
+    test = r"\all x (P(x) -> Q(x))"
     print(test)
-    res = parser.parse(test)[0]
+    res = parser.parse(test)
     print(res)
+
