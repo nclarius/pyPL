@@ -29,7 +29,7 @@ size_limit_factor = 5  # size factor after which to give up the further expansio
 num_mdls = 1  # number of models to generate  # todo doesn't always work
 mark_open = True  # in MG: in open branches, underline line numbers and literals in tree outputs
 hide_nonopen = False  # in MG: hide non-open branches in tree output
-latex = False  # generate output in LaTeX instead of plain text format  # todo wrong output for ML
+latex = True  # generate output in LaTeX instead of plain text format  # todo wrong output for ML
 
 
 class Tableau(object):
@@ -1680,16 +1680,16 @@ if __name__ == "__main__":
     # fml1 = Exists(Var("x"), Atm(Pred("student"), (Var("x"),)))
     # tab = Tableau(fml, premises=[fml1], validity=False)
     #
-    ax1 = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)), Atm(Pred("human"), (Var("x"),))))
-    ax2 = Forall(Var("x"), Imp(Atm(Pred("book"), (Var("x"),)), Atm(Pred("object"), (Var("x"),))))
-    ax3 = Forall(Var("x"), Imp(Atm(Pred("human"), (Var("x"),)), Neg(Atm(Pred("object"), (Var("x"),)))))
-    ax4 = Forall(Var("x"), Imp(Atm(Pred("object"), (Var("x"),)), Neg(Atm(Pred("human"), (Var("x"),)))))
-    prem1 = Atm(Pred("student"), (Const("m"),))
-    prem2 = Atm(Pred("student"), (Const("p"),))
-    fml = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)),
-                               Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
-                                                     Atm(Pred("read"), (Var("x"), Var("y")))))))
-    tab = Tableau(fml, premises=[prem1, prem2], axioms=[ax1, ax2, ax3, ax4], validity=False)
+    # ax1 = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)), Atm(Pred("human"), (Var("x"),))))
+    # ax2 = Forall(Var("x"), Imp(Atm(Pred("book"), (Var("x"),)), Atm(Pred("object"), (Var("x"),))))
+    # ax3 = Forall(Var("x"), Imp(Atm(Pred("human"), (Var("x"),)), Neg(Atm(Pred("object"), (Var("x"),)))))
+    # ax4 = Forall(Var("x"), Imp(Atm(Pred("object"), (Var("x"),)), Neg(Atm(Pred("human"), (Var("x"),)))))
+    # prem1 = Atm(Pred("student"), (Const("m"),))
+    # prem2 = Atm(Pred("student"), (Const("p"),))
+    # fml = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)),
+    #                            Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
+    #                                                  Atm(Pred("read"), (Var("x"), Var("y")))))))
+    # tab = Tableau(fml, premises=[prem1, prem2], axioms=[ax1, ax2, ax3, ax4], validity=False)
     #
     # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("know"), (Var("x"), Var("y")))))

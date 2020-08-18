@@ -8,7 +8,7 @@ CURRENTLY UNDER CONSTRUCTION.
 
 import re
 
-debug = False
+debug = True
 
 class Parser:
     """
@@ -19,6 +19,7 @@ class Parser:
         self.stacks = [[]]
 
     def parse(self, inp):
+        self.stacks = [[]]
         tokens = self.lex(inp)
         parsedstring = self.synt(tokens)
         return parsedstring
@@ -277,12 +278,15 @@ class Parser:
 
 if __name__ == "__main__":
     parser = Parser()
-    # test = r"~ p ^ q <-> ~(\nec p v ~ q v r)"
     # test = r"R(f(a,b),y)"
     # test = "~ p v q |= p -> q"
-    # test = r"\exi x \all y R(x,y) -> \all y \exi x R(x,y)"
-    test = r"\all x (P(x) -> Q(x))"
+    print()
+    test = r"~ p ^ q <-> ~(\nec p v ~ q v r)"
     print(test)
     res = parser.parse(test)
     print(res)
-
+    print()
+    test = r"\exi x \all y (P(x) ^ R(x,y)) -> \all y \exi x R(x,y)"
+    print(test)
+    res = parser.parse(test)
+    print(res)
