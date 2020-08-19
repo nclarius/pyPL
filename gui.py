@@ -33,8 +33,8 @@ red = "#bf5050"
 yellow = "#ffb94f"
 # blue = "#2493ff"
 # lightblue = "#80ccff"
-darkgray = "#333333"
-lightgray = "#595959"
+darkgray = "#333333"  # todo distinguish clickable buttons from selected radiobuttons?
+lightgray = "#666666"
 font = "-family {Arial} -size 12 -weight normal -slant roman -underline 0 -overstrike 0"
 
 
@@ -46,7 +46,7 @@ class PyPLGUI(tk.Frame):
         # general settings
         self.root.title("pyPL")
         self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file='icon.png'))
-        self.root.geometry("713x400")
+        self.root.geometry("655x450")
 
         # style
         self.style = ttk.Style()
@@ -68,25 +68,43 @@ class PyPLGUI(tk.Frame):
         self.mainloop()
 
     def win_main(self):
-        self.main = ttk.Notebook(self.root)
+        self.tabs = ttk.Notebook(self.root)
         tabs = [
             "Start",
             "1. Pick your settings",
             "2. Choose your task",
             "3. Select your logic",
-            "4. Specify your input",
-            "5. Run"
+            "4. Specify your input"
+            # "5. Run"
         ]
         # add tabs
         for i, tab in enumerate(tabs):
-            self.main.add(ttk.Frame(self.main, style="TFrame"), text=tab)
+            self.tabs.add(ttk.Frame(self.tabs, style="TFrame"), text=tab)
         # build tabs
         for i, tab in enumerate(tabs):
             getattr(self, "tab_" + str(i))()
-        self.main.pack(expand=0, fill="both")
+        self.tabs.pack(expand=0, fill="both")
+
+        frm_run = tk.Frame(self.root)
+        frm_run.pack()
+
+        # run button
+        btn_run = tk.Button(frm_run,
+                            text="Run!",
+                            activebackground=lightgray, activeforeground=white,
+                            state="disabled",
+                            width=22, pady=10)
+        btn_run.bind("<Button>", lambda e: self.run())
+        btn_run.pack(in_=frm_run, pady=10)
+        self.btn_run = btn_run
+
+        # info
+        lbl_info = tk.Label(frm_run,
+                            text="🛈 https://github.com/nclarius/pyPL") \
+            .pack(pady=10)
 
     def tab_0(self):  # 0. Start
-        tab = self.main.nametowidget(self.main.tabs()[0])
+        tab = self.tabs.nametowidget(self.tabs.tabs()[0])
 
         # welcome message
         lbl_greeting = ttk.Label(tab,
@@ -136,15 +154,10 @@ class PyPLGUI(tk.Frame):
                               activebackground=lightgray, activeforeground=white,
                               width=20, pady=10)
         btn_step5.bind("<Button>", lambda e: self.switch_to_tab(5))
-        btn_step5.pack(pady=5)
-
-        # info
-        lbl_info = tk.Label(tab,
-                            text="🛈 https://github.com/nclarius/pyPL") \
-            .pack(pady=20)
+        # btn_step5.pack(pady=5)
 
     def tab_1(self):  # 1. Settings
-        tab = self.main.nametowidget(self.main.tabs()[1])
+        tab = self.tabs.nametowidget(self.tabs.tabs()[1])
 
         def initial_select_rb(rb):
             rb.config(fg=white)
@@ -193,12 +206,12 @@ class PyPLGUI(tk.Frame):
         mid1.pack()
         mid2.pack(pady=20, ipadx=24)
         # bot
-        bot = tk.Frame(tab)
-        bot.pack(side=tk.BOTTOM, pady=10, ipady=5)
-        bot1 = tk.Frame(bot)
-        bot2 = tk.Frame(bot)
-        bot1.pack(ipadx=20)
-        bot2.pack(pady=5)
+        # bot = tk.Frame(tab)
+        # bot.pack(side=tk.BOTTOM, pady=10, ipady=5)
+        # bot1 = tk.Frame(bot)
+        # bot2 = tk.Frame(bot)
+        # bot1.pack(ipadx=20)
+        # bot2.pack(pady=5)
 
         # heading
         lbl_head = tk.Label(tab,
@@ -268,7 +281,7 @@ class PyPLGUI(tk.Frame):
         # btn_next.pack(in_=bot2)
 
     def tab_2(self):  # 2. Action
-        tab = self.main.nametowidget(self.main.tabs()[2])
+        tab = self.tabs.nametowidget(self.tabs.tabs()[2])
 
         def initial_select_rb(rb):
             rb.config(fg=white)
@@ -311,12 +324,12 @@ class PyPLGUI(tk.Frame):
         mid1.pack()
         mid2.pack(pady=20, ipadx=24)
         # bot
-        bot = tk.Frame(tab)
-        bot.pack(side=tk.BOTTOM, pady=10, ipady=5)
-        bot1 = tk.Frame(bot)
-        bot2 = tk.Frame(bot)
-        bot1.pack(ipadx=20)
-        bot2.pack(pady=5)
+        # bot = tk.Frame(tab)
+        # bot.pack(side=tk.BOTTOM, pady=10, ipady=5)
+        # bot1 = tk.Frame(bot)
+        # bot2 = tk.Frame(bot)
+        # bot1.pack(ipadx=20)
+        # bot2.pack(pady=5)
 
         # heading
         lbl_head = tk.Label(tab,
@@ -372,7 +385,7 @@ class PyPLGUI(tk.Frame):
         # btn_next.pack(in_=bot2)
 
     def tab_3(self):  # 3. Logic
-        tab = self.main.nametowidget(self.main.tabs()[3])
+        tab = self.tabs.nametowidget(self.tabs.tabs()[3])
 
         def initial_select_rb(arg):
             rb, cat = arg
@@ -416,12 +429,12 @@ class PyPLGUI(tk.Frame):
         for i in mids:
             mids[i].pack(ipadx=5, ipady=5)
         # bot
-        bot = tk.Frame(tab)
-        bot.pack(side=tk.BOTTOM, pady=10, ipady=5)
-        bot1 = tk.Frame(bot)
-        bot2 = tk.Frame(bot)
-        bot1.pack(ipadx=20)
-        bot2.pack(pady=5)
+        # bot = tk.Frame(tab)
+        # bot.pack(side=tk.BOTTOM, pady=10, ipady=5)
+        # bot1 = tk.Frame(bot)
+        # bot2 = tk.Frame(bot)
+        # bot1.pack(ipadx=20)
+        # bot2.pack(pady=5)
 
         # heading
         lbl_head = tk.Label(tab,
@@ -500,7 +513,7 @@ class PyPLGUI(tk.Frame):
         # todo add premsies and axioms
         # todo improve layout
 
-        tab = self.main.nametowidget(self.main.tabs()[4])
+        tab = self.tabs.nametowidget(self.tabs.tabs()[4])
 
         def select_entry():
             btn_set.config(state="normal", bg=darkgray, fg=white)
@@ -522,6 +535,7 @@ class PyPLGUI(tk.Frame):
             parser = __import__("parser")
             self.inst.conclusion = parser.Parser().parse(concl.get())
             self.inst.completed.append(3)
+            self.btn_run.config(state="normal", bg=darkgray, fg=white)
 
         def next_step(i):
             set()
@@ -538,12 +552,12 @@ class PyPLGUI(tk.Frame):
         for i in mids:
             mids[i].pack(ipadx=5, ipady=5)
         # bot
-        bot = tk.Frame(tab)
-        bot.pack(side=tk.BOTTOM, pady=10, ipady=5)
-        bot1 = tk.Frame(bot)
-        bot2 = tk.Frame(bot)
-        bot1.pack(ipadx=20)
-        bot2.pack(pady=5)
+        # bot = tk.Frame(tab)
+        # bot.pack(side=tk.BOTTOM, pady=10, ipady=5)
+        # bot1 = tk.Frame(bot)
+        # bot2 = tk.Frame(bot)
+        # bot1.pack(ipadx=20)
+        # bot2.pack(pady=5)
 
         # heading
         lbl_head = tk.Label(tab,
@@ -606,7 +620,7 @@ class PyPLGUI(tk.Frame):
         # btn_next.pack(in_=bot2)
 
     def tab_5(self):
-        tab = self.main.nametowidget(self.main.tabs()[5])
+        tab = self.tabs.nametowidget(self.tabs.tabs()[5])
 
         def run():
             self.run()
@@ -636,8 +650,8 @@ class PyPLGUI(tk.Frame):
         btn_run.pack(in_=mid)
 
     def switch_to_tab(self, i):
-        tab_id = self.main.tabs()[i]
-        self.main.select(tab_id)
+        tab_id = self.tabs.tabs()[i]
+        self.tabs.select(tab_id)
 
     def run(self):
         tableau = __import__("tableau")
