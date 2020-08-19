@@ -1845,7 +1845,7 @@ class Nec(Formula):
         self.phi = phi
 
     def __str__(self):
-        return "◻" + str(self.phi)
+        return "☐" + str(self.phi)
 
     def tex(self):
         return "\\Box " + " " + self.phi.tex()

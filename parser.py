@@ -20,9 +20,15 @@ class Parser:
 
     def parse(self, inp):
         self.stacks = [[]]
-        tokens = self.lex(inp)
+        tokens, mode = self.lex(inp)
         parsedstring = self.synt(tokens)
         return parsedstring
+
+    def parse_(self, inp):
+        self.stacks = [[]]
+        tokens, mode = self.lex(inp)
+        parsedstring = self.synt(tokens)
+        return parsedstring, mode
 
     def lex(self, inp):
         """
@@ -59,8 +65,8 @@ class Parser:
             "Exists": r"(∃|\\exists|\\exi|\\ex)",
             "Forall": r"(∀|\\forall|\\all|\\fa)",
             # modal operators
-            "Poss":   r"(◇|\\Diamond|\\poss)",
-            "Nec":    r"(◻|\\Box||\\nec)"
+            "Poss":   r"(◇|\*|\\Diamond|\\poss)",
+            "Nec":    r"(◻|#|\\Box||\\nec)"
         }
         regex2token = {v: k for k, v in token2regex.items()}
 
@@ -89,10 +95,11 @@ class Parser:
         mode = dict()
         mode["classical"] = True if "!Int" not in [t[0] for t in tokens] else False
         mode["validity"] = True if "Noninf" not in [t[0] for t in tokens] else False
-        mode["propositional"] = True if any([t[0] in ["prop"] for t in tokens]) else False
-        mode["modal"] = True if any([t[0] in ["poss", "nec"] for t in tokens]) else False
+        mode["propositional"] = True if any([t[0] in ["Prop"] for t in tokens]) else False
+        mode["modal"] = True if any([t[0] in ["Poss", "Nec"] for t in tokens]) else False
         mode["vardomains"] = False if "!VD" not in [t[0] for t in tokens] else False
-        return tokens
+
+        return tokens, mode
 
     def synt(self, tokens):
         """
@@ -191,7 +198,8 @@ class Parser:
     def update_stacks(self, final=False):
         # todo check well-formedness of expressions
         # operator precedence
-        prec = {"Nec": 1, "Poss": 1, "Neg": 1, "Conj": 2, "Disj": 3, "Imp": 4, "Biimp": 5, "Xor": 6}
+        prec = {"Nec": 1, "Poss": 1, "Exists": 1, "Forall": 1, "Neg": 1,
+                "Conj": 2, "Disj": 3, "Imp": 4, "Biimp": 5, "Xor": 6}
 
         stacks = self.stacks
         expr = __import__("expr")

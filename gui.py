@@ -37,6 +37,7 @@ darkgray = "#333333"  # todo distinguish clickable buttons from selected radiobu
 lightgray = "#666666"
 font = "-family {Arial} -size 12 -weight normal -slant roman -underline 0 -overstrike 0"
 
+# todo config file for default settings
 
 class PyPLGUI(tk.Frame):
 
@@ -46,7 +47,7 @@ class PyPLGUI(tk.Frame):
         # general settings
         self.root.title("pyPL")
         self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file='icon.png'))
-        self.root.geometry("655x450")
+        self.root.geometry("715x485")
 
         # style
         self.style = ttk.Style()
@@ -56,7 +57,8 @@ class PyPLGUI(tk.Frame):
                        background=[("selected", darkgray), ("active", lightgray)],
                        foreground=[("selected", white), ("active", white)]
                        # font=[("selected", ("Arial", "12", "bold"))]
-                       )
+                       )  # todo no rounded corners for tabs
+        self.style.theme_settings("default", {"TNotebook.Tab": {"configure": {"padding": [10, 10]}}})
         self.root.configure(bg=white)
         self.root.option_add("*Font", "Arial 12")
 
@@ -86,7 +88,7 @@ class PyPLGUI(tk.Frame):
         self.tabs.pack(expand=0, fill="both")
 
         frm_run = tk.Frame(self.root)
-        frm_run.pack()
+        frm_run.pack(pady=10)
 
         # run button
         btn_run = tk.Button(frm_run,
@@ -97,6 +99,8 @@ class PyPLGUI(tk.Frame):
         btn_run.bind("<Button>", lambda e: self.run())
         btn_run.pack(in_=frm_run, pady=10)
         self.btn_run = btn_run
+        # keyboard shortcut
+        self.root.bind("<Control-Return>", lambda e: self.run())
 
         # info
         lbl_info = tk.Label(frm_run,
@@ -186,7 +190,8 @@ class PyPLGUI(tk.Frame):
 
         def set():
             self.inst.output = output.get()
-            self.inst.num_models = int(num_models.get())
+            if num_models.get():
+                self.inst.num_models = int(num_models.get())
             self.inst.completed.append(1)
             btn_next.config(state="normal", bg=darkgray, fg=white)
 
@@ -251,7 +256,7 @@ class PyPLGUI(tk.Frame):
                                   justify=tk.RIGHT,
                                   width=2)
         ent_num_models.pack(in_=mid2)
-        num_models.trace("w", lambda args: select_entry())
+        num_models.trace("w", lambda *args: select_entry())
 
         # reset button
         btn_reset = tk.Button(tab,
@@ -394,7 +399,8 @@ class PyPLGUI(tk.Frame):
         def select_rb(arg):
             rb, cat = arg
             rb.config(fg=white)
-            for rb_ in radiobuttons[cat]:
+            for val_ in self.rbs_logic[cat]:
+                rb_ = self.rbs_logic[cat][val_]
                 if rb_ != rb:
                     rb_.config(fg=black)
             btn_set.config(state="normal", bg=darkgray, fg=white)
@@ -402,15 +408,17 @@ class PyPLGUI(tk.Frame):
             set()
 
         def reset():
-            for radiobutton in radiobuttons:
-                radiobutton.deselect()
+            for cat_ in self.rbs_logic:
+                for val_ in self.rbs_logic[cat_]:
+                    rb_ = self.rbs_logic[cat][val_]
+                    rb_.deselect()
             self.inst.completed.remove(1)
             self.inst.action = None
             btn_set.config(state="disabled", bg=white, fg=black)
             btn_next.config(state="disabled", bg=white, fg=black)
 
         def set():
-            self.inst.logic = {var: val for (var, val) in variables.items()}
+            self.inst.logic = {var: val.get() for (var, val) in variables.items()}
             self.inst.completed.append(1)
             btn_next.config(state="normal", bg=darkgray, fg=white)
 
@@ -460,7 +468,7 @@ class PyPLGUI(tk.Frame):
             "constvar": tk.StringVar(None, self.inst.logic["constvar"]),
             "frame": tk.StringVar(None, self.inst.logic["frame"])
         }
-        radiobuttons = {cat: [] for cat in categories}
+        self.rbs_logic = {cat: dict() for cat in categories}
         for i, cat in enumerate(categories):
             for j, (txt, val) in enumerate(labels[cat]):
                 rb = tk.Radiobutton(tab,
@@ -474,7 +482,7 @@ class PyPLGUI(tk.Frame):
                 if val == self.inst.logic[cat]:
                     initial_select_rb((rb, cat))
                 rb.pack(in_=mids[i], side=(tk.LEFT if j == 0 else tk.RIGHT))  # todo slightly off-center
-                radiobuttons[cat].append(rb)
+                self.rbs_logic[cat][val] = rb
 
         # summary
         # lbl_summ = tk.Label(tab)
@@ -527,8 +535,40 @@ class PyPLGUI(tk.Frame):
 
         def parse(raw_fml, field):
             parser = __import__("parser")
-            parsed_fml = parser.Parser().parse(raw_fml.get())
+            parsed_fml, mode = parser.Parser().parse_(raw_fml.get())
             field.configure(text=str(parsed_fml))
+            set_mode(mode)
+            set()
+
+        def set_mode(mode):
+            mode_map = {
+                "classical": ("classint", "class", "int"),
+                "propositional": ("proppred", "prop", "pred"),
+                "modal": ("modal", "modal", "nonmodal"),
+                "vardomains": ("constvar", "var", "const")
+            }
+            for md in mode_map:
+                cat, val1, val2 = mode_map[md]
+                if mode[md]:
+                    self.rbs_logic[cat][val1].invoke()
+                    # self.rbs_logic[cat][val1].select()
+                    # self.rbs_logic[cat][val2].deselect()
+                    # select_rb((self.rbs_logic[cat][val1], cat))
+                else:
+                    self.rbs_logic[cat][val2].invoke()
+                    # self.rbs_logic[cat][val2].select()
+                    # self.rbs_logic[cat][val1].deselect()
+                    # select_rb((self.rbs_logic[cat][val2], cat))
+
+        def select_rb(arg):
+            rb, cat = arg
+            rb.config(fg=white)
+            for val_ in self.rbs_logic[cat]:
+                rb_ = self.rbs_logic[cat][val_]
+                if rb_ != rb:
+                    rb_.config(fg=black)
+            btn_set.config(state="normal", bg=darkgray, fg=white)
+            btn_reset.config(state="normal")
             set()
 
         def reset():
@@ -597,6 +637,7 @@ class PyPLGUI(tk.Frame):
         btn_concl_set.pack(in_=mids[2], side=tk.LEFT, padx=5)
         # btn_concl_set.grid(row=2, column=2, padx=5, stick=tk.W)
         btn_concl_set.bind("<Button>", lambda e: parse(concl, fld_concl))
+        entry_concl.bind("<Return>", lambda e: parse(concl, fld_concl))
         entries.append(entry_concl)
         concl.trace("w", lambda *args: select_entry())
 

@@ -7,7 +7,7 @@ THIS PART IS STILL UNDER CONSTRUCTION.
 """
 
 from expr import *
-from parser import Parser as parser
+from parser import Parser
 
 from typing import List, Dict, Set, Tuple
 import os
@@ -30,7 +30,7 @@ num_mdls = 1  # number of models to generate  # todo doesn't always work
 mark_open = True  # in MG: in open branches, underline line numbers and literals in tree outputs
 hide_nonopen = False  # in MG: hide non-open branches in tree output
 latex_ = True  # generate output in LaTeX instead of plain text format  # todo wrong output for ML
-file_ = False  # generate output in LaTeX instead of plain text format  # todo wrong output for ML
+file_ = False  # save plaint text output in file  # todo wrong output for ML
 
 
 class Tableau(object):
@@ -1020,7 +1020,7 @@ class Tableau(object):
                                               node.fml.literal()]))
                 w = {"w" + str(w) for w in worlds}
                 r_ = list(dict.fromkeys([node.inst for node in branch
-                                         if len(node.inst) > 0 and isinstance(node.inst[0], int)]))
+                                         if node.inst and len(node.inst) > 0 and isinstance(node.inst[0], int)]))
                 r = {("w" + str(tpl[0]), "w" + str(tpl[1])) for tpl in r_}
 
             if self.mode["propositional"]:  # classical propositional logic
@@ -1111,9 +1111,10 @@ class Tableau(object):
             # r_ = {(sig[:-1], sig) for sig in sigs if len(sig) > 1}
             # r = {(states[sig1], states[sig2]) for (sig1, sig2) in r_}
             states = list(dict.fromkeys([node.world for node in branch]))
-            states_ = list(dict.fromkeys([node.world for node in branch if node.fml.liteal()]))
+            states_ = list(dict.fromkeys([node.world for node in branch if node.fml.literal()]))
             k = {"k" + str(w) for w in states}
-            r_ = list(dict.fromkeys([node.inst for node in branch if isinstance(node.inst[0], int)]))
+            r_ = list(dict.fromkeys([node.inst for node in branch if
+                                     node.inst and len(node.inst) > 0 and isinstance(node.inst[0], int)]))
             r = {("w" + str(tpl[0]), "w" + str(tpl[1])) for tpl in r_}
 
             if self.mode["propositional"]:  # intuitionstic propositional logic
@@ -1208,7 +1209,7 @@ class Node(object):
 
         line = str(self.line) + "."
         # underline lines of open branches in MG
-        if mark_open and not hide_nonopen and not self.tableau.mode["validity"] and \
+        if mark_open and not hide_nonopen and not self.tableau.file and not self.tableau.mode["validity"] and \
                 any([self in branch for branch in open_branches]):
             line = "\033[4m" + line + "\033[0m" + ((len(line) - 1) * " ")
         str_line = "{:<{len}}".format((line if self.line else ""), len=len_line)
@@ -1220,7 +1221,7 @@ class Node(object):
 
         fml = str(self.fml)
         # underline literals of open branches in MG
-        if mark_open and not self.tableau.mode["validity"] and \
+        if mark_open and not self.tableau.file and not self.tableau.mode["validity"] and \
                 any([self in branch for branch in open_branches]) and self.fml.literal():
             fml = (len(fml) * " ") + \
                   "\033[4m" + fml + "\033[0m" + \
@@ -1520,6 +1521,8 @@ class Node(object):
 if __name__ == "__main__":
     pass
 
+    parser = Parser()
+
     #############
     # basic examples
     ############
@@ -1725,3 +1728,4 @@ if __name__ == "__main__":
     # print(test)
     # res = parser.parse(test)
     # print(res)
+
