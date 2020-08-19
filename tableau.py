@@ -29,7 +29,7 @@ size_limit_factor = 5  # size factor after which to give up the further expansio
 num_mdls = 1  # number of models to generate  # todo doesn't always work
 mark_open = True  # in MG: in open branches, underline line numbers and literals in tree outputs
 hide_nonopen = False  # in MG: hide non-open branches in tree output
-latex = True  # generate output in LaTeX instead of plain text format  # todo wrong output for ML
+tex = True  # generate output in LaTeX instead of plain text format  # todo wrong output for ML
 
 
 class Tableau(object):
@@ -40,7 +40,8 @@ class Tableau(object):
     def __init__(self,
                  conclusion=None, premises=[], axioms=[],
                  validity=True, satisfiability=True,
-                 classical=True, propositional=False, modal=False, vardomains=False, frame="K"):
+                 classical=True, propositional=False, modal=False, vardomains=False, frame="K",
+                 latex=tex, num_models=num_mdls):
         # settings
         # todo nicer specification of settings?
         # todo check consistency of settings
@@ -50,6 +51,8 @@ class Tableau(object):
             "classical": classical, "propositional": propositional,
             "modal": modal, "vardomains": vardomains, "frame": frame
         }
+        self.latex = latex
+        self.num_models = num_models
 
         # append initial nodes
         line = 1
@@ -96,7 +99,7 @@ class Tableau(object):
         """
         res = ""
         # create preamble
-        if latex:
+        if self.latex:
             with open("preamble.tex") as f:
                 preamble = f.read()
                 # for s in list(dict.fromkeys(chain([chain(node.fml.nonlogs())
@@ -110,18 +113,18 @@ class Tableau(object):
         info += "You are using " + \
                 ("proof search" if self.mode["validity"] else
                  ("model" if self.mode["satisfiability"] else "countermodel") + " generation") + \
-                ("\\\\" if latex else "") + " \nfor " + \
+                ("\\\\" if self.latex else "") + " \nfor " + \
                 ("classical " if self.mode["classical"] else "intuitionistic ") + \
                 ("modal " if self.mode["modal"] else "") + \
                 ("propositional " if self.mode["propositional"] else "predicate ") + \
                 "logic" + \
                 (" with " + ("varying " if self.mode["vardomains"] else "constant ") + "domains"
                  if self.mode["modal"] and not self.mode["propositional"] else "") + \
-                (" in a " + ("$\\mathsf{" if latex else "") + self.mode["frame"] + ("}$" if latex else "") + " frame"
+                (" in a " + ("$\\mathsf{" if self.latex else "") + self.mode["frame"] + ("}$" if self.latex else "") + " frame"
                  if self.mode["modal"] else "") + \
-                "." + ("\\\\" if latex else "") + "\n\n"
+                "." + ("\\\\" if self.latex else "") + "\n\n"
 
-        if not latex:
+        if not self.latex:
             axs = ["  " + str(node.fml) for node in self.axioms]
             prems = ["  " + str(self.root.fml)] if not self.conclusion else [] + \
                     ["  " + str(node.fml) for node in self.premises]
@@ -157,7 +160,7 @@ class Tableau(object):
         self.expand()
 
         # print the tableau
-        if not latex:
+        if not self.latex:
             res += self.root.treestr()
         else:
             res += self.root.treetex() + "\n\n"
@@ -165,7 +168,7 @@ class Tableau(object):
         # print result
         result = ""
         if self.closed():
-            result += "The tableau is closed:" + ("\\\\" if latex else "") + "\n"
+            result += "The tableau is closed:" + ("\\\\" if self.latex else "") + "\n"
             if self.mode["validity"]:
                 result += "The " + ("inference" if self.premises else "formula") + " is valid."
             else:
@@ -174,7 +177,7 @@ class Tableau(object):
                 else:
                     result += "The " + ("inference" if self.premises else "formula") + " is irrefutable."
         elif self.open():
-            result += "The tableau is open:" + ("\\\\" if latex else "") + "\n"
+            result += "The tableau is open:" + ("\\\\" if self.latex else "") + "\n"
             if self.mode["validity"]:
                 result += "The " + ("inference" if self.premises else "formula") + " is invalid."
             else:
@@ -183,7 +186,7 @@ class Tableau(object):
                 else:
                     result += "The " + ("inference" if self.premises else "formula") + " is refutable."
         elif self.infinite():
-            result += "The tableau is potentially infinite:" + ("\\\\" if latex else "") + "\n"
+            result += "The tableau is potentially infinite:" + ("\\\\" if self.latex else "") + "\n"
             if self.mode["validity"]:
                 result += "The " + ("inference" if self.premises else "formula") + " may not be valid."
             else:
@@ -193,7 +196,7 @@ class Tableau(object):
                               " may or may not be satisfiable."
                 else:
                     result += "The " + ("inference" if self.premises else "formula") + " may or may not be refutable."
-        result += ("\\\\\n" if latex else "") + "\n"
+        result += ("\\\\\n" if self.latex else "") + "\n"
         res += result
 
         # generate and print models
@@ -201,27 +204,27 @@ class Tableau(object):
             mdls = ""
             mdls += ("Countermodels:" \
                 if self.mode["validity"] or not self.mode["validity"] and not self.mode["satisfiability"] \
-                else "Models:") + ("\\\\" if latex else "") + "\n\n"
-            if latex:
+                else "Models:") + ("\\\\" if self.latex else "") + "\n\n"
+            if self.latex:
                 mdls += "% alignment for structures\n"
                 mdls += "\\renewcommand{\\arraystretch}{1}  % decrease spacing between rows\n"
                 mdls += "\\setlength{\\tabcolsep}{1.5pt}  % decrease spacing between columns\n"
             for model in sorted(self.models, key=lambda m:
                                 {n.line: i for (i, n) in enumerate(self.root.nodes(preorder=True))}[int(m.s[1:])]):
                 mdls += "\n"
-                if not latex:
+                if not self.latex:
                     mdls += str(model) + "\n"
                 else:
                     mdls += model.tex() + "\\\\\\\\\n"
             res += mdls
 
-        if latex:
+        if self.latex:
             postamble = "\\end{document}\n"
             res += postamble
         sep = 80 * "-"
         res += sep
 
-        if not latex:
+        if not self.latex:
             # print the result in plain tex
             print(res)
         else:
