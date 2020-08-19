@@ -29,7 +29,8 @@ size_limit_factor = 5  # size factor after which to give up the further expansio
 num_mdls = 1  # number of models to generate  # todo doesn't always work
 mark_open = True  # in MG: in open branches, underline line numbers and literals in tree outputs
 hide_nonopen = False  # in MG: hide non-open branches in tree output
-tex = True  # generate output in LaTeX instead of plain text format  # todo wrong output for ML
+latex_ = True  # generate output in LaTeX instead of plain text format  # todo wrong output for ML
+file_ = False  # generate output in LaTeX instead of plain text format  # todo wrong output for ML
 
 
 class Tableau(object):
@@ -41,7 +42,7 @@ class Tableau(object):
                  conclusion=None, premises=[], axioms=[],
                  validity=True, satisfiability=True,
                  classical=True, propositional=False, modal=False, vardomains=False, frame="K",
-                 latex=tex, num_models=num_mdls):
+                 latex=latex_, file=file_, num_models=num_mdls):
         # settings
         # todo nicer specification of settings?
         # todo check consistency of settings
@@ -52,6 +53,7 @@ class Tableau(object):
             "modal": modal, "vardomains": vardomains, "frame": frame
         }
         self.latex = latex
+        self.file = file
         self.num_models = num_models
 
         # append initial nodes
@@ -225,8 +227,21 @@ class Tableau(object):
         res += sep
 
         if not self.latex:
-            # print the result in plain tex
-            print(res)
+            if not self.file:
+                # print the result in plain tex
+                print(res)
+            else:
+                # generate the txt file and open it
+                dirpath = os.path.join(os.path.dirname(__file__), "output")
+                if not os.path.exists(dirpath):
+                    os.mkdir(dirpath)
+                os.chdir(dirpath)
+                timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
+                txtpath = "output_" + timestamp + ".txt"
+                with open(txtpath, "w", encoding="utf-8") as txtfile:
+                    txtfile.write(res)  # todo broken encoding
+                # open file
+                check_call(["xdg-open", txtpath], stdout=DEVNULL, stderr=STDOUT)
         else:
             # generate the tex file and open the compiled pdf
             dirpath = os.path.join(os.path.dirname(__file__), "output")
@@ -240,6 +255,7 @@ class Tableau(object):
                 texfile.write(res)
             # generate LaTeX output
             check_call(["pdflatex", texpath], stdout=DEVNULL, stderr=STDOUT)
+            # open file
             check_call(["xdg-open", pdfpath], stdout=DEVNULL, stderr=STDOUT)
             # cleanup
             for file in os.listdir(dirpath) + os.listdir(os.path.dirname(__file__)):

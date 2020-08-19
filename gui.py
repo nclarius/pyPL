@@ -28,12 +28,13 @@ class PyPLInst:
 # style
 white = "#ffffff"
 black = "#000000"
-blue = "#2493ff"
 green = "#52c462"
 red = "#bf5050"
 yellow = "#ffb94f"
-lightgray = "#f5f5f5"
-lightblue = "#80ccff"
+# blue = "#2493ff"
+# lightblue = "#80ccff"
+gray = "#404040"
+lightgray = "#737373"
 font = "-family {Arial} -size 12 -weight normal -slant roman -underline 0 -overstrike 0"
 
 
@@ -52,8 +53,8 @@ class PyPLGUI(tk.Frame):
         for widget in [".", "TFrame", "TNotebook", "TNotebook.Tab", "TLabel"]:
             self.style.configure(widget, background=white, foreground=black, font=font)
         self.style.map("TNotebook.Tab",
-                       background=[("selected", blue), ("active", lightblue)],
-                       foreground=[("selected", white)]
+                       background=[("selected", gray), ("active", lightgray)],
+                       foreground=[("selected", white), ("active", white)]
                        # font=[("selected", ("Arial", "12", "bold"))]
                        )
         self.root.configure(bg=white)
@@ -96,7 +97,7 @@ class PyPLGUI(tk.Frame):
         # next tabs
         btn_next = tk.Button(tab,
                              text=">> 1. Pick your settings",
-                             bg=blue, fg=white,
+                             bg=gray, fg=white,
                              width=20, pady=10)
         btn_next.bind("<Button>", lambda e: self.switch_to_tab(1))
         btn_next.pack(pady=5)
@@ -125,8 +126,19 @@ class PyPLGUI(tk.Frame):
     def tab_1(self):  # 1. Settings
         tab = self.main.nametowidget(self.main.tabs()[1])
 
-        def select(*args):
-            btn_set.config(state="normal", bg=blue, fg=white)
+        def initial_select_rb(rb):
+            rb.config(fg=white)
+
+        def select_rb(rb):
+            rb.config(fg=white)
+            for rb_ in radiobuttons:
+                if rb_ != rb:
+                    rb_.config(fg=black)
+            btn_set.config(state="normal", bg=gray, fg=white)
+            btn_reset.config(state="normal")
+
+        def select_entry():
+            btn_set.config(state="normal", bg=gray, fg=white)
             btn_reset.config(state="normal")
 
         def reset():
@@ -141,7 +153,11 @@ class PyPLGUI(tk.Frame):
             self.inst.output = output.get()
             self.inst.num_models = int(num_models.get())
             self.inst.completed.append(1)
-            btn_next.config(state="normal", bg=blue, fg=white)
+            btn_next.config(state="normal", bg=gray, fg=white)
+
+        def next_step(i):
+            set()
+            self.switch_to_tab(i)
 
         # frames
         # top
@@ -181,12 +197,13 @@ class PyPLGUI(tk.Frame):
                                 text=txt,
                                 variable=output,
                                 value=val,
-                                command=select,
-                                bg=lightgray,
-                                selectcolor=lightblue,
+                                selectcolor=lightgray,  # todo foreground color white when selected
                                 indicatoron=0,
                                 width=25, pady=7.5)
             rb.pack(in_=mid1, side=(tk.LEFT if i == 0 else tk.RIGHT), pady=5)
+            rb.config(command=lambda arg=rb: select_rb(arg))
+            if val == self.inst.output:
+                initial_select_rb(rb)
             radiobuttons.append(rb)
 
         # number of models to generate
@@ -199,7 +216,7 @@ class PyPLGUI(tk.Frame):
                                   justify=tk.RIGHT,
                                   width=2)
         ent_num_models.pack(in_=mid2)
-        num_models.trace("w", select)
+        num_models.trace("w", lambda args: select_entry())
 
         # reset button
         btn_reset = tk.Button(tab,
@@ -222,17 +239,24 @@ class PyPLGUI(tk.Frame):
         btn_next = tk.Button(tab,
                              text=">> 2. Choose your task",
                              state="normal" if self.inst.action else "disabled",
-                             bg=blue if self.inst.action else white,
+                             bg=gray if self.inst.action else white,
                              fg=white if self.inst.action else black,
                              width=22, pady=10)
-        btn_next.bind("<Button>", lambda e: self.switch_to_tab(2))
+        btn_next.bind("<Button>", lambda e: next_step(2))
         btn_next.pack(in_=bot2)
 
     def tab_2(self):  # 2. Action
         tab = self.main.nametowidget(self.main.tabs()[2])
 
-        def select(*args):
-            btn_set.config(state="normal", bg=blue, fg=white)
+        def initial_select_rb(rb):
+            rb.config(fg=white)
+
+        def select_rb(rb):
+            rb.config(fg=white)
+            for rb_ in radiobuttons:
+                if rb_ != rb:
+                    rb_.config(fg=black)
+            btn_set.config(state="normal", bg=gray, fg=white)
             btn_reset.config(state="normal")
 
         def reset():
@@ -246,7 +270,11 @@ class PyPLGUI(tk.Frame):
         def set():
             self.inst.action = action.get()
             self.inst.completed.append(1)
-            btn_next.config(state="normal", bg=blue, fg=white)
+            btn_next.config(state="normal", bg=gray, fg=white)
+
+        def next_step(i):
+            set()
+            self.switch_to_tab(i)
 
         # frames
         # top
@@ -284,12 +312,13 @@ class PyPLGUI(tk.Frame):
                                 text=txt,
                                 variable=action,
                                 value=val,
-                                command=select,
                                 state="normal" if val != "mc" else "disabled",
-                                bg=lightgray,
-                                selectcolor=lightblue,
+                                selectcolor=lightgray,
                                 indicatoron=0,
                                 width=25, pady=7.5)
+            rb.config(command=lambda arg=rb: select_rb(arg))
+            if val == self.inst.action:
+                initial_select_rb(rb)
             rb.pack(in_=top, pady=5)
             radiobuttons.append(rb)
 
@@ -313,28 +342,25 @@ class PyPLGUI(tk.Frame):
         btn_next = tk.Button(tab,
                              text=">> 3. Select your logic",
                              state="normal" if self.inst.action else "disabled",
-                             bg=blue if self.inst.action else white,
+                             bg=gray if self.inst.action else white,
                              fg=white if self.inst.action else black,
                              width=22, pady=10)
-        btn_next.bind("<Button>", lambda e: self.switch_to_tab(3))
+        btn_next.bind("<Button>", lambda e: next_step(3))
         btn_next.pack(in_=bot2)
 
     def tab_3(self):  # 3. Logic
         tab = self.main.nametowidget(self.main.tabs()[3])
 
-        def select():
-            btn_set.config(state="normal", bg=blue, fg=white)
+        def initial_select_rb(rb):
+            rb.config(fg=white)
+
+        def select_rb(rb):
+            rb.config(fg=white)
+            for rb_ in radiobuttons:
+                if rb_ != rb:
+                    rb_.config(fg=black)
+            btn_set.config(state="normal", bg=gray, fg=white)
             btn_reset.config(state="normal")
-            # lbl_summ.config(text=(
-            #         ("classical" if variables["classint"].get() == "class" else "intuitionistic") + " " +
-            #         ("non-modal" if variables["modal"].get() == "nonmodal" else "modal") + " " +
-            #         ("predicate" if variables["proppred"].get() == "pred" else "propositional") + " " +
-            #         "logic" +
-            #         ((" with " + ("varying" if variables["constvar"].get() == "var" else "constant") +
-            #           " domains" if variables["proppred"].get() == "pred" else "") +
-            #          " in a " + variables["frame"].get() + " frame"
-            #          if variables["modal"].get() == "modal" else "")
-            # ))
 
         def reset():
             for radiobutton in radiobuttons:
@@ -347,7 +373,11 @@ class PyPLGUI(tk.Frame):
         def set():
             self.inst.logic = {var: val for (var, val) in variables.items()}
             self.inst.completed.append(1)
-            btn_next.config(state="normal", bg=blue, fg=white)
+            btn_next.config(state="normal", bg=gray, fg=white)
+
+        def next_step(i):
+            set()
+            self.switch_to_tab(i)
 
         # frames
         # top
@@ -398,11 +428,12 @@ class PyPLGUI(tk.Frame):
                                     text=txt,
                                     variable=variables[cat],
                                     value=val,
-                                    command=select,
-                                    bg=lightgray,
-                                    selectcolor=lightblue,
+                                    selectcolor=lightgray,
                                     indicatoron=0,
                                     width=20, pady=7.5)
+                rb.config(command=lambda arg=rb: select_rb(arg))
+                if val == self.inst.logic:
+                    initial_select_rb(rb)
                 rb.pack(in_=mids[i], side=(tk.LEFT if j == 0 else tk.RIGHT))
                 radiobuttons.append(rb)
 
@@ -422,7 +453,7 @@ class PyPLGUI(tk.Frame):
         # set button
         btn_set = tk.Button(tab,
                             text="Set",
-                            bg=blue if self.inst.logic else white,
+                            bg=gray if self.inst.logic else white,
                             fg=white if self.inst.logic else black,
                             state="normal" if self.inst.logic else "disabled",
                             width=7, pady=10)
@@ -433,17 +464,17 @@ class PyPLGUI(tk.Frame):
         btn_next = tk.Button(tab,
                              text=">> 4. Specify your input",
                              state="normal" if self.inst.action else "disabled",
-                             bg=blue if self.inst.action else white,
+                             bg=gray if self.inst.action else white,
                              fg=white if self.inst.action else black,
                              width=22, pady=10)
-        btn_next.bind("<Button>", lambda e: self.switch_to_tab(4))
+        btn_next.bind("<Button>", lambda e: next_step(4))
         btn_next.pack(in_=bot2)
 
     def tab_4(self):  # 4. Input
         tab = self.main.nametowidget(self.main.tabs()[4])
 
-        def select(*args):
-            btn_set.config(state="normal", bg=blue, fg=white)
+        def select_entry():
+            btn_set.config(state="normal", bg=gray, fg=white)
             btn_reset.config(state="normal")
 
         def parse(raw_fml, field):
@@ -461,6 +492,10 @@ class PyPLGUI(tk.Frame):
             parser = __import__("parser")
             self.inst.conclusion = parser.Parser().parse(concl.get())
             self.inst.completed.append(3)
+
+        def next_step(i):
+            set()
+            self.switch_to_tab(i)
 
         # frames
         # top
@@ -504,12 +539,12 @@ class PyPLGUI(tk.Frame):
                                width=50)
         entry_concl.pack(in_=mids[2], side=tk.LEFT)
         # entry_concl.grid(row=2, column=1, sticky=tk.W)
-        btn_concl_set = tk.Label(tab, text="Parse", bg=blue, fg=white)
+        btn_concl_set = tk.Label(tab, text="Parse", bg=gray, fg=white)
         btn_concl_set.pack(in_=mids[2], side=tk.LEFT, padx=5)
         # btn_concl_set.grid(row=2, column=2, padx=5, stick=tk.W)
         btn_concl_set.bind("<Button>", lambda e: parse(concl, fld_concl))
         entries.append(entry_concl)
-        concl.trace("w", select)
+        concl.trace("w", lambda args: select_entry())
 
         # reset button
         btn_reset = tk.Button(tab,
@@ -521,7 +556,7 @@ class PyPLGUI(tk.Frame):
         # set button
         btn_set = tk.Button(tab,
                             text="Set",
-                            bg=blue if self.inst.conclusion else white,
+                            bg=gray if self.inst.conclusion else white,
                             fg=white if self.inst.conclusion else black,
                             state="normal" if self.inst.conclusion else "disabled",
                             width=7, pady=10)
@@ -531,10 +566,10 @@ class PyPLGUI(tk.Frame):
         # next tab button
         btn_next = tk.Button(tab,
                              text=">> 5. Run",
-                             bg=blue if self.inst.action else white,
+                             bg=gray if self.inst.action else white,
                              fg=white if self.inst.action else black,
                              width=22, pady=10)
-        btn_next.bind("<Button>", lambda e: self.switch_to_tab(5))
+        btn_next.bind("<Button>", lambda e: next_step(5))
         btn_next.pack(in_=bot2)
 
     def tab_5(self):
@@ -561,7 +596,7 @@ class PyPLGUI(tk.Frame):
         # run button
         btn_run = tk.Button(tab,
                             text="Run!",
-                            bg=blue, fg=white,
+                            bg=gray, fg=white,
                             width=22, pady=10)
         btn_run.bind("<Button>", lambda e: run())
         btn_run.pack(in_=mid)
@@ -587,11 +622,11 @@ class PyPLGUI(tk.Frame):
         latex = True if self.inst.output == "tex" else False
         num_models = self.inst.num_models
 
-        tableau.Tableau(concl, premises=self.inst.premises, axioms=self.inst.axioms,
+        tableau.Tableau(concl, premises=premises, axioms=axioms,
                         validity=validity, satisfiability=satisfiability,
                         classical=classical, propositional=propositional,
                         modal=modal, vardomains=vardomains, frame=frame,
-                        latex=latex, num_models=num_models)
+                        latex=latex, file=True, num_models=num_models)
 
 if __name__ == "__main__":
     PyPLGUI()
