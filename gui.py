@@ -473,7 +473,7 @@ class PyPLGUI(tk.Frame):
                 rb.config(command=lambda arg=(rb, cat): select_rb(arg))
                 if val == self.inst.logic[cat]:
                     initial_select_rb((rb, cat))
-                rb.pack(in_=mids[i], side=(tk.LEFT if j == 0 else tk.RIGHT))
+                rb.pack(in_=mids[i], side=(tk.LEFT if j == 0 else tk.RIGHT))  # todo slightly off-center
                 radiobuttons[cat].append(rb)
 
         # summary
@@ -516,8 +516,14 @@ class PyPLGUI(tk.Frame):
         tab = self.tabs.nametowidget(self.tabs.tabs()[4])
 
         def select_entry():
-            btn_set.config(state="normal", bg=darkgray, fg=white)
-            btn_reset.config(state="normal")
+            if concl.get():
+                btn_concl_set.config(state="normal")
+                btn_set.config(state="normal", bg=darkgray, fg=white)
+                btn_reset.config(state="normal")
+            else:
+                btn_concl_set.config(state="disabled")
+                btn_set.config(state="disabled", bg=white, fg=black)
+                btn_reset.config(state="disabled")
 
         def parse(raw_fml, field):
             parser = __import__("parser")
@@ -575,7 +581,7 @@ class PyPLGUI(tk.Frame):
         lbl_concl = tk.Label(tab, text="Conclusion:")
         lbl_concl.pack(in_=mids[0], side=tk.LEFT)
         # lbl_concl.grid(row=1, column=0, sticky=tk.W, padx=5)
-        fld_concl = tk.Label(tab, text="—")
+        fld_concl = tk.Label(tab, text="")
         fld_concl.pack(in_=mids[1], side=tk.LEFT)
         # fld_concl.grid(row=1, column=1, sticky=tk.W)
         entry_concl = tk.Entry(tab,
@@ -586,12 +592,13 @@ class PyPLGUI(tk.Frame):
         btn_concl_set = tk.Button(tab,
                                   text="Parse",
                                   # bg=darkgray, fg=white,
-                                  activebackground=lightgray, activeforeground=white)
+                                  activebackground=lightgray, activeforeground=white,
+                                  state="disabled")
         btn_concl_set.pack(in_=mids[2], side=tk.LEFT, padx=5)
         # btn_concl_set.grid(row=2, column=2, padx=5, stick=tk.W)
         btn_concl_set.bind("<Button>", lambda e: parse(concl, fld_concl))
         entries.append(entry_concl)
-        # concl.trace("w", lambda args: select_entry())
+        concl.trace("w", lambda *args: select_entry())
 
         # reset button
         btn_reset = tk.Button(tab,
