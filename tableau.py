@@ -223,8 +223,9 @@ class Tableau(object):
         if self.latex:
             postamble = "\\end{document}\n"
             res += postamble
-        sep = 80 * "-"
-        res += sep
+        if not self.latex and not self.file:
+            sep = 80 * "-"
+            res += sep
 
         if not self.latex:
             if not self.file:
@@ -1027,8 +1028,11 @@ class Tableau(object):
                 if not self.mode["modal"]:  # classical non-modal propositional logic
                     # atoms = all unnegated propositional variables
                     atoms = [node.fml.p for node in branch if node.fml.atom()]
+                    # todo add literals for other prop. log.s
+                    natoms = [node.fml.phi.p for node in branch if node.fml.literal() and not node.fml.atom()]
                     # valuation = make all positive propositional variables true and all others false
-                    v = {p: (True if p in atoms else False) for p in self.root.fml.propvars()}
+                    v = {p: (True if p in atoms else False) for p in
+                         list(dict.fromkeys(atoms + natoms + list(self.root.fml.propvars())))}
                     model = PropStructure(name, v)
 
                 else:  # classical modal propositional logic
@@ -1266,8 +1270,8 @@ class Node(object):
             "⊕": "\\oplus",
             "∃": "\\exists",
             "∀": "\\forall",
-            "◇": "\\Box",
-            "◻": "\\Diamond"
+            "◇": "\\Diamond",
+            "◻": "\\Box"
         }
         str_line = str(self.line) + "." if self.line else ""
         # underline lines of open branches in MG
@@ -1296,7 +1300,7 @@ class Node(object):
                     str_inst = "{,}\\ " + "\\lbrack " + str(self.inst[0]) + "/" + str(self.inst[1]) + " \\rbrack" \
                                + ("*" if self.inst[2] else "")
                 elif isinstance(self.inst[0], int):
-                    str_inst = "{,}\\ " + "\\tpl{" + str(self.inst[0]) + "\\ \\!" + str(self.inst[1]) + "}" \
+                    str_inst = "{,}\\ " + "\\tpl{" + str(self.inst[0]) + "{,}" + str(self.inst[1]) + "}" \
                                + ("*" if self.inst[2] else "")
             else:
                 str_inst = ""

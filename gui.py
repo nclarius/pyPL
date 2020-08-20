@@ -37,6 +37,7 @@ darkgray = "#333333"  # todo distinguish clickable buttons from selected radiobu
 lightgray = "#666666"
 font = "-family {Arial} -size 12 -weight normal -slant roman -underline 0 -overstrike 0"
 
+
 # todo config file for default settings
 
 class PyPLGUI(tk.Frame):
@@ -310,6 +311,7 @@ class PyPLGUI(tk.Frame):
 
         def set():
             self.inst.action = action.get()
+            self.update_summary()
             self.inst.completed.append(1)
             btn_next.config(state="normal", bg=darkgray, fg=white)
 
@@ -518,26 +520,101 @@ class PyPLGUI(tk.Frame):
         # btn_next.pack(in_=bot2)
 
     def tab_4(self):  # 4. Input
-        # todo add premsies and axioms
-        # todo improve layout
+        # todo make scrollable
 
         tab = self.tabs.nametowidget(self.tabs.tabs()[4])
 
-        def select_entry():
-            if concl.get():
-                btn_concl_set.config(state="normal")
+        def add_formula():
+            # variable
+            raw = tk.StringVar()
+            raws.append(raw)
+            fmls.append(raw)
+            i = fmls.index(raw)
+            # frames
+            if i > 0:
+                new_mids = {j: tk.Frame(mid) for j in range(len(mids), len(mids) + 3)}
+                mids.update(new_mids)
+                for j in new_mids:
+                    mids[j].pack(ipadx=5, ipady=5)
+            # caption
+            cap = tk.Label(tab,
+                           text=("Conclusion:" if i == 0 else "Premise " + str(i) + ":"))
+            row = len(mids) - 3 if i > 0 else 1
+            cap.pack(in_=mids[row], side=tk.LEFT)
+            caps.append(cap)
+            # remove button
+            if i > 0:
+                rem = tk.Button(tab,
+                                text="-",
+                                # bg=darkgray, fg=white,
+                                activebackground=lightgray, activeforeground=white)
+                rem.pack(in_=mids[row], side=tk.LEFT, padx=5)
+                rem.bind("<Button>", lambda e: remove_formula(i))
+            else:
+                rem = None
+            rems.append(rem)
+            # formula in plain text
+            lbl = tk.Label(tab, text="...")
+            lbl.pack(in_=mids[row + 1], side=tk.LEFT)
+            lbls.append(lbl)
+            # entry field
+            ent = tk.Entry(tab,
+                           textvariable=raw,
+                           width=50)
+            ent.pack(in_=mids[row + 2], side=tk.LEFT)
+            raw.trace("w", lambda *args: select_entry(i))
+            ents.append(ent)
+            # parse button
+            btn = tk.Button(tab,
+                            text="Parse",
+                            # bg=darkgray, fg=white,
+                            activebackground=lightgray, activeforeground=white,
+                            state="disabled")
+            btn.pack(in_=mids[row + 2], side=tk.LEFT, padx=5)
+            btn.bind("<Button>", lambda e: parse(i))
+            btns.append(btn)
+
+        def remove_formula(i):
+            # todo doesn't always work; indexes not updated correctly?
+            del raws[i]
+            del fmls[i]
+            for j in range(6 + 3 * (i - 1), 6 + 3 * (i - 1) + 3):
+                mids[j].pack_forget()
+            for j in range(3):
+                del mids[6 + 3 * (i - 1) + j]
+            del caps[i]
+            del lbls[i]
+            del rems[i]
+            del ents[i]
+            del btns[i]
+            if len(fmls) > 1:
+                for j in range(1, len(fmls)):
+                    pos = j if j <= i else j - 1
+                    caps[j].config(text="Premise " + str(pos) + ":")
+                    rems[j].bind("<Button>", lambda e: remove_formula(pos))
+                    raws[j].trace("w", lambda *args: select_entry(pos))
+                    btns[j].bind("<Button>", lambda e: parse(pos))
+
+        def select_entry(i):
+            raw = raws[i]
+            if raw.get():
+                btns[i].config(state="normal")
                 btn_set.config(state="normal", bg=darkgray, fg=white)
                 btn_reset.config(state="normal")
             else:
-                btn_concl_set.config(state="disabled")
+                btns[i].config(state="disabled")
                 btn_set.config(state="disabled", bg=white, fg=black)
                 btn_reset.config(state="disabled")
 
-        def parse(raw_fml, field):
+        def parse(i):
+            raw = raws[i]
+            field = lbls[i]
             parser = __import__("parser")
-            parsed_fml, mode = parser.Parser().parse_(raw_fml.get())
-            field.configure(text=str(parsed_fml))
-            set_mode(mode)
+            fml, mode = parser.Parser().parse_(raw.get())
+            fmls[i] = fml
+            field.configure(text=str(fml))
+            if i == 0:
+                set_mode(mode)
             set()
 
         def set_mode(mode):
@@ -560,26 +637,16 @@ class PyPLGUI(tk.Frame):
                     # self.rbs_logic[cat][val1].deselect()
                     # select_rb((self.rbs_logic[cat][val2], cat))
 
-        def select_rb(arg):
-            rb, cat = arg
-            rb.config(fg=white)
-            for val_ in self.rbs_logic[cat]:
-                rb_ = self.rbs_logic[cat][val_]
-                if rb_ != rb:
-                    rb_.config(fg=black)
-            btn_set.config(state="normal", bg=darkgray, fg=white)
-            btn_reset.config(state="normal")
-            set()
-
         def reset():
-            fld_concl.configure(text="—")
-            entry_concl.delete(first=0)
+            # lbl_concl.configure(text="—")
+            # ent_concl.delete(first=0)
             self.inst.completed.remove(3)
             btn_set.config(state="disabled", bg=white, fg=black)
 
         def set():
-            parser = __import__("parser")
-            self.inst.conclusion = parser.Parser().parse(concl.get())
+            self.inst.conclusion = fmls[0] if fmls else None
+            self.inst.premises = fmls[1:] if len(fmls) > 1 else []
+            self.update_summary()
             self.inst.completed.append(3)
             self.btn_run.config(state="normal", bg=darkgray, fg=white)
 
@@ -594,7 +661,7 @@ class PyPLGUI(tk.Frame):
         # mid
         mid = tk.Frame(tab)
         mid.pack()
-        mids = {i: tk.Frame(mid) for i in range(3)}
+        mids = {i: tk.Frame(mid) for i in range(6)}
         for i in mids:
             mids[i].pack(ipadx=5, ipady=5)
         # bot
@@ -611,35 +678,33 @@ class PyPLGUI(tk.Frame):
                             font=("Arial", "12", "bold"),
                             anchor=tk.NW, justify=tk.LEFT) \
             .pack(in_=top)
-            # .grid(row=0, columnspan=4, sticky="NESW")
+        # .grid(row=0, columnspan=4, sticky="NESW")
+
+        # summary
+        self.lbl_sum = tk.Label()
+        self.lbl_sum.pack(in_=mids[0])
 
         # input fields
-        entries = []
+        fmls = []
+        raws = []
+        caps = []
+        lbls = []
+        rems = []
+        ents = []
+        btns = []
 
         # conclusion
-        concl = tk.StringVar()
-        lbl_concl = tk.Label(tab, text="Conclusion:")
-        lbl_concl.pack(in_=mids[0], side=tk.LEFT)
-        # lbl_concl.grid(row=1, column=0, sticky=tk.W, padx=5)
-        fld_concl = tk.Label(tab, text="")
-        fld_concl.pack(in_=mids[1], side=tk.LEFT)
-        # fld_concl.grid(row=1, column=1, sticky=tk.W)
-        entry_concl = tk.Entry(tab,
-                               textvariable=concl,
-                               width=50)
-        entry_concl.pack(in_=mids[2], side=tk.LEFT)
-        # entry_concl.grid(row=2, column=1, sticky=tk.W)
-        btn_concl_set = tk.Button(tab,
-                                  text="Parse",
-                                  # bg=darkgray, fg=white,
-                                  activebackground=lightgray, activeforeground=white,
-                                  state="disabled")
-        btn_concl_set.pack(in_=mids[2], side=tk.LEFT, padx=5)
-        # btn_concl_set.grid(row=2, column=2, padx=5, stick=tk.W)
-        btn_concl_set.bind("<Button>", lambda e: parse(concl, fld_concl))
-        entry_concl.bind("<Return>", lambda e: parse(concl, fld_concl))
-        entries.append(entry_concl)
-        concl.trace("w", lambda *args: select_entry())
+        add_formula()
+        self.update_summary()
+
+        # premise heading and add premise button
+        lbl_prem = tk.Label(tab, text="Premises:")
+        lbl_prem.pack(in_=mids[4], side=tk.LEFT)
+        btn_add_prem = tk.Button(tab,
+                                 text="+",
+                                 activebackground=lightgray, activeforeground=white)
+        btn_add_prem.pack(in_=mids[4], side=tk.RIGHT)
+        btn_add_prem.bind("<Button>", lambda e: add_formula())
 
         # reset button
         btn_reset = tk.Button(tab,
@@ -701,6 +766,17 @@ class PyPLGUI(tk.Frame):
         tab_id = self.tabs.tabs()[i]
         self.tabs.select(tab_id)
 
+    def update_summary(self):
+        txt = "You are searching for a " + ("proof that " if self.inst.action == "tp" else "model in which ")
+        txt += (str(self.inst.conclusion) if self.inst.conclusion else "...") + " is "
+        txt += ("true in all structures" if self.inst.action == "tp" else (
+               "true" if self.inst.action == "mg" else "false"))
+        if self.inst.premises:
+            txt += (" in which " if self.inst.action == "tp" else " and ") + \
+                   ", ".join([str(fml) for fml in self.inst.premises]) + " is true"
+        txt += "."
+        self.lbl_sum.config(text=txt)
+
     def run(self):
         tableau = __import__("tableau")
         concl = self.inst.conclusion
@@ -723,6 +799,7 @@ class PyPLGUI(tk.Frame):
                         classical=classical, propositional=propositional,
                         modal=modal, vardomains=vardomains, frame=frame,
                         latex=latex, file=True, num_models=num_models)
+
 
 if __name__ == "__main__":
     PyPLGUI()

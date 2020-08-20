@@ -50,9 +50,9 @@ class PropStructure(Structure):
                " = \\tpl{\\mathcal{V}}$ with \\\\\n" +\
                "\\begin{tabular}{LL}\n" +\
                "\\mathcal{V} : &" + \
-               ", ".join([str(p) + " \\mapsto " + str(tv.replace("True", "1").replace("False", "0"))
+               ", ".join([str(p) + " \\mapsto " + str(tv).replace("True", "1").replace("False", "0")
                           for p, tv in sorted(self.v.items())]) + "\\\\\n"+\
-               "\\end{tabuar}" \
+               "\\end{tabular}" \
                .replace("\\set{}", "\\emptyset{}")
 
 
