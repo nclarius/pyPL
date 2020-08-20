@@ -1521,7 +1521,6 @@ class Node(object):
 
 ####################
 
-# todo integration in main module gives class not defined errors -- circular imports?
 if __name__ == "__main__":
     pass
 
@@ -1650,7 +1649,7 @@ if __name__ == "__main__":
     # tab2 = Tableau(fml1, modal=True)
     # tab3 = Tableau(fml2, modal=True, validity=False, satisfiability=False, vardomains=True)
     # tab4 = Tableau(fml4, modal=True, validity=False, satisfiability=False, vardomains=True)
-    # # todo wrong result
+    # # todo finds no counter models
 
     #################
     # quantifier commutativity
