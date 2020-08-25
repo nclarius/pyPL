@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Define the structures of classical (standard and modal) (prepositional and first-order) logic.
+Define the structures (aka models) of standard logic.
 """
 
 

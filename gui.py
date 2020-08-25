@@ -327,6 +327,7 @@ class PyPLGUI(tk.Frame):
                             state="disabled")
             btn.pack(in_=mids[row + 2], side=tk.LEFT, padx=5)
             btn.bind("<Button>", lambda e: parse(i))
+            ent.bind("<Return>", lambda e: parse(i))
             btns.append(btn)
             # swap button
             if len(fmls) > 1:
@@ -847,14 +848,14 @@ class PyPLGUI(tk.Frame):
         self.tabs.select(tab_id)
 
     def update_summary(self):
-        txt = "You are searching for a " + ("proof that " if self.inst.action == "tp" else "structure in which ")
+        txt = "(You are searching for a " + ("proof that " if self.inst.action == "tp" else "structure in which ")
         txt += (str(self.inst.conclusion) if self.inst.conclusion else "...") + " is "
         txt += ("true in all structures" if self.inst.action == "tp" else (
                "true" if self.inst.action == "mg" else "false"))
         if self.inst.premises:
             txt += (" in which " if self.inst.action == "tp" else " and ") + \
                    ", ".join([str(fml) for fml in self.inst.premises]) + " is true"
-        txt += ".\n"
+        txt += ".)"
         self.lbl_sum.config(text=txt)
 
     def run(self):

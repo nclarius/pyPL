@@ -165,7 +165,7 @@ class Tableau(object):
         if not self.latex:
             res += self.root.treestr()
         else:
-            res += self.root.treetex() + "\ \\\\\n\n"
+            res += self.root.treetex() + "\ \\\\\n\ \\\\\n"
 
         # print result
         result = ""
