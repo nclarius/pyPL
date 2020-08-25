@@ -24,11 +24,11 @@ from itertools import chain
 
 # global settings
 debug = False
-# todo when size limit factor is not high enough and no model is found, result will be "closed" rather than "pot. inf."
-size_limit_factor = 5  # size factor after which to give up the further expansion
-num_mdls = 1  # number of models to generate  # todo doesn't always work
-mark_open = True  # in MG: in open branches, underline line numbers and literals in tree outputs
-hide_nonopen = False  # in MG: hide non-open branches in tree output
+size_limit_factor_ = 5  # size factor after which to give up the further expansion
+# todo when size limit factor is not high enough and no model is found, result should be "pot. inf." rather than closed
+num_models_ = 1  # number of models to generate  # todo doesn't always work
+underline_open_ = True  # in MG: in open branches, underline line numbers and literals in tree outputs
+hide_nonopen_ = False  # in MG: hide non-open branches in tree output
 latex_ = True  # generate output in LaTeX instead of plain text format  # todo wrong output for ML
 file_ = False  # save plaint text output in file  # todo wrong output for ML
 
@@ -42,7 +42,9 @@ class Tableau(object):
                  conclusion=None, premises=[], axioms=[],
                  validity=True, satisfiability=True,
                  classical=True, propositional=False, modal=False, vardomains=False, frame="K",
-                 latex=latex_, file=file_, num_models=num_mdls):
+                 latex=latex_, file=file_,
+                 underline_open=underline_open_, hide_nonopen=hide_nonopen_,
+                 num_models=num_models_, size_limit_factor=size_limit_factor_):
         # settings
         # todo nicer specification of settings?
         # todo check consistency of settings
@@ -52,9 +54,8 @@ class Tableau(object):
             "classical": classical, "propositional": propositional,
             "modal": modal, "vardomains": vardomains, "frame": frame
         }
-        self.latex = latex
-        self.file = file
-        self.num_models = num_models
+        self.latex, self.file, self.underline_open, self.hide_nonopen, self.num_models, self.size_limit_factor = \
+            latex, file, underline_open, hide_nonopen, num_models, size_limit_factor
 
         # append initial nodes
         line = 1
@@ -277,19 +278,21 @@ class Tableau(object):
         if debug:
             print(self.root.treestr())
         while applicable := self.applicable():
-            # todo stop search when only contradictions found after all new instantiations?
+            # todo stop search when only contradictions found after all new instantiations
             # check whether to continue expansion
             len_assumptions = sum([len(str(node.fml)) for node in self.root.nodes()
                                    if node.rule == "A" and (self.mode["validity"] or not node.world)])
             num_nodes = len(self.root.nodes(True))
+
             # the tree gets too big; stop execution
-            if num_nodes > 2 * size_limit_factor * len_assumptions:
+            if num_nodes > 2 * self.size_limit_factor * len_assumptions * self.num_models:
                 # mark abandoned branches
                 for leaf in self.root.leaves(True):
                     leaf.add_child((self, None, None, Infinite(), None, None, None))
                 return
-            if not self.mode["validity"] and len(self.models) >= num_mdls:
-                # enough models have been found; stop the execution
+
+            # enough models have been found; stop the execution
+            if not self.mode["validity"] and len(self.models) >= self.num_models:
                 # mark abandoned branches
                 for leaf in self.root.leaves(True):
                     leaf.add_child((self, None, None, Infinite(), None, None, None))
@@ -415,7 +418,7 @@ class Tableau(object):
                             # yet to be instantiated;
                             # except there are no constants at all, then it may be applied with an arbitrary parameter
                             if any([not any([node.inst[3] == c for node in branch if applied(node)])
-                                    for c in occurring + Tableau.parameters[:num_mdls - 1]]) \
+                                    for c in occurring + Tableau.parameters[:self.num_models - 1]]) \
                                     or not occurring:
                                 applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
 
@@ -515,7 +518,7 @@ class Tableau(object):
                             # except when there are no signatures in the branch at all and the rule is an assumption
                             if any([not any([node.inst[3] == w
                                              for node in branch if applied(node)])
-                                    for w in extensions + fresh[:num_mdls - 1]]) or \
+                                    for w in extensions + fresh[:self.num_models - 1]]) or \
                                     rule_name == "A" and not occurring:
                                 applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
 
@@ -771,8 +774,8 @@ class Tableau(object):
         # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         subscript = "_" + str(source.world) if indexed else ""
         usable = [c + (subscript if "_" not in c else "")
-                  for c in (occurring + Tableau.parameters[:num_mdls - 1]
-                            if occurring + Tableau.parameters[:num_mdls - 1] else ["a"])]
+                  for c in (occurring + Tableau.parameters[:self.num_models - 1]
+                            if occurring + Tableau.parameters[:self.num_models - 1] else ["a"])]
         # choose first symbol from occurring that has not already been used with this particular rule
         const_symbol = usable[(min([i for i in range(len(usable)) if usable[i] not in used]))]
         const = Const(const_symbol)
@@ -916,7 +919,7 @@ class Tableau(object):
         #         sig = sig_
         #         break
         # inst = (source.sig, sig)
-        usable = extensions + [i for i in range(1, 1000)][:num_mdls - 1]
+        usable = extensions + [i for i in range(1, 1000)][:self.num_models - 1]
         world = min([i for i in usable if i not in used])
         new = True if world not in extensions else False
         inst = (universal, new, source.world, world)
@@ -1253,9 +1256,6 @@ class Node(object):
         String representation of this line.
         """
         open_branches = [leaf.branch for leaf in self.root().leaves() if isinstance(leaf.fml, Open)]
-        # hide non-open branches
-        if hide_nonopen and not self.tableau.mode["validity"] and not any([self in branch for branch in open_branches]):
-            return ""
 
         # compute lengths of columns  # todo inefficient to recalculate for every node
         len_line = max([len(str(node.line)) for node in self.root().nodes() if node.line]) + 2
@@ -1273,7 +1273,8 @@ class Node(object):
 
         line = str(self.line) + "."
         # underline lines of open branches in MG
-        if mark_open and not hide_nonopen and not self.tableau.file and not self.tableau.mode["validity"] and \
+        if self.tableau.underline_open and not self.tableau.hide_nonopen and \
+                not self.tableau.file and not self.tableau.mode["validity"] and \
                 any([self in branch for branch in open_branches]):
             line = "\033[4m" + line + "\033[0m" + ((len(line) - 1) * " ")
         str_line = "{:<{len}}".format((line if self.line else ""), len=len_line)
@@ -1285,7 +1286,8 @@ class Node(object):
 
         fml = str(self.fml)
         # underline literals of open branches in MG
-        if mark_open and not self.tableau.file and not self.tableau.mode["validity"] and \
+        if self.tableau.underline_open and not self.tableau.file and \
+                not self.tableau.mode["validity"] and \
                 any([self in branch for branch in open_branches]) and self.fml.literal():
             fml = (len(fml) * " ") + \
                   "\033[4m" + fml + "\033[0m" + \
@@ -1305,10 +1307,10 @@ class Node(object):
             if self.inst and len(self.inst) > 2:
                 if isinstance(self.inst[-1], str):
                     str_inst = ", " + "[" + str(self.inst[2]) + "/" + str(self.inst[3]) + "]" \
-                               + ("*" if self.inst[2] else "")
+                               + ("*" if self.inst[1] else "")
                 elif isinstance(self.inst[-1], int):
                     str_inst = ", " + "⟨" + str(self.inst[2]) + "," + str(self.inst[3]) + "⟩" \
-                               + ("*" if self.inst[2] else "")
+                               + ("*" if self.inst[1] else "")
             else:
                 str_inst = ""
             str_cite = "(" + str_rule + str_comma + str_source + str_inst + ")"
@@ -1333,15 +1335,16 @@ class Node(object):
             "◇": "\\Diamond",
             "◻": "\\Box"
         }
+
         str_line = str(self.line) + "." if self.line else ""
         # underline lines of open branches in MG
-        if mark_open and not hide_nonopen and not self.tableau.mode["validity"] and \
+        if self.tableau.underline_open and not self.tableau.hide_nonopen and not self.tableau.mode["validity"] and \
                 any([self in branch for branch in open_branches]):
             str_line = "\\underline{" + str_line + "}"
         str_world = "$w" + "_" + "{" + str(self.world) + "}" + "$" if self.world else ""
         str_fml = "$" + self.fml.tex().replace(",", "{,}\\ \\!") + "$"
         # underline literals of open branches in MG
-        if mark_open and not self.tableau.mode["validity"] and \
+        if self.tableau.underline_open and not self.tableau.mode["validity"] and \
                 any([self in branch for branch in open_branches]) and self.fml.literal():
             str_fml = "\\underline{" + str_fml + "}"
         str_cite = ""
@@ -1358,10 +1361,10 @@ class Node(object):
             if self.inst and len(self.inst) > 2:
                 if isinstance(self.inst[-1], str):
                     str_inst = "{,}\\ " + "\\lbrack " + str(self.inst[2]) + "/" + str(self.inst[3]) + " \\rbrack" \
-                               + ("*" if self.inst[2] else "")
+                               + ("*" if self.inst[1] else "")
                 elif isinstance(self.inst[-1], int):
                     str_inst = "{,}\\ " + "\\tpl{" + str(self.inst[2]) + "{,}" + str(self.inst[3]) + "}" \
-                               + ("*" if self.inst[2] else "")
+                               + ("*" if self.inst[1] else "")
             else:
                 str_inst = ""
             str_cite = "($" + str_rule + str_comma + str_source + str_inst + "$)"
@@ -1381,6 +1384,12 @@ class Node(object):
         """
         if isinstance(self.fml, Empty):  # self is empty pseudo-node
             return ""
+        open_branches = [leaf.branch for leaf in self.root().leaves() if isinstance(leaf.fml, Open)]
+        # hide non-open branches
+        if self.tableau.hide_nonopen and not self.tableau.mode["validity"] and \
+                not any([self in branch for branch in open_branches]):
+            return ""
+
         res = indent
         res += "|--" if binary else ""
         res += str(self) + "\n"
@@ -1404,6 +1413,11 @@ class Node(object):
         return res
 
     def treetex(self, indent="", first=True, root=True) -> str:
+        open_branches = [leaf.branch for leaf in self.root().leaves() if isinstance(leaf.fml, Open)]
+        # hide non-open branches
+        if self.tableau.hide_nonopen and not self.tableau.mode["validity"] and \
+                not any([self in branch for branch in open_branches]):
+            return ""
         colspec = "{llcl}" if not self.tableau.mode["classical"] or self.tableau.mode["modal"] else "{lcl}"
         res = ""
         if root:
@@ -1421,7 +1435,9 @@ class Node(object):
                 res += "\n"
                 res += indent + "\\end{tabular}\n"
                 for child in self.children:
-                    if child.fml and child.fml.tex() and not isinstance(child.fml, Empty):
+                    if child.fml and child.fml.tex() and not isinstance(child.fml, Empty) and \
+                            not (self.tableau.hide_nonopen and not self.tableau.mode["validity"] and not
+                            any([child in branch for branch in open_branches])):
                         indent += "    "
                         res += indent + "[\n"
                         res += child.treetex(indent, first=True, root=False)
@@ -1554,10 +1570,10 @@ class Node(object):
                                if node.rule == "A" and (self.root().tableau.mode["validity"] or not node.world)])
         height = len(self.branch)
         width = len(self.branch[-2].children)
-        if height > size_limit_factor * len_assumptions:
+        if height > self.tableau.size_limit_factor * len_assumptions:
             self.add_child((self.tableau, None, None, Infinite(), None, None, None))
             return True
-        if width > size_limit_factor * len_assumptions:
+        if width > self.tableau.size_limit_factor * len_assumptions:
             self.branch[-2].add_child((self.tableau, None, None, Infinite(), None, None, None))
             return True
         # num_consts_vertical = len(dict.fromkeys(chain(*[node.fml.nonlogs()[0]
@@ -1719,7 +1735,7 @@ if __name__ == "__main__":
     fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
     # tab = Tableau(fml2, premises=[fml1])
     # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
-    tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False)
+    tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False, latex=True, num_models=2, hide_nonopen=True)
     #
     # fml1 = Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
     #                              Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),

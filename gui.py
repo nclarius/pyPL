@@ -21,8 +21,12 @@ class PyPLInst:
         self.axioms = []
         self.premises = []
         self.logic = {"proppred": "pred", "classint": "class", "modal": "nonmodal", "constvar": "var", "frame": "K"}
+
         self.output = "tex"
         self.num_models = 1
+        self.size_limit_factor = 1
+        self.underline_open = True
+        self.hide_nonopen = False
 
 
 # style
@@ -327,8 +331,8 @@ class PyPLGUI(tk.Frame):
                             state="disabled")
             btn.pack(in_=mids[row + 2], side=tk.LEFT, padx=5)
             btn.bind("<Button>", lambda e: parse(i))
-            ent.bind("<Return>", lambda e: parse(i))
             btns.append(btn)
+            ent.bind("<Return>", lambda e: parse(i))
             # swap button
             if len(fmls) > 1:
                 btn_swap.config(state="normal")
@@ -665,6 +669,7 @@ class PyPLGUI(tk.Frame):
         # btn_next.pack(in_=bot2)
 
     def tab_4(self):  # 4. Settings
+        # todo implement size limit factor, underline open and hide nonopen
         tab = self.tabs.nametowidget(self.tabs.tabs()[4])
 
         def initial_select_rb(rb):
@@ -672,9 +677,22 @@ class PyPLGUI(tk.Frame):
 
         def select_rb(rb):
             rb.config(fg=white)
-            for rb_ in radiobuttons:
+            for rb_ in rbs:
                 if rb_ != rb:
                     rb_.config(fg=black)
+            btn_set.config(state="normal", bg=darkgray, fg=white)
+            btn_reset.config(state="normal")
+            set()
+
+        def initial_select_cb(cb):
+            cb.config(fg=white)
+
+        def select_cb(cb):
+            cb.config(fg=white)
+            if not underline.get():
+                cbs[0].config(fg=black)
+            if not hide.get():
+                cbs[1].config(fg=black)
             btn_set.config(state="normal", bg=darkgray, fg=white)
             btn_reset.config(state="normal")
             set()
@@ -690,8 +708,14 @@ class PyPLGUI(tk.Frame):
         def increase_num_models():
             num_models.set(str(int(num_models.get())+1))
 
+        def decrease_size_limit():
+            size_limit.set(str(int(size_limit.get())-1))
+
+        def increase_size_limit():
+            size_limit.set(str(int(size_limit.get())+1))
+
         def reset():
-            for radiobutton in radiobuttons:
+            for radiobutton in rbs:
                 radiobutton.deselect()
             self.inst.completed.remove(1)
             self.inst.output = None
@@ -700,8 +724,12 @@ class PyPLGUI(tk.Frame):
 
         def set():
             self.inst.output = output.get()
+            self.inst.underline_open = underline.get()
+            self.inst.hide_nonopen = hide.get()
             if num_models.get():
                 self.inst.num_models = int(num_models.get())
+            if size_limit.get():
+                self.inst.size_limit_factor = int(size_limit.get())
             self.inst.completed.append(1)
             btn_next.config(state="normal", bg=darkgray, fg=white)
 
@@ -718,14 +746,16 @@ class PyPLGUI(tk.Frame):
         mid.pack()
         mid1 = tk.Frame(mid)
         mid2 = tk.Frame(mid)
-        sep12 = tk.Frame(mid)
         mid3 = tk.Frame(mid)
+        sep12 = tk.Frame(mid)
         mid4 = tk.Frame(mid)
+        mid5 = tk.Frame(mid)
         mid1.pack()
         mid2.pack()
-        sep12.pack(pady=15)
         mid3.pack()
+        sep12.pack(pady=15)
         mid4.pack()
+        mid5.pack(pady=15)
         # bot
         # bot = tk.Frame(tab)
         # bot.pack(side=tk.BOTTOM, pady=10, ipady=5)
@@ -746,9 +776,10 @@ class PyPLGUI(tk.Frame):
         lbl_output = tk.Label(tab,
                               text="Output format:")
         lbl_output.pack(in_=mid1)
-        outputs = [("LaTeX PDF", "tex"), ("plain text", "txt")]
-        radiobuttons = []
-        for i, (txt, val) in enumerate(outputs):
+
+        outputs1 = [("LaTeX PDF", "tex"), ("plain text", "txt")]
+        rbs = []
+        for i, (txt, val) in enumerate(outputs1):
             rb = tk.Radiobutton(tab,
                                 text=txt,
                                 variable=output,
@@ -760,13 +791,38 @@ class PyPLGUI(tk.Frame):
             rb.config(command=lambda arg=rb: select_rb(arg))
             if val == self.inst.output:
                 initial_select_rb(rb)
-            radiobuttons.append(rb)
+            rbs.append(rb)
+
+        cbs = []
+        underline = tk.BooleanVar(None, self.inst.underline_open)
+        cb = tk.Checkbutton(tab,
+                            text="mark open literals",
+                            variable=underline,
+                            onvalue=True, offvalue=False,
+                            selectcolor=darkgray, activebackground=lightgray, activeforeground=white,
+                            indicatoron=0,
+                            width=25, pady=7.5)
+        cb.pack(in_=mid3, side=tk.LEFT, pady=5)
+        cb.config(command=lambda arg=cb: select_cb(arg))
+        initial_select_cb(cb)
+        cbs.append(cb)
+        hide = tk.BooleanVar(None, self.inst.hide_nonopen)
+        cb = tk.Checkbutton(tab,
+                            text="hide non-open branches",
+                            variable=hide,
+                            onvalue=True, offvalue=False,
+                            selectcolor=darkgray, activebackground=lightgray, activeforeground=white,
+                            indicatoron=0,
+                            width=25, pady=7.5)
+        cb.config(command=lambda arg=cb: select_cb(arg))
+        cb.pack(in_=mid3, side=tk.RIGHT, pady=5)
+        cbs.append(cb)
 
         # number of models to generate
         num_models = tk.StringVar(None, self.inst.num_models)
         lbl_num_models = tk.Label(tab,
-                                  text="Number of models to compute in model generation mode:")
-        lbl_num_models.pack(in_=mid3)
+                                  text="Number of models to compute in model generation:")
+        lbl_num_models.pack(in_=mid4, side=tk.LEFT, padx=15)
         btn_num_models_dn = tk.Button(tab,
                                       text="-",
                                       activebackground=lightgray, activeforeground=white,
@@ -785,6 +841,30 @@ class PyPLGUI(tk.Frame):
                                       width=1)
         btn_num_models_up.bind("<Button>", lambda e: increase_num_models())
         btn_num_models_up.pack(in_=mid4, side=tk.LEFT, padx=5)
+
+        # size limit factor
+        size_limit = tk.StringVar(None, self.inst.size_limit_factor)
+        lbl_size_limit = tk.Label(tab,
+                                  text="Size limit factor for tableau trees:")
+        lbl_size_limit.pack(in_=mid5, side=tk.LEFT, padx=15)
+        btn_size_limit_dn = tk.Button(tab,
+                                      text="-",
+                                      activebackground=lightgray, activeforeground=white,
+                                      width=1)
+        btn_size_limit_dn.bind("<Button>", lambda e: decrease_size_limit())
+        btn_size_limit_dn.pack(in_=mid5, side=tk.LEFT, padx=5)
+        ent_size_limit = tk.Entry(tab,
+                                  textvariable=size_limit,
+                                  justify=tk.RIGHT,
+                                  width=2)
+        ent_size_limit.pack(in_=mid5, side=tk.LEFT, padx=5)
+        size_limit.trace("w", lambda *args: select_entry())
+        btn_size_limit_up = tk.Button(tab,
+                                      text="+",
+                                      activebackground=lightgray, activeforeground=white,
+                                      width=1)
+        btn_size_limit_up.bind("<Button>", lambda e: increase_size_limit())
+        btn_size_limit_up.pack(in_=mid5, side=tk.LEFT, padx=5)
 
         # reset button
         btn_reset = tk.Button(tab,
@@ -872,14 +952,18 @@ class PyPLGUI(tk.Frame):
         modal = True if self.inst.logic["modal"] == "modal" else False
         vardomains = True if self.inst.logic["constvar"] == "var" else False
         frame = self.inst.logic["frame"]
+
         latex = True if self.inst.output == "tex" else False
         num_models = self.inst.num_models
+        underline_open = True if self.inst.underline_open else False
+        hide_nonopen = True if self.inst.hide_nonopen else False
 
         tableau.Tableau(concl, premises=premises, axioms=axioms,
                         validity=validity, satisfiability=satisfiability,
                         classical=classical, propositional=propositional,
                         modal=modal, vardomains=vardomains, frame=frame,
-                        latex=latex, file=True, num_models=num_models)
+                        latex=latex, file=True, num_models=num_models,
+                        underline_open=underline_open, hide_nonopen=hide_nonopen)
 
 
 if __name__ == "__main__":
