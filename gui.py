@@ -43,7 +43,7 @@ font = "-family {Arial} -size 12 -weight normal -slant roman -underline 0 -overs
 
 
 # todo config file for default settings
-# todo visually distinguish clickable buttons from selected radiobuttons?
+# todo visually distinguish clickable buttons, radiobuttons and check buttons?
 
 class PyPLGUI(tk.Frame):
 

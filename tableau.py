@@ -123,14 +123,16 @@ class Tableau(object):
                 "logic" + \
                 (" with " + ("varying " if self.mode["vardomains"] else "constant ") + "domains"
                  if self.mode["modal"] and not self.mode["propositional"] else "") + \
-                (" in a " + ("$\\mathsf{" if self.latex else "") + self.mode["frame"] + ("}$" if self.latex else "") + " frame"
+                (" in a " + ("$\\mathsf{" if self.latex else "") + self.mode["frame"] + (
+                    "}$" if self.latex else "") + " frame"
                  if self.mode["modal"] else "") + \
                 "." + ("\\\\" if self.latex else "") + "\n\n"
 
         if not self.latex:
             axs = ["  " + str(node.fml) for node in self.axioms]
             prems = ["  " + str(self.root.fml)] if not self.conclusion else [] + \
-                    ["  " + str(node.fml) for node in self.premises]
+                                                                            ["  " + str(node.fml) for node in
+                                                                             self.premises]
             prems += [("  " if len(prems) > 0 else "") + str(self.conclusion)] \
                 if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else []
             concl = str(self.conclusion) if \
@@ -141,11 +143,14 @@ class Tableau(object):
                     ", \n".join(axs) + (" + \n" if axs and prems else "\n" if axs else "") + \
                     ", \n".join(prems) + ("\n" if len(lhs) > 1 else " " if not concl else "") + \
                     inf + \
-                    (" " if concl else "") + concl + ":" +"\n"
+                    (" " if concl else "") + concl + ":" + "\n"
         else:
             axs = ["\\phantom{\\vDash\ }" + node.fml.tex() for node in self.axioms]
             prems = ["\\phantom{\\vDash\ }" + self.root.fml.tex()] if not self.conclusion else [] + \
-                    ["\\phantom{\\vDash\ }" + node.fml.tex() for node in self.premises]
+                                                                                               [
+                                                                                                   "\\phantom{\\vDash\ }" + node.fml.tex()
+                                                                                                   for node in
+                                                                                                   self.premises]
             prems += [("\\phantom{\\vDash\ }" if len(prems) > 0 else "") + self.conclusion.tex()] \
                 if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else []
             concl = self.conclusion.tex() if \
@@ -206,14 +211,14 @@ class Tableau(object):
         if self.models:
             mdls = ""
             mdls += ("Countermodels:" \
-                if self.mode["validity"] or not self.mode["validity"] and not self.mode["satisfiability"] \
-                else "Models:") + ("\\\\" if self.latex else "") + "\n\n"
+                         if self.mode["validity"] or not self.mode["validity"] and not self.mode["satisfiability"] \
+                         else "Models:") + ("\\\\" if self.latex else "") + "\n\n"
             if self.latex:
                 mdls += "% alignment for structures\n"
                 mdls += "\\renewcommand{\\arraystretch}{1}  % decrease spacing between rows\n"
                 mdls += "\\setlength{\\tabcolsep}{1.5pt}  % decrease spacing between columns\n"
             for model in sorted(self.models, key=lambda m:
-                                {n.line: i for (i, n) in enumerate(self.root.nodes(preorder=True))}[int(m.s[1:])]):
+            {n.line: i for (i, n) in enumerate(self.root.nodes(preorder=True))}[int(m.s[1:])]):
                 mdls += "\n"
                 if not self.latex:
                     mdls += str(model) + "\n"
@@ -387,24 +392,35 @@ class Tableau(object):
                             used = list(dict.fromkeys([str(node.inst[3]) for node in branch if applied(node)]))
                         else:
                             used = list(dict.fromkeys([str(node.inst[3]) for node in instantiations[target]]))
-                        # collect the constants occurring in the branch
-                        occurring = list(dict.fromkeys(chain(*[[str(c)
-                                                                for c in node.fml.nonlogs()[0]]
-                                                               for node in branch
-                                                        if not isinstance(node.fml, Pseudo) and node.fml.nonlogs()])))
+                        # collect the constants occurring in the branch;
+                        # for modal logic with var. domains, restricted to the constants associated with this world
+                        occurring_ass = list(chain(*[[str(c)
+                                                      for c in node.fml.nonlogs()[0]]
+                                                     for node in branch
+                                                     if node.rule == "A"]))
+                        occurring_insts = [node.inst[3] for node in branch if node.inst and
+                                           len(node.inst) > 2 and isinstance(node.inst[3], str)]
+                        occurring_global = list(dict.fromkeys(occurring_ass + occurring_insts))
+                        if not self.mode["validity"] and self.mode["modal"] and not self.mode["propositional"]:
+                            occurring_local = [(c if "_" not in c else c[:c.index("_")]) for c in occurring_global
+                                               if c.endswith("_" + str(source.world))]
+                            occurring_global = [(c if "_" not in c else c[:c.index("_")]) for c in occurring_global]
+                        else:
+                            occurring_local = occurring_global
+                        # print(occurring)
                         # check if the rule requires a new constant to be instantiated
                         # marking is incorrect
                         if rule_type in ["γ", "θ"]:
-                            new = len(used) >= len(occurring)
+                            new = len(used) >= len(occurring_local)
                         elif rule_type in ["δ"]:
                             new = True
                         elif rule_type in ["η"]:
-                            new = len(occurring) == 0
+                            new = len(occurring_local) == 0
                         # check if indexed constants are required (for modal PL with var. domains and IL)
                         indexed = self.mode["modal"] and not self.mode["propositional"] and self.mode["vardomains"] or \
                                   not self.mode["classical"]
                         # compose the arguments
-                        args = universal, new, indexed, used, occurring
+                        args = universal, new, indexed, used, occurring_local, occurring_global
                         # count instantiations
                         insts = len(used)
 
@@ -417,9 +433,9 @@ class Tableau(object):
                             # and only if there are constants occurring in the branch or needed for additional models
                             # yet to be instantiated;
                             # except there are no constants at all, then it may be applied with an arbitrary parameter
-                            if any([not any([node.inst[3] == c for node in branch if applied(node)])
-                                    for c in occurring + Tableau.parameters[:self.num_models - 1]]) \
-                                    or not occurring:
+                            if any([not any([node.inst[3] == c + "_" + str(source.world)
+                                             for node in branch if applied(node)]) for c in occurring_local]) or \
+                                    not occurring_local:
                                 applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
 
                 # modal rules
@@ -467,9 +483,9 @@ class Tableau(object):
                             used = list(dict.fromkeys([node.inst[3] for node in instantiations[target]
                                                        if node.inst and len(node.inst) > 2]))
                         # collect the worlds occurring in the branch
-                        occurring = list(dict.fromkeys([node.world for node in branch if node.world]))
+                        occurring_global = list(dict.fromkeys([node.world for node in branch if node.world]))
                         # additional worlds to use
-                        fresh = [i for i in range(1, 1000) if i not in occurring]
+                        fresh = [i for i in range(1, 100) if i not in occurring_global]
                         # collect the signatures occurring in the branch that are accessible from the source world
                         extensions = list(dict.fromkeys([node.inst[3] for node in branch
                                                          if node.inst and len(node.inst) > 2 and
@@ -480,7 +496,7 @@ class Tableau(object):
                         # if not self.mode["validity"] and not extensions:
                         #     extensions = occurring[:1]
                         # collect the signatures occurring in the branch that the source world is accessible from
-                        reductions = list(dict.fromkeys([node.inst[0] for node in branch
+                        reductions = list(dict.fromkeys([node.inst[2] for node in branch
                                                          if node.inst and len(node.inst) > 2
                                                          and node.inst[3] == source.world]))
                         # check if the rule requires a new world or accessibility to be instantiated
@@ -493,7 +509,7 @@ class Tableau(object):
                         elif rule_type in ["λ"]:
                             new = len(extensions) == 0
                         # compose the arguments
-                        args = universal, new, used, occurring, extensions, reductions
+                        args = universal, new, used, occurring_global, extensions, reductions
                         # count instantiations
                         insts = len(used)
 
@@ -519,7 +535,7 @@ class Tableau(object):
                             if any([not any([node.inst[3] == w
                                              for node in branch if applied(node)])
                                     for w in extensions + fresh[:self.num_models - 1]]) or \
-                                    rule_name == "A" and not occurring:
+                                    rule_name == "A" and not occurring_global:
                                 applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
 
                 # intuitionistic rules
@@ -587,7 +603,7 @@ class Tableau(object):
             operator[i[3]],  # 5. what type of operator the rule belongs to (connective > quant., modal > int.)
             rule_order[i[3]],  # 6. remaining rule type rank (prefer earlier in order)
             pos_by_type[i[3]][i[1]],  # 7. position of the source node in the tree
-                                  # (prefer leftmost lowest for sat. quant. and mod. rules, leftmost highest for others)
+            # (prefer leftmost lowest for sat. quant. and mod. rules, leftmost highest for others)
             pos[i[0]],  # 8. position of the target node in the tree
         )
         # sort_v2 = lambda i: (  # for satisfiability tableaus:
@@ -702,26 +718,24 @@ class Tableau(object):
         Branch unary with an arbitrary constant.
         """
         phi, var = fmls
-        universal, new, indexed, used, occurring = args
+        universal, new, indexed, used, occurring_local, occurring_global = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
 
         # find a constant to substitute
-        # for modal predicate logic with varying domains:
-        # limit the occurring constants to those belong to the domain of the current world
-        if self.mode["modal"] and self.mode["vardomains"] or not self.mode["classical"]:
-            occurring = [c for c in occurring if "_" + str(world) in c]
         # for modal predicate logic with varying domains: add signature subscript to constant
         # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         subscript = "_" + str(source.world) if indexed else ""
-        usable = [c + (subscript if "_" not in c else "") for c in occurring + Tableau.parameters]
-        usable += ["a"] if not usable else []
+        usable = [c + (subscript if "_" not in c else "") for c in occurring_local]
+        usable += [c + subscript for c in Tableau.parameters if c not in
+                   [c if "_" not in c else c[:c.index("_")] for c in occurring_global]]
+        usable = list(dict.fromkeys(usable))
         # choose first symbol from constants and parameters that has not already been used with this particular rule
         const_symbol = usable[(min([i for i in range(len(usable)) if usable[i] not in used]))]
         # todo prevent arg is empty sequence error when running out of symbols to use
         const = Const(const_symbol)
-        new = True if const_symbol not in occurring else False
+        new = True if const_symbol not in occurring_local else False
 
         # compute formula
         inst = (universal, new, str(var), str(const))
@@ -736,7 +750,7 @@ class Tableau(object):
         Branch unary with a new constant.
         """
         phi, var = fmls
-        universal, new, indexed, used, occurring = args
+        universal, new, indexed, used, occurring_local, occurring_global = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
@@ -745,9 +759,11 @@ class Tableau(object):
         # for modal predicate logic with varying domains: add signature subscript to constant
         # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         subscript = "_" + str(source.world) if indexed else ""
-        usable = [c + (subscript if "_" not in c else "") for c in Tableau.parameters]
+        usable = [c + (subscript if "_" not in c else "") for c in Tableau.parameters if c not in
+                  [c if "_" not in c else c[:c.index("_")] for c in occurring_global]]
+        usable = list(dict.fromkeys(usable))
         # choose first symbol from list of parameters that does not yet occur in this branch
-        const_symbol = usable[(min([i for i in range(len(usable)) if usable[i] not in occurring]))]
+        const_symbol = usable[(min([i for i in range(len(usable)) if usable[i] not in occurring_local]))]
         const = Const(const_symbol)
         new = True
 
@@ -764,7 +780,7 @@ class Tableau(object):
         Branch unary with an existing constant.
         """
         phi, var = fmls
-        universal, new, indexed, used, occurring = args
+        universal, new, indexed, used, occurring_local, occurring_global = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
@@ -773,16 +789,18 @@ class Tableau(object):
         # for modal predicate logic with varying domains: add signature subscript to constant
         # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         subscript = "_" + str(source.world) if indexed else ""
-        usable = [c + (subscript if "_" not in c else "")
-                  for c in (occurring + Tableau.parameters[:self.num_models - 1]
-                            if occurring + Tableau.parameters[:self.num_models - 1] else ["a"])]
+        used = [c if "_" not in c else c[:c.index("_")] for c in used]
+        usable = occurring_local
+        usable = list(dict.fromkeys(usable))
+        if not usable:
+            usable += [c for c in Tableau.parameters if c not in occurring_global]
         # choose first symbol from occurring that has not already been used with this particular rule
         const_symbol = usable[(min([i for i in range(len(usable)) if usable[i] not in used]))]
         const = Const(const_symbol)
-        new = True if const_symbol not in occurring else False
+        new = True if const_symbol not in occurring_local else False
 
         # compute formula
-        inst = (universal, new, str(var), str(const))
+        inst = (universal, new, str(var), const_symbol + subscript)
         fml = phi.subst(var, const)
 
         # add node
@@ -794,7 +812,7 @@ class Tableau(object):
         Branch n-ay with an arbitrary constant.
         """
         phi, var = fmls
-        universal, new, indexed, used, occurring = args
+        universal, new, indexed, used, occurring_local, occurring_global = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
@@ -803,14 +821,16 @@ class Tableau(object):
         # for modal predicate logic varying domains: add signature subscript to constant
         # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
         subscript = "_" + str(source.world) if indexed else ""
-        usable = [c + (subscript if "_" not in c else "") for c in occurring + Tableau.parameters]
+        used = [c if "_" not in c else c[:c.index("_")] for c in used]
+        usable = occurring_local + occurring_global + [c for c in Tableau.parameters if c not in occurring_global]
+        usable = list(dict.fromkeys(usable))
         # choose first symbol from occurring and parameters that has not already been used with this particular rule
         const_symbol = usable[(min([i for i in range(len(usable)) if usable[i] not in used]))]
         const = Const(const_symbol)
-        new = True if const_symbol not in occurring else False
+        new = True if const_symbol not in occurring_local else False
 
         # compute formula
-        inst = (universal, new, str(var), str(const))
+        inst = (universal, new, str(var), const_symbol + subscript)
         fml = phi.subst(var, const)
 
         # add pseudo-node to indicate branching
@@ -1069,6 +1089,12 @@ class Tableau(object):
         # name = "S" + str(len(self.models)+1)
         name = "S" + str(leaf.line)
 
+        def remove_sig(term):
+            if "_" not in term:
+                return term
+            else:
+                return term[:term.index("_")]
+
         if self.mode["classical"]:  # classical logic
 
             if self.mode["modal"]:  # classical modal logic
@@ -1083,8 +1109,8 @@ class Tableau(object):
                 worlds_ = list(dict.fromkeys([node.world for node in branch if node.world and
                                               node.fml.literal()]))
                 w = {"w" + str(w) for w in worlds}
-                r_ = list(dict.fromkeys([node.inst[2:] for node in branch
-                                         if node.inst and len(node.inst) > 2 and isinstance(node.inst[-1], int)]))
+                r_ = list(dict.fromkeys([node.inst[2:] for node in branch if
+                                         node.inst and len(node.inst) > 2 and isinstance(node.inst[2], int)]))
                 r = {("w" + str(tpl[0]), "w" + str(tpl[1])) for tpl in r_}
 
             if self.mode["propositional"]:  # classical propositional logic
@@ -1133,9 +1159,10 @@ class Tableau(object):
                     # atoms = all unnegated atomic predications
                     atoms = [(node.fml.pred, node.fml.terms) for node in branch if node.fml.atom()]
                     # domain = all const.s occurring in formulas
-                    d = set(list(chain(*[node.fml.nonlogs()[0] for node in branch if node.fml.nonlogs()])))
+                    d = set(list(chain(*[[remove_sig(t) for t in node.fml.nonlogs()[0]]
+                                         for node in branch if node.fml.nonlogs()])))
                     # interpretation = make all unnegated predications true and all others false
-                    i = {p: {tuple([str(t) for t in a[1]]) for a in atoms if (Pred(p), a[1]) in atoms}
+                    i = {p: {tuple([remove_sig(str(t)) for t in a[1]]) for a in atoms if (Pred(p), a[1]) in atoms}
                          for p in predicates}
                     model = PredStructure(name, d, i)
 
@@ -1152,22 +1179,24 @@ class Tableau(object):
                     atoms = {w: [(node.fml.pred, node.fml.terms) for node in branch
                                  if node.fml.atom() and node.world == w]
                              for w in worlds}
-                    i = {"w" + str(w): {p: {tuple([str(t) for t in a[1]]) for a in atoms[w]
+                    i = {"w" + str(w): {p: {tuple([remove_sig(str(t)) for t in a[1]]) for a in atoms[w]
                                             if (Pred(p), a[1]) in atoms[w]}
                                         for p in predicates}
                          for w in worlds}
 
                     if not self.mode["vardomains"]:  # classical modal predicate logic with constant domains
-                        d = set(chain(*[node.fml.nonlogs()[0] for node in branch]))
+                        d = set(chain(*[[remove_sig(t) for t in node.fml.nonlogs()[0]] for node in branch]))
                         model = ConstModalStructure(name, w, r, d, i)
 
                     else:  # classical modal predicate logic with varying domains
                         # d = {worlds[sig]: set(chain(*[node.fml.nonlogs()[0] for node in branch
                         #                       if node.sig == sig]))
                         #      for sig in sigs}
-                        d = {"w" + str(w): set(chain(*[node.fml.nonlogs()[0] for node in branch
-                                                       if node.world == w]))
-                             for w in worlds}
+                        d_ = set(list(chain(*[[c + "_0" for c in node.fml.nonlogs()[0]]
+                                         for node in branch if node.rule == "A"])) +
+                                 [node.inst[3] for node in branch
+                                  if node.inst and len(node.inst) > 2 and isinstance(node.inst[3], str)])
+                        d = {"w" + str(w): set([c[:c.index("_")] for c in d_ if c.endswith("_" + str(w))]) for w in worlds}
                         model = VarModalStructure(name, w, r, d, i)
 
         else:  # intuitionistic logic
@@ -1181,7 +1210,7 @@ class Tableau(object):
             states_ = list(dict.fromkeys([node.world for node in branch if node.fml.literal()]))
             k = {"k" + str(w) for w in states}
             r_ = list(dict.fromkeys([node.inst[2:] for node in branch if
-                                     node.inst and len(node.inst) > 2 and isinstance(node.inst[-1], int)]))
+                                     node.inst and len(node.inst) > 2 and isinstance(node.inst[2], int)]))
             r = {("w" + str(tpl[0]), "w" + str(tpl[1])) for tpl in r_}
 
             if self.mode["propositional"]:  # intuitionstic propositional logic
@@ -1222,10 +1251,10 @@ class Tableau(object):
                 atoms = {k: [(node.fml.pred, node.fml.terms) for node in branch
                              if isinstance(node.fml, Atm) and node.world == k]
                          for k in states}
-                d = {"k" + str(k): set(chain(*[node.fml.nonlogs()[0] for node in branch
+                d = {"k" + str(k): set(chain(*[[remove_sig(t) for t in node.fml.nonlogs()[0]] for node in branch
                                                if node.world == k]))
                      for k in states}
-                i = {"k" + str(k): {p: {tuple([str(t) for t in a[1]]) for a in atoms[k]
+                i = {"k" + str(k): {p: {tuple([remove_sig(str(t)) for t in a[1]]) for a in atoms[k]
                                         if (Pred(p), a[1]) in atoms[k]}
                                     for p in predicates}
                      for k in states}
@@ -1717,15 +1746,17 @@ if __name__ == "__main__":
     # todo results correct?
     #
     # Barcan formulas
-    # fml1 = Imp(Forall(Var("x"), Nec(Atm(Pred("A"), (Var("x"),)))), Nec(Forall(Var("x"), Atm(Pred("A"), (Var("x"),)))))
-    # fml2 = Imp(Poss(Exists(Var("x"), Atm(Pred("A"), (Var("x"),)))), Exists(Var("x"), Poss(Atm(Pred("A"), (Var("x"),)))))
-    # fml3 = Imp(Nec(Forall(Var("x"), Atm(Pred("A"), (Var("x"),)))), Forall(Var("x"), Nec(Atm(Pred("A"), (Var("x"),)))))
-    # fml4 = Imp(Exists(Var("x"), Poss(Atm(Pred("A"), (Var("x"),)))), Poss(Exists(Var("x"), Atm(Pred("A"), (Var("x"),)))))
+    fml1 = Imp(Forall(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))), Nec(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))))
+    fml2 = Imp(Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))), Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))))
+    fml3 = Imp(Nec(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))), Forall(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))))
+    fml4 = Imp(Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))), Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))))
     # tab1 = Tableau(fml1, modal=True)
     # tab2 = Tableau(fml1, modal=True)
-    # tab3 = Tableau(fml2, modal=True, validity=False, satisfiability=False, vardomains=True)
-    # tab4 = Tableau(fml4, modal=True, validity=False, satisfiability=False, vardomains=True)
-    # # todo finds no counter models
+    tab3 = Tableau(fml2, modal=True, validity=False, satisfiability=False, vardomains=True, latex=False)
+    # counter model: D(w1) = {a}, D(w2) = {a,b}, I(w1)(P) = {}, I(w2)(P) = {b}
+    tab4 = Tableau(fml4, modal=True, validity=False, satisfiability=False, vardomains=True, latex=False)
+    # counter model: D(w1) = {a,b}, D(w2) = {a}, I(w1)(P) = {}, I(w2)(P) = {b}
+    # # todo wrong counter model for converse Barcan formula
 
     #################
     # quantifier commutativity
@@ -1735,7 +1766,7 @@ if __name__ == "__main__":
     fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
     # tab = Tableau(fml2, premises=[fml1])
     # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
-    tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False, latex=True, num_models=2, hide_nonopen=True)
+    # tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False, latex=True, num_models=2, hide_nonopen=True)
     #
     # fml1 = Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
     #                              Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),
@@ -1807,4 +1838,3 @@ if __name__ == "__main__":
     # print(test)
     # res = parser.parse(test)
     # print(res)
-

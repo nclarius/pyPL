@@ -207,9 +207,9 @@ class PropModalStructure(ModalStructure):
         self.v = v
 
     def __str__(self):
-        return "Structure " + self.s + " = (W,V) with\n"\
+        return "Structure " + self.s + " = ⟨W,V⟩ with\n"\
                "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n"\
-               "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n"\
+               "R = {" + ", ".join(["⟨" + str(r[0]) + "," + str(r[1]) + "⟩"for r in sorted(self.r)]) + "}\n"\
                "V : " + ", \n    ".join([str(w) + " ↦ \n" +
                             ", \n".join(["           " + str(p) + " ↦ " + str(tv)
                             for (p, tv) in sorted(self.v[w].items())])
@@ -283,7 +283,7 @@ class ConstModalStructure(ModalStructure):
     def __str__(self):
         return "Structure " + self.s + " = ⟨W,R,D,I⟩ with\n" \
                "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n"\
-               "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n"\
+               "R = {" + ", ".join(["⟨" + str(r[0]) + "," + str(r[1]) + "⟩"for r in sorted(self.r)]) + "}\n"\
                "D = {" + ", ".join([str(d) for d in sorted(self.d)]) + "}\n" \
                "I : " + "\n    ".join([str(w) + " ↦ \n" + \
                         ", \n".join(
@@ -380,7 +380,7 @@ class VarModalStructure(ModalStructure):
     def __str__(self):
         return "Structure " + self.s + " = ⟨W,R,D,F⟩ with\n" \
                "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" \
-               "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n" \
+               "R = {" + ", ".join(["⟨" + str(r[0]) + "," + str(r[1]) + "⟩"for r in sorted(self.r)]) + "}\n"\
                "D : " + "\n    ".join([str(w) + " ↦ " + \
                             "{" + ", ".join([str(d) for d in sorted(self.d[w])]) + "}"
                     for w in sorted(self.w)]) +\
@@ -539,7 +539,7 @@ class KripkePropStructure(KripkeStructure):
     def __str__(self):
         return "Structure " + self.s + " = (K,V) with\n"\
                "K = {" + ", ".join([str(k) for k in sorted(self.k)]) + "}\n"\
-               "R = {" + ", ".join([str(r) for r in sorted(self.r)]) + "}\n"\
+               "R = {" + ", ".join(["⟨" + str(r[0]) + "," + str(r[1]) + "⟩"for r in sorted(self.r)]) + "}\n"\
                "D : " + "\n    ".join([str(k) + " ↦ \n" +
                             ", \n".join(["           " + str(p) + " ↦ " + str(tv)
                             for (p, tv) in sorted(self.v[k].items())])
@@ -683,7 +683,7 @@ class KripkePredStructure(KripkeStructure):
     def __str__(self):
         return "Structure " + self.s + " = (K,R,D,F) with\n" \
                "K = {" + ", ".join([repr(k) for k in self.k]) + "}\n" \
-               "R = {" + ", ".join([repr(r) for r in self.r]) + "}\n" \
+               "R = {" + ", ".join(["⟨" + str(r[0]) + "," + str(r[1]) + "⟩"for r in sorted(self.r)]) + "}\n"\
                "D : " + "\n    ".join([repr(k) + " ↦ " +\
                             ", ".join([repr(d) for d in self.d[k]]) + "}"
                     for k in self.k]) if self.d else "" +\
