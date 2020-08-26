@@ -53,7 +53,7 @@ class PyPLGUI(tk.Frame):
         # general settings
         self.root.title("pyPL")
         self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file='icon.png'))
-        self.root.geometry("729x485")
+        self.root.geometry("729x490")
 
         # style
         self.style = ttk.Style()
