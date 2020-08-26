@@ -8,7 +8,7 @@ CURRENTLY UNDER CONSTRUCTION.
 
 import re
 
-debug = True
+debug = False
 
 class Parser:
     """
