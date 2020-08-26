@@ -1373,7 +1373,7 @@ class Node(object):
                 any([self in branch for branch in open_branches]):
             str_line = "\\underline{" + str_line + "}"
         str_world = "$w" + "_" + "{" + str(self.world) + "}" + "$" if self.world else ""
-        str_fml = "$" + self.fml.tex().replace(",", "{,}\\ \\!") + "$"
+        str_fml = "$" + self.fml.tex().replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }") + "$"
         # underline literals of open branches in MG
         if self.tableau.underline_open and not self.tableau.mode["validity"] and \
                 any([self in branch for branch in open_branches]) and self.fml.literal():
@@ -1392,10 +1392,10 @@ class Node(object):
             if self.inst and len(self.inst) > 2:
                 if isinstance(self.inst[-1], str):
                     str_inst = "{,}\\ " + "\\lbrack " + str(self.inst[2]) + "/" + str(self.inst[3]) + " \\rbrack" \
-                               + ("*" if self.inst[1] else "")
+                               + (" *" if self.inst[1] else "")
                 elif isinstance(self.inst[-1], int):
                     str_inst = "{,}\\ " + "\\tpl{" + str(self.inst[2]) + "{,}" + str(self.inst[3]) + "}" \
-                               + ("*" if self.inst[1] else "")
+                               + (" *" if self.inst[1] else "")
             else:
                 str_inst = ""
             str_cite = "($" + str_rule + str_comma + str_source + str_inst + "$)"
@@ -1456,7 +1456,7 @@ class Node(object):
             indent += "    "
             res += indent + "[\n"
         if first:
-            res += indent + "\\begin{tabular}{" + colspec + "}\n"
+            res += indent + "\\begin{tabular}" + colspec + "\n"
         res += indent + self.tex()
         if self.children:
             if len(self.children) == 1:  # no branching
@@ -1478,7 +1478,7 @@ class Node(object):
             res += "\n"
             res += indent + "\\end{tabular}\n"
         if root:
-            res += "]\n"
+            res += indent + "]\n"
             indent = indent[:-4]
             res += "\\end{forest}\n"
         return res
