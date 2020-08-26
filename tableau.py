@@ -387,6 +387,9 @@ class Tableau(object):
 
                     for target in targets:
                         branch = [node for node in target.branch if not isinstance(node.fml, Pseudo)]
+                        # check if indexed constants are required (for modal PL with var. domains and IL)
+                        indexed = self.mode["modal"] and not self.mode["propositional"] and self.mode["vardomains"] or \
+                                  not self.mode["classical"]
                         # collect the constants this rule has been instantiated with in the branch/level
                         if rule_type not in ["θ"]:
                             used = list(dict.fromkeys([str(node.inst[3]) for node in branch if applied(node)]))
@@ -401,7 +404,7 @@ class Tableau(object):
                         occurring_insts = [node.inst[3] for node in branch if node.inst and
                                            len(node.inst) > 2 and isinstance(node.inst[3], str)]
                         occurring_global = list(dict.fromkeys(occurring_ass + occurring_insts))
-                        if not self.mode["validity"] and self.mode["modal"] and not self.mode["propositional"]:
+                        if indexed and not self.mode["validity"]:
                             occurring_local = [(c if "_" not in c else c[:c.index("_")]) for c in occurring_global
                                                if c.endswith("_" + str(source.world))]
                             occurring_global = [(c if "_" not in c else c[:c.index("_")]) for c in occurring_global]
@@ -416,9 +419,6 @@ class Tableau(object):
                             new = True
                         elif rule_type in ["η"]:
                             new = len(occurring_local) == 0
-                        # check if indexed constants are required (for modal PL with var. domains and IL)
-                        indexed = self.mode["modal"] and not self.mode["propositional"] and self.mode["vardomains"] or \
-                                  not self.mode["classical"]
                         # compose the arguments
                         args = universal, new, indexed, used, occurring_local, occurring_global
                         # count instantiations
@@ -433,7 +433,7 @@ class Tableau(object):
                             # and only if there are constants occurring in the branch or needed for additional models
                             # yet to be instantiated;
                             # except there are no constants at all, then it may be applied with an arbitrary parameter
-                            if any([not any([node.inst[3] == c + "_" + str(source.world)
+                            if any([not any([node.inst[3] == c + ("_" + str(source.world) if indexed else "")
                                              for node in branch if applied(node)]) for c in occurring_local]) or \
                                     not occurring_local:
                                 applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
@@ -1743,30 +1743,29 @@ if __name__ == "__main__":
     # tab = Tableau(fml, modal=True, vardomains=True)
     # tab = Tableau(fml, validity=False, modal=True, vardomains=True)
     # tab = Tableau(fml, validity=False, satisfiability=False, modal=True, vardomains=True)
-    # todo results correct?
-    #
+    # # todo results correct?
+    # #
     # Barcan formulas
-    fml1 = Imp(Forall(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))), Nec(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))))
-    fml2 = Imp(Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))), Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))))
-    fml3 = Imp(Nec(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))), Forall(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))))
-    fml4 = Imp(Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))), Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))))
+    # fml1 = Imp(Forall(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))), Nec(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))))
+    # fml2 = Imp(Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))), Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))))
+    # fml3 = Imp(Nec(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))), Forall(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))))
+    # fml4 = Imp(Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))), Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))))
     # tab1 = Tableau(fml1, modal=True)
     # tab2 = Tableau(fml1, modal=True)
-    tab3 = Tableau(fml2, modal=True, validity=False, satisfiability=False, vardomains=True, latex=False)
-    # counter model: D(w1) = {a}, D(w2) = {a,b}, I(w1)(P) = {}, I(w2)(P) = {b}
-    tab4 = Tableau(fml4, modal=True, validity=False, satisfiability=False, vardomains=True, latex=False)
-    # counter model: D(w1) = {a,b}, D(w2) = {a}, I(w1)(P) = {}, I(w2)(P) = {b}
-    # # todo wrong counter model for converse Barcan formula
+    # tab3 = Tableau(fml2, modal=True, validity=False, satisfiability=False, vardomains=True, latex=False)
+    # # counter model: D(w1) = {a}, D(w2) = {a,b}, I(w1)(P) = {}, I(w2)(P) = {b}
+    # tab4 = Tableau(fml4, modal=True, validity=False, satisfiability=False, vardomains=True, latex=False)
+    # # counter model: D(w1) = {a,b}, D(w2) = {a}, I(w1)(P) = {}, I(w2)(P) = {b}
 
     #################
     # quantifier commutativity
     #################
     #
-    fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    # fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    # fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
     # tab = Tableau(fml2, premises=[fml1])
     # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
-    # tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False, latex=True, num_models=2, hide_nonopen=True)
+    # tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False, latex=True, num_models=2)
     #
     # fml1 = Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
     #                              Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),
