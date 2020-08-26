@@ -12,25 +12,17 @@ from parser import Parser
 from typing import List, Dict, Set, Tuple
 import os
 from subprocess import DEVNULL, STDOUT, check_call
+from timeit import default_timer as timer
 from datetime import datetime
 import itertools
 from itertools import chain
 
 # todo documentation
-# todo GUI
 # todo make non-K modal logics work
 # todo tableaux for IL
 # todo formulas with free variables?
 
-# global settings
 debug = False
-size_limit_factor_ = 5  # size factor after which to give up the further expansion
-# todo when size limit factor is not high enough and no model is found, result should be "pot. inf." rather than closed
-num_models_ = 1  # number of models to generate  # todo doesn't always work
-underline_open_ = True  # in MG: in open branches, underline line numbers and literals in tree outputs
-hide_nonopen_ = False  # in MG: hide non-open branches in tree output
-latex_ = True  # generate output in LaTeX instead of plain text format  # todo wrong output for ML
-file_ = False  # save plaint text output in file  # todo wrong output for ML
 
 
 class Tableau(object):
@@ -42,9 +34,11 @@ class Tableau(object):
                  conclusion=None, premises=[], axioms=[],
                  validity=True, satisfiability=True,
                  classical=True, propositional=False, modal=False, vardomains=False, frame="K",
-                 latex=latex_, file=file_,
-                 underline_open=underline_open_, hide_nonopen=hide_nonopen_,
-                 num_models=num_models_, size_limit_factor=size_limit_factor_):
+                 latex=True, file=False, underline_open=True, hide_nonopen=False,
+                 num_models=1, size_limit_factor=2):
+
+        self.start = timer()
+
         # settings
         # todo nicer specification of settings?
         # todo check consistency of settings
@@ -147,10 +141,7 @@ class Tableau(object):
         else:
             axs = ["\\phantom{\\vDash\ }" + node.fml.tex() for node in self.axioms]
             prems = ["\\phantom{\\vDash\ }" + self.root.fml.tex()] if not self.conclusion else [] + \
-                                                                                               [
-                                                                                                   "\\phantom{\\vDash\ }" + node.fml.tex()
-                                                                                                   for node in
-                                                                                                   self.premises]
+                    ["\\phantom{\\vDash\ }" + node.fml.tex() for node in self.premises]
             prems += [("\\phantom{\\vDash\ }" if len(prems) > 0 else "") + self.conclusion.tex()] \
                 if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else []
             concl = self.conclusion.tex() if \
@@ -226,6 +217,12 @@ class Tableau(object):
                     mdls += model.tex() + "\\\\\\\\\n"
             res += mdls
 
+        # measures size and time
+        # size = len(self)
+        self.end = timer()
+        elapsed = self.end - self.start
+        res += ("\\ \\\\" if self.latex else "") + "\nThis computation took " + str(round(elapsed, 3)) + " seconds.\n\n"
+
         if self.latex:
             postamble = "\\end{document}\n"
             res += postamble
@@ -290,6 +287,8 @@ class Tableau(object):
             num_nodes = len(self.root.nodes(True))
 
             # the tree gets too big; stop execution
+            # todo when size limit factor is not high enough and no model is found,
+            #  result should be "pot. inf." rather than closed
             if num_nodes > 2 * self.size_limit_factor * len_assumptions * self.num_models:
                 # mark abandoned branches
                 for leaf in self.root.leaves(True):
@@ -1685,11 +1684,11 @@ if __name__ == "__main__":
     # tab = Tableau(fml1, validity=False, satisfiability=False)
     # fml2 = Imp(Exists(Var("x"), Forall(Var("y"), Atm(Pred("R"), (Var("x"), Var("y"))))),
     #            Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("x")))))
-    # tab = Tableau(fml2, validity=False, satisfiability=True)
+    # tab = Tableau(fml2, validity=False, satisfiability=True, num_models=2)
     # tab = Tableau(fml2, validity=False, satisfiability=False)
     # fml3 = Disj(Exists(Var("x"), Forall(Var("y"), Atm(Pred("R"), (Var("x"), Var("y"))))),
     #             Forall(Var("y"), Exists(Var("x"), Neg(Atm(Pred("R"), (Var("x"), Var("y")))))))
-    # tab = Tableau(fml3, validity=False, satisfiability=True)
+    # tab = Tableau(fml3, validity=False, satisfiability=True, num_models=2)
     # tab = Tableau(fml3, validity=False, satisfiability=False)
 
     ###############
@@ -1754,9 +1753,9 @@ if __name__ == "__main__":
     # fml4 = Imp(Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))), Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))))
     # tab1 = Tableau(fml1, modal=True)
     # tab2 = Tableau(fml1, modal=True)
-    # tab3 = Tableau(fml2, modal=True, validity=False, satisfiability=False, vardomains=True, latex=False)
+    # tab3 = Tableau(fml2, modal=True, validity=False, satisfiability=False, vardomains=True)
     # # counter model: D(w1) = {a}, D(w2) = {a,b}, I(w1)(P) = {}, I(w2)(P) = {b}
-    # tab4 = Tableau(fml4, modal=True, validity=False, satisfiability=False, vardomains=True, latex=False)
+    # tab4 = Tableau(fml4, modal=True, validity=False, satisfiability=False, vardomains=True)
     # # counter model: D(w1) = {a,b}, D(w2) = {a}, I(w1)(P) = {}, I(w2)(P) = {b}
 
     #################
@@ -1797,6 +1796,18 @@ if __name__ == "__main__":
     # tab = Tableau(fml1, premises=[fml2, fml3], axioms=[ax1, ax2], validity=False, satisfiability=False)
 
     #####################
+    # function symbols and equailty
+    #####################
+    # fml1 = Forall(Var("x"), Forall(Var("y"), Forall(Var("z"),
+    #                                                 Disj(Disj(
+    #                                                     Eq(Var("x"), Var("y")),
+    #                                                     Eq(Var("x"), Var("z"))),
+    #                                                     Eq(Var("y"), Var("z"))))))
+    # fml2 = Exists(Var("x"), Exists(Var("y"), Neg(Eq(Var("x"), Var("y")))))
+    # tab = Tableau(None, premises=[fml1, fml2], validity=False, hide_nonopen=True)
+    # # todo inefficient (open branch has 193 nodes)
+
+    #####################
     # linguistic examples
     #####################
 
@@ -1826,10 +1837,6 @@ if __name__ == "__main__":
     #
     # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("know"), (Var("x"), Var("y")))))
-    # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
-    #
-    # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
     # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
 
     ####################

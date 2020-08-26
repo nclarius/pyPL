@@ -937,7 +937,7 @@ class Neg(Formula):
         self.phi = phi
 
     def __str__(self):
-        if isinstance(self.phi, Eq):
+        if isinstance(self.phi, Eq):  # todo double negated equality ("- t1 \= t2")
             return str(self.phi.t1) + "≠" + str(self.phi.t2)
         return "¬" + str(self.phi)
 

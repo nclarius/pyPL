@@ -409,12 +409,12 @@ class VarModalStructure(ModalStructure):
                "\\multicolumn{5}{L}{\\set{" + ", ".join(
                                  ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" +\
                "\\mathcal{D} = & " +\
-               "\\\\\n    ".join([str(w) + " & \\multicolumn{2}{L}{\\mapsto " + \
+               "\\\\\n    & ".join([str(w) + " & \\multicolumn{2}{L}{\\mapsto " + \
                             "\\set{" + ", ".join([str(d) for d in sorted(self.d[w])]) + "}}"
                     for w in sorted(self.w)]) +\
                     "\\\\\n" +\
                "\\mathcal{I} : & " + \
-               "\\n    & ".join([str(w) + " & \\mapsto" + \
+               "\\\\\n    & ".join([str(w) + " & \\mapsto" + \
                         ", \\\\\n && ".join(
                         ["&" + str(keyI) + " & \\mapsto " +
                          (str(valI) if isinstance(valI, str) else
