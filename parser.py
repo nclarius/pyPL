@@ -8,7 +8,7 @@ CURRENTLY UNDER CONSTRUCTION.
 
 import re
 
-debug = False
+debug = True
 
 class Parser:
     """
@@ -198,7 +198,7 @@ class Parser:
     def update_stacks(self, final=False):
         # todo check well-formedness of expressions
         # operator precedence
-        prec = {"Nec": 1, "Poss": 1, "Exists": 1, "Forall": 1, "Neg": 1,
+        prec = {"Eq": 1, "Nec": 1, "Poss": 1, "Exists": 1, "Forall": 1, "Neg": 1,
                 "Conj": 2, "Disj": 3, "Imp": 4, "Biimp": 5, "Xor": 6}
 
         stacks = self.stacks
@@ -248,17 +248,20 @@ class Parser:
             if bot in ["Eq", "Conj", "Disj", "Imp", "Biimp", "Xor"]:
 
                 # operator ambiguity
+                # todo associativity not right with Eq
                 if mid and mid in ["Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall",
-                                   "Neg", "Poss", "Nec"]:  # operator clash: resolve ambiguiy
+                                   "Neg", "Poss", "Nec", "Eq"]:  # operator clash: resolve ambiguiy
                     # first op has precedence over second op: take current stack as subformula. to second op
                     # ops have equal precedence: apply left-associativity
                     if prec[mid] < prec[bot] or prec[mid] == prec[bot]:
+                        print("ambig v1")
                         c = getattr(expr, mid)
                         e = c(*curr_stack[2:])
                         curr_stack = [bot, e]
                         stacks[i] = curr_stack
                     # second op has precedence over first op: move to new stack
                     else:
+                        print("ambig v2")
                         new_stack = [bot, curr_stack[3]]
                         stacks.append(new_stack)
                         curr_stack = [mid, curr_stack[2]]
@@ -289,12 +292,20 @@ if __name__ == "__main__":
     # test = r"R(f(a,b),y)"
     # test = "~ p v q |= p -> q"
     print()
-    test = r"~ p ^ q <-> ~(\nec p v ~ q v r)"
-    print(test)
-    res = parser.parse(test)
-    print(res)
-    print()
-    test = r"\exi x \all y (P(x) ^ R(x,y)) -> \all y \exi x R(x,y)"
-    print(test)
-    res = parser.parse(test)
-    print(res)
+    # test = r"~ p ^ q <-> ~(\nec p v ~ q v r)"
+    # print(test)
+    # res = parser.parse(test)
+    # print(res)
+    # print()
+    # test = r"\exi x \all y (P(x) ^ R(x,y)) -> \all y \exi x R(x,y)"
+    # print(test)
+    # res = parser.parse(test)
+    # print(res)
+    # test = r"\all x \all y \all z (x = y v x = z v y = z)"
+    # print(test)
+    # res = parser.parse(test)
+    # print(res)
+    # test = r"p v q v r"
+    # print(test)
+    # res = parser.parse(test)
+    # print(res)
