@@ -254,14 +254,12 @@ class Parser:
                     # first op has precedence over second op: take current stack as subformula. to second op
                     # ops have equal precedence: apply left-associativity
                     if prec[mid] < prec[bot] or prec[mid] == prec[bot]:
-                        print("ambig v1")
                         c = getattr(expr, mid)
                         e = c(*curr_stack[2:])
                         curr_stack = [bot, e]
                         stacks[i] = curr_stack
                     # second op has precedence over first op: move to new stack
                     else:
-                        print("ambig v2")
                         new_stack = [bot, curr_stack[3]]
                         stacks.append(new_stack)
                         curr_stack = [mid, curr_stack[2]]

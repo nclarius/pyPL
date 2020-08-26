@@ -1157,7 +1157,8 @@ class Tableau(object):
 
                 if not self.mode["modal"]:  # classical non-modal predicate logic
                     # atoms = all unnegated atomic predications
-                    atoms = [(node.fml.pred, node.fml.terms) for node in branch if node.fml.atom()]
+                    atoms = [(node.fml.pred, node.fml.terms) for node in branch
+                             if node.fml.atom() and not isinstance(node.fml, Eq)]
                     # domain = all const.s occurring in formulas
                     d = set(list(chain(*[[remove_sig(t) for t in node.fml.nonlogs()[0]]
                                          for node in branch if node.fml.nonlogs()])))
@@ -1177,7 +1178,7 @@ class Tableau(object):
                     #                    for p in predicates}
                     #      for sig in sigs}
                     atoms = {w: [(node.fml.pred, node.fml.terms) for node in branch
-                                 if node.fml.atom() and node.world == w]
+                                 if node.fml.atom() and not isinstance(node.fml, Eq) and node.world == w]
                              for w in worlds}
                     i = {"w" + str(w): {p: {tuple([remove_sig(str(t)) for t in a[1]]) for a in atoms[w]
                                             if (Pred(p), a[1]) in atoms[w]}
@@ -1221,7 +1222,8 @@ class Tableau(object):
                 # v = {states[sig]: {p: (True if p in atoms[sig] else False) for p in self.root.fml.propvars()}
                 #      for sig in sigs}
                 # atoms = all unnegated propositional variables
-                atoms = {k: [node.fml.p for node in branch if node.fml.atom() and node.world == k]
+                atoms = {k: [node.fml.p for node in branch
+                             if node.fml.atom() and not isinstance(node.fml, Eq) and node.world == k]
                          for k in states}
                 # valuation = make all positive propositional variables true and all others false
                 v = {k: {p: (True if p in atoms[k] else False) for p in self.root.fml.propvars()}
