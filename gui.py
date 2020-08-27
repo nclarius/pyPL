@@ -8,6 +8,7 @@ CURRENTLY UNDER CONSTRUCTION.
 
 import tkinter as tk
 from tkinter import ttk
+import os
 
 
 class PyPLInst:
@@ -52,7 +53,8 @@ class PyPLGUI(tk.Frame):
 
         # general settings
         self.root.title("pyPL")
-        self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file='icon.png'))
+        icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
+        self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file=icon_path))
         self.root.geometry("729x490")
 
         # style
@@ -167,6 +169,7 @@ class PyPLGUI(tk.Frame):
         # btn_step5.pack(pady=5)
 
     def tab_1(self):  # 1. Action
+        # todo theorem guessing
         tab = self.tabs.nametowidget(self.tabs.tabs()[1])
 
         def initial_select_rb(rb):

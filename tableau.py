@@ -54,8 +54,8 @@ class Tableau(object):
         # append initial nodes
         line = 1
         # sig = (1,) if modal or not classical else None
-        world = 1 if validity and (modal or not classical) else None
-        signed = True if not classical or modal else False  # todo reimplement with signed formulas
+        world = 1 if modal or not classical else None
+        signed = True if not classical or modal else False  # todo reimplement with pos./neg. signed formulas
         rule = "A"
         source = None
         inst = tuple()
@@ -64,12 +64,13 @@ class Tableau(object):
         negative = True if validity or not validity and not satisfiability else False
         root_fml, premise_fmls, axiom_fmls = \
             (conclusion, premises, axioms) if conclusion else (premises[0], premises[1:], axioms)
-        if classical and (not modal or validity):  # default: no forcing sign
-            root_fml = root_fml if not negative else Neg(root_fml)
-        else:  # ML MG and IL: forcing sign
-            root_fml = AllWorlds(root_fml) if not negative else NotAllWorlds(root_fml)
-            premise_fmls = [AllWorlds(prem) for prem in premise_fmls]
-            axiom_fmls = [AllWorlds(ax) for ax in axiom_fmls]
+        root_fml = root_fml if not negative else Neg(root_fml)
+        # if classical and (not modal or validity):  # default: no forcing sign
+        #     root_fml = root_fml if not negative else Neg(root_fml)
+        # else:  # ML MG and IL: forcing sign
+        #     root_fml = AllWorlds(root_fml) if not negative else NotAllWorlds(root_fml)
+        #     premise_fmls = [AllWorlds(prem) for prem in premise_fmls]
+        #     axiom_fmls = [AllWorlds(ax) for ax in axiom_fmls]
         self.conclusion = conclusion
         self.root = Node(None, self, line, world, root_fml, rule, source, inst)
         self.premises = [self.root.leaves()[0].add_child((self, i + 2, world, premise_fml, rule, source, inst))
@@ -137,7 +138,7 @@ class Tableau(object):
                     ", \n".join(axs) + (" + \n" if axs and prems else "\n" if axs else "") + \
                     ", \n".join(prems) + ("\n" if len(lhs) > 1 else " " if not concl else "") + \
                     inf + \
-                    (" " if concl else "") + concl + ":" + "\n"
+                    (" " if concl else "") + concl + ":" + "\n\n"
         else:
             axs = ["\\phantom{\\vDash\ }" + node.fml.tex() for node in self.axioms]
             prems = ["\\phantom{\\vDash\ }" + self.root.fml.tex()] if not self.conclusion else [] + \
@@ -187,7 +188,7 @@ class Tableau(object):
         elif self.infinite():
             result += "The tableau is potentially infinite:" + ("\\\\" if self.latex else "") + "\n"
             if self.mode["validity"]:
-                result += "The " + ("inference" if self.premises else "formula") + " may not be valid."
+                result += "The " + ("inference" if self.premises else "formula") + " may or may not be valid."
             else:
                 if self.mode["satisfiability"]:
                     result += "The " + \
@@ -243,7 +244,7 @@ class Tableau(object):
                 timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
                 txtpath = "output_" + timestamp + ".txt"
                 with open(txtpath, "w", encoding="utf-8") as txtfile:
-                    txtfile.write(res)  # todo broken encoding
+                    txtfile.write(res)
                 # open file
                 check_call(["xdg-open", txtpath], stdout=DEVNULL, stderr=STDOUT)
         else:
@@ -283,7 +284,7 @@ class Tableau(object):
             # todo stop search when only contradictions found after all new instantiations
             # check whether to continue expansion
             len_assumptions = sum([len(str(node.fml)) for node in self.root.nodes()
-                                   if node.rule == "A" and (self.mode["validity"] or not node.world)])
+                                   if node.rule == "A"])
             num_nodes = len(self.root.nodes(True))
 
             # the tree gets too big; stop execution
@@ -387,8 +388,8 @@ class Tableau(object):
                     for target in targets:
                         branch = [node for node in target.branch if not isinstance(node.fml, Pseudo)]
                         # check if indexed constants are required (for modal PL with var. domains and IL)
-                        indexed = self.mode["modal"] and not self.mode["propositional"] and self.mode["vardomains"] or \
-                                  not self.mode["classical"]
+                        indexed = (self.mode["modal"] and self.mode["vardomains"] or not self.mode["classical"]) and \
+                                  not self.mode["propositional"]
                         # collect the constants this rule has been instantiated with in the branch/level
                         if rule_type not in ["θ"]:
                             used = list(dict.fromkeys([str(node.inst[3]) for node in branch if applied(node)]))
@@ -403,13 +404,14 @@ class Tableau(object):
                         occurring_insts = [node.inst[3] for node in branch if node.inst and
                                            len(node.inst) > 2 and isinstance(node.inst[3], str)]
                         occurring_global = list(dict.fromkeys(occurring_ass + occurring_insts))
-                        if indexed and not self.mode["validity"]:
-                            occurring_local = [(c if "_" not in c else c[:c.index("_")]) for c in occurring_global
-                                               if c.endswith("_" + str(source.world))]
-                            occurring_global = [(c if "_" not in c else c[:c.index("_")]) for c in occurring_global]
+                        if indexed:
+                            occurring_local = [c for c in occurring_global if c.endswith("_" + str(source.world))]
+                            occurring_global = [c for c in occurring_global]
+                            if not self.mode["validity"]:
+                                occurring_local = [(c if "_" not in c else c[:c.index("_")]) for c in occurring_local]
+                                occurring_global = [(c if "_" not in c else c[:c.index("_")]) for c in occurring_global]
                         else:
                             occurring_local = occurring_global
-                        # print(occurring)
                         # check if the rule requires a new constant to be instantiated
                         # marking is incorrect
                         if rule_type in ["γ", "θ"]:
@@ -511,6 +513,8 @@ class Tableau(object):
                         args = universal, new, used, occurring_global, extensions, reductions
                         # count instantiations
                         insts = len(used)
+
+                        # todo not correctly reusing already introduced accessible worlds
 
                         if rule_type in ["μ", "κ"]:
                             # the rules can be applied with any new signature extension
@@ -907,7 +911,9 @@ class Tableau(object):
         #         sig = sig_
         #         break
         # inst = (source.sig, sig)
-        world = min([i for i in range(1, 1000) if i not in used])
+        usable = extensions + [i for i in range(1, 100)]
+        print(extensions, used, usable)
+        world = usable[min([i for i in range(len(usable)) if usable[i] not in used])]
         new = True if world not in extensions else False
         inst = (universal, new, source.world, world)
 
@@ -938,8 +944,8 @@ class Tableau(object):
         #         sig = sig_
         #         break
         # inst = (source.sig, sig)
-        usable = extensions + [i for i in range(1, 1000)][:self.num_models - 1]
-        world = min([i for i in usable if i not in used])
+        usable = extensions + [i for i in range(1, 100)][:self.num_models - 1]
+        world = usable[min([i for i in range(len(usable)) if usable[i] not in used])]
         new = True if world not in extensions else False
         inst = (universal, new, source.world, world)
 
@@ -1597,7 +1603,7 @@ class Node(object):
             return
         # todo smarter implementation (check for loops in rule appls.)
         len_assumptions = sum([len(str(node.fml)) for node in self.branch
-                               if node.rule == "A" and (self.root().tableau.mode["validity"] or not node.world)])
+                               if node.rule == "A"])
         height = len(self.branch)
         width = len(self.branch[-2].children)
         if height > self.tableau.size_limit_factor * len_assumptions:
@@ -1718,7 +1724,11 @@ if __name__ == "__main__":
     # fml = Conj(Poss(Prop("p")), Poss(Neg(Prop("p"))))
     # tab = Tableau(fml, modal=True)
     # tab = Tableau(fml, propositional=True, modal=True, validity=False)
-    # # #
+
+    # fml = Disj(Nec(Prop("p")), Nec(Prop("q")))
+    # fml1 = Nec(Disj(Prop("p"), Prop("q")))
+    # tab = Tableau(fml, premises=[fml1], validity=False, satisfiability=False, propositional=True, modal=True)
+
     # fml = Imp(Nec(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))), Exists(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))))
     # tab = Tableau(fml, modal=True)
     # tab = Tableau(fml, modal=True, validity=False)
@@ -1757,6 +1767,8 @@ if __name__ == "__main__":
     # # counter model: D(w1) = {a}, D(w2) = {a,b}, I(w1)(P) = {}, I(w2)(P) = {b}
     # tab4 = Tableau(fml4, modal=True, validity=False, satisfiability=False, vardomains=True)
     # # counter model: D(w1) = {a,b}, D(w2) = {a}, I(w1)(P) = {}, I(w2)(P) = {b}
+    # tab1 = Tableau(fml2, modal=True, vardomains=True)
+    # tab2 = Tableau(fml4, modal=True, vardomains=True)
 
     #################
     # quantifier commutativity
