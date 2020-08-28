@@ -16,7 +16,7 @@ class PyPLInst:
     def __init__(self):
         self.completed = []
 
-        self.action = "mg"
+        self.action = "tt"
         self.structure = None
         self.conclusion = None
         self.axioms = []
@@ -54,7 +54,7 @@ class PyPLGUI(tk.Frame):
         # general settings
         self.root.title("pyPL")
         icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
-        self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file=icon_path))
+        # self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file=icon_path))
         self.root.geometry("729x490")
 
         # style
@@ -231,7 +231,7 @@ class PyPLGUI(tk.Frame):
         # radio buttons
         action = tk.StringVar(None, self.inst.action)
         actions = [("Model checking", "mc"), ("Model generation", "mg"), ("Counter model generation", "cmg"),
-                   ("Theorem proving", "tp")]  # todo implement MC
+                   ("Theorem proving", "tp"), ("Theorem testing", "tt")]  # todo implement MC
         radiobuttons = []
         for txt, val in actions:
             rb = tk.Radiobutton(tab,
@@ -706,16 +706,16 @@ class PyPLGUI(tk.Frame):
             set()
 
         def decrease_num_models():
-            num_models.set(str(int(num_models.get())-1))
+            num_models.set(str(int(num_models.get()) - 1))
 
         def increase_num_models():
-            num_models.set(str(int(num_models.get())+1))
+            num_models.set(str(int(num_models.get()) + 1))
 
         def decrease_size_limit():
-            size_limit.set(str(int(size_limit.get())-1))
+            size_limit.set(str(int(size_limit.get()) - 1))
 
         def increase_size_limit():
-            size_limit.set(str(int(size_limit.get())+1))
+            size_limit.set(str(int(size_limit.get()) + 1))
 
         def reset():
             for radiobutton in rbs:
@@ -931,12 +931,14 @@ class PyPLGUI(tk.Frame):
         self.tabs.select(tab_id)
 
     def update_summary(self):
-        txt = "(You are searching for a " + ("proof that " if self.inst.action == "tp" else "structure in which ")
+        txt = "(You are searching for a " + ("proof that " if self.inst.action == "tp" else
+                                             ("proof or refutation that " if self.inst.action == "tt" else
+                                              "structure in which "))
         txt += (str(self.inst.conclusion) if self.inst.conclusion else "...") + " is "
-        txt += ("true in all structures" if self.inst.action == "tp" else (
-               "true" if self.inst.action == "mg" else "false"))
+        txt += ("true in all structures" if self.inst.action == "tp" or self.inst.action == "tt" else (
+            "true" if self.inst.action == "mg" else "false"))
         if self.inst.premises:
-            txt += (" in which " if self.inst.action == "tp" else " and ") + \
+            txt += (" in which " if self.inst.action == "tp" or self.inst.action == "tt" else " and ") + \
                    ", ".join([str(fml) for fml in self.inst.premises]) + " is true"
         txt += ".)"
         self.lbl_sum.config(text=txt)
@@ -948,8 +950,7 @@ class PyPLGUI(tk.Frame):
         axioms = self.inst.axioms
 
         # settings
-        validity = True if self.inst.action == "tp" else False
-        satisfiability = True if self.inst.action == "mg" else False
+
         classical = True if self.inst.logic["classint"] == "class" else False
         propositional = True if self.inst.logic["proppred"] == "prop" else False
         modal = True if self.inst.logic["modal"] == "modal" else False
@@ -961,12 +962,37 @@ class PyPLGUI(tk.Frame):
         underline_open = True if self.inst.underline_open else False
         hide_nonopen = True if self.inst.hide_nonopen else False
 
-        tableau.Tableau(concl, premises=premises, axioms=axioms,
-                        validity=validity, satisfiability=satisfiability,
-                        classical=classical, propositional=propositional,
-                        modal=modal, vardomains=vardomains, frame=frame,
-                        latex=latex, file=True, num_models=num_models,
-                        underline_open=underline_open, hide_nonopen=hide_nonopen)
+        if self.inst.action != "tt":
+            validity = True if self.inst.action == "tp" else False
+            satisfiability = True if self.inst.action == "mg" else False
+
+            tableau.Tableau(concl, premises=premises, axioms=axioms,
+                            validity=validity, satisfiability=satisfiability,
+                            classical=classical, propositional=propositional,
+                            modal=modal, vardomains=vardomains, frame=frame,
+                            latex=latex, file=True, num_models=num_models,
+                            underline_open=underline_open, hide_nonopen=hide_nonopen)
+
+        else:
+            # test if theorem
+            tab1 = tableau.Tableau(concl, premises=premises, axioms=axioms,
+                                   validity=True, satisfiability=False,
+                                   classical=classical, propositional=propositional,
+                                   modal=modal, vardomains=vardomains, frame=frame,
+                                   latex=latex, file=True, silent=True, num_models=num_models,
+                                   underline_open=underline_open, hide_nonopen=hide_nonopen)
+
+            if not tab1.infinite():
+                tab1.show()
+            else:
+                tab2 = tableau.Tableau(concl, premises=premises, axioms=axioms,
+                                       validity=False, satisfiability=False,
+                                       classical=classical, propositional=propositional,
+                                       modal=modal, vardomains=vardomains, frame=frame,
+                                       latex=latex, file=True, silent=True, num_models=num_models,
+                                       underline_open=underline_open, hide_nonopen=hide_nonopen)
+                if not tab2.infinite():
+                    tab2.show()
 
 
 if __name__ == "__main__":

@@ -34,10 +34,8 @@ class Tableau(object):
                  conclusion=None, premises=[], axioms=[],
                  validity=True, satisfiability=True,
                  classical=True, propositional=False, modal=False, vardomains=False, frame="K",
-                 latex=True, file=False, underline_open=True, hide_nonopen=False,
+                 latex=True, file=False, silent=False, underline_open=True, hide_nonopen=False,
                  num_models=1, size_limit_factor=2):
-
-        self.start = timer()
 
         # settings
         # todo nicer specification of settings?
@@ -48,8 +46,9 @@ class Tableau(object):
             "classical": classical, "propositional": propositional,
             "modal": modal, "vardomains": vardomains, "frame": frame
         }
-        self.latex, self.file, self.underline_open, self.hide_nonopen, self.num_models, self.size_limit_factor = \
-            latex, file, underline_open, hide_nonopen, num_models, size_limit_factor
+        self.latex, self.file, self.silent, self.underline_open, self.hide_nonopen, \
+        self.num_models, self.size_limit_factor = \
+            latex, file, silent, underline_open, hide_nonopen, num_models, size_limit_factor
 
         # append initial nodes
         line = 1
@@ -83,7 +82,11 @@ class Tableau(object):
         self.models = []  # generated models
 
         # run the tableau
-        self.run()
+        self.start = timer()
+        self.expand()
+        self.end = timer()
+        if not self.silent:
+            self.show()
 
     def __str__(self):
         return self.root.treestr()
@@ -91,9 +94,9 @@ class Tableau(object):
     def __len__(self):
         return len(self.root.nodes())
 
-    def run(self):
+    def show(self):
         """
-        Expand the tableau, generate the associate models and print some info.
+        Print tableau info.
         """
         res = ""
         # create preamble
@@ -156,9 +159,6 @@ class Tableau(object):
                     (" " if concl else "") + concl + ":" + "$\\\\\n\n"
         res += info
 
-        # recursively apply the rules
-        self.expand()
-
         # print the tableau
         if not self.latex:
             res += self.root.treestr()
@@ -220,7 +220,6 @@ class Tableau(object):
 
         # measures size and time
         # size = len(self)
-        self.end = timer()
         elapsed = self.end - self.start
         res += ("\\ \\\\" if self.latex else "") + "\nThis computation took " + str(round(elapsed, 3)) + " seconds.\n\n"
 
@@ -1774,11 +1773,11 @@ if __name__ == "__main__":
     # quantifier commutativity
     #################
     #
-    # fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # tab = Tableau(fml2, premises=[fml1])
+    fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    tab = Tableau(fml2, premises=[fml1])
     # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
-    # tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False, latex=True, num_models=2)
+    tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False, latex=True, num_models=2)
     #
     # fml1 = Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
     #                              Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),
