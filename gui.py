@@ -41,6 +41,7 @@ yellow = "#ffb94f"
 darkgray = "#333333"
 lightgray = "#666666"
 font = "-family {Arial} -size 12 -weight normal -slant roman -underline 0 -overstrike 0"
+font_large = "-family {Arial} -size 14 -weight normal -slant roman -underline 0 -overstrike 0"
 
 
 # todo config file for default settings
@@ -247,6 +248,7 @@ class PyPLGUI(tk.Frame):
                 initial_select_rb(rb)
             rb.pack(in_=top, pady=5)
             radiobuttons.append(rb)
+            # todo inexplicably thicker border around MG button
 
         # reset button
         btn_reset = tk.Button(tab,
@@ -305,6 +307,7 @@ class PyPLGUI(tk.Frame):
                                 # bg=darkgray, fg=white,
                                 activebackground=lightgray, activeforeground=white)
                 rem.pack(in_=mids[row], side=tk.LEFT, padx=5)
+                rem["font"] = font_large
                 rem.bind("<Button>", lambda e: remove_formula(i))
             else:
                 rem = None
@@ -327,14 +330,15 @@ class PyPLGUI(tk.Frame):
             raw.trace("w", lambda *args: select_entry(i))
             ents.append(ent)
             # parse button
-            btn = tk.Button(tab,
-                            text="🗘",
+            btn_parse = tk.Button(tab,
+                            text="↻",
                             # bg=darkgray, fg=white,
                             activebackground=lightgray, activeforeground=white,
                             state="disabled")
-            btn.pack(in_=mids[row + 2], side=tk.LEFT, padx=5)
-            btn.bind("<Button>", lambda e: parse(i))
-            btns.append(btn)
+            btn_parse["font"] = font_large
+            btn_parse.pack(in_=mids[row + 2], side=tk.LEFT, padx=5)
+            btn_parse.bind("<Button>", lambda e: parse(i))
+            btns.append(btn_parse)
             ent.bind("<Return>", lambda e: parse(i))
             # swap button
             if len(fmls) > 1:
@@ -487,7 +491,7 @@ class PyPLGUI(tk.Frame):
 
         # premise heading, swap and add premise buttons
         btn_swap = tk.Button(tab,
-                             text="🡑🡓",
+                             text="⇅",
                              state="disabled",
                              activebackground=lightgray, activeforeground=white)
         btn_swap.pack(in_=mids[4], side=tk.LEFT, padx=15)
@@ -497,6 +501,7 @@ class PyPLGUI(tk.Frame):
         btn_add_prem = tk.Button(tab,
                                  text="+",
                                  activebackground=lightgray, activeforeground=white)
+        btn_add_prem["font"] = font_large
         btn_add_prem.pack(in_=mids[4], side=tk.LEFT, padx=15)
         btn_add_prem.bind("<Button>", lambda e: add_formula())
         ents[0].focus()
