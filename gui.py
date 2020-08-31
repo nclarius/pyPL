@@ -45,7 +45,7 @@ font_large = "-family {Arial} -size 14 -weight normal -slant roman -underline 0 
 
 
 # todo config file for default settings
-# todo visually distinguish clickable buttons, radiobuttons and check buttons?
+# todo visually distinguish action buttons, radio buttons and check buttons?
 
 class PyPLGUI(tk.Frame):
 
@@ -55,7 +55,7 @@ class PyPLGUI(tk.Frame):
         # general settings
         self.root.title("pyPL")
         icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
-        # self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file=icon_path))
+        self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file=icon_path))
         self.root.geometry("729x490")
 
         # style
@@ -331,10 +331,10 @@ class PyPLGUI(tk.Frame):
             ents.append(ent)
             # parse button
             btn_parse = tk.Button(tab,
-                            text="↻",
-                            # bg=darkgray, fg=white,
-                            activebackground=lightgray, activeforeground=white,
-                            state="disabled")
+                                  text="↻",
+                                  # bg=darkgray, fg=white,
+                                  activebackground=lightgray, activeforeground=white,
+                                  state="disabled")
             btn_parse["font"] = font_large
             btn_parse.pack(in_=mids[row + 2], side=tk.LEFT, padx=5)
             btn_parse.bind("<Button>", lambda e: parse(i))

@@ -1359,7 +1359,7 @@ class Node(object):
         """
         open_branches = [leaf.branch for leaf in self.root().leaves() if isinstance(leaf.fml, Open)]
         str2tex = {
-            "¬": "\\neg ",
+            "¬": "\\neg",
             "∧": "\\wedge",
             "∨": "\\vee",
             "→": "\\rightarrow",
@@ -1390,7 +1390,8 @@ class Node(object):
         elif not self.rule:
             str_cite = "(" + str(self.source.line) + ")"
         else:
-            str_rule = "".join([str2tex[c] if c in str2tex else c for c in str(self.rule)]) if self.rule else ""
+            str_rule = "\\! ".join([str2tex[c] if c in str2tex else c for c in str(self.rule)])\
+                .replace("\\neg\\! \\neg", "\\neg  \\neg") if self.rule else ""
             str_comma = "{,}\\ " if self.rule and self.source else ""
             str_source = str(self.source.line) if self.source else ""
             if self.inst and len(self.inst) > 2:
@@ -1457,6 +1458,7 @@ class Node(object):
         res = ""
         if root:
             res += "\\begin{forest}\n"
+            res += "for tree={anchor=north}\n"
             indent += "    "
             res += indent + "[\n"
         if first:
@@ -1641,8 +1643,8 @@ if __name__ == "__main__":
     # basic examples
     ############
 
-    # fml = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
-    # tab = Tableau(fml, propositional=True)
+    fml = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
+    tab = Tableau(fml, propositional=True)
     # 
     # fml = Conj(Imp(Prop("p"), Prop("q")), Prop("r"))
     # tab = Tableau(fml, validity=True, propositional=True)
@@ -1773,11 +1775,11 @@ if __name__ == "__main__":
     # quantifier commutativity
     #################
     #
-    fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    tab = Tableau(fml2, premises=[fml1])
+    # fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    # fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    # tab = Tableau(fml2, premises=[fml1])
     # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
-    tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False, latex=True, num_models=2)
+    # tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False, latex=True, num_models=2)
     #
     # fml1 = Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
     #                              Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),
@@ -1807,7 +1809,7 @@ if __name__ == "__main__":
     # tab = Tableau(fml1, premises=[fml2, fml3], axioms=[ax1, ax2], validity=False, satisfiability=False)
 
     #####################
-    # function symbols and equailty
+    # function symbols and equality
     #####################
     # fml1 = Forall(Var("x"), Forall(Var("y"), Forall(Var("z"),
     #                                                 Disj(Disj(
