@@ -6,6 +6,30 @@ Tableau proofs and model extraction.
 THIS PART IS STILL UNDER CONSTRUCTION.
 """
 
+# Workflow:
+# - set initial settings, add assumptions (`init`)
+# - while there are applicable rules: expand the tree (`expand`)
+#    - check whether tree expansion can be stopped
+#       - tree gets too big or
+#       - requested number of models found
+#    - recompute the list of applicable rules
+#      - traverse all source nodes (= lines to potentially expand)
+#      - compile applicability entry
+#        - get applicable rules (rule type, rule name, formulas to add) from class belonging to formula in expr.py
+#        - select target nodes (= nodes to append the new lines to)
+#        - compute additional function arguments (such as list of constants occurring on the branch)
+#      - add rule of form (target, source, rule name, rule type, arguments, number of applications)to list of applicable
+#      - remove inactive branches
+#      - rank list according to specified criteria
+#    - pick the topmost applicable rule
+#    - apply the rule by calling the rule type function (`rule_alpha` etc.)
+#      - if appropriate, select constant/world instantiation
+#      - add new node to target (`add_node`)
+#        - extend tree object
+#        - check if branch is now closed, terminally open, or probably infinite
+#        - if open, extract model and add to list of models
+# - print results (`show`)
+
 from expr import *
 from parser import Parser
 
@@ -196,32 +220,31 @@ class Tableau(object):
                               " may or may not be satisfiable."
                 else:
                     result += "The " + ("inference" if self.premises else "formula") + " may or may not be refutable."
-        result += ("\\\\\n" if self.latex else "") + "\n"
         res += result
 
         # generate and print models
         if self.models:
-            mdls = ""
+            mdls = "\\\\\n\\\\\n" if self.latex else "\n\n"
             mdls += ("Countermodels:" \
                          if self.mode["validity"] or not self.mode["validity"] and not self.mode["satisfiability"] \
-                         else "Models:") + ("\\\\" if self.latex else "") + "\n\n"
+                         else "Models:") + ("\\\\" if self.latex else "")
             if self.latex:
                 mdls += "% alignment for structures\n"
                 mdls += "\\renewcommand{\\arraystretch}{1}  % decrease spacing between rows\n"
                 mdls += "\\setlength{\\tabcolsep}{1.5pt}  % decrease spacing between columns\n"
             for model in sorted(self.models, key=lambda m:
             {n.line: i for (i, n) in enumerate(self.root.nodes(preorder=True))}[int(m.s[1:])]):
-                mdls += "\n"
                 if not self.latex:
-                    mdls += str(model) + "\n"
+                    mdls += "\n\n" + str(model)
                 else:
-                    mdls += model.tex() + "\\\\\\\\\n"
+                    mdls += "\\\\\n\\\\\n" + model.tex()
             res += mdls
 
         # measures size and time
         # size = len(self)
         elapsed = self.end - self.start
-        res += ("\\ \\\\" if self.latex else "") + "\nThis computation took " + str(round(elapsed, 3)) + " seconds.\n\n"
+        res += ("\\\\\n\\\\\n" if self.latex else "\n\n") + \
+               "This computation took " + str(round(elapsed, 3)) + " seconds.\n\n"
 
         if self.latex:
             postamble = "\\end{document}\n"
@@ -310,13 +333,13 @@ class Tableau(object):
                     for i, itm in enumerate(applicable)]))
             # get first applicable rule from prioritized list
             (target, source, rule_name, rule_type, fmls, args, insts) = applicable[0]
-            rule_func = getattr(self, "rule_" + Tableau.rule_names[rule_type])
-            # apply the rule
+            rule_type_func = getattr(self, "rule_" + Tableau.rule_names[rule_type])
             if debug:
                 input()
                 print("expanding:")
                 print(str(source), " with ", rule_name, " on ", str(target))
-            rule_func(target, source, rule_name, fmls, args)
+            # apply the rule
+            rule_type_func(target, source, rule_name, fmls, args)
             if debug:
                 print()
                 print(self.root.treestr())
@@ -1286,6 +1309,12 @@ class Node(object):
         self.branch = (parent.branch if parent else []) + [self]
         self.children = []
 
+    def __repr__(self):
+        """
+        String representation of this line.
+        """
+        return str(self)
+
     def __str__(self):
         """
         String representation of this line.
@@ -1391,7 +1420,7 @@ class Node(object):
             str_cite = "(" + str(self.source.line) + ")"
         else:
             str_rule = "\\! ".join([str2tex[c] if c in str2tex else c for c in str(self.rule)])\
-                .replace("\\neg\\! \\neg", "\\neg  \\neg") if self.rule else ""
+                .replace("\\neg\\! \\", "\\neg  \\") if self.rule else ""
             str_comma = "{,}\\ " if self.rule and self.source else ""
             str_source = str(self.source.line) if self.source else ""
             if self.inst and len(self.inst) > 2:
@@ -1407,12 +1436,6 @@ class Node(object):
         return " & ".join([str_line, str_world, str_fml, str_cite]) \
             if not self.tableau.mode["classical"] or self.tableau.mode["modal"] \
             else " & ".join([str_line, str_fml, str_cite])
-
-    def __repr__(self):
-        """
-        String representation of this line.
-        """
-        return str(self)
 
     def treestr(self, indent="", binary=False, last=True) -> str:
         """
@@ -1643,8 +1666,8 @@ if __name__ == "__main__":
     # basic examples
     ############
 
-    fml = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
-    tab = Tableau(fml, propositional=True)
+    # fml = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
+    # tab = Tableau(fml, propositional=True)
     # 
     # fml = Conj(Imp(Prop("p"), Prop("q")), Prop("r"))
     # tab = Tableau(fml, validity=True, propositional=True)
@@ -1775,11 +1798,11 @@ if __name__ == "__main__":
     # quantifier commutativity
     #################
     #
-    # fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    # tab = Tableau(fml2, premises=[fml1])
-    # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
-    # tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False, latex=True, num_models=2)
+    fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    tab = Tableau(fml2, premises=[fml1])
+    tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
+    tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False, latex=True, num_models=2)
     #
     # fml1 = Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
     #                              Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),
