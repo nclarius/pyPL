@@ -6,29 +6,33 @@ Tableau proofs and model extraction.
 THIS PART IS STILL UNDER CONSTRUCTION.
 """
 
+
 # Workflow:
 # - set initial settings, add assumptions (`init`)
 # - while there are applicable rules: expand the tree (`expand`)
 #    - check whether tree expansion can be stopped
 #       - tree gets too big or
 #       - requested number of models found
-#    - recompute the list of applicable rules
+#    - recompute list of applicable rules
 #      - traverse all source nodes (= lines to potentially expand)
 #      - compile applicability entry
 #        - get applicable rules (rule type, rule name, formulas to add) from class belonging to formula in expr.py
 #        - select target nodes (= nodes to append the new lines to)
 #        - compute additional function arguments (such as list of constants occurring on the branch)
-#      - add rule of form (target, source, rule name, rule type, arguments, number of applications)to list of applicable
-#      - remove inactive branches
+#      - add rule of form (target, source, rule name, rule type, arguments, num of applications) to list of applicable
+#      - remove inactive branches form applicable
 #      - rank list according to specified criteria
-#    - pick the topmost applicable rule
+#    - pick the topmost of the prioritized applicable rules
 #    - apply the rule by calling the rule type function (`rule_alpha` etc.)
-#      - if appropriate, select constant/world instantiation
+#      - if appropriate, pick constant/world instantiation
 #      - add new node to target (`add_node`)
 #        - extend tree object
 #        - check if branch is now closed, terminally open, or probably infinite
-#        - if open, extract model and add to list of models
+#        - if open, extract model (`model`)
+#          - collect propositional variables, constants (-> D), worlds (-> W) and accessiblity tuples (-> R) on  branch
+#          - collect literals (atoms and negated atoms) on the branch and turn into valuation/interpret. func. (-> V/I)
 # - print results (`show`)
+
 
 from expr import *
 from parser import Parser
