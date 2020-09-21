@@ -17,6 +17,9 @@ I am happy to learn about any bugs or improvement suggestions.
 
 Features
 --------
+![pyPL GUI -- input](doc/img/pyPL_1.png)
+![pyPL GUI -- output](doc/img/pyPL_3.png)
+
 ```
  |                 classical                 |               intutionistic               |
  |    propositional    |    predicational    |    propositional    |    predicational    |

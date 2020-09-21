@@ -40,8 +40,8 @@ yellow = "#ffb94f"
 # lightblue = "#80ccff"
 darkgray = "#333333"
 lightgray = "#666666"
-font = "-family {Arial} -size 12 -weight normal -slant roman -underline 0 -overstrike 0"
-font_large = "-family {Arial} -size 14 -weight normal -slant roman -underline 0 -overstrike 0"
+font = "-family {OpenSans} -size 12 -weight normal -slant roman -underline 0 -overstrike 0"
+font_large = "-family {OpenSans} -size 14 -weight normal -slant roman -underline 0 -overstrike 0"
 
 
 # todo config file for default settings
@@ -56,7 +56,7 @@ class PyPLGUI(tk.Frame):
         self.root.title("pyPL")
         icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
         self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file=icon_path))
-        self.root.geometry("729x490")
+        self.root.geometry("870x530")
 
         # style
         self.style = ttk.Style()
@@ -65,11 +65,11 @@ class PyPLGUI(tk.Frame):
         self.style.map("TNotebook.Tab",
                        background=[("selected", darkgray), ("active", lightgray)],
                        foreground=[("selected", white), ("active", white)]
-                       # font=[("selected", ("Arial", "12", "bold"))]
+                       # font=[("selected", ("OpenSans", "12", "bold"))]
                        )  # todo no rounded corners for tabs
         self.style.theme_settings("default", {"TNotebook.Tab": {"configure": {"padding": [10, 10]}}})
         self.root.configure(bg=white)
-        self.root.option_add("*Font", "Arial 12")
+        self.root.option_add("*Font", "OpenSans 12")
 
         # invoke
         super().__init__(self.root)
@@ -94,7 +94,8 @@ class PyPLGUI(tk.Frame):
         # build tabs
         for i, tab in enumerate(tabs):
             getattr(self, "tab_" + str(i))()
-        self.tabs.pack(expand=0, fill="both")
+        self.tabs.pack(fill="both")
+        # self.tabs.grid(row=0, column=0)
 
         frm_run = tk.Frame(self.root)
         frm_run.pack(pady=10)
@@ -122,7 +123,7 @@ class PyPLGUI(tk.Frame):
         # welcome message
         lbl_greeting = ttk.Label(tab,
                                  text="Welcome to pyPL.",
-                                 font=("Arial", "12", "bold")) \
+                                 font=("OpenSans", "12", "bold")) \
             .pack(pady=10)
 
         # next tabs
@@ -225,7 +226,7 @@ class PyPLGUI(tk.Frame):
         # heading
         lbl_head = tk.Label(tab,
                             text="What would you like to do?",
-                            font=("Arial", "12", "bold"),
+                            font=("OpenSans", "12", "bold"),
                             anchor=tk.NW, justify=tk.LEFT) \
             .pack(in_=top)
 
@@ -466,7 +467,7 @@ class PyPLGUI(tk.Frame):
         # heading
         lbl_head = tk.Label(tab,
                             text="What would you like to analyze?",
-                            font=("Arial", "12", "bold"),
+                            font=("OpenSans", "12", "bold"),
                             anchor=tk.NW, justify=tk.LEFT) \
             .pack(in_=top)
         # .grid(row=0, columnspan=4, sticky="NESW")
@@ -605,7 +606,7 @@ class PyPLGUI(tk.Frame):
         # heading
         lbl_head = tk.Label(tab,
                             text="Which logic are you working in?",
-                            font=("Arial", "12", "bold"),
+                            font=("OpenSans", "12", "bold"),
                             anchor=tk.NW, justify=tk.LEFT) \
             .pack(in_=top)
 
@@ -775,7 +776,7 @@ class PyPLGUI(tk.Frame):
         # heading
         lbl_head = tk.Label(tab,
                             text="How would you like pyPL to work?",
-                            font=("Arial", "12", "bold"),
+                            font=("OpenSans", "12", "bold"),
                             anchor=tk.NW, justify=tk.LEFT) \
             .pack(in_=top)
 
@@ -918,7 +919,7 @@ class PyPLGUI(tk.Frame):
         # heading
         lbl_head = tk.Label(tab,
                             text="What are you waiting for?",
-                            font=("Arial", "12", "bold"),
+                            font=("OpenSans", "12", "bold"),
                             anchor=tk.NW, justify=tk.LEFT) \
             .pack(in_=top)
 
@@ -943,7 +944,7 @@ class PyPLGUI(tk.Frame):
         txt += ("true in all structures" if self.inst.action == "tp" or self.inst.action == "tt" else (
             "true" if self.inst.action == "mg" else "false"))
         if self.inst.premises:
-            txt += (" in which " if self.inst.action == "tp" or self.inst.action == "tt" else " and ") + \
+            txt += ("\n in which " if self.inst.action == "tp" or self.inst.action == "tt" else " and ") + \
                    ", ".join([str(fml) for fml in self.inst.premises]) + " is true"
         txt += ".)"
         self.lbl_sum.config(text=txt)

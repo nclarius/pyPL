@@ -137,7 +137,7 @@ class Tableau(object):
                 preamble += "\n\\begin{document}"
                 res += preamble
 
-        # print info
+        # print usage info
         info = "\n"
         info += "You are using " + \
                 ("proof search" if self.mode["validity"] else
@@ -247,7 +247,7 @@ class Tableau(object):
         # measures size and time
         # size = len(self)
         elapsed = self.end - self.start
-        res += ("\\\\\n\\\\\n" if self.latex else "\n\n") + \
+        res += ("\\\\\n\\ \\\\\\ \\\\\n" if self.latex else "\n\n") + \
                "This computation took " + str(round(elapsed, 3)) + " seconds.\n\n"
 
         if self.latex:
@@ -257,6 +257,7 @@ class Tableau(object):
             sep = 80 * "-"
             res += sep
 
+        # generate output
         if not self.latex:
             if not self.file:
                 # print the result in plain tex
@@ -371,8 +372,10 @@ class Tableau(object):
                            node.rule and node.rule == rule_name and \
                            node.source and node.source.line and node.source.line == source.line
 
+                # nodes to append the application's children to (usually leaves)
                 targets = [node for node in source.leaves(True) if not isinstance(node.fml, Pseudo)]
 
+                # whether or not the source is a subformula of a universal statement
                 universal = True if source.inst and source.inst[0] or rule_name == "∀" else False
 
                 # connective rules
@@ -387,7 +390,8 @@ class Tableau(object):
 
                 # quantifier rules
                 elif rule_type in ["γ", "δ", "η", "θ"]:
-                    if rule_type in ["θ"]:
+
+                    if rule_type in ["θ"]:  # special treatement of targets for theta rule
                         targets = []
                         instantiations = dict()
                         for node in source.nodes():
@@ -413,14 +417,17 @@ class Tableau(object):
 
                     for target in targets:
                         branch = [node for node in target.branch if not isinstance(node.fml, Pseudo)]
+
                         # check if indexed constants are required (for modal PL with var. domains and IL)
                         indexed = (self.mode["modal"] and self.mode["vardomains"] or not self.mode["classical"]) and \
                                   not self.mode["propositional"]
+
                         # collect the constants this rule has been instantiated with in the branch/level
                         if rule_type not in ["θ"]:
                             used = list(dict.fromkeys([str(node.inst[3]) for node in branch if applied(node)]))
                         else:
                             used = list(dict.fromkeys([str(node.inst[3]) for node in instantiations[target]]))
+
                         # collect the constants occurring in the branch;
                         # for modal logic with var. domains, restricted to the constants associated with this world
                         occurring_ass = list(chain(*[[str(c)
@@ -438,18 +445,19 @@ class Tableau(object):
                                 occurring_global = [(c if "_" not in c else c[:c.index("_")]) for c in occurring_global]
                         else:
                             occurring_local = occurring_global
+
                         # check if the rule requires a new constant to be instantiated
-                        # marking is incorrect
                         if rule_type in ["γ", "θ"]:
                             new = len(used) >= len(occurring_local)
                         elif rule_type in ["δ"]:
                             new = True
                         elif rule_type in ["η"]:
                             new = len(occurring_local) == 0
-                        # compose the arguments
-                        args = universal, new, indexed, used, occurring_local, occurring_global
+
                         # count instantiations
                         insts = len(used)
+                        # compose the arguments
+                        args = universal, new, indexed, used, occurring_local, occurring_global
 
                         if rule_type in ["γ", "δ", "θ"]:
                             # the rule is applied with some constant
@@ -467,7 +475,8 @@ class Tableau(object):
 
                 # modal rules
                 elif rule_type in ["μ", "ν", "π", "κ", "λ"]:
-                    if rule_type in ["κ"]:
+
+                    if rule_type in ["κ"]:  # special treatement of targets for kappa rule
                         targets = []
                         instantiations = dict()
                         for node in source.nodes():
@@ -493,6 +502,7 @@ class Tableau(object):
 
                     for target in targets:
                         branch = [node for node in target.branch if not isinstance(node.fml, Pseudo)]
+
                         # # collect the signatures this rule has been instantiated with in the branch/on this level
                         # used = list(dict.fromkeys([node.inst[1] for node in branch if applied(node)])) \
                         #     if rule_type not in ["κ"] else \
@@ -503,16 +513,20 @@ class Tableau(object):
                         # extensions = list(dict.fromkeys([node.sig for node in branch if node.sig and
                         #                                  len(node.sig) == len(source.sig) + 1 and
                         #                                  node.sig[:-1] == source.sig]))
+
                         # collect the worlds this rule has been instantiated with in the branch/on this level
                         if rule_type not in ["κ"]:
                             used = list(dict.fromkeys([node.inst[3] for node in branch if applied(node)]))
                         else:
                             used = list(dict.fromkeys([node.inst[3] for node in instantiations[target]
                                                        if node.inst and len(node.inst) > 2]))
+
                         # collect the worlds occurring in the branch
                         occurring_global = list(dict.fromkeys([node.world for node in branch if node.world]))
+
                         # additional worlds to use
                         fresh = [i for i in range(1, 100) if i not in occurring_global]
+
                         # collect the signatures occurring in the branch that are accessible from the source world
                         extensions = list(dict.fromkeys([node.inst[3] for node in branch
                                                          if node.inst and len(node.inst) > 2 and
@@ -526,6 +540,7 @@ class Tableau(object):
                         reductions = list(dict.fromkeys([node.inst[2] for node in branch
                                                          if node.inst and len(node.inst) > 2
                                                          and node.inst[3] == source.world]))
+
                         # check if the rule requires a new world or accessibility to be instantiated
                         if rule_type in ["μ"]:
                             new = True
@@ -535,10 +550,11 @@ class Tableau(object):
                             new = len(used) >= len(extensions) or rule_name == "A"
                         elif rule_type in ["λ"]:
                             new = len(extensions) == 0
-                        # compose the arguments
-                        args = universal, new, used, occurring_global, extensions, reductions
+
                         # count instantiations
                         insts = len(used)
+                        # compose the arguments
+                        args = universal, new, used, occurring_global, extensions, reductions
 
                         # todo not correctly reusing already introduced accessible worlds
 
@@ -582,6 +598,7 @@ class Tableau(object):
                     self.models.append(self.model(leaf))
                 if self.mode["validity"]:
                     applicable = [appl for appl in applicable if appl[0] not in leaf.branch]
+
         # if all nodes have been applied and every theta/kappa formula has been inst. with a new constant/world,
         # as in a validity tableau, and the branch is still contradictory,
         # then the sequent is unsatisfiable, and the appplicable rules of the entire tree are cleared
