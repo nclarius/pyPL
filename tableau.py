@@ -142,7 +142,7 @@ class Tableau(object):
         info += "You are using " + \
                 ("proof search" if self.mode["validity"] else
                  ("model" if self.mode["satisfiability"] else "countermodel") + " generation") + \
-                ("\\\\" if self.latex else "") + " \nfor " + \
+                "for " + \
                 ("classical " if self.mode["classical"] else "intuitionistic ") + \
                 ("modal " if self.mode["modal"] else "") + \
                 ("propositional " if self.mode["propositional"] else "predicate ") + \
@@ -227,6 +227,7 @@ class Tableau(object):
         res += result
 
         # generate and print models
+        # todo improve blank lines
         if self.models:
             mdls = "\\\\\n\\\\\n" if self.latex else "\n\n"
             mdls += ("Countermodels:" \

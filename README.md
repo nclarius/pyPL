@@ -5,6 +5,9 @@ This tool can compute
 - the denotation (truth value) of a given logical expression in a given structure,  
 - an analytic tableau with associated (counter) models for a given inference (**currently under construction**).   
 
+![pyPL GUI -- input](doc/img/pyPL_1.png)
+![pyPL GUI -- output](doc/img/pyPL_2.png)
+
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
 License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/). 
 
@@ -17,8 +20,6 @@ I am happy to learn about any bugs or improvement suggestions.
 
 Features
 --------
-![pyPL GUI -- input](doc/img/pyPL_1.png)
-![pyPL GUI -- output](doc/img/pyPL_3.png)
 
 ```
  |                 classical                 |               intutionistic               |
@@ -60,7 +61,7 @@ Known issues
 ------------
  - global variables are bad
  - search strategy for tableaus is sometimes inefficient
- - tableaus and modal generation for non-K frames not working properly
+ - tableaus and model generation for non-K frames not working properly
 
 Wish list
 ---------
