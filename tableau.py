@@ -35,7 +35,7 @@ THIS PART IS STILL UNDER CONSTRUCTION.
 
 
 from expr import *
-from parser import Parser
+from parser import FmlParser
 
 from typing import List, Dict, Set, Tuple
 import os
@@ -142,7 +142,7 @@ class Tableau(object):
         info += "You are using " + \
                 ("proof search" if self.mode["validity"] else
                  ("model" if self.mode["satisfiability"] else "countermodel") + " generation") + \
-                "for " + \
+                " for " + \
                 ("classical " if self.mode["classical"] else "intuitionistic ") + \
                 ("modal " if self.mode["modal"] else "") + \
                 ("propositional " if self.mode["propositional"] else "predicate ") + \
@@ -1682,7 +1682,7 @@ class Node(object):
 if __name__ == "__main__":
     pass
 
-    parser = Parser()
+    parser = FmlParser()
 
     #############
     # basic examples

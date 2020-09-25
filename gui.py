@@ -56,7 +56,7 @@ class PyPLGUI(tk.Frame):
         self.root.title("pyPL")
         icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
         self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file=icon_path))
-        self.root.geometry("870x530")
+        self.root.geometry("1000x575")
 
         # style
         self.style = ttk.Style()
@@ -67,7 +67,9 @@ class PyPLGUI(tk.Frame):
                        foreground=[("selected", white), ("active", white)]
                        # font=[("selected", ("OpenSans", "12", "bold"))]
                        )  # todo no rounded corners for tabs
-        self.style.theme_settings("default", {"TNotebook.Tab": {"configure": {"padding": [10, 10]}}})
+        self.style.theme_settings("default", {
+                                  "TNotebook": {"configure": {"tabposition": "n"}},
+                                  "TNotebook.Tab": {"configure": {"padding": [10, 7.5]}}})
         self.root.configure(bg=white)
         self.root.option_add("*Font", "OpenSans 12")
 
@@ -81,7 +83,7 @@ class PyPLGUI(tk.Frame):
     def win_main(self):
         self.tabs = ttk.Notebook(self.root)
         tabs = [
-            "Start",
+            # "Start",
             "1. Choose your task",
             "2. Specify your input",
             "3. Select your logic",
@@ -93,7 +95,7 @@ class PyPLGUI(tk.Frame):
             self.tabs.add(ttk.Frame(self.tabs, style="TFrame"), text=tab)
         # build tabs
         for i, tab in enumerate(tabs):
-            getattr(self, "tab_" + str(i))()
+            getattr(self, "tab_" + str(i+1))()
         self.tabs.pack(fill="both")
         # self.tabs.grid(row=0, column=0)
 
@@ -172,7 +174,7 @@ class PyPLGUI(tk.Frame):
 
     def tab_1(self):  # 1. Action
         # todo theorem guessing
-        tab = self.tabs.nametowidget(self.tabs.tabs()[1])
+        tab = self.tabs.nametowidget(self.tabs.tabs()[0])
 
         def initial_select_rb(rb):
             rb.config(fg=white)
@@ -196,7 +198,7 @@ class PyPLGUI(tk.Frame):
 
         def set():
             self.inst.action = action.get()
-            self.update_summary()
+            self.tab_2()
             self.inst.completed.append(1)
             btn_next.config(state="normal", bg=darkgray, fg=white)
 
@@ -207,14 +209,14 @@ class PyPLGUI(tk.Frame):
         # frames
         # top
         top = tk.Frame(tab)
-        top.pack(side=tk.TOP, pady=25, anchor=tk.N)
+        top.pack(side=tk.TOP, pady=25,anchor=tk.N)
         # mid
         mid = tk.Frame(tab)
         mid.pack()
         mid1 = tk.Frame(mid)
         mid2 = tk.Frame(mid)
         mid1.pack()
-        mid2.pack(pady=20, ipadx=24)
+        mid2.pack(pady=25, ipadx=24)
         # bot
         # bot = tk.Frame(tab)
         # bot.pack(side=tk.BOTTOM, pady=10, ipady=5)
@@ -235,12 +237,12 @@ class PyPLGUI(tk.Frame):
         actions = [("Model checking", "mc"), ("Model generation", "mg"), ("Counter model generation", "cmg"),
                    ("Theorem proving", "tp"), ("Theorem testing", "tt")]  # todo implement MC
         radiobuttons = []
-        for txt, val in actions:
+        for txt, val in actions[::-1]:
             rb = tk.Radiobutton(tab,
                                 text=txt,
                                 variable=action,
                                 value=val,
-                                state="normal" if val != "mc" else "disabled",
+                                state="normal",
                                 selectcolor=darkgray, activebackground=lightgray, activeforeground=white,
                                 indicatoron=0,
                                 width=25, pady=7.5)
@@ -280,29 +282,32 @@ class PyPLGUI(tk.Frame):
     def tab_2(self):  # 2. Input
         # todo make scrollable
 
-        tab = self.tabs.nametowidget(self.tabs.tabs()[2])
+        tab = self.tabs.nametowidget(self.tabs.tabs()[1])
 
         def add_formula():
             # variable
             raw = tk.StringVar()
             raws.append(raw)
-            fmls.append(raw)
-            modes.append(raw)
-            i = fmls.index(raw)
+            fmls.append(None)
+            modes.append(None)
+            i = raws.index(raw)
             # frames
             if i > 0:
                 new_mids = {j: tk.Frame(mid) for j in range(len(mids), len(mids) + 3)}
                 mids.update(new_mids)
                 for j in new_mids:
                     mids[j].pack(ipadx=5, ipady=5)
+
             # caption
             cap = tk.Label(tab,
-                           text=("Conclusion:" if i == 0 else "Premise " + str(i) + ":"))
-            row = len(mids) - 3 if i > 0 else 1
+                           text=(("Conclusion:" if i == 0 else "Premise " + str(i) + ":")
+                                 if self.inst.action in ["tt", "tp", "cmg"]
+                                  else "Formula " + str(i+1) + ":" if self.inst.action in ["mg"] else "Expression"))
+            row = len(mids) - 3 if i > 0 else 1 if self.inst.action != "mg" else len(mids) - 2 if i > 0 else 2
             cap.pack(in_=mids[row], side=tk.LEFT)
             caps.append(cap)
             # remove button
-            if i > 0:
+            if i > 0 or self.inst.action == "mg":
                 rem = tk.Button(tab,
                                 text="-",
                                 # bg=darkgray, fg=white,
@@ -344,15 +349,18 @@ class PyPLGUI(tk.Frame):
             # swap button
             if len(fmls) > 1:
                 btn_swap.config(state="normal")
+            # summary
+            update_summary()
 
         def remove_formula(i):
             # todo doesn't always work; indices not updated correctly?
             del raws[i]
             del fmls[i]
-            for j in range(6 + 3 * (i - 1), 6 + 3 * (i - 1) + 3):
+            start = 3 if self.inst.action != "mg" else 2
+            for j in range(6 + start * (i - 1), 6 + start * (i - 1) + 3):
                 mids[j].pack_forget()
             for j in range(3):
-                del mids[6 + 3 * (i - 1) + j]
+                del mids[6 + start * (i - 1) + j]
             del caps[i]
             del lbls[i]
             del rems[i]
@@ -391,14 +399,20 @@ class PyPLGUI(tk.Frame):
             raw = raws[i]
             lbl = lbls[i]
             parser = __import__("parser")
-            fml, mode = parser.Parser().parse_(raw.get())
+            fml, mode = parser.FmlParser().parse_(raw.get())
             fmls[i] = fml
             modes[i] = mode
             lbl.configure(text=str(fml))
             set_mode(modes)
             set()
 
-        def set_mode(modes):
+        def parse_struct(struct_raw):
+            parser = __import__("parser")
+            struct = parser.StructParser().parse(struct_raw.get())
+            lbl_struct.configure(text=str(struct))
+            set()
+
+        def set_mode(modes):  # todo extend for structure
             mode_map = {
                 "classical": ("classint", "class", "int"),
                 "propositional": ("proppred", "prop", "pred"),
@@ -438,13 +452,16 @@ class PyPLGUI(tk.Frame):
         def set():
             self.inst.conclusion = fmls[0] if fmls else None
             self.inst.premises = fmls[1:] if len(fmls) > 1 else []
-            self.update_summary()
+            update_summary()
             self.inst.completed.append(3)
             self.btn_run.config(state="normal", bg=darkgray, fg=white)
 
         def next_step(i):
             set()
             self.switch_to_tab(i)
+
+        for child in tab.winfo_children():
+            child.destroy()
 
         # frames
         # top
@@ -472,10 +489,6 @@ class PyPLGUI(tk.Frame):
             .pack(in_=top)
         # .grid(row=0, columnspan=4, sticky="NESW")
 
-        # summary
-        self.lbl_sum = tk.Label()
-        self.lbl_sum.pack(in_=mids[0])
-
         # input fields
         fmls = []
         modes = []
@@ -486,25 +499,92 @@ class PyPLGUI(tk.Frame):
         ents = []
         btns = []
 
-        # conclusion
-        add_formula()
-        self.update_summary()
+        def update_summary():
+            concl = self.inst.conclusion
+            if self.inst.action == "tt":
+                txt = "You are searching for a proof or refutation that " + \
+                       (str(concl) if concl else "...") + " is true in all structures" + \
+                       (" in which " + ", ".join([fml if fml else "..." for fml in fmls[1:]]) + " is true"
+                        if len(fmls) > 1 else "") + "."
+            elif self.inst.action == "tp":
+                txt = "You are searching for a proof that " + \
+                       (str(concl) if concl else "...") + " is true in all structures" + \
+                       (" in which " + ", ".join([fml if fml else "..." for fml in fmls[1:]]) + " is true"
+                        if len(fmls) > 1 else "") + "."
+            elif self.inst.action == "cmg":
+                txt = "You are searching for a structure in which " + \
+                       (str(concl) if concl else "...") + " is false" + \
+                       (" and " + ", ".join([fml if fml else "..." for fml in fmls[1:]]) + " is true"
+                        if len(fmls) > 1 else "") + "."
+            elif self.inst.action == "mg":
+                txt = "You are searching for a structure in which " + \
+                    ", ".join([str(fml) if fml else "..." for fml in fmls]) + \
+                       (" is " if len(fmls) == 1 else " are ") + "true."
+            else:
+                txt = "You are searching for the denotation of " + \
+                      (str(concl) if concl else "...") + " in  " + "S."
+            lbl_sum.config(text="(" + txt + ")")
 
-        # premise heading, swap and add premise buttons
+        # summary
+        lbl_sum = tk.Label()
+        update_summary()
+        lbl_sum.pack(in_=mids[0])
+
+        # captions
+        cap_pseudo = tk.Label(tab, text="")
+        cap_fml = tk.Label(tab, text="Formula:")
+        cap_fmls = tk.Label(tab, text="Formulas:")
+        cap_concl = tk.Label(tab, text="Conclusion:")
+        cap_prems = tk.Label(tab, text="Premises:")
+        cap_struct = tk.Label(tab, text="Structure:")
+
+        # buttons
         btn_swap = tk.Button(tab,
                              text="⇅",
                              state="disabled",
                              activebackground=lightgray, activeforeground=white)
-        btn_swap.pack(in_=mids[4], side=tk.LEFT, padx=15)
         btn_swap.bind("<Button>", lambda e: swap_formulas())
-        lbl_prem = tk.Label(tab, text="Premises:")
-        lbl_prem.pack(in_=mids[4], side=tk.LEFT)
-        btn_add_prem = tk.Button(tab,
-                                 text="+",
-                                 activebackground=lightgray, activeforeground=white)
-        btn_add_prem["font"] = font_large
-        btn_add_prem.pack(in_=mids[4], side=tk.LEFT, padx=15)
-        btn_add_prem.bind("<Button>", lambda e: add_formula())
+        btn_add_fml = tk.Button(tab,
+                                text="+",
+                                activebackground=lightgray, activeforeground=white)
+        btn_add_fml["font"] = font_large
+        btn_add_fml.bind("<Button>", lambda e: add_formula())
+
+        if self.inst.action == "mc":  # todo complete
+            add_formula()
+            mid6 = tk.Frame(mid)
+            mids[6] = mid6
+            mids[6].pack(ipadx=5, ipady=5)
+            cap_struct.pack(in_=mids[4], padx=15)
+            lbl_struct = tk.Label(tab, text="...")
+            lbl_struct.pack(in_=mids[5], side=tk.LEFT)
+            struct_raw = tk.StringVar()
+            ent = tk.Entry(tab,
+                           textvariable=struct_raw,
+                           width=50)
+            ent.pack(in_=mids[6], side=tk.LEFT)
+            # struct_raw.trace("w", lambda *args: select_entry(i))
+            ents.append(ent)
+            btn_parse_struct = tk.Button(tab,
+                                         text="↻",
+                                         # bg=darkgray, fg=white,
+                                         activebackground=lightgray, activeforeground=white,
+                                         state="disabled")
+            btn_parse_struct["font"] = font_large
+            btn_parse_struct.pack(in_=mids[6], side=tk.LEFT, padx=5)
+            btn_parse_struct.bind("<Button>", lambda e: parse_struct(struct_raw))
+            btns.append(btn_parse_struct)
+        elif self.inst.action == "mg":  # todo align center
+            # cap_pseudo.pack(in_=mids[0], side=tk.LEFT, padx=15)
+            cap_fmls.pack(in_=mids[1], side=tk.LEFT)
+            btn_add_fml.pack(in_=mids[1], side=tk.LEFT, padx=15)
+            add_formula()
+        else:
+            # cap_concl.pack(in_=mids[0], side=tk.LEFT, padx=15)
+            add_formula()
+            btn_swap.pack(in_=mids[4], side=tk.LEFT, padx=15)
+            cap_prems.pack(in_=mids[4], side=tk.LEFT)
+            btn_add_fml.pack(in_=mids[4], side=tk.LEFT, padx=15)
         ents[0].focus()
 
         # reset button
@@ -534,7 +614,7 @@ class PyPLGUI(tk.Frame):
         # btn_next.pack(in_=bot2)
 
     def tab_3(self):  # 3. Logic
-        tab = self.tabs.nametowidget(self.tabs.tabs()[3])
+        tab = self.tabs.nametowidget(self.tabs.tabs()[2])
 
         def initial_select_rb(arg):
             rb, cat = arg
@@ -679,7 +759,7 @@ class PyPLGUI(tk.Frame):
 
     def tab_4(self):  # 4. Settings
         # todo implement size limit factor, underline open and hide nonopen
-        tab = self.tabs.nametowidget(self.tabs.tabs()[4])
+        tab = self.tabs.nametowidget(self.tabs.tabs()[3])
 
         def initial_select_rb(rb):
             rb.config(fg=white)
@@ -936,19 +1016,6 @@ class PyPLGUI(tk.Frame):
         tab_id = self.tabs.tabs()[i]
         self.tabs.select(tab_id)
 
-    def update_summary(self):
-        txt = "(You are searching for a " + ("proof that " if self.inst.action == "tp" else
-                                             ("proof or refutation that " if self.inst.action == "tt" else
-                                              "structure in which "))
-        txt += (str(self.inst.conclusion) if self.inst.conclusion else "...") + " is "
-        txt += ("true in all structures" if self.inst.action == "tp" or self.inst.action == "tt" else (
-            "true" if self.inst.action == "mg" else "false"))
-        if self.inst.premises:
-            txt += ("\n in which " if self.inst.action == "tp" or self.inst.action == "tt" else " and ") + \
-                   ", ".join([str(fml) for fml in self.inst.premises]) + " is true"
-        txt += ".)"
-        self.lbl_sum.config(text=txt)
-
     def run(self):
         tableau = __import__("tableau")
         concl = self.inst.conclusion
@@ -980,9 +1047,9 @@ class PyPLGUI(tk.Frame):
                             underline_open=underline_open, hide_nonopen=hide_nonopen)
 
         else:
-            # test if theorem
+            # test if non-theorem
             tab1 = tableau.Tableau(concl, premises=premises, axioms=axioms,
-                                   validity=True, satisfiability=False,
+                                   validity=False, satisfiability=False,
                                    classical=classical, propositional=propositional,
                                    modal=modal, vardomains=vardomains, frame=frame,
                                    latex=latex, file=True, silent=True, num_models=num_models,
@@ -991,8 +1058,9 @@ class PyPLGUI(tk.Frame):
             if not tab1.infinite():
                 tab1.show()
             else:
+                # test if theorem
                 tab2 = tableau.Tableau(concl, premises=premises, axioms=axioms,
-                                       validity=False, satisfiability=False,
+                                       validity=True, satisfiability=False,
                                        classical=classical, propositional=propositional,
                                        modal=modal, vardomains=vardomains, frame=frame,
                                        latex=latex, file=True, silent=True, num_models=num_models,

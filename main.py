@@ -12,7 +12,7 @@ from denotation import *
 from tableau import *
 
 if __name__ == "__main__":
-    parser = Parser()
+    parser = FmlParser()
 
     # fml = parser.parse(r"\exi x \all y R(x,y) -> \all y \exi x R(x,y)")
 

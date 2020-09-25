@@ -10,7 +10,8 @@ import re
 
 debug = False
 
-class Parser:
+
+class FmlParser:
     """
     Parse a formula given as string into an Expr object.
     """
@@ -38,35 +39,35 @@ class Parser:
             # auxiliary symbols
             "Lbrack": r"\(",
             "Rbrack": r"\)",
-            "Comma":  r",",
-            "Semic":  r";",
+            "Comma": r",",
+            "Semic": r";",
             "Dsemic": r";;",
             # meta symbols
-            "Inf":    r"(\|=||\\vDash|\\models|\\linf)",
+            "Inf": r"(\|=||\\vDash|\\models|\\linf)",
             "Noninf": r"(\|/=||\\nvDash|\\nmodels|\\lninf)",
             # term symbols
-            "Var":    r"(x|y|z)(_?\d+)?",
-            "Const":  r"(([a-e]|[i-o])(_?\d+)?)",
-            "Func":   r"(f|g|h)(_?\d+)?",
-            "Pred":   r"[A-Z]\w*",
+            "Var": r"(x|y|z)(_?\d+)?",
+            "Const": r"(([a-e]|[i-o])(_?\d+)?)",
+            "Func": r"(f|g|h)(_?\d+)?",
+            "Pred": r"[A-Z]\w*",
             # atom symbols
-            "Prop":   r"[p-u](_?\d+)?",
-            "Eq":     r"(=|\\eq)",
+            "Prop": r"[p-u](_?\d+)?",
+            "Eq": r"(=|\\eq)",
             # connectives
-            "Verum":  r"(⊤|\\top|\\verum|\\ltrue)",
+            "Verum": r"(⊤|\\top|\\verum|\\ltrue)",
             "Falsum": r"(⊥|\\bot|\\falsum|\\lfalse)",
-            "Neg":    r"(¬|-|~|\\neg|\\lnot)",
-            "Conj":   r"(∧|\^|&|\\wedge|\\land)",
-            "Disj":   r"(∨|v|\||\\vee|\\lnot)",
-            "Imp":    r"(→|⇒|⊃|(-|=)+>|\\rightarrow|\\Rightarrow|\\to|\\limp)",
-            "Biimp":  r"(↔|⇔|≡|<(-|=)+>|\\leftrightarrow|\\Leftrightarrow|\\oto|\\lbiimp)",
-            "Xor":    r"(⊕|⊻|\\oplus|\\lxor)",
+            "Neg": r"(¬|-|~|\\neg|\\lnot)",
+            "Conj": r"(∧|\^|&|\\wedge|\\land)",
+            "Disj": r"(∨|v|\||\\vee|\\lnot)",
+            "Imp": r"(→|⇒|⊃|(-|=)+>|\\rightarrow|\\Rightarrow|\\to|\\limp)",
+            "Biimp": r"(↔|⇔|≡|<(-|=)+>|\\leftrightarrow|\\Leftrightarrow|\\oto|\\lbiimp)",
+            "Xor": r"(⊕|⊻|\\oplus|\\lxor)",
             # quantifiers
             "Exists": r"(∃|\\exists|\\exi|\\ex)",
             "Forall": r"(∀|\\forall|\\all|\\fa)",
             # modal operators
-            "Poss":   r"(◇|\*|\\Diamond|\\poss)",
-            "Nec":    r"(◻|#|\\Box||\\nec)"
+            "Poss": r"(◇|\*|\\Diamond|\\poss)",
+            "Nec": r"(◻|#|\\Box||\\nec)"
         }
         regex2token = {v: k for k, v in token2regex.items()}
 
@@ -213,7 +214,7 @@ class Parser:
                 continue
 
             if len(stacks) == 1:
-                if len(stack) == 1:   # stacks are finished; return
+                if len(stack) == 1:  # stacks are finished; return
                     break
                 else:  # outer brackets ommmited; move content to new stack
                     new_stack = [e for e in stack]
@@ -222,7 +223,7 @@ class Parser:
                     i += 1
                     curr_stack = stacks[i]
 
-            prev_stack = stacks[i-1]
+            prev_stack = stacks[i - 1]
             bot = curr_stack[0]
             mid = curr_stack[1] if len(curr_stack) > 1 else None
             top = curr_stack[-1]
@@ -285,8 +286,94 @@ class Parser:
         if debug:
             print("stacks after: ", stacks)
 
+
+class StructParser:
+    """
+    Parse a structure given as string into a Structure object.
+    """
+    def __init__(self):
+        pass
+
+    def parse(self, inp):
+        constituents = {const.split(" = ")[0]: const.split(" = ")[1] for const in inp.split("\n")}
+        s = "S0"
+        modal = True if "W" in constituents or "K" in constituents else False
+        propositional = True if "V" in constituents else False
+        intuitionistic = True if "K" in constituents else False
+        vardomains = True
+        if "V" in constituents:
+            spec = constituents["V"].split(", ")
+            if not modal:
+                v = {s.split(": ")[0]: s.split(": ")[1] for s in spec}
+            else:
+                v = {s.split(": ")[0]: {s_.split(": ")[0]: s_[1] for s_ in s.split(": ")[1]} for s in spec}
+        if "D" in constituents:
+            spec = constituents["D"][1:-1].split(", ")
+            vardomains = True if ": " in spec else False
+            if not modal or not vardomains:
+                d = set(constituents["D"][1:-1].split(", "))
+            else:
+                d = {s.split(": ")[0]: s.split(": ")[1] for s in spec}
+        if "I" in constituents:
+            spec = constituents["I"].split(", ")
+            i = dict()
+            if not modal:
+                for s in spec:
+                    [symbol, interpr] = s.split(": ")
+                    if "{" not in interpr:
+                        i[symbol] = interpr
+                    elif ": " not in interpr:
+                        i[symbol] = set([tuple(el.split(", ")) for el in interpr.split(", ")])
+                    else:
+                        i[symbol] = {el.split(": ")[0]: tuple(el.split(": ")[1].split(", "))
+                                     for el in interpr.split(", ")}
+            else:
+                spec_ = spec.split(", ")
+                for s_ in spec_:
+                    [world, interprfunc] = s_.split(": ")
+                    interprfunc = interprfunc.split(", ")
+                    for s in interprfunc:
+                        [symbol, interpr] = s.split(": ")
+                        if "{" not in interpr:
+                            i[world][symbol] = interpr
+                        elif ": " not in interpr:
+                            i[world][symbol] = set([tuple(el.split(", ")) for el in interpr.split(", ")])
+                        else:
+                            i[world][symbol] = {el.split(": ")[0]: tuple(el.split(": ")[1].split(", "))
+                                                for el in interpr.split(", ")}
+        if "W" in constituents:
+            spec = constituents["W"][1:-1].split(", ")
+            w = set(spec)
+        if "K" in constituents:
+            spec = constituents["K"][1:-1].split(", ")
+            k = set(spec)
+        if "R" in constituents:
+            spec = constituents["K"][1:-1].split(", ")
+            r = set([tuple(el.split(", ")) for el in spec])
+
+        structure = __import__("structure")
+        if not intuitionistic:
+            if not modal:
+                if propositional:
+                    structure.PropStructure(s, v)
+                else:
+                    return structure.PredStructure(s, d, i)
+            else:
+                if propositional:
+                    return structure.PropModalStructure(s, w, r, w)
+                else:
+                    if not vardomains:
+                        return structure.ConstModalStructure(s, w, r, d, i)
+                    else:
+                        return structure.VarModalStructure(s, w, r, d, i)
+        else:
+            if propositional:
+                return structure.KripkePropStructure(s, k, r, v)
+            else:
+                return structure.KripkePredStructure(s, k, r, d, i)
+
 if __name__ == "__main__":
-    parser = Parser()
+    parser = FmlParser()
     # test = r"R(f(a,b),y)"
     # test = "~ p v q |= p -> q"
     print()
