@@ -201,6 +201,19 @@ class PyPLGUI(tk.Frame):
         # todo theorem guessing
         tab = self.tabs.nametowidget(self.tabs.tabs()[0])
 
+        def update_summary():
+            if self.inst.action == "tt":
+                txt = "Test whether or not the conclusion is true in all structures [in which the premises are true]."
+            elif self.inst.action == "tp":
+                txt = "Prove that the conclusion is true in all structures [in which the premises are true]."
+            elif self.inst.action == "cmg":
+                txt = "Generate a structure in which the conclusion is false [and the premises are true]."
+            elif self.inst.action == "mg":
+                txt = "Generate a structure in which the formula[s] is [/are] true."
+            else:
+                txt = "Test whether the formula is true in the structure."
+            lbl_sum.config(text="(" + txt + ")")
+
         def initial_select_rb(rb):
             rb.config(fg=white)
 
@@ -213,7 +226,7 @@ class PyPLGUI(tk.Frame):
 
         def set():
             self.inst.action = action.get()
-            self.tab_2()
+            update_summary()
             self.inst.completed.append(1)
         # frames
         # top
@@ -252,64 +265,77 @@ class PyPLGUI(tk.Frame):
             rb.pack(in_=mid, pady=5)
             radiobuttons.append(rb)
 
+        # summary
+        lbl_sum = tk.Label(bg=white)
+        update_summary()
+        lbl_sum.pack(in_=mid, ipady=15)
+
     def tab_2(self):  # 2. Input
         # todo make scrollable
+        # todo dont delete all entries when switching self.input_modes
+        # todo broaden on window resize
 
         tab = self.tabs.nametowidget(self.tabs.tabs()[1])
 
         def add_formula():
             # variable
             raw = tk.StringVar()
-            raws.append(raw)
-            fmls.append(None)
-            modes.append(None)
-            i = raws.index(raw)
+            self.input_raws.append(raw)
+            self.input_fmls.append(None)
+            self.input_modes.append(None)
+            i = self.input_raws.index(raw)
             # frames
             if i > 0:
-                new_mids = {j: tk.Frame(mid, bg=white) for j in range(len(mids), len(mids) + 3)}
+                new_mids = {j: tk.Frame(mid, bg=white) for j in range(len(mids), len(mids) + 1)}
                 mids.update(new_mids)
                 for j in new_mids:
-                    mids[j].pack(ipadx=5, ipady=5)
-
-            # caption
-            cap = tk.Label(tab,
-                           bg=white,
-                           text=(("Conclusion:" if i == 0 else "Premise " + str(i) + ":")
-                                 if self.inst.action in ["tt", "tp", "cmg"]
-                                  else "Formula " + str(i+1) + ":" if self.inst.action in ["mg"] else "Expression:"))
-            row = len(mids) - 3 if i > 0 else 1 if self.inst.action != "mg" else len(mids) - 2 if i > 0 else 2
-            cap.pack(in_=mids[row], side=tk.LEFT)
-            caps.append(cap)
+                    mids[j].pack(ipadx=5, ipady=5, padx=50)
+            # row = len(mids) - 3 if i > 0 else 1 if self.inst.action != "mg" else len(mids) - 2 if i > 0 else 2
+            # # caption
+            # cap = tk.Label(tab,
+            #                bg=white,
+            #                text=(("Conclusion:" if i == 0 else "Premise " + str(i) + ":")
+            #                      if self.inst.action in ["tt", "tp", "cmg"]
+            #                       else "Formula " + str(i+1) + ":" if self.inst.action in ["mg"] else "Formula:"))
+            row = len(mids) - 1 if i > 0 else 1
+            # cap.pack(in_=mids[row], side=tk.LEFT)
+            # caps.append(cap)
             # remove button
-            if i > 0 or self.inst.action == "mg":
-                rem = tk.Button(tab,
-                                bg=white,
-                                text="-",
-                                # bg=darkgray, fg=white,
-                                activebackground=lightgray, activeforeground=white)
+            rem = tk.Button(tab,
+                            bg=white,
+                            text="-",
+                            # bg=darkgray, fg=white,
+                            state="disabled",
+                            activebackground=lightgray, activeforeground=white,
+                            width=1, height=1)
+            if self.inst.action != "mc":
                 rem.pack(in_=mids[row], side=tk.LEFT, padx=5)
-                rem["font"] = font_large
-                rem.bind("<Button>", lambda e: remove_formula(i))
-            else:
-                rem = None
+            rem["font"] = font_large
+            rem.bind("<Button>", lambda e: remove_formula(i))
             rems.append(rem)
-            # formula in plain text  # todo make text selectable
-            lbl = tk.Label(tab, text="...", bg=white)
-            lbl.pack(in_=mids[row + 1], side=tk.LEFT)
+            if len(self.input_fmls) > 1:
+                btn_swap.config(state="normal")
+                rem.config(state="normal")
+            # formula in plain text
+            lbl = tk.Text(tab, height=1, width=40, borderwidth=0, bg=white)
+            lbl.configure(inactiveselectbackground=lbl.cget("selectbackground"))
+            lbl.configure(state="disabled")
+            # lbl.pack(in_=mids[row + 1], side=tk.LEFT)
+            lbl.pack(in_=mids[row], side=tk.LEFT, padx=15)
             # lbl = tk.Text(tab, height=1, borderwidth=0)
             # lbl.tag_configure("center", justify='center')
             # lbl.insert(1.0, "...", "center")
             # lbl.configure(state="disabled")
             # lbl.configure(inactiveselectbackground=lbl.cget("selectbackground"))
             # lbl.pack(in_=mids[row + 1], side=tk.LEFT)
-            lbls.append(lbl)
+            input_lbls.append(lbl)
             # entry field
             ent = tk.Entry(tab,
                            textvariable=raw,
-                           width=50)
-            ent.pack(in_=mids[row + 2], side=tk.LEFT)
+                           width=37)
+            ent.pack(in_=mids[row], side=tk.LEFT)
             raw.trace("w", lambda *args: select_entry(i))
-            ents.append(ent)
+            self.input_ents.append(ent)
             # parse button
             btn_parse = tk.Button(tab,
                                   bg=white,
@@ -318,50 +344,48 @@ class PyPLGUI(tk.Frame):
                                   activebackground=lightgray, activeforeground=white,
                                   state="disabled")
             btn_parse["font"] = font_large
-            btn_parse.pack(in_=mids[row + 2], side=tk.LEFT, padx=5)
+            btn_parse.pack(in_=mids[row], side=tk.LEFT, padx=5)
             btn_parse.bind("<Button>", lambda e: parse(i))
             btns.append(btn_parse)
             ent.bind("<Return>", lambda e: parse(i))
-            # swap button
-            if len(fmls) > 1:
-                btn_swap.config(state="normal")
-            # summary
-            update_summary()
 
         def remove_formula(i):
             # todo doesn't always work; indices not updated correctly?
-            del raws[i]
-            del fmls[i]
-            start = 3 if self.inst.action != "mg" else 2
-            for j in range(6 + start * (i - 1), 6 + start * (i - 1) + 3):
-                mids[j].pack_forget()
-            for j in range(3):
-                del mids[6 + start * (i - 1) + j]
-            del caps[i]
-            del lbls[i]
+            del self.input_raws[i]
+            del self.input_fmls[i]
+            # start = 3 if self.inst.action != "mg" else 2
+            # for j in range(6 + start * (i - 1), 6 + start * (i - 1) + 3):
+            #     mids[j].pack_forget()
+            # for j in range(3):
+            #     del mids[6 + start * (i - 1) + j]
+            row = len(mids) - 1 if i > 0 else 1
+            mids[row].pack_forget()
+            del mids[row]
+            # del caps[i]
+            del input_lbls[i]
             del rems[i]
-            del ents[i]
+            del self.input_ents[i]
             del btns[i]
-            if len(fmls) > 1:
-                for j in range(1, len(fmls)):
+            if len(self.input_fmls) > 1:
+                for j in range(1, len(self.input_fmls)):
                     pos = j if j <= i else j - 1
-                    caps[j].config(text="Premise " + str(pos) + ":")
+                    # caps[j].config(text="Premise " + str(pos) + ":")
                     rems[j].bind("<Button>", lambda e: remove_formula(pos))
-                    raws[j].trace("w", lambda *args: select_entry(pos))
+                    self.input_raws[j].trace("w", lambda *args: select_entry(pos))
                     btns[j].bind("<Button>", lambda e: parse(pos))
-            if len(fmls) == 1:
+            if len(self.input_fmls) == 1:
                 btn_swap.config(state="disabled")
             set()
 
         def swap_formulas():
-            c, p1 = raws[0].get(), raws[1].get()
-            raws[0].set(p1)
-            raws[1].set(c)
+            c, p1 = self.input_raws[0].get(), self.input_raws[1].get()
+            self.input_raws[0].set(p1)
+            self.input_raws[1].set(c)
             parse(0)
             parse(1)
 
         def select_entry(i):
-            raw = raws[i]
+            raw = self.input_raws[i]
             if raw.get():
                 if i >= 0:
                     btns[i].config(state="normal")
@@ -374,21 +398,29 @@ class PyPLGUI(tk.Frame):
                     btn_parse_struct.config(state="disabled")
 
         def parse(i):
-            raw = raws[i]
-            lbl = lbls[i]
+            raw = self.input_raws[i]
+            lbl = input_lbls[i]
             parser = __import__("parser")
             fml, mode = parser.FmlParser().parse_(raw.get())
-            fmls[i] = fml
-            modes[i] = mode
-            lbl.configure(text=str(fml))
-            set_mode(modes)
+            self.input_fmls[i] = fml
+            self.input_modes[i] = mode
+            # lbl.configure(text=str(fml))
+            lbl.configure(state="normal")
+            lbl.delete("1.0", tk.END)
+            lbl.insert(1.0, str(fml))
+            lbl.configure(state="disabled")
+            set_mode(self.input_modes)
             set()
 
         def parse_struct():
             parser = __import__("parser")
             struct_raw = ent_struct.get(1.0, "end-1c")
             struct = parser.StructParser().parse(struct_raw)
-            lbl_struct.configure(text=str(struct))
+            # lbl_struct.configure(text=str(struct))
+            lbl_struct.configure(state="normal")
+            lbl_struct.delete("1.0", tk.END)
+            lbl_struct.insert(1.0, str(struct))
+            lbl_struct.configure(state="disabled")
             self.inst.structure = struct
             # set()
 
@@ -424,10 +456,10 @@ class PyPLGUI(tk.Frame):
                 self.rbs_logic["constvar"]["var"].config(state="disabled")
 
         def set():
-            self.inst.conclusion = fmls[0] if fmls else None
-            self.inst.premises = fmls[1:] if len(fmls) > 1 else []
+            self.inst.conclusion = self.input_fmls[0] if self.input_fmls else None
+            self.inst.premises = self.input_fmls[1:] if len(self.input_fmls) > 1 else []
             # self.inst.structure = struct
-            update_summary()
+            # update_summary()
             self.inst.completed.append(3)
             self.btn_run.config(state="normal", bg=darkgray, fg=white)
 
@@ -443,10 +475,9 @@ class PyPLGUI(tk.Frame):
         # mid
         mid = tk.Frame(tab, bg=white)
         mid.pack()
-        mids = {i: tk.Frame(mid, bg=white) for i in range(6)}
+        mids = {i: tk.Frame(mid, bg=white) for i in range(3)}
         for i in mids:
-            mids[i].pack(ipadx=5, ipady=5)
-
+            mids[i].pack(ipadx=5, ipady=5, padx=50)
         # heading
         lbl_head = tk.Label(tab,
                             bg=white,
@@ -457,14 +488,14 @@ class PyPLGUI(tk.Frame):
         # .grid(row=0, columnspan=4, sticky="NESW")
 
         # input fields
-        fmls = []
+        self.input_fmls = []
         struct = None
-        modes = []
-        raws = []
+        self.input_modes = []
+        self.input_raws = []
         caps = []
-        lbls = []
+        input_lbls = []
         rems = []
-        ents = []
+        self.input_ents = []
         btns = []
 
         def update_summary():
@@ -472,22 +503,22 @@ class PyPLGUI(tk.Frame):
             if self.inst.action == "tt":
                 txt = "You are searching for a proof or refutation that " + \
                        (str(concl) if concl else "...") + " is true in all structures" + \
-                       (" in which " + ", ".join([fml if fml else "..." for fml in fmls[1:]]) + " is true"
-                        if len(fmls) > 1 else "") + "."
+                       (" in which " + ", ".join([fml if fml else "..." for fml in self.input_fmls[1:]]) + " is true"
+                        if len(self.input_fmls) > 1 else "") + "."
             elif self.inst.action == "tp":
                 txt = "You are searching for a proof that " + \
                        (str(concl) if concl else "...") + " is true in all structures" + \
-                       (" in which " + ", ".join([fml if fml else "..." for fml in fmls[1:]]) + " is true"
-                        if len(fmls) > 1 else "") + "."
+                       (" in which " + ", ".join([fml if fml else "..." for fml in self.input_fmls[1:]]) + " is true"
+                        if len(self.input_fmls) > 1 else "") + "."
             elif self.inst.action == "cmg":
                 txt = "You are searching for a structure in which " + \
                        (str(concl) if concl else "...") + " is false" + \
-                       (" and " + ", ".join([fml if fml else "..." for fml in fmls[1:]]) + " is true"
-                        if len(fmls) > 1 else "") + "."
+                       (" and " + ", ".join([fml if fml else "..." for fml in self.input_fmls[1:]]) + " is true"
+                        if len(self.input_fmls) > 1 else "") + "."
             elif self.inst.action == "mg":
                 txt = "You are searching for a structure in which " + \
-                    ", ".join([str(fml) if fml else "..." for fml in fmls]) + \
-                       (" is " if len(fmls) == 1 else " are ") + "true."
+                    ", ".join([str(fml) if fml else "..." for fml in self.input_fmls]) + \
+                       (" is " if len(self.input_fmls) == 1 else " are ") + "true."
             else:
                 txt = "You are searching for the denotation of " + \
                       (str(concl) if concl else "...") + " in  " + "S."
@@ -495,8 +526,8 @@ class PyPLGUI(tk.Frame):
 
         # summary
         lbl_sum = tk.Label(bg=white)
-        update_summary()
-        lbl_sum.pack(in_=mids[0])
+        # update_summary()
+        # lbl_sum.pack(in_=mids[0])
 
         # captions
         cap_pseudo = tk.Label(tab, text="", bg=white)
@@ -511,52 +542,57 @@ class PyPLGUI(tk.Frame):
                              bg=white,
                              text="⇅",
                              state="disabled",
-                             activebackground=lightgray, activeforeground=white)
+                             activebackground=lightgray, activeforeground=white,
+                             width=1, height=1)
         btn_swap.bind("<Button>", lambda e: swap_formulas())
         btn_add_fml = tk.Button(tab,
                                 bg=white,
                                 text="+",
-                                activebackground=lightgray, activeforeground=white)
+                                activebackground=lightgray, activeforeground=white,
+                                width=1, height=1)
         btn_add_fml["font"] = font_large
         btn_add_fml.bind("<Button>", lambda e: add_formula())
 
         if self.inst.action == "mc":
+            cap_fml.pack(in_=mids[0], side=tk.LEFT, padx=15)
             add_formula()
-            mid6 = tk.Frame(mid, bg=white)
-            mids[6] = mid6
-            mids[6].pack(ipadx=5, ipady=5)
-            cap_struct.pack(in_=mids[4], padx=15)
-            lbl_struct = tk.Label(tab, text="...", bg="white")
-            lbl_struct.pack(in_=mids[5], side=tk.LEFT)
+            mid3 = tk.Frame(mid, bg=white)
+            mids[3] = mid3
+            mids[3].pack(ipadx=5, ipady=5)
+            cap_struct.pack(in_=mids[2], padx=15)
+            lbl_struct = tk.Text(tab, height=4, width=40, borderwidth=0, bg=white)
+            lbl_struct.configure(inactiveselectbackground=lbl_struct.cget("selectbackground"))
+            lbl_struct.configure(state="disabled")
+            lbl_struct.pack(in_=mids[3], side=tk.LEFT, padx=15, expand=True)
             # raw_struct = tk.StringVar()
             # ent_struct = tk.Entry(tab,
             #                textvariable=struct_raw)
             # ent_struct.pack(in_=mids[6], side=tk.LEFT, expand=True)
             # ent_struct.trace("w", lambda *args: select_entry(-1))
-            ent_struct = tk.Text(tab, height=4, width=50)
-            ent_struct.pack(in_=mids[6], side=tk.LEFT, expand=True)  # todo doesn't work
-            ents.append(ent_struct)
+            ent_struct = tk.Text(tab, height=4, width=37)
+            ent_struct.pack(in_=mids[3], side=tk.LEFT, expand=True)  # todo doesn't work
+            self.input_ents.append(ent_struct)
             btn_parse_struct = tk.Button(tab,
                                          bg=white,
                                          text="↻",
                                          # bg=darkgray, fg=white,
                                          activebackground=lightgray, activeforeground=white)
             btn_parse_struct["font"] = font_large
-            btn_parse_struct.pack(in_=mids[6], side=tk.LEFT, padx=5)
+            btn_parse_struct.pack(in_=mids[3], side=tk.LEFT, padx=5)
             btn_parse_struct.bind("<Button>", lambda e: parse_struct())
             btns.append(btn_parse_struct)
         elif self.inst.action == "mg":  # todo align center
             # cap_pseudo.pack(in_=mids[0], side=tk.LEFT, padx=15)
-            cap_fmls.pack(in_=mids[1], side=tk.LEFT)
-            btn_add_fml.pack(in_=mids[1], side=tk.LEFT, padx=15)
+            cap_fmls.pack(in_=mids[0], side=tk.LEFT)
+            btn_add_fml.pack(in_=mids[0], side=tk.LEFT, padx=15)
             add_formula()
         else:
-            # cap_concl.pack(in_=mids[0], side=tk.LEFT, padx=15)
+            cap_concl.pack(in_=mids[0], side=tk.LEFT, padx=15)
             add_formula()
-            btn_swap.pack(in_=mids[4], side=tk.LEFT, padx=15)
-            cap_prems.pack(in_=mids[4], side=tk.LEFT)
-            btn_add_fml.pack(in_=mids[4], side=tk.LEFT, padx=15)
-        ents[0].focus()
+            btn_swap.pack(in_=mids[2], side=tk.LEFT, padx=15)
+            cap_prems.pack(in_=mids[2], side=tk.LEFT, pady=15)
+            btn_add_fml.pack(in_=mids[2], side=tk.LEFT, padx=15)
+        self.input_ents[0].focus()
 
     def tab_3(self):  # 3. Logic
         tab = self.tabs.nametowidget(self.tabs.tabs()[2])
