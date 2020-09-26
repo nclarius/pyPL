@@ -203,15 +203,16 @@ class PyPLGUI(tk.Frame):
 
         def update_summary():
             if self.inst.action == "tt":
-                txt = "Test whether or not the conclusion is true in all structures [in which the premises are true]."
+                txt = "Test whether or not the conclusion is true in all structures [in which the premises are true]," \
+                      "\nand generate a proof or counter model."
             elif self.inst.action == "tp":
-                txt = "Prove that the conclusion is true in all structures [in which the premises are true]."
+                txt = "Generate a proof that the conclusion is true in all structures [in which the premises are true]."
             elif self.inst.action == "cmg":
                 txt = "Generate a structure in which the conclusion is false [and the premises are true]."
             elif self.inst.action == "mg":
                 txt = "Generate a structure in which the formula[s] is [/are] true."
             else:
-                txt = "Test whether the formula is true in the structure."
+                txt = "Check whether the formula is true in the structure."
             lbl_sum.config(text="(" + txt + ")")
 
         def initial_select_rb(rb):
@@ -227,6 +228,7 @@ class PyPLGUI(tk.Frame):
         def set():
             self.inst.action = action.get()
             update_summary()
+            self.tab_2()
             self.inst.completed.append(1)
         # frames
         # top
@@ -317,11 +319,11 @@ class PyPLGUI(tk.Frame):
                 btn_swap.config(state="normal")
                 rem.config(state="normal")
             # formula in plain text
-            lbl = tk.Text(tab, height=1, width=40, borderwidth=0, bg=white)
+            lbl = tk.Text(tab, height=1, width=40, borderwidth=0, bg=white, wrap=tk.CHAR)
             lbl.configure(inactiveselectbackground=lbl.cget("selectbackground"))
             lbl.configure(state="disabled")
             # lbl.pack(in_=mids[row + 1], side=tk.LEFT)
-            lbl.pack(in_=mids[row], side=tk.LEFT, padx=15)
+            lbl.pack(in_=mids[row], side=tk.LEFT, padx=15, fill="both", expand=True)
             # lbl = tk.Text(tab, height=1, borderwidth=0)
             # lbl.tag_configure("center", justify='center')
             # lbl.insert(1.0, "...", "center")
@@ -530,7 +532,6 @@ class PyPLGUI(tk.Frame):
         # lbl_sum.pack(in_=mids[0])
 
         # captions
-        cap_pseudo = tk.Label(tab, text="", bg=white)
         cap_fml = tk.Label(tab, text="Formula:", bg=white)
         cap_fmls = tk.Label(tab, text="Formulas:", bg=white)
         cap_concl = tk.Label(tab, text="Conclusion:", bg=white)
@@ -581,7 +582,7 @@ class PyPLGUI(tk.Frame):
             btn_parse_struct.pack(in_=mids[3], side=tk.LEFT, padx=5)
             btn_parse_struct.bind("<Button>", lambda e: parse_struct())
             btns.append(btn_parse_struct)
-        elif self.inst.action == "mg":  # todo align center
+        elif self.inst.action == "mg":
             # cap_pseudo.pack(in_=mids[0], side=tk.LEFT, padx=15)
             cap_fmls.pack(in_=mids[0], side=tk.LEFT)
             btn_add_fml.pack(in_=mids[0], side=tk.LEFT, padx=15)
