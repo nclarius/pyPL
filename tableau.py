@@ -1125,7 +1125,7 @@ class Tableau(object):
         return any([isinstance(leaf.fml, Infinite) for leaf in self.root.leaves()
                     if leaf.fml and not isinstance(leaf.fml, Empty)])
 
-    def model(self, leaf) -> Structure:
+    def model(self, leaf):
         """
         The models for a tableau are the models associated with its open branches.
         A model for an open branch is one that satisfies all atoms in the branch.

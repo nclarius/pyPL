@@ -9,6 +9,8 @@ from structure import *
 
 from typing import List, Dict, Set, Tuple
 
+verbose = False
+
 
 class Expr:
     """
@@ -81,12 +83,12 @@ class Expr:
         # todo doesnt work
         pass
 
-    def denot(self, m: Structure, v: Dict[str,str] = None, w: str = None):
+    def denot(self, m, v: Dict[str,str] = None, w: str = None):
         """
         Compute the denotation of the expression relative to a structure m and assignment g.
 
         @param m: the structure to evaluate the formula against
-        @type m: Structure
+        @type m
         @param v: the assignment to evaluate the formula against
         @type v: dict[str,str]
         @param w: the possible world to evaluate the formula against
@@ -95,6 +97,23 @@ class Expr:
         """
         pass
 
+
+def mode_modal(m):
+    structure = __import__("structure")
+    return isinstance(m, structure.ModalStructure) or isinstance(m, structure.ModalStructure)
+
+def mode_propositional(m):
+    structure = __import__("structure")
+    return isinstance(m, structure.PropStructure) or \
+               isinstance(m, structure.PropModalStructure) or isinstance(m, structure.KripkePropStructure)
+
+def mode_vardomains(m):
+    structure = __import__("structure")
+    return isinstance(m, structure.VarModalStructure)
+
+def mode_intuitionistic(m):
+    structure = __import__("structure")
+    return isinstance(m, structure.KripkeStructure)
 
 class Term(Expr):
     """
@@ -210,9 +229,7 @@ class Const(Term):
         """
         The denotation of a constant is that individual that the interprηtion function f assigns it.
         """
-        i = m.i
-        if isinstance(m, ModalStructure) or isinstance(m, KripkeStructure):
-            i = m.i[w]
+        i = m.i if not mode_modal(m) else m.i[w]
         return i[self.c]
 
 
@@ -259,9 +276,7 @@ class Func(Expr):
         """
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
-        i = m.i
-        if isinstance(m, ModalStructure) or isinstance(m, KripkeStructure):
-            i = m.i[w]
+        i = m.i if not mode_modal(m) else m.i[w]
         return i[self.i]
 
 
@@ -321,9 +336,7 @@ class FuncTerm(Term):
         The denotation of a function symbol applied to an appropriate number of terms is that individual that the
         interprηtion function f assigns to the application.
         """
-        i = m.i
-        if isinstance(m, ModalStructure) or isinstance(m, KripkeStructure):
-            i = m.i[w]
+        i = m.i if not mode_modal(m) else m.i[w]
         return i[self.f.f][tuple([t.denot(m, g, w) for t in self.terms])]
 
 
@@ -370,9 +383,7 @@ class Pred(Expr):
         The denotation of a predicate is the set of ordered tuples of individuals that the interprηtion function f
         assigns it.
         """
-        i = m.i
-        if isinstance(m, ModalStructure) or isinstance(m, KripkeStructure):
-            i = m.i[w]
+        i = m.i if not mode_modal(m) else m.i[w]
         return i[self.p]
 
 
@@ -403,32 +414,32 @@ class Formula(Expr):
         """
         pass
 
-    def denot(self, m: Structure, g=None, w=None) -> bool:
+    def denot(self, m, g=None, w=None) -> bool:
         """
         @rtype: bool
         """
         pass
 
-    def denotG(self, m: Structure, w: str = None) -> bool:
+    def denotG(self, m, w: str = None) -> bool:
         """
         The truth value of a formula relative to a structure M (without reference to a particular assignment).
         A formula is true in a structure M iff it is true in M under all assignment functions g.
 
         @param m: a structure
-        @type m: Structure
+        @type m
         @attr w: a possible world
         @type w: str
         @return: the truth value of self in m
         @rtype: bool
         """
-        if isinstance(m, PropStructure) or isinstance(m, KripkePropStructure):
+        if mode_propositional(m):
             return self.denot(m, None, w)
 
         global depth
         # for efficiency, restrict the domain of the assignment functions o the vars that actually occur in the formula
         var_occs = self.freevars() | self.boundvars()
         gs__ = m.gs
-        if isinstance(m, VarModalStructure):
+        if mode_vardomains(m):
             vs__ = m.vs[w]
         gs_ = [{u: g[u] for u in g if u in var_occs} for g in gs__]
         gs = [dict(tpl) for tpl in {tuple(g.items()) for g in gs_}]  # filter out now duplicate assignment functions
@@ -455,13 +466,13 @@ class Formula(Expr):
                 return False
         return True
 
-    def denotW(self, m: ModalStructure, g: Dict[str,str]) -> bool:
+    def denotW(self, m, g: Dict[str,str]) -> bool:
         """
         The truth value of a formula relative to a structure M and assmnt. g (without reference to a particular world).
         A formula is true in a structure M iff it is true in M and g in all possible worlds w.
 
         @param m: a structure
-        @type m: ModalStructure
+        @type m
         @attr g: an assignment function
         @type g: dict[str,str]
         @return: the truth value of self in m under g
@@ -490,13 +501,13 @@ class Formula(Expr):
                 return False
         return True
 
-    def denotGW(self, m: ModalStructure) -> bool:
+    def denotGW(self, m) -> bool:
         """
         The truth value of a formula relative to a structure M (without reference to a particular assignment and world).
         A formula is true in a structure M iff it is true in M and g under all assignments g and all possible worlds w.
 
         @param m: a structure
-        @type m: ModalStructure
+        @type m
         @attr g: an assignment function
         @type g: dict[str,str]
         @return: the truth value of self in m under g
@@ -633,7 +644,7 @@ class Prop(Formula):
         """
         The denotation of a propositional variable is the truth value the valuation function V assigns it.
         """
-        if not isinstance(m, KripkeStructure):
+        if not mode_intuitionistic(m):
             v = m.v
             return v[self.p]
         else:
@@ -712,7 +723,7 @@ class Atm(Formula):
         The denotation of an atomic predication P(t1, ..., tn) is true iff the tuple of the denotation of the terms is
         an element of the interprηtion of the predicate.
         """
-        if not isinstance(m, KripkeStructure):
+        if not mode_intuitionistic(m):
             return tuple([t.denot(m, g, w) for t in self.terms]) in self.pred.denot(m, g, w)
         else:
             return (tuple([t.denot(m, g, w) for t in self.terms]) in self.pred.denot(m, g, w) or
@@ -976,7 +987,7 @@ class Neg(Formula):
         In IL, the denotation of a negated formula Neg(phi) is true iff phi is false at all subsequent states k' >= k.
 
         """
-        if not isinstance(m, KripkeStructure):  # CL
+        if not mode_intuitionistic(m):  # CL
             return not self.phi.denot(m, g, w)
         else:  # IL
             return True not in [self.phi.denot(m, g, w_) for w_ in m.future(w)]
@@ -1198,7 +1209,7 @@ class Imp(Formula):
         In IL, the denotation of an implicational formula Imp(phi,psi) is true at k iff
         at all subsequent states k' >= k, either phi is false or psi is true at k'.
         """
-        if not isinstance(self, KripkeStructure):  # CL
+        if not mode_intuitionistic(m):  # CL
             return not self.phi.denot(m, g, w) or self.psi.denot(m, g, w)
         else:  # IL
             return False not in [(not self.phi.denot(m, g, w_) or self.psi.denot(m, g, w_)) for w_ in m.future(w)]
@@ -1285,7 +1296,7 @@ class Biimp(Formula):
         In IL, the denotation of an biimplicational formula Biimp(phi,psi) is true at k iff
         at all subsequent states k' >= k, phi and psi have the same truth value.
         """
-        if not isinstance(m, KripkeStructure):  # CL
+        if not mode_intuitionistic(m):  # CL
             return self.phi.denot(m, g, w) == self.psi.denot(m, g, w)
         else:  # IL
             return False not in [(self.phi.denot(m, g, w_) == self.psi.denot(m, g, w_)) for w_ in m.future(w)]
@@ -1375,7 +1386,7 @@ class Xor(Formula):
         In IL, the denotation of an biimplicational formula Biimp(phi,psi) is true at k iff
         at all subsequent states k' >= k, phi and psi have the same truth value.
         """
-        if not isinstance(m, KripkeStructure):  # CL
+        if not mode_intuitionistic(m):  # CL
             return self.phi.denot(m, g, w) != self.psi.denot(m, g, w)
         else:  # IL
             return False not in [(self.phi.denot(m, g, w_) != self.psi.denot(m, g, w_)) for w_ in m.future(w)]
@@ -1466,7 +1477,7 @@ class Exists(Formula):
         """
         global verbose
         d = m.d
-        if isinstance(m, VarModalStructure) or isinstance(m, KripkeStructure):
+        if mode_vardomains(m) or mode_intuitionistic(m):
             d = m.d[w]
 
         # short version
@@ -1587,10 +1598,10 @@ class Forall(Formula):
         global depth
         depth += 1
         d = m.d
-        if isinstance(w, VarModalStructure):
+        if mode_vardomains(m):
             d = m.d[w]
 
-        if not isinstance(m, KripkeStructure):  # CL
+        if not mode_intuitionistic(m):  # CL
 
             # short version
             if not verbose:
@@ -1749,14 +1760,14 @@ class Poss(Formula):
         phi is true at at least one world accessible from w.
 
         @param m: the structure to evaluate the formula in
-        @type m: ModalStructure
+        @type m
         @param v: the assignment function to evaluate the formula in
         @type v: dict[str,str]
         @param w: the world to evaluate the formula in
         @type w: str
         @return: the denotation of Poss(phi)
         """
-        if isinstance(m, KripkeStructure):
+        if mode_intuitionistic(m):
             return  # not implemented
 
         # all possible worlds w' which are accessible from w
@@ -1877,13 +1888,13 @@ class Nec(Formula):
         phi is true at all worlds accessible from w.
 
         @param m: the structure to evaluate the formula in
-        @type m: ModalStructure
+        @type m
         @param w: the world to evaluate the formula in
         @type w: str
         @param v: the assignment function to evaluate the formula in
         @type v: dict[str,str]
         """
-        if isinstance(m, KripkeStructure):
+        if mode_intuitionistic(m):
             return  # not implemented
 
         # all possible worlds w' which are accessible from w

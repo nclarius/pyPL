@@ -296,7 +296,6 @@ class StructParser:
 
     def parse(self, inp):
         constituents = {const.split(" = ")[0]: const.split(" = ")[1] for const in inp.split("\n")}
-        s = "S0"
         modal = True if "W" in constituents or "K" in constituents else False
         propositional = True if "V" in constituents else False
         intuitionistic = True if "K" in constituents else False
@@ -305,7 +304,7 @@ class StructParser:
             spec = constituents["V"].split(", ")
             if not modal:
                 v = {s.split(": ")[0]: s.split(": ")[1] for s in spec}
-            else:
+            else:  # todo doesn't work (double colon and semicolon meaning)
                 v = {s.split(": ")[0]: {s_.split(": ")[0]: s_[1] for s_ in s.split(": ")[1]} for s in spec}
         if "D" in constituents:
             spec = constituents["D"][1:-1].split(", ")
@@ -313,9 +312,9 @@ class StructParser:
             if not modal or not vardomains:
                 d = set(constituents["D"][1:-1].split(", "))
             else:
-                d = {s.split(": ")[0]: s.split(": ")[1] for s in spec}
+                d = {sp.split(": ")[0]: sp.split(": ")[1] for sp in spec}
         if "I" in constituents:
-            spec = constituents["I"].split(", ")
+            spec = constituents["I"].split("; ")
             i = dict()
             if not modal:
                 for s in spec:
@@ -323,7 +322,7 @@ class StructParser:
                     if "{" not in interpr:
                         i[symbol] = interpr
                     elif ": " not in interpr:
-                        i[symbol] = set([tuple(el.split(", ")) for el in interpr.split(", ")])
+                        i[symbol] = set([tuple(el[1:-1].split(" - ")) for el in interpr[1:-1].split(", ")])
                     else:
                         i[symbol] = {el.split(": ")[0]: tuple(el.split(": ")[1].split(", "))
                                      for el in interpr.split(", ")}
@@ -332,15 +331,15 @@ class StructParser:
                 for s_ in spec_:
                     [world, interprfunc] = s_.split(": ")
                     interprfunc = interprfunc.split(", ")
-                    for s in interprfunc:
-                        [symbol, interpr] = s.split(": ")
+                    for sym in interprfunc:
+                        [symbol, interpr] = sym.split(": ")
                         if "{" not in interpr:
                             i[world][symbol] = interpr
                         elif ": " not in interpr:
-                            i[world][symbol] = set([tuple(el.split(", ")) for el in interpr.split(", ")])
+                            i[world][symbol] = set([tuple(el[1:-1].split(" - ")) for el in interpr[1:-1].split(", ")])
                         else:
                             i[world][symbol] = {el.split(": ")[0]: tuple(el.split(": ")[1].split(", "))
-                                                for el in interpr.split(", ")}
+                                                for el in interpr.split("; ")}
         if "W" in constituents:
             spec = constituents["W"][1:-1].split(", ")
             w = set(spec)
@@ -350,12 +349,13 @@ class StructParser:
         if "R" in constituents:
             spec = constituents["K"][1:-1].split(", ")
             r = set([tuple(el.split(", ")) for el in spec])
+        s = "S"
 
         structure = __import__("structure")
         if not intuitionistic:
             if not modal:
                 if propositional:
-                    structure.PropStructure(s, v)
+                    return structure.PropStructure(s, v)
                 else:
                     return structure.PredStructure(s, d, i)
             else:
@@ -393,4 +393,4 @@ if __name__ == "__main__":
     # test = r"p v q v r"
     # print(test)
     # res = parser.parse(test)
-    # print(res)
+    # print(res
