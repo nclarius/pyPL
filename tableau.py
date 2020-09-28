@@ -227,29 +227,29 @@ class Tableau(object):
         res += result
 
         # generate and print models
-        # todo improve blank lines
         if self.models:
             mdls = "\\\\\n\\\\\n" if self.latex else "\n\n"
             mdls += ("Countermodels:" \
                          if self.mode["validity"] or not self.mode["validity"] and not self.mode["satisfiability"] \
-                         else "Models:") + ("\\\\" if self.latex else "")
+                         else "Models:") + ("\\\\\n" if self.latex else "\n\n")
             if self.latex:
                 mdls += "% alignment for structures\n"
                 mdls += "\\renewcommand{\\arraystretch}{1}  % decrease spacing between rows\n"
                 mdls += "\\setlength{\\tabcolsep}{1.5pt}  % decrease spacing between columns\n"
+                mdls += "\n"
             for model in sorted(self.models, key=lambda m:
             {n.line: i for (i, n) in enumerate(self.root.nodes(preorder=True))}[int(m.s[1:])]):
                 if not self.latex:
-                    mdls += "\n\n" + str(model)
+                    mdls += str(model) + "\n\n"
                 else:
-                    mdls += "\\\\\n\\\\\n" + model.tex()
+                    mdls += model.tex() + "\\\\\n\\\\\n"
             res += mdls
 
         # measures size and time
         # size = len(self)
         elapsed = self.end - self.start
-        res += ("\\\\\n\\ \\\\\\ \\\\\n" if self.latex else "\n\n") + \
-               "This computation took " + str(round(elapsed, 3)) + " seconds.\n\n"
+        res += ("" if not self.latex else "\\ \\\\\n") +\
+            "This computation took " + str(round(elapsed, 3)) + " seconds.\n\n"
 
         if self.latex:
             postamble = "\\end{document}\n"
@@ -1740,7 +1740,7 @@ if __name__ == "__main__":
     # tab = Tableau(fml2, validity=False, satisfiability=False)
     # fml3 = Disj(Exists(Var("x"), Forall(Var("y"), Atm(Pred("R"), (Var("x"), Var("y"))))),
     #             Forall(Var("y"), Exists(Var("x"), Neg(Atm(Pred("R"), (Var("x"), Var("y")))))))
-    # tab = Tableau(fml3, validity=False, satisfiability=True, num_models=2)
+    # tab = Tableau(fml3, validity=False, satisfiability=True, num_models=2, latex=False)
     # tab = Tableau(fml3, validity=False, satisfiability=False)
 
     ###############
@@ -1820,11 +1820,11 @@ if __name__ == "__main__":
     # quantifier commutativity
     #################
     #
-    fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
-    tab = Tableau(fml2, premises=[fml1])
-    tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
-    tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False, latex=True, num_models=2)
+    # fml1 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    # fml2 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("R"), (Var("x"), Var("y")))))
+    # tab = Tableau(fml2, premises=[fml1])
+    # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
+    # tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False, latex=True, num_models=2)
     #
     # fml1 = Exists(Var("y"), Conj(Atm(Pred("Q"), (Var("y"),)),
     #                              Forall(Var("x"), Imp(Atm(Pred("P"), (Var("x"),)),

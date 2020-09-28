@@ -5,11 +5,12 @@ This tool can compute
 - the denotation (truth value) of a given logical expression in a given structure,  
 - an analytic tableau with associated (counter) models for a given inference (**currently under construction**).   
 
-![pyPL GUI -- input](doc/img/pyPL_1.png)
-![pyPL GUI -- output](doc/img/pyPL_2.png)
+![pyPL GUI -- start](doc/img/pyPL_1.png)
+![pyPL GUI -- input](doc/img/pyPL_2.png)
+![pyPL GUI -- output](doc/img/pyPL_3.png)
 
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
-License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/). 
+License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
 Disclaimer
 ----------
@@ -29,7 +30,7 @@ Features
  | MC |  MG  | MC | MG | MC |  MG  | MC | MG | MC |  MG  | MC | MG | MC |  MG  | MC | MG |
  |-------------------------------------------|-------------------------------------------|
  | 🗸  |  🗸  |  🗸 | 🗸  | 🗸  |  🗸  | 🗸  | 🗸  |  🗸 |  ✗  |  ✗ | ✗  |  🗸 |  ✗   | ✗  | ✗  |
-MC = model checking, MG = model generation + tableau calculus; 
+MC = model checking, MG = model generation + tableau calculus;
 CD = with constant domains, VD = with varying domains;  
 modal MG only for K frames.
 ```
@@ -113,12 +114,12 @@ After specifying your input in the source code, execute `denotation.py` in a ter
   `parser.py` is a formula parser.
 - The interesting part for you are the `denot` (denotation) methods in each of the expression classes in `expr.py`.  
   Compare how the formal definitions can be translated into code almost 1:1,
-  and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers 
+  and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers
   (classes `Exists` and `Forall` in `expr.py`).  
 - To follow an evaluation process, I recommend to
   - set breakpoints at each of the `denot` method instances and step through an evaluation process symbol by symbol
     to see how a denotation is computed recursively in line with the inductive definitions.
-  - trace (watch or simply print) the variables `v` and `v_` in the `denot` methods 
+  - trace (watch or simply print) the variables `v` and `v_` in the `denot` methods
     to keep track of what the current variable assignment looks like during quantifier evaluation.  
 - The `__str__` methods are what makes the expressions formatted human-readable in the output.  
 - Simply ignore all the print statements and anything that looks completely unfamiliar to you (such as `w`/modal stuff).  
