@@ -91,7 +91,7 @@ class PyPLGUI(tk.Frame):
                        # font=[("selected", ("OpenSans", "12", "bold"))]
                        )  # todo no rounded corners for tabs
         self.style.theme_settings("default", {
-                                  "TNotebook": {"configure": {"tabposition": "n"}},
+                                  "TNotebook": {"configure": {"tabposition": "n", "borderwidth": 0}},
                                   "TNotebook.Tab": {"configure": {"padding": [10, 7.5]}}})
         self.root.configure(bg=white)
         self.root.option_add("*Font", "NotoSans 12")
