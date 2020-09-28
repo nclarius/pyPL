@@ -301,11 +301,12 @@ class StructParser:
         intuitionistic = True if "K" in constituents else False
         vardomains = True
         if "V" in constituents:
-            spec = constituents["V"].split(", ")
             if not modal:
+                spec = constituents["V"].split(", ")
                 v = {s.split(": ")[0]: s.split(": ")[1] for s in spec}
             else:  # todo doesn't work (double colon and semicolon meaning)
-                v = {s.split(": ")[0]: {s_.split(": ")[0]: s_[1] for s_ in s.split(": ")[1]} for s in spec}
+                spec = constituents["V"].split(",, ")
+                v = {s.split(":: ")[0]: {s_.split(": ")[0]: s_[1] for s_ in s.split(": ")[1]} for s in spec}
         if "D" in constituents:
             spec = constituents["D"][1:-1].split(", ")
             vardomains = True if ": " in spec else False

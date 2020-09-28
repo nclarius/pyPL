@@ -149,8 +149,7 @@ class Tableau(object):
                 "logic" + \
                 (" with " + ("varying " if self.mode["vardomains"] else "constant ") + "domains"
                  if self.mode["modal"] and not self.mode["propositional"] else "") + \
-                (" in a " + ("$\\mathsf{" if self.latex else "") + self.mode["frame"] + (
-                    "}$" if self.latex else "") + " frame"
+                (" in a " + self.mode["frame"] + " frame"
                  if self.mode["modal"] else "") + \
                 "." + ("\\\\" if self.latex else "") + "\n\n"
 
@@ -956,7 +955,6 @@ class Tableau(object):
         #         break
         # inst = (source.sig, sig)
         usable = extensions + [i for i in range(1, 100)]
-        print(extensions, used, usable)
         world = usable[min([i for i in range(len(usable)) if usable[i] not in used])]
         new = True if world not in extensions else False
         inst = (universal, new, source.world, world)

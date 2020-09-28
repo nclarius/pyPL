@@ -561,7 +561,7 @@ class PyPLGUI(tk.Frame):
             mids[3] = mid3
             mids[3].pack(ipadx=5, ipady=5)
             cap_struct.pack(in_=mids[2], padx=15)
-            lbl_struct = tk.Text(tab, height=4, width=40, borderwidth=0, bg=white)
+            lbl_struct = tk.Text(tab, height=8, width=40, borderwidth=0, bg=white)
             lbl_struct.configure(inactiveselectbackground=lbl_struct.cget("selectbackground"))
             lbl_struct.configure(state="disabled")
             lbl_struct.pack(in_=mids[3], side=tk.LEFT, padx=15, expand=True)
@@ -570,7 +570,7 @@ class PyPLGUI(tk.Frame):
             #                textvariable=struct_raw)
             # ent_struct.pack(in_=mids[6], side=tk.LEFT, expand=True)
             # ent_struct.trace("w", lambda *args: select_entry(-1))
-            ent_struct = tk.Text(tab, height=4, width=37)
+            ent_struct = tk.Text(tab, height=8, width=37)
             ent_struct.pack(in_=mids[3], side=tk.LEFT, expand=True)  # todo doesn't work
             self.input_ents.append(ent_struct)
             btn_parse_struct = tk.Button(tab,
