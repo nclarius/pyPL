@@ -342,7 +342,7 @@ class PyPLGUI(tk.Frame):
             lbl.configure(inactiveselectbackground=lbl.cget("selectbackground"))
             lbl.configure(state="disabled")
             # lbl.pack(in_=mids[row + 1], side=tk.LEFT)
-            lbl.pack(in_=mids[row], side=tk.LEFT, padx=15, fill="both", expand=True)
+            lbl.pack(in_=mids[row], side=tk.LEFT, padx=15, expand=True)
             # lbl = tk.Text(tab, height=1, borderwidth=0)
             # lbl.tag_configure("center", justify='center')
             # lbl.insert(1.0, "...", "center")
