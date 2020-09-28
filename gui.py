@@ -318,19 +318,6 @@ class PyPLGUI(tk.Frame):
             if len(self.input_fmls) > 1:
                 btn_swap.config(state="normal")
                 rem.config(state="normal")
-            # formula in plain text
-            lbl = tk.Text(tab, height=1, width=40, borderwidth=0, bg=white, wrap=tk.CHAR)
-            lbl.configure(inactiveselectbackground=lbl.cget("selectbackground"))
-            lbl.configure(state="disabled")
-            # lbl.pack(in_=mids[row + 1], side=tk.LEFT)
-            lbl.pack(in_=mids[row], side=tk.LEFT, padx=15, fill="both", expand=True)
-            # lbl = tk.Text(tab, height=1, borderwidth=0)
-            # lbl.tag_configure("center", justify='center')
-            # lbl.insert(1.0, "...", "center")
-            # lbl.configure(state="disabled")
-            # lbl.configure(inactiveselectbackground=lbl.cget("selectbackground"))
-            # lbl.pack(in_=mids[row + 1], side=tk.LEFT)
-            input_lbls.append(lbl)
             # entry field
             ent = tk.Entry(tab,
                            textvariable=raw,
@@ -350,6 +337,19 @@ class PyPLGUI(tk.Frame):
             btn_parse.bind("<Button>", lambda e: parse(i))
             btns.append(btn_parse)
             ent.bind("<Return>", lambda e: parse(i))
+            # formula in plain text
+            lbl = tk.Text(tab, height=1, width=40, borderwidth=0, bg=white, wrap=tk.CHAR)
+            lbl.configure(inactiveselectbackground=lbl.cget("selectbackground"))
+            lbl.configure(state="disabled")
+            # lbl.pack(in_=mids[row + 1], side=tk.LEFT)
+            lbl.pack(in_=mids[row], side=tk.LEFT, padx=15, fill="both", expand=True)
+            # lbl = tk.Text(tab, height=1, borderwidth=0)
+            # lbl.tag_configure("center", justify='center')
+            # lbl.insert(1.0, "...", "center")
+            # lbl.configure(state="disabled")
+            # lbl.configure(inactiveselectbackground=lbl.cget("selectbackground"))
+            # lbl.pack(in_=mids[row + 1], side=tk.LEFT)
+            input_lbls.append(lbl)
 
         def remove_formula(i):
             # todo doesn't always work; indices not updated correctly?
@@ -561,10 +561,6 @@ class PyPLGUI(tk.Frame):
             mids[3] = mid3
             mids[3].pack(ipadx=5, ipady=5)
             cap_struct.pack(in_=mids[2], padx=15)
-            lbl_struct = tk.Text(tab, height=8, width=40, borderwidth=0, bg=white)
-            lbl_struct.configure(inactiveselectbackground=lbl_struct.cget("selectbackground"))
-            lbl_struct.configure(state="disabled")
-            lbl_struct.pack(in_=mids[3], side=tk.LEFT, padx=15, expand=True)
             # raw_struct = tk.StringVar()
             # ent_struct = tk.Entry(tab,
             #                textvariable=struct_raw)
@@ -582,6 +578,10 @@ class PyPLGUI(tk.Frame):
             btn_parse_struct.pack(in_=mids[3], side=tk.LEFT, padx=5)
             btn_parse_struct.bind("<Button>", lambda e: parse_struct())
             btns.append(btn_parse_struct)
+            lbl_struct = tk.Text(tab, height=8, width=40, borderwidth=0, bg=white)
+            lbl_struct.configure(inactiveselectbackground=lbl_struct.cget("selectbackground"))
+            lbl_struct.configure(state="disabled")
+            lbl_struct.pack(in_=mids[3], side=tk.LEFT, padx=15, expand=True)
         elif self.inst.action == "mg":
             # cap_pseudo.pack(in_=mids[0], side=tk.LEFT, padx=15)
             cap_fmls.pack(in_=mids[0], side=tk.LEFT)
