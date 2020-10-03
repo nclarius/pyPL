@@ -1524,7 +1524,10 @@ class Exists(Formula):
         if mode["validity"]:
             return {"∃": ("δ", [self.phi, self.u])}
         else:
-            return {"∃": ("θ", [self.phi, self.u])}
+            if mode["linguistic"]:
+                return {"∃": ("ε", [self.phi, self.u])}
+            else:
+                return {"∃": ("θ", [self.phi, self.u])}
 
     def tableau_neg(self, mode):
         """
@@ -1713,7 +1716,10 @@ class Forall(Formula):
             else:
                 return {"¬∀": ("υ", [Neg(self.phi), self.u])}
         else:
-            return {"¬∀": ("θ", [Neg(self.phi), self.u])}
+            if mode["linguistic"]:
+                return {"¬∀": ("ε", [Neg(self.phi), self.u])}
+            else:
+                return {"¬∀": ("θ", [Neg(self.phi), self.u])}
 
 
 class Poss(Formula):

@@ -302,7 +302,7 @@ class StructParser:
         vardomains = True
         if "V" in constituents:
             if not modal:
-                spec = constituents["V"].split(", ")
+                spec = constituents["V"].split("; ")
                 v = {s.split(": ")[0]: s.split(": ")[1] for s in spec}
             else:  # todo doesn't work (double colon and semicolon meaning)
                 spec = constituents["V"].split(",, ")

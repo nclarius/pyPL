@@ -45,6 +45,8 @@ from datetime import datetime
 import itertools
 from itertools import chain
 
+
+# todo variant wo identity assumption
 # todo documentation
 # todo make non-K modal logics work
 # todo tableaux for IL
@@ -60,9 +62,9 @@ class Tableau(object):
 
     def __init__(self,
                  conclusion=None, premises=[], axioms=[],
-                 validity=True, satisfiability=True,
+                 validity=True, satisfiability=True, linguistic=False,
                  classical=True, propositional=False, modal=False, vardomains=False, frame="K",
-                 latex=True, file=False, silent=False, underline_open=True, hide_nonopen=False,
+                 latex=True, file=False, silent=False, verbose=False, underline_open=True, hide_nonopen=False,
                  num_models=1, size_limit_factor=2):
 
         # settings
@@ -70,13 +72,13 @@ class Tableau(object):
         # todo check consistency of settings
         self.mode = {
             "latex": latex,
-            "validity": validity, "satisfiability": satisfiability,
+            "validity": validity, "satisfiability": satisfiability, "linguistic": linguistic,
             "classical": classical, "propositional": propositional,
             "modal": modal, "vardomains": vardomains, "frame": frame
         }
-        self.latex, self.file, self.silent, self.underline_open, self.hide_nonopen, \
+        self.latex, self.file, self.silent, self.verbose, self.underline_open, self.hide_nonopen, \
         self.num_models, self.size_limit_factor = \
-            latex, file, silent, underline_open, hide_nonopen, num_models, size_limit_factor
+            latex, file, silent, verbose, underline_open, hide_nonopen, num_models, size_limit_factor
 
         # append initial nodes
         line = 1
@@ -296,16 +298,17 @@ class Tableau(object):
             os.chdir(os.path.dirname(__file__))
 
     rule_names = {"α": "alpha", "β": "beta",  # connective rules
-                  "γ": "gamma", "δ": "delta", "η": "eta", "θ": "theta",  # quantifier rules
+                  "γ": "gamma", "δ": "delta", "η": "eta", "θ": "theta", "ε": "epsilon", # quantifier rules
                   "μ": "mu", "ν": "nu", "π": "pi", "κ": "kappa", "λ": "lambda",  # modal rules
                   "ξ": "xi", "χ": "chi", "ο": "omicron", "u": "ypsilon", "ω": "omega"  # intuitionistic rules
                   }
 
     def expand(self):
         """
-        Recursively expand all nodes in the tableau.check_
+        Recursively expand all nodes in the tableau.
         """
         if debug:
+            pass
             print(self.root.treestr())
         while applicable := self.applicable():
             # todo stop search when only contradictions found after all new instantiations
@@ -332,6 +335,7 @@ class Tableau(object):
 
             # expand
             if debug:
+                pass
                 print("applicable:")
                 print("\n".join([", ".join([
                     str(i), str(itm[0].line), str(itm[1].line), itm[2], str(itm[3]), str(itm[5]), str(itm[6])])
@@ -340,6 +344,7 @@ class Tableau(object):
             (target, source, rule_name, rule_type, fmls, args, insts) = applicable[0]
             rule_type_func = getattr(self, "rule_" + Tableau.rule_names[rule_type])
             if debug:
+                pass
                 input()
                 print("expanding:")
                 print(str(source), " with ", rule_name, " on ", str(target))
@@ -389,7 +394,7 @@ class Tableau(object):
                             applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
 
                 # quantifier rules
-                elif rule_type in ["γ", "δ", "η", "θ"]:
+                elif rule_type in ["γ", "δ", "η", "θ", "ε"]:
 
                     if rule_type in ["θ"]:  # special treatement of targets for theta rule
                         targets = []
@@ -449,7 +454,7 @@ class Tableau(object):
                         # check if the rule requires a new constant to be instantiated
                         if rule_type in ["γ", "θ"]:
                             new = len(used) >= len(occurring_local)
-                        elif rule_type in ["δ"]:
+                        elif rule_type in ["δ", "ε"]:
                             new = True
                         elif rule_type in ["η"]:
                             new = len(occurring_local) == 0
@@ -459,7 +464,7 @@ class Tableau(object):
                         # compose the arguments
                         args = universal, new, indexed, used, occurring_local, occurring_global
 
-                        if rule_type in ["γ", "δ", "θ"]:
+                        if rule_type in ["γ", "δ", "θ", "ε"]:
                             # the rule is applied with some constant
                             applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
 
@@ -588,10 +593,10 @@ class Tableau(object):
                     pass  # not yet implemented
 
         # if the only rules applicable to an unfinished branch are
-        # δ, θ or κ rules that have already been applied on this branch,
+        # δ, θ, ε or κ rules that have already been applied on this branch,
         # it is declared open and, in the case of validity tableaus, its applicable rules cleared
         for leaf in [node for node in self.root.leaves() if node.fml and not (isinstance(node.fml, Pseudo))]:
-            if all([appl[6] and appl[3] in ["δ", "θ", "κ"]
+            if all([appl[6] and appl[3] in ["δ", "θ", "ε", "κ"]
                     for appl in applicable if appl[0] in leaf.branch]):
                 if not isinstance(leaf.fml, Pseudo):
                     leaf.branch_open()
@@ -611,16 +616,16 @@ class Tableau(object):
 
         # define a preference order for rule types
         rule_order = {r: i for (i, r) in enumerate(
-            ["η", "λ", "α", "β", "δ", "γ", "θ", "π", "μ", "ν", "κ", "ξ", "χ", "ο", "u", "ω"])}
+            ["η", "λ", "α", "β", "δ", "γ", "θ", "ε", "π", "μ", "ν", "κ", "ξ", "χ", "ο", "u", "ω"])}
         branching = {  # rank by branching
             "α": 0, "β": 1,  # connective rules
-            "γ": 0, "δ": 0, "η": 0, "θ": 1,  # quantifier rules
+            "γ": 0, "δ": 0, "η": 0, "θ": 1, "ε": 1, # quantifier rules
             "μ": 0, "ν": 0, "π": 0, "κ": 1, "λ": 0,  # modal rules
             "ξ": 1, "χ": 1, "ο": 0, "u": 0, "ω": 0  # intuitionistic rules
         }
         operator = {  # rank by operator type
             "α": 0, "β": 0,  # connective rules
-            "γ": 1, "δ": 1, "η": 1, "θ": 1,  # quantifier rules
+            "γ": 1, "δ": 1, "η": 1, "θ": 1, "ε": 1,  # quantifier rules
             "μ": 1, "ν": 1, "π": 1, "κ": 1, "λ": 1,  # modal rules
             "ξ": 1, "χ": 1, "ο": 2, "u": 2, "ω": 2  # intuitionistic rules
         }
@@ -629,7 +634,7 @@ class Tableau(object):
         pos_rev = {node: i for (i, node) in enumerate(self.root.nodes(True)[::-1])}
         pos_by_type = {
             "α": pos, "β": pos,  # connective rules
-            "γ": pos, "δ": pos, "η": pos_rev, "θ": pos_rev,  # quantifier rules
+            "γ": pos, "δ": pos, "η": pos_rev, "θ": pos_rev, "ε": pos_rev,  # quantifier rules
             "μ": pos, "ν": pos, "π": pos, "κ": pos_rev, "λ": pos_rev,  # modal rules
             "ξ": pos, "χ": pos, "ο": pos, "u": pos, "ω": pos  # intuitionistic rules
         }
@@ -823,7 +828,7 @@ class Tableau(object):
     def rule_eta(self, target, source, rule, fmls, args):
         """
         η
-        Branch unary with an existing constant.
+        Branch n-ary with an existing constant.
         """
         phi, var = fmls
         universal, new, indexed, used, occurring_local, occurring_global = args
@@ -874,6 +879,41 @@ class Tableau(object):
         const_symbol = usable[(min([i for i in range(len(usable)) if usable[i] not in used]))]
         const = Const(const_symbol)
         new = True if const_symbol not in occurring_local else False
+
+        # compute formula
+        inst = (universal, new, str(var), const_symbol + subscript)
+        fml = phi.subst(var, const)
+
+        # add pseudo-node to indicate branching
+        if not target.children:
+            target.add_child((self, None, None, Empty(), rule, source, None))
+
+        # add node
+        target.add_child((self, line + 1, world, fml, rule, source, inst))
+
+    def rule_epsilon(self, target, source, rule, fmls, args):
+        """
+        θ
+        Branch n-ay with a new constant.
+        """
+        phi, var = fmls
+        universal, new, indexed, used, occurring_local, occurring_global = args
+        line = max([node.line for node in self.root.nodes() if node.line])
+        # sig = tuple([s for s in source.sig]) if source.sig else None
+        world = source.world
+
+        # find a constant to substitute
+        # for modal predicate logic varying domains: add signature subscript to constant
+        # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed else ""
+        subscript = "_" + str(source.world) if indexed else ""
+        used = [c if "_" not in c else c[:c.index("_")] for c in used]
+        usable = [c + (subscript if "_" not in c else "") for c in Tableau.parameters if c not in
+                  [c if "_" not in c else c[:c.index("_")] for c in occurring_global]]
+        usable = list(dict.fromkeys(usable))
+        # choose first symbol from list of parameters that does not yet occur in this branch
+        const_symbol = usable[(min([i for i in range(len(usable)) if usable[i] not in occurring_local]))]
+        const = Const(const_symbol)
+        new = True
 
         # compute formula
         inst = (universal, new, str(var), const_symbol + subscript)
@@ -1681,6 +1721,7 @@ if __name__ == "__main__":
     pass
 
     parser = FmlParser()
+    parse = parser.parse
 
     #############
     # basic examples
@@ -1869,6 +1910,7 @@ if __name__ == "__main__":
 
     # fml = Exists(Var("x"), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y")))))
     # tab = Tableau(fml, validity=False)
+    # tab = Tableau(fml, validity=False, linguistic=True)
     #
     # fml = Exists(Var("x"), Exists(Var("y"),
     #                               Conj(Neg(Eq(Var("x"), (Var("y")))), Atm(Pred("love"), (Var("x"), Var("y"))))))
