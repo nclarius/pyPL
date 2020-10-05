@@ -123,7 +123,7 @@ class PredStructure(Structure):
         # all variable assignment functions
         self.gs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
-    def __str__(self):
+    def __str__(self):  # todo sort interpretation by type and arity of symbol
         return "Structure " + self.s + "  = ⟨D,I⟩ with\n" \
                "D = {" + ", ".join([str(d) for d in sorted(self.d)]) + "}\n" \
                "I : " + ", \n    ".join([str(key) + " ↦ " +

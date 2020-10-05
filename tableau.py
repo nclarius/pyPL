@@ -37,7 +37,6 @@ THIS PART IS STILL UNDER CONSTRUCTION.
 from expr import *
 from parser import FmlParser
 
-from typing import List, Dict, Set, Tuple
 import os
 from subprocess import DEVNULL, STDOUT, check_call
 from timeit import default_timer as timer
@@ -1357,7 +1356,7 @@ class Node(object):
     A node in a tree.
     """
 
-    def __init__(self, parent, tableau: Tableau, line: int, world: int, fml: Formula, rule: str, source, inst: Tuple):
+    def __init__(self, parent, tableau: Tableau, line: int, world: int, fml: Formula, rule: str, source, inst: tuple):
         self.tableau = tableau
         self.line = line
         # self.sig = sig

@@ -7,8 +7,6 @@ Define the language and semantics of classical (standard and modal) (preposition
 
 from structure import *
 
-from typing import List, Dict, Set, Tuple
-
 verbose = False
 
 
@@ -34,7 +32,7 @@ class Expr:
         @rtype str
         """
 
-    def propvars(self) -> Set[str]:
+    def propvars(self) -> set[str]:
         """
         The set of propositional variables in the expression.
 
@@ -43,7 +41,7 @@ class Expr:
         """
         return self.phi.propvars()
 
-    def freevars(self) -> Set[str]:
+    def freevars(self) -> set[str]:
         """
         The set of free variables in the expression.
 
@@ -52,7 +50,7 @@ class Expr:
         """
         pass
 
-    def boundvars(self) -> Set[str]:
+    def boundvars(self) -> set[str]:
         """
         The set of bound variables in the expression.
 
@@ -83,7 +81,7 @@ class Expr:
         # todo doesnt work
         pass
 
-    def denot(self, m, v: Dict[str,str] = None, w: str = None):
+    def denot(self, m, v: dict[str,str] = None, w: str = None):
         """
         Compute the denotation of the expression relative to a structure m and assignment g.
 
@@ -298,7 +296,7 @@ class FuncTerm(Term):
     @type terms: tuple[Term]
     """
 
-    def __init__(self, f: Func, terms: Tuple[Term]):
+    def __init__(self, f: Func, terms: tuple[Term]):
         self.f = f
         self.terms = terms
 
@@ -378,7 +376,7 @@ class Pred(Expr):
     def subst(self, u, t):
         return self
 
-    def denot(self, m, g=None, w=None) -> Set[Tuple[str]]:
+    def denot(self, m, g=None, w=None) -> set[tuple[str]]:
         """
         The denotation of a predicate is the set of ordered tuples of individuals that the interprηtion function f
         assigns it.
@@ -466,7 +464,7 @@ class Formula(Expr):
                 return False
         return True
 
-    def denotW(self, m, g: Dict[str,str]) -> bool:
+    def denotW(self, m, g: dict[str,str]) -> bool:
         """
         The truth value of a formula relative to a structure M and assmnt. g (without reference to a particular world).
         A formula is true in a structure M iff it is true in M and g in all possible worlds w.
@@ -556,7 +554,7 @@ class Formula(Expr):
                  - the rule name
                  - the type of rule (α/β/γ/δ/μ/nu)
                  - the arguments of the rule: the formulas to extend and, if applicable, parameter/signature information
-        @rtype List[Tuple[str,str,Any]]
+        @rtype list[tuple[str,str,Any]]
         """
 
     def tableau_neg(self, mode):
@@ -567,7 +565,7 @@ class Formula(Expr):
                  - the rule name
                  - the type of rule (α/β/γ/δ/μ/nu)
                  - the arguments of the rule: the formulas to extend and, if applicable, parameter/signature information
-        @rtype List[Tuple[str,str,Any]]
+        @rtype list[tuple[str,str,Any]]
         """
         pass
 
@@ -685,7 +683,7 @@ class Atm(Formula):
     @attr terms: the terms to apply the predicate symbol to
     @type terms: tuple[Term]
     """
-    def __init__(self, pred: Pred, terms: Tuple[Term]):
+    def __init__(self, pred: Pred, terms: tuple[Term]):
         self.pred = pred
         self.terms = terms
 

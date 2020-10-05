@@ -47,11 +47,6 @@ font = "-family {OpenSans} -size 12 -weight normal -slant roman -underline 0 -ov
 font_large = "-family {OpenSans} -size 14 -weight normal -slant roman -underline 0 -overstrike 0"
 
 
-# todo file input
-# todo ui for linguistic mode
-# todo config file for default settings
-# todo visually distinguish action buttons, radio buttons and check buttons?
-
 class ScrollableFrame(ttk.Frame):
     def __init__(self, container, *args, **kwargs):
         super().__init__(container, *args, **kwargs)
@@ -96,6 +91,7 @@ class PyPLGUI(tk.Frame):
         self.style.theme_settings("default", {
                                   "TNotebook": {"configure": {"tabposition": "n", "borderwidth": 0}},
                                   "TNotebook.Tab": {"configure": {"padding": [10, 7.5]}}})
+        # todo visually distinguish action buttons, radio buttons and check buttons?
         self.root.configure(bg=white)
         self.root.option_add("*Font", "NotoSans 12")
 
@@ -201,7 +197,6 @@ class PyPLGUI(tk.Frame):
         # btn_step5.pack(pady=5)
 
     def tab_1(self):  # 1. Action
-        # todo theorem guessing
         tab = self.tabs.nametowidget(self.tabs.tabs()[0])
 
         def update_summary():
@@ -252,7 +247,7 @@ class PyPLGUI(tk.Frame):
         # radio buttons
         action = tk.StringVar(None, self.inst.action)
         actions = [("Model checking", "mc"), ("Model generation", "mg"), ("Counter model generation", "cmg"),
-                   ("Theorem proving", "tp"), ("Theorem testing", "tt")]  # todo implement MC
+                   ("Theorem proving", "tp"), ("Theorem testing", "tt")]
         radiobuttons = []
         for txt, val in actions[::-1]:
             rb = tk.Radiobutton(tab,
@@ -509,7 +504,7 @@ class PyPLGUI(tk.Frame):
         top.pack(side=tk.TOP, pady=25, anchor=tk.N)
         # top mid
         topmid = tk.Frame(tab, bg=white)
-        topmid.pack()  # todo make more compact
+        topmid.pack()  # todo make more compact?
         # mid
         mid = tk.Frame(tab, bg=white)
         mid.pack()
@@ -621,7 +616,7 @@ class PyPLGUI(tk.Frame):
             # ent_struct.pack(in_=mids[6], side=tk.LEFT, expand=True)
             # ent_struct.trace("w", lambda *args: select_entry(-1))
             ent_struct = tk.Text(tab, height=6, width=37)
-            ent_struct.pack(in_=mids[3], side=tk.LEFT)  # todo doesn't work
+            ent_struct.pack(in_=mids[3], side=tk.LEFT)
             input_ents.append(ent_struct)
             btn_parse_struct = tk.Button(tab,
                                          bg=white,
@@ -751,7 +746,8 @@ class PyPLGUI(tk.Frame):
                 self.rbs_logic[cat][val] = rb
 
     def tab_4(self):  # 4. Settings
-        # todo implement size limit factor, underline open and hide nonopen
+        # todo config file for default settings
+
         tab = self.tabs.nametowidget(self.tabs.tabs()[3])
 
         def initial_select_rb(rb):
@@ -1000,7 +996,7 @@ class PyPLGUI(tk.Frame):
             else:
                 denot = concl.denotGW(structure)
 
-            # todo make look nicer
+            # todo make look nicer?
             # tk.messagebox.showinfo("", str(denot))
             win_output = tk.Toplevel(self.root, bg=white)
             icon_path = os.path.join(os.path.dirname(__file__), "icon.png")

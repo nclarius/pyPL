@@ -92,7 +92,7 @@ To run this tool locally on your machine:
 2. *Optional:* To specify custom input (see next subsection), edit the file `denotation.py` in a text editor of your choice.
 3. Execute `denotation.py` in a terminal.
 
-Running this program requires Python (version >= 3.8) to be installed on your machine.  
+Running this program requires Python (version >= 3.9) to be installed on your machine.  
 How to 'clone github repository', 'install python', 'edit .py file' and 'execute .py script in terminal' is all easily googleable for your respective operating system.
 
 ### Specifying input
