@@ -6,7 +6,6 @@ Tableau proofs and model extraction.
 THIS PART IS STILL UNDER CONSTRUCTION.
 """
 
-
 # Workflow:
 # - set initial settings, add assumptions (`init`)
 # - while there are applicable rules: expand the tree (`expand`)
@@ -37,13 +36,12 @@ THIS PART IS STILL UNDER CONSTRUCTION.
 from expr import *
 from parser import FmlParser
 
+import itertools
 import os
+from datetime import datetime
+from itertools import chain
 from subprocess import DEVNULL, STDOUT, check_call
 from timeit import default_timer as timer
-from datetime import datetime
-import itertools
-from itertools import chain
-
 
 # todo variant wo identity assumption
 # todo documentation
@@ -70,10 +68,10 @@ class Tableau(object):
         # todo nicer specification of settings?
         # todo check consistency of settings
         self.mode = {
-            "latex": latex,
-            "validity": validity, "satisfiability": satisfiability, "linguistic": linguistic,
-            "classical": classical, "propositional": propositional,
-            "modal": modal, "vardomains": vardomains, "frame": frame
+                "latex":     latex,
+                "validity":  validity, "satisfiability": satisfiability, "linguistic": linguistic,
+                "classical": classical, "propositional": propositional,
+                "modal":     modal, "vardomains": vardomains, "frame": frame
         }
         self.latex, self.file, self.silent, self.verbose, self.underline_open, self.hide_nonopen, \
         self.num_models, self.size_limit_factor = \
@@ -173,7 +171,12 @@ class Tableau(object):
         else:
             axs = ["\\phantom{\\vDash\ }" + node.fml.tex() for node in self.axioms]
             prems = ["\\phantom{\\vDash\ }" + self.root.fml.tex()] if not self.conclusion else [] + \
-                    ["\\phantom{\\vDash\ }" + node.fml.tex() for node in self.premises]
+                                                                                               [
+                                                                                                       "\\phantom{" \
+                                                                                                       "\\vDash\ }" +
+                                                                                                       node.fml.tex()
+                                                                                                       for node in
+                                                                                                       self.premises]
             prems += [("\\phantom{\\vDash\ }" if len(prems) > 0 else "") + self.conclusion.tex()] \
                 if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else []
             concl = self.conclusion.tex() if \
@@ -248,8 +251,8 @@ class Tableau(object):
         # measures size and time
         # size = len(self)
         elapsed = self.end - self.start
-        res += ("" if not self.latex else "\\ \\\\\n") +\
-            "This computation took " + str(round(elapsed, 3)) + " seconds.\n\n"
+        res += ("" if not self.latex else "\\ \\\\\n") + \
+               "This computation took " + str(round(elapsed, 3)) + " seconds.\n\n"
 
         if self.latex:
             postamble = "\\end{document}\n"
@@ -297,7 +300,7 @@ class Tableau(object):
             os.chdir(os.path.dirname(__file__))
 
     rule_names = {"α": "alpha", "β": "beta",  # connective rules
-                  "γ": "gamma", "δ": "delta", "η": "eta", "θ": "theta", "ε": "epsilon", # quantifier rules
+                  "γ": "gamma", "δ": "delta", "η": "eta", "θ": "theta", "ε": "epsilon",  # quantifier rules
                   "μ": "mu", "ν": "nu", "π": "pi", "κ": "kappa", "λ": "lambda",  # modal rules
                   "ξ": "xi", "χ": "chi", "ο": "omicron", "u": "ypsilon", "ω": "omega"  # intuitionistic rules
                   }
@@ -337,8 +340,8 @@ class Tableau(object):
                 pass
                 print("applicable:")
                 print("\n".join([", ".join([
-                    str(i), str(itm[0].line), str(itm[1].line), itm[2], str(itm[3]), str(itm[5]), str(itm[6])])
-                    for i, itm in enumerate(applicable)]))
+                        str(i), str(itm[0].line), str(itm[1].line), itm[2], str(itm[3]), str(itm[5]), str(itm[6])])
+                        for i, itm in enumerate(applicable)]))
             # get first applicable rule from prioritized list
             (target, source, rule_name, rule_type, fmls, args, insts) = applicable[0]
             rule_type_func = getattr(self, "rule_" + Tableau.rule_names[rule_type])
@@ -615,56 +618,57 @@ class Tableau(object):
 
         # define a preference order for rule types
         rule_order = {r: i for (i, r) in enumerate(
-            ["η", "λ", "α", "β", "δ", "γ", "θ", "ε", "π", "μ", "ν", "κ", "ξ", "χ", "ο", "u", "ω"])}
+                ["η", "λ", "α", "β", "δ", "γ", "θ", "ε", "π", "μ", "ν", "κ", "ξ", "χ", "ο", "u", "ω"])}
         branching = {  # rank by branching
-            "α": 0, "β": 1,  # connective rules
-            "γ": 0, "δ": 0, "η": 0, "θ": 1, "ε": 1, # quantifier rules
-            "μ": 0, "ν": 0, "π": 0, "κ": 1, "λ": 0,  # modal rules
-            "ξ": 1, "χ": 1, "ο": 0, "u": 0, "ω": 0  # intuitionistic rules
+                "α": 0, "β": 1,  # connective rules
+                "γ": 0, "δ": 0, "η": 0, "θ": 1, "ε": 1,  # quantifier rules
+                "μ": 0, "ν": 0, "π": 0, "κ": 1, "λ": 0,  # modal rules
+                "ξ": 1, "χ": 1, "ο": 0, "u": 0, "ω": 0  # intuitionistic rules
         }
         operator = {  # rank by operator type
-            "α": 0, "β": 0,  # connective rules
-            "γ": 1, "δ": 1, "η": 1, "θ": 1, "ε": 1,  # quantifier rules
-            "μ": 1, "ν": 1, "π": 1, "κ": 1, "λ": 1,  # modal rules
-            "ξ": 1, "χ": 1, "ο": 2, "u": 2, "ω": 2  # intuitionistic rules
+                "α": 0, "β": 0,  # connective rules
+                "γ": 1, "δ": 1, "η": 1, "θ": 1, "ε": 1,  # quantifier rules
+                "μ": 1, "ν": 1, "π": 1, "κ": 1, "λ": 1,  # modal rules
+                "ξ": 1, "χ": 1, "ο": 2, "u": 2, "ω": 2  # intuitionistic rules
         }
         # enumerate the nodes level-order so nodes can be prioritized by position in the tree
         pos = {node: i for (i, node) in enumerate(self.root.nodes())}
         pos_rev = {node: i for (i, node) in enumerate(self.root.nodes(True)[::-1])}
         pos_by_type = {
-            "α": pos, "β": pos,  # connective rules
-            "γ": pos, "δ": pos, "η": pos_rev, "θ": pos_rev, "ε": pos_rev,  # quantifier rules
-            "μ": pos, "ν": pos, "π": pos, "κ": pos_rev, "λ": pos_rev,  # modal rules
-            "ξ": pos, "χ": pos, "ο": pos, "u": pos, "ω": pos  # intuitionistic rules
+                "α": pos, "β": pos,  # connective rules
+                "γ": pos, "δ": pos, "η": pos_rev, "θ": pos_rev, "ε": pos_rev,  # quantifier rules
+                "μ": pos, "ν": pos, "π": pos, "κ": pos_rev, "λ": pos_rev,  # modal rules
+                "ξ": pos, "χ": pos, "ο": pos, "u": pos, "ω": pos  # intuitionistic rules
         }
 
         # sort the applicable rules by ...
         sort_v1 = lambda i: (  # for validity tableaus:
-            i[6],  # 1. number of times the rule has already been applied on this branch (prefer least used)
-            pos[i[1]],  # 2. position of the source node in the tree (prefer leftmost highest)
-            pos[i[0]],  # 3. position of the target node in the tree (prefer leftmost highest)
-            rule_order[i[3]]  # 4. rule type rank (prefer earlier in order)
+                i[6],  # 1. number of times the rule has already been applied on this branch (prefer least used)
+                pos[i[1]],  # 2. position of the source node in the tree (prefer leftmost highest)
+                pos[i[0]],  # 3. position of the target node in the tree (prefer leftmost highest)
+                rule_order[i[3]]  # 4. rule type rank (prefer earlier in order)
         )
         sort_v2 = lambda i: (  # for satisfiability tableaus:
-            i[6],  # 1. number of times the rule has already been applied on this branch (prefer least used)
-            i[5][0],  # 2. whether the formula comes from a universal formula (prefer yes)
-            i[5][1],  # 3. whether to introduce a new constant or world (prefer not to)
-            branching[i[3]],  # 4. whether the rules branches (prefer non-branching)
-            operator[i[3]],  # 5. what type of operator the rule belongs to (connective > quant., modal > int.)
-            rule_order[i[3]],  # 6. remaining rule type rank (prefer earlier in order)
-            pos_by_type[i[3]][i[1]],  # 7. position of the source node in the tree
-            # (prefer leftmost lowest for sat. quant. and mod. rules, leftmost highest for others)
-            pos[i[0]],  # 8. position of the target node in the tree
+                i[6],  # 1. number of times the rule has already been applied on this branch (prefer least used)
+                i[5][0],  # 2. whether the formula comes from a universal formula (prefer yes)
+                i[5][1],  # 3. whether to introduce a new constant or world (prefer not to)
+                branching[i[3]],  # 4. whether the rules branches (prefer non-branching)
+                operator[i[3]],  # 5. what type of operator the rule belongs to (connective > quant., modal > int.)
+                rule_order[i[3]],  # 6. remaining rule type rank (prefer earlier in order)
+                pos_by_type[i[3]][i[1]],  # 7. position of the source node in the tree
+                # (prefer leftmost lowest for sat. quant. and mod. rules, leftmost highest for others)
+                pos[i[0]],  # 8. position of the target node in the tree
         )
         # sort_v2 = lambda i: (  # for satisfiability tableaus:
-        #     i[6],              # 1. number of times the rule has already been applied on this branch (prefer least used)
+        #     i[6],              # 1. number of times the rule has already been applied on this branch (prefer least
+        #     used)
         #     rule_order[i[3]],  # 2. rule type rank (prefer earlier in order)
         #     pos_rev[i[0]],     # 3. position of the target node in the tree (prefer leftmost lowest)
         #     pos_rev[i[1]]      # 4. position of the source node in the tree (prefer leftmost lowest)
         # )
         appl_sorted = list(k for k, _ in itertools.groupby([itm for itm in
                                                             sorted(applicable, key=(
-                                                                sort_v1 if self.mode["validity"] else sort_v2))]))
+                                                                    sort_v1 if self.mode["validity"] else sort_v2))]))
         self.appl = appl_sorted
         return appl_sorted
 
@@ -1222,12 +1226,12 @@ class Tableau(object):
                     #     for sig in sigs_}
                     # atoms = all unnegated propositional variables
                     atoms = {
-                        w: [node.fml.p for node in branch if node.fml.atom() and node.world == w]
-                        for w in worlds}
+                            w: [node.fml.p for node in branch if node.fml.atom() and node.world == w]
+                            for w in worlds}
                     # valuation = make all positive propositional variables true and all others false
                     v = {
-                        "w" + str(w): {p: (True if p in atoms[w] else False) for p in self.root.fml.propvars()}
-                        for w in worlds}
+                            "w" + str(w): {p: (True if p in atoms[w] else False) for p in self.root.fml.propvars()}
+                            for w in worlds}
                     model = PropModalStructure(name, w, r, v)
 
             else:  # classical predicate logic
@@ -1280,10 +1284,11 @@ class Tableau(object):
                         #                       if node.sig == sig]))
                         #      for sig in sigs}
                         d_ = set(list(chain(*[[c + "_0" for c in node.fml.nonlogs()[0]]
-                                         for node in branch if node.rule == "A"])) +
+                                              for node in branch if node.rule == "A"])) +
                                  [node.inst[3] for node in branch
                                   if node.inst and len(node.inst) > 2 and isinstance(node.inst[3], str)])
-                        d = {"w" + str(w): set([c[:c.index("_")] for c in d_ if c.endswith("_" + str(w))]) for w in worlds}
+                        d = {"w" + str(w): set([c[:c.index("_")] for c in d_ if c.endswith("_" + str(w))]) for w in
+                             worlds}
                         model = VarModalStructure(name, w, r, d, i)
 
         else:  # intuitionistic logic
@@ -1447,16 +1452,16 @@ class Node(object):
         """
         open_branches = [leaf.branch for leaf in self.root().leaves() if isinstance(leaf.fml, Open)]
         str2tex = {
-            "¬": "\\neg",
-            "∧": "\\wedge",
-            "∨": "\\vee",
-            "→": "\\rightarrow",
-            "↔": "\\leftrightarrow",
-            "⊕": "\\oplus",
-            "∃": "\\exists",
-            "∀": "\\forall",
-            "◇": "\\Diamond",
-            "◻": "\\Box"
+                "¬": "\\neg",
+                "∧": "\\wedge",
+                "∨": "\\vee",
+                "→": "\\rightarrow",
+                "↔": "\\leftrightarrow",
+                "⊕": "\\oplus",
+                "∃": "\\exists",
+                "∀": "\\forall",
+                "◇": "\\Diamond",
+                "◻": "\\Box"
         }
 
         str_line = str(self.line) + "." if self.line else ""
@@ -1478,7 +1483,7 @@ class Node(object):
         elif not self.rule:
             str_cite = "(" + str(self.source.line) + ")"
         else:
-            str_rule = "\\! ".join([str2tex[c] if c in str2tex else c for c in str(self.rule)])\
+            str_rule = "\\! ".join([str2tex[c] if c in str2tex else c for c in str(self.rule)]) \
                 .replace("\\neg\\! \\", "\\neg  \\") if self.rule else ""
             str_comma = "{,}\\ " if self.rule and self.source else ""
             str_source = str(self.source.line) if self.source else ""
@@ -1700,7 +1705,8 @@ class Node(object):
         #                                                 if not isinstance(node.fml, Pseudo) and node.fml.nonlogs()])))
         # num_consts_horizontal = len(dict.fromkeys(chain(*[node.fml.nonlogs()[0]
         #                                                   for node in self.branch[-2].children
-        #                                                   if not isinstance(node.fml, Pseudo) and node.fml.nonlogs()])))
+        #                                                   if not isinstance(node.fml, Pseudo) and node.fml.nonlogs(
+        #                                                   )])))
         # num_worlds_vertical = len(dict.fromkeys([node.world
         #                                          for node in self.branch if node.world]))
         # num_worlds_horizontal = len(dict.fromkeys([node.world
@@ -1842,9 +1848,11 @@ if __name__ == "__main__":
     # #
     # Barcan formulas
     # fml1 = Imp(Forall(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))), Nec(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))))
-    # fml2 = Imp(Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))), Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))))
+    # fml2 = Imp(Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))), Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),
+    # )))))
     # fml3 = Imp(Nec(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))), Forall(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))))
-    # fml4 = Imp(Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))), Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))))
+    # fml4 = Imp(Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))), Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),
+    # )))))
     # tab1 = Tableau(fml1, modal=True)
     # tab2 = Tableau(fml1, modal=True)
     # tab3 = Tableau(fml2, modal=True, validity=False, satisfiability=False, vardomains=True)

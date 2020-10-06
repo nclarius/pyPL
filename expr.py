@@ -58,7 +58,7 @@ class Expr:
         @rtype: set[str]
         """
         pass
-    
+
     def nonlogs(self):
         """
         The set of non-logical symbols in the expression.
@@ -81,7 +81,7 @@ class Expr:
         # todo doesnt work
         pass
 
-    def denot(self, m, v: dict[str,str] = None, w: str = None):
+    def denot(self, m, v: dict[str, str] = None, w: str = None):
         """
         Compute the denotation of the expression relative to a structure m and assignment g.
 
@@ -100,18 +100,22 @@ def mode_modal(m):
     structure = __import__("structure")
     return isinstance(m, structure.ModalStructure) or isinstance(m, structure.ModalStructure)
 
+
 def mode_propositional(m):
     structure = __import__("structure")
     return isinstance(m, structure.PropStructure) or \
-               isinstance(m, structure.PropModalStructure) or isinstance(m, structure.KripkePropStructure)
+           isinstance(m, structure.PropModalStructure) or isinstance(m, structure.KripkePropStructure)
+
 
 def mode_vardomains(m):
     structure = __import__("structure")
     return isinstance(m, structure.VarModalStructure)
 
+
 def mode_intuitionistic(m):
     structure = __import__("structure")
     return isinstance(m, structure.KripkeStructure)
+
 
 class Term(Expr):
     """
@@ -131,6 +135,7 @@ class Term(Expr):
         """
         pass
 
+
 class Var(Term):
     """
     Individual variable.
@@ -139,6 +144,7 @@ class Var(Term):
     @attr u: the variable name
     @type u: str
     """
+
     # NB: When dealing with variable occurrences in the further processing,
     # it will be necessary to reference the variables by their name (self.v)
     # rather than the variable objects themselves (self)
@@ -346,6 +352,7 @@ class Pred(Expr):
     @attr p: the predicate name
     @type p: str
     """
+
     def __init__(self, p: str):
         self.p = p
 
@@ -386,6 +393,8 @@ class Pred(Expr):
 
 
 depth = 0  # keep track of the level of nesting
+
+
 # todo depth has to be reset manually after each call of `denot`
 
 
@@ -394,8 +403,10 @@ class Formula(Expr):
     Formula.
     φ, ψ, ...
 
-    @method denotV: the truth value of a formula relative to a structure m (without reference to a particular assignment)
+    @method denotV: the truth value of a formula relative to a structure m (without reference to a particular
+    assignment)
     """
+
     # todo efficiency: assignment functions have to be specified on all variables of the language;
     #  the domain is not restricted expression-wise to those variables that actually occur in the expression
 
@@ -464,7 +475,7 @@ class Formula(Expr):
                 return False
         return True
 
-    def denotW(self, m, g: dict[str,str]) -> bool:
+    def denotW(self, m, g: dict[str, str]) -> bool:
         """
         The truth value of a formula relative to a structure M and assmnt. g (without reference to a particular world).
         A formula is true in a structure M iff it is true in M and g in all possible worlds w.
@@ -511,7 +522,8 @@ class Formula(Expr):
         @return: the truth value of self in m under g
         @rtype: bool
         """
-        # todo doesn't work for modal structures with varying domain yet (due different structure of assignment functions)
+        # todo doesn't work for modal structures with varying domain yet (due different structure of assignment
+        #  functions)
         global depth
 
         for w in m.w:
@@ -599,6 +611,7 @@ class Formula(Expr):
         """
         return self == other
 
+
 class Prop(Formula):
     """
     Propositional variable.
@@ -660,7 +673,7 @@ class Prop(Formula):
         if mode["classical"]:
             return dict()
         else:
-            return {"p": ("ν", [self], )}
+            return {"p": ("ν", [self],)}
 
     def tableau_neg(self, mode):
         return dict()
@@ -683,6 +696,7 @@ class Atm(Formula):
     @attr terms: the terms to apply the predicate symbol to
     @type terms: tuple[Term]
     """
+
     def __init__(self, pred: Pred, terms: tuple[Term]):
         self.pred = pred
         self.terms = terms
@@ -818,6 +832,7 @@ class Verum(Formula):
     Verum.
     ⊤
     """
+
     def __init__(self):
         pass
 
@@ -942,6 +957,7 @@ class Neg(Formula):
     @attr phi: the negated formula
     @type phi: Formula
     """
+
     def __init__(self, phi: Formula):
         self.phi = phi
 
@@ -1030,6 +1046,7 @@ class Conj(Formula):
     @attr psi: the right conjunct
     @type psi: Formula
     """
+
     def __init__(self, phi: Formula, psi: Formula):
         self.phi = phi
         self.psi = psi
@@ -1098,6 +1115,7 @@ class Disj(Formula):
     @attr psi: the right disjunct
     @type psi: Formula
     """
+
     def __init__(self, phi: Formula, psi: Formula):
         self.phi = phi
         self.psi = psi
@@ -1167,6 +1185,7 @@ class Imp(Formula):
     @attr psi: the consequent
     @type psi: Formula
     """
+
     def __init__(self, phi: Formula, psi: Formula):
         self.phi = phi
         self.psi = psi
@@ -1253,6 +1272,7 @@ class Biimp(Formula):
     @attr psi: the right formula
     @type psi: Formula
     """
+
     def __init__(self, phi: Formula, psi: Formula):
         self.phi = phi
         self.psi = psi
@@ -1333,6 +1353,7 @@ class Biimp(Formula):
             return {"¬↔": ("ξ", [self.phi, Neg(self.phi),
                                  Neg(self.psi), self.psi])}
 
+
 class Xor(Formula):
     """
     Exclusive or..
@@ -1343,6 +1364,7 @@ class Xor(Formula):
     @attr psi: the right formula
     @type psi: Formula
     """
+
     def __init__(self, phi: Formula, psi: Formula):
         self.phi = phi
         self.psi = psi
@@ -1434,6 +1456,7 @@ class Exists(Formula):
     @attr phi: the formula to be quantified
     @type phi: Formula
     """
+
     def __init__(self, u: Var, phi: Formula):
         self.u = u
         self.phi = phi
@@ -1480,7 +1503,7 @@ class Exists(Formula):
 
         # short version
         if not verbose:
-            return any([self.phi.denot(m, g | {self.u: d_}) for d_ in d])
+            return any([self.phi.denot(m, g | {self.u.u: d_}) for d_ in d])
 
         # long version
         global depth
@@ -1553,6 +1576,7 @@ class Forall(Formula):
     @attr phi: the formula to be quantified
     @type phi: Formula
     """
+
     def __init__(self, u: Var, phi: Formula):
         self.u = u
         self.phi = phi
@@ -1640,7 +1664,7 @@ class Forall(Formula):
 
             # short version
             if not verbose:
-                return all([all([self.phi.denot(m, w_, g | {self.u: d_}) for d_ in m.d[w_]]) for w_ in m.future(w)])
+                return all([all([self.phi.denot(m, w_, g | {self.u.u: d_}) for d_ in m.d[w_]]) for w_ in m.future(w)])
 
             # long version
 
@@ -1658,7 +1682,7 @@ class Forall(Formula):
 
                     # check whether the current indiv. d under consideration makes phi true at k'
                     print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(
-                        d_) + " ...")
+                            d_) + " ...")
                     witness = self.phi.denot(m, g, w_)
 
                     # if yes, everything is fine until now, we do nothing and go check the next one (continue)
@@ -1728,6 +1752,7 @@ class Poss(Formula):
     @attr phi: the formula to apply the modal operator to
     @type phi: Formula
     """
+
     def __init__(self, phi: Formula):
         self.phi = phi
 
@@ -1973,6 +1998,7 @@ class Nec(Formula):
             rules = {"¬◻": ("κ", [Neg(self.phi)])}
         return rules
 
+
 class AllWorlds(Formula):
     """
     Special pseudo-connective indicating that a formula is true in all worlds of the model.
@@ -2036,6 +2062,7 @@ class AllWorlds(Formula):
 
     def tableau_neg(self, mode):
         return dict()
+
 
 class NotAllWorlds(Formula):
     """
@@ -2107,6 +2134,7 @@ class Pseudo(Formula):
     Special pseudo-formulas for tableau annotation.
     """
 
+
 class Empty(Pseudo):
     """
     Special empty pseudo-formula to secretly introduce branching.
@@ -2120,6 +2148,7 @@ class Empty(Pseudo):
 
     def tex(self):
         return "\\varepsilon"
+
 
 class Closed(Pseudo):
     """

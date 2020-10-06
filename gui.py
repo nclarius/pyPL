@@ -6,10 +6,11 @@ Graphical interface.
 CURRENTLY UNDER CONSTRUCTION.
 """
 
-import tkinter as tk
-from tkinter import ttk
-import tkinter.messagebox, tkinter.filedialog
 import os
+import tkinter as tk
+import tkinter.filedialog
+import tkinter.messagebox
+from tkinter import ttk
 
 
 class PyPLInst:
@@ -55,10 +56,10 @@ class ScrollableFrame(ttk.Frame):
         self.scrollable_frame = ttk.Frame(canvas)
 
         self.scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(
-                scrollregion=canvas.bbox("all")
-            )
+                "<Configure>",
+                lambda e: canvas.configure(
+                        scrollregion=canvas.bbox("all")
+                )
         )
 
         canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw", width=1000, height=500)
@@ -67,6 +68,7 @@ class ScrollableFrame(ttk.Frame):
 
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+
 
 class PyPLGUI(tk.Frame):
 
@@ -89,8 +91,8 @@ class PyPLGUI(tk.Frame):
                        # font=[("selected", ("OpenSans", "12", "bold"))]
                        )  # todo no rounded corners for tabs
         self.style.theme_settings("default", {
-                                  "TNotebook": {"configure": {"tabposition": "n", "borderwidth": 0}},
-                                  "TNotebook.Tab": {"configure": {"padding": [10, 7.5]}}})
+                "TNotebook":     {"configure": {"tabposition": "n", "borderwidth": 0}},
+                "TNotebook.Tab": {"configure": {"padding": [10, 7.5]}}})
         # todo visually distinguish action buttons, radio buttons and check buttons?
         self.root.configure(bg=white)
         self.root.option_add("*Font", "NotoSans 12")
@@ -105,19 +107,19 @@ class PyPLGUI(tk.Frame):
     def win_main(self):
         self.tabs = ttk.Notebook(self.root)
         tabs = [
-            # "Start",
-            "1. Choose your task",
-            "2. Specify your input",
-            "3. Select your logic",
-            "4. Adjust your settings",
-            # "5. Run"
+                # "Start",
+                "1. Choose your task",
+                "2. Specify your input",
+                "3. Select your logic",
+                "4. Adjust your settings",
+                # "5. Run"
         ]
         # add tabs
         for i, tab in enumerate(tabs):
             self.tabs.add(ttk.Frame(self.tabs, style="TFrame"), text=tab)
         # build tabs
         for i, tab in enumerate(tabs):
-            getattr(self, "tab_" + str(i+1))()
+            getattr(self, "tab_" + str(i + 1))()
         self.tabs.pack(fill="both", expand=True)
         # self.tabs.grid(row=0, column=0)
 
@@ -228,6 +230,7 @@ class PyPLGUI(tk.Frame):
             update_summary()
             self.tab_2()
             self.inst.completed.append(1)
+
         # frames
         # top
         top = tk.Frame(tab, bg=white)
@@ -279,7 +282,7 @@ class PyPLGUI(tk.Frame):
 
         def load():
             while len(input_raws) > 1:
-                remove_formula(len(input_raws)-1)
+                remove_formula(len(input_raws) - 1)
             initial_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "input")
             if not os.path.exists(initial_dir):
                 initial_dir = os.getcwd()
@@ -456,10 +459,10 @@ class PyPLGUI(tk.Frame):
 
         def set_mode(modes):  # todo extend for structure
             mode_map = {
-                "classical": ("classint", "class", "int"),
-                "propositional": ("proppred", "prop", "pred"),
-                "modal": ("modal", "modal", "nonmodal"),
-                "vardomains": ("constvar", "var", "const")
+                    "classical":     ("classint", "class", "int"),
+                    "propositional": ("proppred", "prop", "pred"),
+                    "modal":         ("modal", "modal", "nonmodal"),
+                    "vardomains":    ("constvar", "var", "const")
             }
             for md, (cat, val1, val2) in mode_map.items():
                 if any([mode[md] for mode in modes]):
@@ -531,10 +534,10 @@ class PyPLGUI(tk.Frame):
 
         # load from file button
         btn_load = tk.Button(tab,
-                              bg=white,
-                              text="↥",
+                             bg=white,
+                             text="↥",
                              # bg=darkgray, fg=white,
-                              activebackground=lightgray, activeforeground=white)
+                             activebackground=lightgray, activeforeground=white)
         btn_load.pack(in_=topmid, padx=15, side=tk.LEFT)
         btn_load.bind("<Button>", lambda e: load())
 
@@ -553,23 +556,23 @@ class PyPLGUI(tk.Frame):
             concl = self.inst.conclusion
             if self.inst.action == "tt":
                 txt = "You are searching for a proof or refutation that " + \
-                       (str(concl) if concl else "...") + " is true in all structures" + \
-                       (" in which " + ", ".join([fml if fml else "..." for fml in iput_fmls[1:]]) + " is true"
-                        if len(iput_fmls) > 1 else "") + "."
+                      (str(concl) if concl else "...") + " is true in all structures" + \
+                      (" in which " + ", ".join([fml if fml else "..." for fml in iput_fmls[1:]]) + " is true"
+                       if len(iput_fmls) > 1 else "") + "."
             elif self.inst.action == "tp":
                 txt = "You are searching for a proof that " + \
-                       (str(concl) if concl else "...") + " is true in all structures" + \
-                       (" in which " + ", ".join([fml if fml else "..." for fml in iput_fmls[1:]]) + " is true"
-                        if len(iput_fmls) > 1 else "") + "."
+                      (str(concl) if concl else "...") + " is true in all structures" + \
+                      (" in which " + ", ".join([fml if fml else "..." for fml in iput_fmls[1:]]) + " is true"
+                       if len(iput_fmls) > 1 else "") + "."
             elif self.inst.action == "cmg":
                 txt = "You are searching for a structure in which " + \
-                       (str(concl) if concl else "...") + " is false" + \
-                       (" and " + ", ".join([fml if fml else "..." for fml in iput_fmls[1:]]) + " is true"
-                        if len(iput_fmls) > 1 else "") + "."
+                      (str(concl) if concl else "...") + " is false" + \
+                      (" and " + ", ".join([fml if fml else "..." for fml in iput_fmls[1:]]) + " is true"
+                       if len(iput_fmls) > 1 else "") + "."
             elif self.inst.action == "mg":
                 txt = "You are searching for a structure in which " + \
-                    ", ".join([str(fml) if fml else "..." for fml in iput_fmls]) + \
-                       (" is " if len(iput_fmls) == 1 else " are ") + "true."
+                      ", ".join([str(fml) if fml else "..." for fml in iput_fmls]) + \
+                      (" is " if len(iput_fmls) == 1 else " are ") + "true."
             else:
                 txt = "You are searching for the denotation of " + \
                       (str(concl) if concl else "...") + " in  " + "S."
@@ -713,18 +716,18 @@ class PyPLGUI(tk.Frame):
         # selection
         categories = ["proppred", "classint", "modal", "constvar", "frame"]
         labels = {
-            "proppred": [("propositional logic", "prop"), ("predicate logic", "pred")],
-            "classint": [("classical", "class"), ("intuitionistic", "int")],
-            "modal": [("non-modal", "nonmodal"), ("modal", "modal")],
-            "constvar": [("with constant domains", "const"), ("with varying domains", "var")],
-            "frame": [("frame K", "K")]
+                "proppred": [("propositional logic", "prop"), ("predicate logic", "pred")],
+                "classint": [("classical", "class"), ("intuitionistic", "int")],
+                "modal":    [("non-modal", "nonmodal"), ("modal", "modal")],
+                "constvar": [("with constant domains", "const"), ("with varying domains", "var")],
+                "frame":    [("frame K", "K")]
         }
         variables = {
-            "proppred": tk.StringVar(None, self.inst.logic["proppred"]),
-            "classint": tk.StringVar(None, self.inst.logic["classint"]),
-            "modal": tk.StringVar(None, self.inst.logic["modal"]),
-            "constvar": tk.StringVar(None, self.inst.logic["constvar"]),
-            "frame": tk.StringVar(None, self.inst.logic["frame"])
+                "proppred": tk.StringVar(None, self.inst.logic["proppred"]),
+                "classint": tk.StringVar(None, self.inst.logic["classint"]),
+                "modal":    tk.StringVar(None, self.inst.logic["modal"]),
+                "constvar": tk.StringVar(None, self.inst.logic["constvar"]),
+                "frame":    tk.StringVar(None, self.inst.logic["frame"])
         }
         self.rbs_logic = {cat: dict() for cat in categories}
         for i, cat in enumerate(categories):
