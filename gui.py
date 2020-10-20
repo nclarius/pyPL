@@ -6,6 +6,7 @@ Graphical interface.
 CURRENTLY UNDER CONSTRUCTION.
 """
 
+
 import os
 import tkinter as tk
 import tkinter.filedialog
@@ -287,23 +288,31 @@ class PyPLGUI(tk.Frame):
             if not os.path.exists(initial_dir):
                 initial_dir = os.getcwd()
             file = tkinter.filedialog.askopenfile(initialdir=initial_dir)
-            lines = [line.strip() for line in file if line.strip()]
-            for i, line in enumerate(lines):
-                if i == 0:
+            lines = [line.strip() for line in file]
+            if self.inst.action != "mc":
+                for i, line in enumerate(lines):
+                    if not line:
+                        continue
+                    if i > 0:
+                        add_formula()
                     input_ents[i].delete(0, tk.END)
                     input_ents[i].insert(0, line)
                     parse(i)
-                else:
-                    if not (self.inst.action == "mc"):
+            else:
+                empty_line = lines.index("")
+                structure = lines[0:empty_line]
+                formulas = lines[empty_line + 1:]
+                ent_struct.delete("1.0", tk.END)
+                ent_struct.insert(1.0, "\n".join(structure))
+                parse_struct("\n".join(structure))
+                for i, line in enumerate(formulas):
+                    if not line:
+                        continue
+                    if i > 0:
                         add_formula()
-                        input_ents[i].delete(0, tk.END)
-                        input_ents[i].insert(0, line)
-                        parse(i)
-                    else:
-                        if i == 1:
-                            ent_struct.delete("1.0", tk.END)
-                            ent_struct.insert(1.0, "\n".join(lines[i:]))
-                            parse_struct("\n".join(lines[i:]))
+                    input_ents[i+1].delete(0, tk.END)
+                    input_ents[i+1].insert(0, line)
+                    parse(i)
 
         def add_formula():
             # variable
@@ -313,7 +322,7 @@ class PyPLGUI(tk.Frame):
             input_modes.append(None)
             i = input_raws.index(raw)
             # frames
-            if i > 0:
+            if i > 0 or self.inst.action == "mc":
                 new_mids = {j: tk.Frame(mid, bg=white) for j in range(len(mids), len(mids) + 1)}
                 mids.update(new_mids)
                 for j in new_mids:
@@ -325,7 +334,7 @@ class PyPLGUI(tk.Frame):
             #                text=(("Conclusion:" if i == 0 else "Premise " + str(i) + ":")
             #                      if self.inst.action in ["tt", "tp", "cmg"]
             #                       else "Formula " + str(i+1) + ":" if self.inst.action in ["mg"] else "Formula:"))
-            row = len(mids) - 1 if i > 0 else 1
+            row = len(mids) - 1 if i > 0 else (1 if self.inst.action != "mc" else 3)
             # cap.pack(in_=mids[row], side=tk.LEFT)
             # caps.append(cap)
             # remove button
@@ -336,8 +345,7 @@ class PyPLGUI(tk.Frame):
                             state="disabled",
                             activebackground=lightgray, activeforeground=white,
                             width=1, height=1)
-            if self.inst.action != "mc":
-                rem.pack(in_=mids[row], side=tk.LEFT, padx=5)
+            rem.pack(in_=mids[row], side=tk.LEFT, padx=5)
             rem["font"] = font_large
             rem.bind("<Button>", lambda e: remove_formula(i))
             rems.append(rem)
@@ -360,8 +368,7 @@ class PyPLGUI(tk.Frame):
                                   bg=white,
                                   text="↻",
                                   # bg=darkgray, fg=white,
-                                  activebackground=lightgray, activeforeground=white,
-                                  state="disabled")
+                                  activebackground=lightgray, activeforeground=white)
             btn_parse["font"] = font_large
             btn_parse.pack(in_=mids[row], side=tk.LEFT, padx=5)
             btn_parse.bind("<Button>", lambda e: parse(i))
@@ -607,19 +614,14 @@ class PyPLGUI(tk.Frame):
         btn_add_fml.bind("<Button>", lambda e: add_formula())
 
         if self.inst.action == "mc":
-            cap_fml.pack(in_=mids[0], side=tk.LEFT, padx=15, pady=15)
-            add_formula()
-            mid3 = tk.Frame(mid, bg=white)
-            mids[3] = mid3
-            mids[3].pack(ipadx=5, ipady=5)
-            cap_struct.pack(in_=mids[2], padx=15)
+            cap_struct.pack(in_=mids[0], padx=15, pady=15)
             # raw_struct = tk.StringVar()
             # ent_struct = tk.Entry(tab,
             #                textvariable=struct_raw)
             # ent_struct.pack(in_=mids[6], side=tk.LEFT, expand=True)
             # ent_struct.trace("w", lambda *args: select_entry(-1))
             ent_struct = tk.Text(tab, height=6, width=37)
-            ent_struct.pack(in_=mids[3], side=tk.LEFT)
+            ent_struct.pack(in_=mids[1], side=tk.LEFT)
             input_ents.append(ent_struct)
             btn_parse_struct = tk.Button(tab,
                                          bg=white,
@@ -627,13 +629,19 @@ class PyPLGUI(tk.Frame):
                                          # bg=darkgray, fg=white,
                                          activebackground=lightgray, activeforeground=white)
             btn_parse_struct["font"] = font_large
-            btn_parse_struct.pack(in_=mids[3], side=tk.LEFT, padx=5)
+            btn_parse_struct.pack(in_=mids[1], side=tk.LEFT, padx=5)
             btn_parse_struct.bind("<Button>", lambda e: parse_struct())
             btns.append(btn_parse_struct)
             lbl_struct = tk.Text(tab, height=6, width=40, borderwidth=0, bg=white)
             lbl_struct.configure(inactiveselectbackground=lbl_struct.cget("selectbackground"))
             lbl_struct.configure(state="disabled")
-            lbl_struct.pack(in_=mids[3], side=tk.LEFT, padx=15, expand=True)
+            lbl_struct.pack(in_=mids[1], side=tk.LEFT, padx=15, expand=True)
+            mid2 = tk.Frame(mid, bg=white)
+            mids[2] = mid2
+            mids[2].pack(ipadx=5, ipady=5)
+            cap_fmls.pack(in_=mids[2], side=tk.LEFT, padx=15, pady=15)
+            btn_add_fml.pack(in_=mids[2], side=tk.LEFT)
+            add_formula()
         elif self.inst.action == "mg":
             # cap_pseudo.pack(in_=mids[0], side=tk.LEFT, padx=15)
             cap_fmls.pack(in_=mids[0], side=tk.LEFT, pady=15)
@@ -995,9 +1003,9 @@ class PyPLGUI(tk.Frame):
 
         if self.inst.action == "mc":
             if not modal:
-                denot = concl.denotG(structure)
+                denot = all([fml.denotG(structure) for fml in premises])
             else:
-                denot = concl.denotGW(structure)
+                denot = all([fml.denotGW(structure) for fml in premises])
 
             # todo make look nicer?
             # tk.messagebox.showinfo("", str(denot))
@@ -1021,21 +1029,21 @@ class PyPLGUI(tk.Frame):
                             underline_open=underline_open, hide_nonopen=hide_nonopen)
 
         else:
-            # test if non-theorem
+            # test if theorem
             tab1 = tableau.Tableau(concl, premises=premises, axioms=axioms,
-                                   validity=False, satisfiability=False, linguistic=linguistic,
+                                   validity=True, satisfiability=False, linguistic=linguistic,
                                    classical=classical, propositional=propositional,
                                    modal=modal, vardomains=vardomains, frame=frame,
                                    latex=latex, file=True, silent=True, num_models=num_models,
                                    underline_open=underline_open, hide_nonopen=hide_nonopen)
 
-            if not tab1.infinite():
+            if tab1.closed():
                 # win_wait.destroy()
                 tab1.show()
             else:
-                # test if theorem
+                # test if non-theorem
                 tab2 = tableau.Tableau(concl, premises=premises, axioms=axioms,
-                                       validity=True, satisfiability=False, linguistic=linguistic,
+                                       validity=False, satisfiability=False, linguistic=linguistic,
                                        classical=classical, propositional=propositional,
                                        modal=modal, vardomains=vardomains, frame=frame,
                                        latex=latex, file=True, silent=True, num_models=num_models,
@@ -1044,6 +1052,14 @@ class PyPLGUI(tk.Frame):
                     # win_wait.destroy()
                     tab2.show()
 
+             # todo output sometimes shown twice?
+
 
 if __name__ == "__main__":
+    # redirect output to log file
+    import sys
+    sys.stdout = open('pyPL.log', 'w')
+    sys.stderr = sys.stdout
+
+    # run
     PyPLGUI()

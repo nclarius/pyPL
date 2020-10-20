@@ -43,7 +43,7 @@ from itertools import chain
 from subprocess import DEVNULL, STDOUT, check_call
 from timeit import default_timer as timer
 
-# todo variant wo identity assumption
+# todo specify partial model to start with?
 # todo documentation
 # todo make non-K modal logics work
 # todo tableaux for IL
@@ -322,6 +322,7 @@ class Tableau(object):
             # the tree gets too big; stop execution
             # todo when size limit factor is not high enough and no model is found,
             #  result should be "pot. inf." rather than closed
+            # todo more models often just creates isomorphisms, rather than increasing the domain size
             if num_nodes > 2 * self.size_limit_factor * len_assumptions * self.num_models:
                 # mark abandoned branches
                 for leaf in self.root.leaves(True):
