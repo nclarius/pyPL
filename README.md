@@ -7,7 +7,6 @@ This tool can compute
 
 ![pyPL GUI -- start](doc/img/pyPL_1_MG.png)
 ![pyPL GUI -- input](doc/img/pyPL_2_MG.png)
-![pyPL GUI -- output](doc/img/pyPL_5_MG.png)
 
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
 License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).
