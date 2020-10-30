@@ -5,8 +5,8 @@ This tool can compute
 - the denotation (truth value) of a given logical expression in a given structure,  
 - an analytic tableau with associated (counter) models for a given inference (**currently under construction**).   
 
-![pyPL GUI -- start](doc/img/pyPL_1_CMG.png)
-![pyPL GUI -- input](doc/img/pyPL_2_CMG.png)
+![pyPL GUI -- start](doc/img/pyPL_1_MG.png)
+![pyPL GUI -- input](doc/img/pyPL_2_MG.png)
 ![pyPL GUI -- output](doc/img/pyPL_5_CMG.png)
 
 © Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
