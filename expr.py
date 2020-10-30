@@ -2179,7 +2179,7 @@ class Open(Pseudo):
         return "○"
 
     def tex(self):
-        return "\\circ"
+        return "\\ocircle"
 
 
 class Infinite(Pseudo):
