@@ -37,7 +37,7 @@ modal MG only for K frames.
  - accepts languages
    - of propositional logic
    - of first-order logic with zero-place predicates, function symbols and term equality
-   - with modal operators ◻, ◇
+   - with modal operators ◻, ◇, ^, ⱽ 
  - specification of structures (aka models, interpretations)
     - of classical logic
         - of PL with valuation function

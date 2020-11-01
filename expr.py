@@ -2070,9 +2070,9 @@ class Int(Expr):
 class Ext(Expr):
     """
     The extension of an intensional expression.
-    vφ
+    ⱽφ
 
-    @attr phi: the formula to compute the intension for
+    @attr phi: the formula to compute the extension for
     @type phi: Formula
     """
 
@@ -2080,7 +2080,7 @@ class Ext(Expr):
         self.phi = phi
 
     def __str__(self):
-        return "v" + str(self.phi)
+        return "ⱽ" + str(self.phi)
 
     def tex(self):
         return "\\{}^{\\vee} " + " " + self.phi.tex()
@@ -2108,8 +2108,8 @@ class Ext(Expr):
 
     def denot(self, m, v, w):
         """
-        The denotation of the extension of an expression is
-        the intension applied to the possible world.
+        The denotation of the extension of an intensional expression is
+        the intension function applied to the possible world.
 
         @param m: the structure to evaluate the formula in
         @type m

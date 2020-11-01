@@ -67,7 +67,9 @@ class FmlParser:
             "Forall": r"(∀|\\forall|\\all|\\fa)",
             # modal operators
             "Poss": r"(◇|\*|\\Diamond|\\poss)",
-            "Nec": r"(◻|#|\\Box||\\nec)"
+            "Nec": r"(◻|#|\\Box||\\nec)",
+            "Int": r"\\int",
+            "Ext": r"\\ext"
         }
         regex2token = {v: k for k, v in token2regex.items()}
 
