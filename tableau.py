@@ -128,7 +128,8 @@ class Tableau(object):
         res = ""
         # create preamble
         if self.latex:
-            with open("preamble.tex") as f:
+            path_preamble = os.path.join(os.path.dirname(__file__), "preamble.tex")
+            with open(path_preamble) as f:
                 preamble = f.read()
                 # for s in list(dict.fromkeys(chain([chain(node.fml.nonlogs())
                 #                             for node in self.axioms + self.premises + [self.conclusion]]))):
@@ -268,35 +269,41 @@ class Tableau(object):
                 print(res)
             else:
                 # generate the txt file and open it
-                dirpath = os.path.join(os.path.dirname(__file__), "output")
-                if not os.path.exists(dirpath):
-                    os.mkdir(dirpath)
-                os.chdir(dirpath)
+                path_output = os.path.join(os.path.dirname(__file__), "output")
+                if not os.path.exists(path_output):
+                    os.mkdir(path_output)
                 timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
-                txtpath = "output_" + timestamp + ".txt"
-                with open(txtpath, "w", encoding="utf-8") as txtfile:
-                    txtfile.write(res)
+                file_txt = "output_" + timestamp + ".txt"
+                path_txt = os.path.join(path_output, file_txt)
+                os.chdir(path_output)
+                with open(path_txt, "w", encoding="utf-8") as f:
+                    f.write(res)
                 # open file
-                check_call(["xdg-open", txtpath], stdout=DEVNULL, stderr=STDOUT)
+                check_call(["xdg-open", path_txt], stdout=DEVNULL, stderr=STDOUT)
+                os.chdir(os.path.dirname(__file__))
         else:
             # generate the tex file and open the compiled pdf
-            dirpath = os.path.join(os.path.dirname(__file__), "output")
-            if not os.path.exists(dirpath):
-                os.mkdir(dirpath)
-            os.chdir(dirpath)
+            path_output = os.path.join(os.path.dirname(__file__), "output")
+            if not os.path.exists(path_output):
+                os.mkdir(path_output)
             timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
-            texpath = "output_" + timestamp + ".tex"
-            pdfpath = "output_" + timestamp + ".pdf"
-            with open(texpath, "w") as texfile:
+            file_tex = "output_" + timestamp + ".tex"
+            file_pdf = "output_" + timestamp + ".pdf"
+            path_tex = os.path.join(path_output, file_tex)
+            path_pdf = os.path.join(path_output, file_pdf)
+            os.chdir(path_output)
+            # write LaTeX code
+            with open(path_tex, "w") as texfile:
                 texfile.write(res)
-            # generate LaTeX output
-            check_call(["pdflatex", texpath], stdout=DEVNULL, stderr=STDOUT)
+            # compile LaTeX to PDF
+            check_call(["pdflatex", file_tex], stdout=DEVNULL, stderr=STDOUT)
             # open file
-            check_call(["xdg-open", pdfpath], stdout=DEVNULL, stderr=STDOUT)
+            check_call(["xdg-open", path_pdf], stdout=DEVNULL, stderr=STDOUT)
             # cleanup
-            for file in os.listdir(dirpath) + os.listdir(os.path.dirname(__file__)):
-                if os.path.exists(file) and file.endswith(".log") or file.endswith(".aux"):
-                    os.remove(file)
+            for file in os.listdir(path_output):
+                path_file = os.path.join(path_output, file)
+                if os.path.exists(path_file) and file.endswith(".log") or file.endswith(".aux") or file.endswith(".gz"):
+                    os.remove(path_file)
             os.chdir(os.path.dirname(__file__))
 
     rule_names = {"α": "alpha", "β": "beta",  # connective rules

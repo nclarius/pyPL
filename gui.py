@@ -362,7 +362,6 @@ class PyPLGUI(tk.Frame):
             ent.bind("<Return>", lambda e: parse(i))
             ent.bind("<Control-plus>", lambda e: add_formula())
             ent.bind("<Control-minus>", lambda e: remove_formula(i))
-            ent.bind("<Control-Return>", lambda e: self.run())
             # parse button
             btn_parse = tk.Button(tab,
                                   bg=white,
@@ -1058,7 +1057,8 @@ class PyPLGUI(tk.Frame):
 if __name__ == "__main__":
     # redirect output to log file
     import sys
-    sys.stdout = open('pyPL.log', 'w')
+    path_log = os.path.join(os.path.dirname(__file__), "pyPL.log")
+    sys.stdout = open(path_log, 'w')
     sys.stderr = sys.stdout
 
     # run
