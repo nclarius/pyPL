@@ -278,8 +278,7 @@ def compute_denots():
         w6 = {"w1", "w2"}
         r6 = {("w1", "w1"), ("w1", "w2"), ("w2", "w2"), ("w2", "w2")}
         d6 = {"a"}
-        i6 = {"w1": {"P": {()}},
-              "w2": {"P": set()}}
+        i6 = {"P": {"w1": {()}, "w2": set()}}
         m6 = ConstModalStructure("S6", w6, r6, d6, i6)
         v6 = m6.vs[0]
 
@@ -318,8 +317,7 @@ def compute_denots():
         r7 = {("w1", "w1"), ("w1", "w2"), ("w2", "w2"), ("w2", "w2")}
         d7 = {"w1": {"a"},
               "w2": {"a", "b"}}
-        i7 = {"w1": {"P": {("a",)}},
-              "w2": {"P": {("b",)}}}
+        i7 = {"P": {"w1": {("a",)}, "w2": {("b",)}}}
         m7 = VarModalStructure("S7", w7, r7, d7, i7)
 
         print(m7)
@@ -465,8 +463,7 @@ def compute_denots():
     
         k11 = {"k0", "k1"}
         r11 = {("k0", "k1")}
-        v11 = {"k0": {"p": False},
-               "k1": {"p": True}}
+        v11 = {"p": {"k0": False, "k1": True}}
         m11 = KripkePropStructure("S11", k11, r11, v11)
     
         print(m11)
@@ -503,9 +500,8 @@ def compute_denots():
     
         k12 = {"k0", "k1", "k12"}
         r12 = {("k0", "k1"), ("k0", "k12")}
-        v12 = {"k0": {"p": False, "q": False},
-               "k1": {"p": True, "q": False},
-               "k12": {"p": False, "q": True}}
+        v12 = {"p": {"k0": False, "k1": True, "k2": False},
+               "q": {"k0": False, "k1": False, "k2": True}}
         m12 = KripkePropStructure("S12", k12, r12, v12)
     
         print(m12)
@@ -529,11 +525,8 @@ def compute_denots():
     
         k13 = {"k0", "k1", "k2", "k3"}
         r13 = {("k0", "k1"), ("k0", "k2"), ("k1", "k13"), ("k2", "k3")}
-        v13 = {"k0": {"p": False, "q": False},
-               "k1": {"p": False, "q": True},
-               "k2": {"p": True, "q": True},
-               "k3": {"p": True, "q": True}
-               }
+        v13 = {"p": {"k0": False, "k1": False, "k2": True, "k3": True},
+               "q": {"k0": False, "k1": True, "k2": True, "k3": True}}
         m13 = KripkePropStructure("S113", k13, r13, v13)
     
         print(m13)
@@ -571,19 +564,6 @@ def compute_denots():
         #############################
         print("\n---------------------------------\n")
         #############################
-
-
-def compute_tableaus():
-
-    if 1 in tableaus:
-        fml1 = Conj(Imp(Prop("p"), Prop("q")), Prop("r"))
-        tab1 = Tableau(fml1)
-        tab1.__str__()
-
-    if 2 in tableaus:
-        fml2 = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
-        tab2 = Tableau(Neg(fml2))
-        tab2.__str__()
 
 
 if __name__ == "__main__":

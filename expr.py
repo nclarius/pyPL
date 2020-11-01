@@ -233,8 +233,11 @@ class Const(Term):
         """
         The denotation of a constant is that individual that the interprηtion function f assigns it.
         """
-        i = m.i if not mode_modal(m) else m.i[w]
-        return i[self.c]
+        i = m.i
+        if not w:
+            return i[self.c]
+        else:
+            return i[self.c][w]
 
 
 class Func(Expr):
@@ -280,8 +283,11 @@ class Func(Expr):
         """
         The denotation of a constant is that individual that the assignment function g assigns it.
         """
-        i = m.i if not mode_modal(m) else m.i[w]
-        return i[self.i]
+        i = m.i
+        if not w:
+            return i[self.f]
+        else:
+            return i[self.f][w]
 
 
 class FuncTerm(Term):
@@ -340,8 +346,11 @@ class FuncTerm(Term):
         The denotation of a function symbol applied to an appropriate number of terms is that individual that the
         interprηtion function f assigns to the application.
         """
-        i = m.i if not mode_modal(m) else m.i[w]
-        return i[self.f.f][tuple([t.denot(m, g, w) for t in self.terms])]
+        i = m.i
+        if not w:
+            return i[self.f.f][tuple([t.denot(m, g, w) for t in self.terms])]
+        else:
+            return i[self.f.f][w][tuple([t.denot(m, g, w) for t in self.terms])]
 
 
 class Pred(Expr):
@@ -388,8 +397,11 @@ class Pred(Expr):
         The denotation of a predicate is the set of ordered tuples of individuals that the interprηtion function f
         assigns it.
         """
-        i = m.i if not mode_modal(m) else m.i[w]
-        return i[self.p]
+        i = m.i
+        if not w:
+            return i[self.p]
+        else:
+            return i[self.p][w]
 
 
 depth = 0  # keep track of the level of nesting
@@ -657,9 +669,12 @@ class Prop(Formula):
         """
         if not mode_intuitionistic(m):
             v = m.v
-            return v[self.p]
+            if not v:
+                return v[self.p]
+            else:
+                return v[self.p][w]
         else:
-            return (m.v[w][self.p] or
+            return (m.v[self.p][w] or
                     True in [self.denot(m, g, w_) for w_ in m.past(w) - {w}])
 
     def tableau_pos(self, mode):
@@ -1997,6 +2012,113 @@ class Nec(Formula):
         else:
             rules = {"¬◻": ("κ", [Neg(self.phi)])}
         return rules
+
+
+class Int(Expr):
+    """
+    The intension of an expression.
+    ^φ
+
+    @attr phi: the formula to compute the intension for
+    @type phi: Formula
+    """
+
+    def __init__(self, phi: Formula):
+        self.phi = phi
+
+    def __str__(self):
+        return "^" + str(self.phi)
+
+    def tex(self):
+        return "\\{}^{\\wedge} " + " " + self.phi.tex()
+
+    def __eq__(self, other):
+        return isinstance(other, Nec) and self.phi == other.phi
+
+    def __len__(self):
+        return 1 + len(self.phi)
+
+    def propvars(self):
+        return self.phi.propvars()
+
+    def freevars(self):
+        return self.phi.freevars()
+
+    def boundvars(self):
+        return self.phi.boundvars()
+
+    def nonlogs(self):
+        return self.phi.nonlogs()
+
+    def subst(self, u, t):
+        return Int(self.phi.subst(u, t))
+
+    def denot(self, m, v, w):
+        """
+        The denotation of the intension of an expression is
+        a function from possible worlds to the extension of the expression in that world.
+
+        @param m: the structure to evaluate the formula in
+        @type m
+        @param w: the world to evaluate the formula in
+        @type w: str
+        @param v: the assignment function to evaluate the formula in
+        @type v: dict[str,str]
+        """
+        return self.phi.denot(self, m, v, None)
+
+class Ext(Expr):
+    """
+    The extension of an intensional expression.
+    vφ
+
+    @attr phi: the formula to compute the intension for
+    @type phi: Formula
+    """
+
+    def __init__(self, phi: Formula):
+        self.phi = phi
+
+    def __str__(self):
+        return "v" + str(self.phi)
+
+    def tex(self):
+        return "\\{}^{\\vee} " + " " + self.phi.tex()
+
+    def __eq__(self, other):
+        return isinstance(other, Nec) and self.phi == other.phi
+
+    def __len__(self):
+        return 1 + len(self.phi)
+
+    def propvars(self):
+        return self.phi.propvars()
+
+    def freevars(self):
+        return self.phi.freevars()
+
+    def boundvars(self):
+        return self.phi.boundvars()
+
+    def nonlogs(self):
+        return self.phi.nonlogs()
+
+    def subst(self, u, t):
+        return Int(self.phi.subst(u, t))
+
+    def denot(self, m, v, w):
+        """
+        The denotation of the extension of an expression is
+        the intension applied to the possible world.
+
+        @param m: the structure to evaluate the formula in
+        @type m
+        @param w: the world to evaluate the formula in
+        @type w: str
+        @param v: the assignment function to evaluate the formula in
+        @type v: dict[str,str]
+        """
+        return self.phi.denot(self, m, v, w)[w]
 
 
 class AllWorlds(Formula):
