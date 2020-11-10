@@ -36,45 +36,48 @@ class FmlParser:
         Lex an input string into a list of tokens.
         """
         token2regex = {
-            # auxiliary symbols
-            "Lbrack": r"\(",
-            "Rbrack": r"\)",
-            "Comma": r",",
-            "Semic": r";",
-            "Dsemic": r";;",
-            # meta symbols
-            "Inf": r"(\|=||\\vDash|\\models|\\linf)",
-            "Noninf": r"(\|/=||\\nvDash|\\nmodels|\\lninf)",
-            # term symbols
-            "Var": r"(x|y|z)(_?\d+)?",
-            "Const": r"(([a-e]|[i-o])(_?\d+)?)",
-            "Func": r"(f|g|h)(_?\d+)?",
-            "Pred": r"[A-Z]\w*",
-            # atom symbols
-            "Prop": r"[p-u](_?\d+)?",
-            "Eq": r"(=|\\eq)",
-            # connectives
-            "Verum": r"(⊤|\\top|\\verum|\\ltrue)",
-            "Falsum": r"(⊥|\\bot|\\falsum|\\lfalse)",
-            "Neg": r"(¬|-|~|\\neg|\\lnot)",
-            "Conj": r"(∧|\^|&|\\wedge|\\land)",
-            "Disj": r"(∨|v|\||\\vee|\\lnot)",
-            "Imp": r"(→|⇒|⊃|(-|=)+>|\\rightarrow|\\Rightarrow|\\to|\\limp)",
-            "Biimp": r"(↔|⇔|≡|<(-|=)+>|\\leftrightarrow|\\Leftrightarrow|\\oto|\\lbiimp)",
-            "Xor": r"(⊕|⊻|\\oplus|\\lxor)",
-            # quantifiers
-            "Exists": r"(∃|\\exists|\\exi|\\ex)",
-            "Forall": r"(∀|\\forall|\\all|\\fa)",
-            # modal operators
-            "Poss": r"(◇|\*|\\Diamond|\\poss)",
-            "Nec": r"(◻|#|\\Box||\\nec)",
-            "Int": r"\\int",
-            "Ext": r"\\ext"
+                # auxiliary symbols
+                "Lbrack": r"\(",
+                "Rbrack": r"\)",
+                "Comma":  r",",
+                "Semic":  r";",
+                "Dsemic": r";;",
+                # meta symbols
+                "Inf":    r"(\|=||\\vDash|\\models|\\linf)",
+                "Noninf": r"(\|/=||\\nvDash|\\nmodels|\\lninf)",
+                # term symbols
+                "Var":    r"(x|y|z)(_?\d+)?",
+                "Const":  r"(([a-e]|[i-o])(_?\d+)?)",
+                "Func":   r"(f|g|h)(_?\d+)?",
+                "Pred":   r"[A-Z]\w*",
+                # atom symbols
+                "Prop":   r"[p-u](_?\d+)?",
+                "Eq":     r"(=|\\eq)",
+                # connectives
+                "Verum":  r"(⊤|\\top|\\verum|\\ltrue)",
+                "Falsum": r"(⊥|\\bot|\\falsum|\\lfalse)",
+                "Neg":    r"(¬|-|~|\\neg|\\lnot)",
+                "Conj":   r"(∧|\^|&|\\wedge|\\land)",
+                "Disj":   r"(∨|v|\||\\vee|\\lnot)",
+                "Imp":    r"(→|⇒|⊃|(-|=)+>|\\rightarrow|\\Rightarrow|\\to|\\limp)",
+                "Biimp":  r"(↔|⇔|≡|<(-|=)+>|\\leftrightarrow|\\Leftrightarrow|\\oto|\\lbiimp)",
+                "Xor":    r"(⊕|⊻|\\oplus|\\lxor)",
+                # quantifiers
+                "Exists": r"(∃|\\exists|\\exi|\\ex)",
+                "Forall": r"(∀|\\forall|\\all|\\fa)",
+                "Most": r"\\most",  # todo implement gen. quant.
+                "More": r"\\more",
+                # modal operators
+                "Poss":   r"(◇|\*|\\Diamond|\\poss)",
+                "Nec":    r"(◻|#|\\Box||\\nec)",
+                "Int":    r"\\int",
+                "Ext":    r"\\ext"
         }
         regex2token = {v: k for k, v in token2regex.items()}
 
         # add whitespace around auxiliary symbols
-        inp = inp.replace("(", " ( ").replace(")", " ) ").replace(",", " , ").replace(";", " ; ").replace("; ;", ";;")
+        inp = inp.replace("(", " ( ").replace(")", " ) ").replace(",", " , ").replace(";", " ; ").replace("; ;",
+                                                                                                          ";;")
         inp = re.sub("\s+", " ", inp)
 
         # process the input string split by whitespace
@@ -99,7 +102,7 @@ class FmlParser:
         mode["classical"] = True if "!Int" not in [t[0] for t in tokens] else False
         mode["validity"] = True if "Noninf" not in [t[0] for t in tokens] else False
         mode["propositional"] = True if any([t[0] in ["Prop"] for t in tokens]) else False
-        mode["modal"] = True if any([t[0] in ["Poss", "Nec", "Int", "Ext"] for t in tokens]) else False
+        mode["modal"] = True if any([t[0] in ["Poss", "Nec"] for t in tokens]) else False
         mode["vardomains"] = False if "!VD" not in [t[0] for t in tokens] else False
 
         return tokens, mode
@@ -176,8 +179,6 @@ class FmlParser:
             c = getattr(expr, t)
             e = c(s)
             stack_ = ["Atm", e]
-            if len(stacks) > 1 and not stacks[-1]:
-                stacks = stacks[:-1]  # remove empty previous stack
             stacks.append(stack_)
             self.stacks = stacks
             return
@@ -203,7 +204,7 @@ class FmlParser:
     def update_stacks(self, final=False):
         # todo check well-formedness of expressions
         # operator precedence
-        prec = {"Eq": 1, "Int": 1, "Ext": 1, "Nec": 1, "Poss": 1, "Exists": 1, "Forall": 1, "Neg": 1,
+        prec = {"Eq":   1, "Int": 1, "Ext": 1, "Nec": 1, "Poss": 1, "Exists": 1, "Forall": 1, "Neg": 1,
                 "Conj": 2, "Disj": 3, "Imp": 4, "Biimp": 5, "Xor": 6}
 
         stacks = self.stacks
@@ -424,10 +425,19 @@ if __name__ == "__main__":
     # print(test)
     # res = parser.parse(test)
     # print(res)
-    test = "Believe(j, \int Democrat(a))"
-    res = parser.parse(test)
-    print(res)
-    parser = StructParser()
+    # test = "Believe(j, \int Democrat(a))"
+    # res = parser.parse(test)
+    # print(res)
+    # test = "\most x (Man(x), \exists y Love(x,y))))"
+    # res = parser.parse(test)
+    # print(res)
+    # test = "\more x(Woman(x), Man(x), \exists y Love(x,y))"
+    # res = parser.parse(test)
+    # print(res)
+    # test = "\\all x (Man(x) -> \exi y (Woman(y) ^ Love(x,y)))"
+    # res = parser.parse(test)
+    # print(res)
+    # parser = StructParser()
     # with open("input/believe2.txt") as f:
     #     inp = f.read()
     # outp = parser.parse(inp)

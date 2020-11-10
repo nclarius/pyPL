@@ -614,6 +614,7 @@ class PyPLGUI(tk.Frame):
         btn_add_fml.bind("<Button>", lambda e: add_formula())
 
         if self.inst.action == "mc":
+            # todo add field for specification of g and w
             cap_struct.pack(in_=mids[0], padx=15, pady=15)
             # raw_struct = tk.StringVar()
             # ent_struct = tk.Entry(tab,

@@ -1759,6 +1759,133 @@ class Forall(Formula):
                 return {"¬∀": ("θ", [Neg(self.phi), self.u])}
 
 
+class Most(Formula):
+    """
+    "most than" quantification.
+    most u(φ,ψ,χ)
+
+    @attr u: the binding variable
+    @type u: Var
+    @attr phi: the first restriction to be compared
+    @type phi: Formula
+    @attr psi: the second restriction to be compared
+    @type psi: Formula
+    @attr chi: the nucleus to be compared against
+    @type chi: Formula
+    """
+
+    def __init__(self, u: Var, phi: Formula, psi: Formula):
+        self.u = u
+        self.phi = phi
+        self.psi = psi
+
+    def __str__(self):
+        return "most " + str(self.u) + "(" + ",".join([str(self.phi), str(self.psi)]) + ")"
+
+    def tex(self):
+        return "\\mathrm{most }" + self.u.tex() + "(" + ",".join([self.phi.tex(), self.psi.tex()]) + ")"
+
+    def __eq__(self, other):
+        return isinstance(other, Most) and self.u == other.u and \
+               self.phi == other.phi and self.psi == other.psi
+
+    def __len__(self):
+        return 2 + len(self.phi) + len(self.psi)
+
+    def propvars(self):
+        return set()
+
+    def freevars(self):
+        return self.phi.freevars() | self.psi.freevars() - {self.u.u}
+
+    def boundvars(self):
+        return self.phi.boundvars() | self.psi.boundvars() | {self.u.u}
+
+    def nonlogs(self):
+        return tuple([self.phi.nonlogs()[i] | self.psi.nonlogs()[i] for i in range(3)])
+
+    def subst(self, u, t):
+        if u.u == self.u.u:
+            return self
+        else:
+            return Most(self.u, self.phi.subst(u, t), self.psi.subst(u, t))
+
+    def denot(self, m, g=None, w=None):
+        """
+        The denotation of most u(phi, psi) is true iff
+        |phi ∩ psi| > |phi - psi|
+        """
+        return len({d for d in m.d if self.phi.denot(m, g | {self.u.u: d}, w)} &
+                   {d for d in m.d if self.psi.denot(m, g | {self.u.u: d}, w)}) \
+               > \
+               len({d for d in m.d if self.psi.denot(m, g | {self.u.u: d}, w)} -
+                   {d for d in m.d if self.psi.denot(m, g | {self.u.u: d}, w)})
+
+
+class More(Formula):
+    """
+    "more than" quantification.
+    more u(φ,ψ,χ)
+
+    @attr u: the binding variable
+    @type u: Var
+    @attr phi: the first restriction to be compared
+    @type phi: Formula
+    @attr psi: the second restriction to be compared
+    @type psi: Formula
+    @attr chi: the nucleus to be compared against
+    @type chi: Formula
+    """
+
+    def __init__(self, u: Var, phi: Formula, psi: Formula, chi: Formula):
+        self.u = u
+        self.phi = phi
+        self.psi = psi
+        self.chi = chi
+
+    def __str__(self):
+        return "more " + str(self.u) + "(" + ",".join([str(self.phi), str(self.psi), str(self.chi)]) + ")"
+
+    def tex(self):
+        return "\\mathrm{more }" + self.u.tex() + "(" + ",".join([self.phi.tex(), self.psi.tex(), self.chi.tex()]) + ")"
+
+    def __eq__(self, other):
+        return isinstance(other, More) and self.u == other.u and \
+               self.phi == other.phi and self.psi == other.psi and self.chi == other.chi
+
+    def __len__(self):
+        return 2 + len(self.phi) + len(self.psi) + len(self.chi)
+
+    def propvars(self):
+        return set()
+
+    def freevars(self):
+        return self.phi.freevars() | self.psi.freevars() | self.chi.freevars() - {self.u.u}
+
+    def boundvars(self):
+        return self.phi.boundvars() | self.psi.boundvars() | self.chi.boundvars() | {self.u.u}
+
+    def nonlogs(self):
+        return tuple([self.phi.nonlogs()[i] | self.psi.nonlogs()[i] | self.chi.nonlogs()[i] for i in range(3)])
+
+    def subst(self, u, t):
+        if u.u == self.u.u:
+            return self
+        else:
+            return More(self.u, self.phi.subst(u, t), self.psi.subst(u, t), self.chi.subst(u, t))
+
+    def denot(self, m, g=None, w=None):
+        """
+        The denotation of morethan u(phi, psi, chi) is true iff
+        |phi ∩ chi| > |psi ∩ chi|
+        """
+        return len({d for d in m.d if self.phi.denot(m, g | {self.u.u: d}, w)} &
+                   {d for d in m.d if self.chi.denot(m, g | {self.u.u: d}, w)}) \
+               > \
+               len({d for d in m.d if self.psi.denot(m, g | {self.u.u: d}, w)} &
+                   {d for d in m.d if self.chi.denot(m, g | {self.u.u: d}, w)})
+
+
 class Poss(Formula):
     """
     Possibility.

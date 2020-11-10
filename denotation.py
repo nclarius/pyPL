@@ -12,7 +12,7 @@ from functools import reduce
 
 
 # settings
-denots = [11, 12, 13]  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
+denots = [3]  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
 tableaus = [1, 2]  # set here which tableaus to include in the output (see def.s in fnc. 'compute_denots')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
@@ -157,12 +157,18 @@ def compute_denots():
                                          Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
                                                                Atm(Pred("love"), (Var("x"), Var("y"))))
                                                 )))),
-            10: Neg(Exists(Var("y"), Exists(Var("z"), Atm(Pred("jealous"), (Const("j"), Var("y"), Var("z"))))))
+            10: Neg(Exists(Var("y"), Exists(Var("z"), Atm(Pred("jealous"), (Const("j"), Var("y"), Var("z")))))),
+            11: Morethan(Var("x"), Atm(Pred("man"), (Var("x"),)), Atm(Pred("woman"), (Var("x"),)),
+                         Exists(Var("y"), Exists(Var("z"), Atm(Pred("jealous"), (Var("x"), Var("y"), Var("z")))))),
+            12: Morethan(Var("x"), Atm(Pred("woman"), (Var("x"),)), Atm(Pred("man"), (Var("x"),)),
+                         Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y"))))),
+            13: Most(Var("x"), Atm(Pred("man"), (Var("x"),)), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y")))))
+
         }
 
         for nr, e in e3.items():
             # print(e)
-            if nr in [1, 2, 4, 5, 7, 8, 9]:
+            if nr in [1, 2, 4, 5, 7, 8, 9, 11, 12, 13]:
                 print()
                 print("⟦" + str(e) + "⟧^S3,v3 =")
                 print(e.denot(s1, v3))
