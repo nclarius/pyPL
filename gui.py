@@ -1020,12 +1020,15 @@ class PyPLGUI(tk.Frame):
             # todo make look nicer?
             # tk.messagebox.showinfo("", str(denot))
             win_output = tk.Toplevel(self.root, bg=white)
+            win_output.geometry("1000x605")  # todo geometry only applied on second opening
+            win_output.destroy()
+            win_output = tk.Toplevel(self.root, bg=white)
             icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
             win_output.tk.call('wm', 'iconphoto', win_output._w, tk.PhotoImage(file=icon_path))
-            win_output.geometry("1000x605")  # todo geometry only applied on second opening
-            # frame_output = tk.Frame(win_output)
             lbl_output = tk.Label(win_output, text=str(denot), font=font, bg=white)
             lbl_output.pack(pady=32)
+            # frame_output = tk.Frame(win_output)
+            # win_output.destroy()
 
         elif self.inst.action != "tt":
             validity = True if self.inst.action == "tp" else False
