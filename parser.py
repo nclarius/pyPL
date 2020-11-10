@@ -102,7 +102,7 @@ class FmlParser:
         mode["classical"] = True if "!Int" not in [t[0] for t in tokens] else False
         mode["validity"] = True if "Noninf" not in [t[0] for t in tokens] else False
         mode["propositional"] = True if any([t[0] in ["Prop"] for t in tokens]) else False
-        mode["modal"] = True if any([t[0] in ["Poss", "Nec"] for t in tokens]) else False
+        mode["modal"] = True if any([t[0] in ["Poss", "Nec", "Int", "Ext"] for t in tokens]) else False
         mode["vardomains"] = False if "!VD" not in [t[0] for t in tokens] else False
 
         return tokens, mode

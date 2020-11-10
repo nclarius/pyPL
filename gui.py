@@ -1004,8 +1004,7 @@ class PyPLGUI(tk.Frame):
 
         if self.inst.action == "mc":
             # model checking
-            premises = premises + [concl]
-            premises = premises[::-1]
+            premises = [concl] + premises
             denot = ""
             for fml in premises:
                 denot += "[[" + str(fml) + "]]" + structure.s + "\n= "

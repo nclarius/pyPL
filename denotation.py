@@ -12,7 +12,7 @@ from functools import reduce
 
 
 # settings
-denots = [3]  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
+denots = [14]  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
 tableaus = [1, 2]  # set here which tableaus to include in the output (see def.s in fnc. 'compute_denots')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
@@ -565,6 +565,41 @@ def compute_denots():
                 print(e.denotG(s1, "k0"))
                 depth = 0
     
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+
+    if 14 in denots:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+        print("Example 14: ML - believe-contexts")
+
+        w14 = {"w0", "w1", "w2"}
+        r14 = set()
+        d14 = {"John", "JoeBiden", "DonaldTrump"}
+        i14 = {"e": {"w0": "JoeBiden", "w1": "DonaldTrump", "w2": "DonaldTrump"},
+               "j": {"w0": "John", "w1": "John", "w3": "John"},
+               "b": {"w0": "JoeBiden", "w1": "JoeBiden", "w3": "JoeBiden"},
+               "t": {"w0": "DonaldTrump", "w1": "DonaldTrump", "w3": "DonaldTrump"}}
+        
+        s14 = ConstModalStructure("S14", w14, r14, d14, i14)
+        print(s14)
+
+        e14 = {
+                1: Const("e"),
+                2: Int(Const("e")),
+                3: Ext(Int(Const("e"))),
+                4: Eq(Ext(Int(Const("e"))), Const("e"))
+        }
+
+        for nr, e in e14.items():
+            print()
+            if nr in [1, 2, 3, 4, 5]:
+                print("[[" + str(e) + "]]^S14,w0 =")
+                print(e.denotG(s14, "w0"))
+                depth = 0
+
         #############################
         print("\n---------------------------------\n")
         #############################

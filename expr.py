@@ -95,6 +95,21 @@ class Expr:
         """
         pass
 
+    def denotG(self, m, w=None):
+        return self.denot(m, None, w)
+
+    def denotW(self, m, g=None):
+        return self.denot(m, g, None)
+
+    def denotGW(self, m):
+        return self.denot(m)
+
+    def denotK(self, m):
+        return self.denot(m, g, None)
+
+    def denotGK(self, m):
+        return self.denot(m)
+
 
 def mode_modal(m):
     structure = __import__("structure")
@@ -134,6 +149,12 @@ class Term(Expr):
         @rtype: str
         """
         pass
+
+    def denotGW(self, m) -> str:
+        """
+        @rtype: str
+        """
+        return self.denot(m)
 
 
 class Var(Term):
@@ -231,7 +252,7 @@ class Const(Term):
 
     def denot(self, m, g=None, w=None):
         """
-        The denotation of a constant is that individual that the interprηtion function f assigns it.
+        The denotation of a constant is that individual that the interpretation function f assigns it.
         """
         i = m.i
         if not w:
@@ -279,15 +300,21 @@ class Func(Expr):
     def subst(self, u, t):
         return self
 
-    def denot(self, m, g=None, w=None) -> str:
+    def denot(self, m, g=None, w=None) -> dict[tuple[str],str]:
         """
-        The denotation of a constant is that individual that the assignment function g assigns it.
+        The denotation of a function symbol is the function that the interpretation function f assigns it.
         """
         i = m.i
         if not w:
             return i[self.f]
         else:
             return i[self.f][w]
+
+    def denotGW(self, m) -> dict[tuple[str],str]:
+        """
+        @rtype: dict[tuple[str],str]
+        """
+        return self.denot(m)
 
 
 class FuncTerm(Term):
@@ -344,7 +371,7 @@ class FuncTerm(Term):
     def denot(self, m, g=None, w=None) -> str:
         """
         The denotation of a function symbol applied to an appropriate number of terms is that individual that the
-        interprηtion function f assigns to the application.
+        interpretation function f assigns to the application.
         """
         i = m.i
         if not w:
@@ -394,7 +421,7 @@ class Pred(Expr):
 
     def denot(self, m, g=None, w=None) -> set[tuple[str]]:
         """
-        The denotation of a predicate is the set of ordered tuples of individuals that the interprηtion function f
+        The denotation of a predicate is the set of ordered tuples of individuals that the interpretation function f
         assigns it.
         """
         i = m.i
@@ -402,6 +429,12 @@ class Pred(Expr):
             return i[self.p]
         else:
             return i[self.p][w]
+
+    def denotGW(self, m) -> set[tuple[[str]]]:
+        """
+        @rtype: set[tuple[[str]]]
+        """
+        return self.denot(m)
 
 
 depth = 0  # keep track of the level of nesting
@@ -748,7 +781,7 @@ class Atm(Formula):
     def denot(self, m, g=None, w=None):
         """
         The denotation of an atomic predication P(t1, ..., tn) is true iff the tuple of the denotation of the terms is
-        an element of the interprηtion of the predicate.
+        an element of the interpretation of the predicate.
         """
         if not mode_intuitionistic(m):
             return tuple([t.denot(m, g, w) for t in self.terms]) in self.pred.denot(m, g, w)
@@ -2150,7 +2183,7 @@ class Int(Expr):
     @type phi: Formula
     """
 
-    def __init__(self, phi: Formula):
+    def __init__(self, phi: Expr):
         self.phi = phi
 
     def __str__(self):
@@ -2180,7 +2213,7 @@ class Int(Expr):
     def subst(self, u, t):
         return Int(self.phi.subst(u, t))
 
-    def denot(self, m, g, w):
+    def denot(self, m, g=None, w=None):
         """
         The denotation of the intension of an expression is
         the function from possible worlds to the extension of the expression in that world.
@@ -2192,7 +2225,7 @@ class Int(Expr):
         @param g: the assignment function to evaluate the formula in
         @type g: dict[str,str]
         """
-        return frozenset({w: self.phi.denot(m, g, w) for w in m.w}.items())
+        return frozenset({w_: self.phi.denot(m, g, w_) for w_ in m.w}.items())
 
 class Ext(Expr):
     """
@@ -2203,7 +2236,7 @@ class Ext(Expr):
     @type phi: Formula
     """
 
-    def __init__(self, phi: Formula):
+    def __init__(self, phi: Expr):
         self.phi = phi
 
     def __str__(self):
@@ -2233,7 +2266,7 @@ class Ext(Expr):
     def subst(self, u, t):
         return Int(self.phi.subst(u, t))
 
-    def denot(self, m, g, w):
+    def denot(self, m, g=None, w=None):
         """
         The denotation of the extension of an intensional expression is
         the intension function applied to the possible world.
@@ -2245,7 +2278,7 @@ class Ext(Expr):
         @param g: the assignment function to evaluate the formula in
         @type g: dict[str,str]
         """
-        return self.phi.denot(self, m, g, w)[w]
+        return dict(self.phi.denot(m, g, w))[w]
 
 
 class AllWorlds(Formula):

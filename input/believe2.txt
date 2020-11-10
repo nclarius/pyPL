@@ -23,7 +23,3 @@
                    w1: {(John, {(w0, True), (w1, True), (w2, False)})},
                    w2: {(John, {(w0, True), (w1, True), (w2, False)})}]
       ]
-
-\ext \int e = e
-Believe(j, \int Democrat(b))
-Believe(j, \int Democrat(e))
