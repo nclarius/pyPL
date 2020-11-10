@@ -81,14 +81,14 @@ class Expr:
         # todo doesnt work
         pass
 
-    def denot(self, m, v: dict[str, str] = None, w: str = None):
+    def denot(self, m, g: dict[str, str] = None, w: str = None):
         """
         Compute the denotation of the expression relative to a structure m and assignment g.
 
         @param m: the structure to evaluate the formula against
         @type m
-        @param v: the assignment to evaluate the formula against
-        @type v: dict[str,str]
+        @param g: the assignment to evaluate the formula against
+        @type g: dict[str,str]
         @param w: the possible world to evaluate the formula against
         @type w: str
         @return: the denotation of the expression relative to the structure m and assignment g
@@ -98,7 +98,7 @@ class Expr:
 
 def mode_modal(m):
     structure = __import__("structure")
-    return isinstance(m, structure.ModalStructure) or isinstance(m, structure.ModalStructure)
+    return isinstance(m, structure.ModalStructure)
 
 
 def mode_propositional(m):
@@ -555,7 +555,7 @@ class Formula(Expr):
                 return False
         return True
 
-    def denotK(self, m):
+    def denotGK(self, m):
         """
         The truth value of a formula relative to a structure M (without reference to a particular state).
         A formula is true in a structure M iff it is true in M in the root state.
@@ -744,7 +744,7 @@ class Atm(Formula):
 
     def subst(self, u, t):
         return Atm(self.pred, tuple([term.subst(u, t) for term in self.terms]))
-
+#
     def denot(self, m, g=None, w=None):
         """
         The denotation of an atomic predication P(t1, ..., tn) is true iff the tuple of the denotation of the terms is
@@ -1798,15 +1798,15 @@ class Poss(Formula):
     def subst(self, u, t):
         return Poss(self.phi.subst(u, t))
 
-    def denot(self, m, v, w):
+    def denot(self, m, g, w):
         """
         In CL, the denotation of a possiblity formula is true iff
         phi is true at at least one world accessible from w.
 
         @param m: the structure to evaluate the formula in
         @type m
-        @param v: the assignment function to evaluate the formula in
-        @type v: dict[str,str]
+        @param g: the assignment function to evaluate the formula in
+        @type g: dict[str,str]
         @param w: the world to evaluate the formula in
         @type w: str
         @return: the denotation of Poss(phi)
@@ -1819,7 +1819,7 @@ class Poss(Formula):
 
         # short version
         if not verbose:
-            return any([self.phi.denot(m, v, w_) for w_ in neighbors])
+            return any([self.phi.denot(m, g, w_) for w_ in neighbors])
 
         # long version
         global depth
@@ -1830,7 +1830,7 @@ class Poss(Formula):
 
             # check whether phi is true in w
             print((depth * "  ") + "checking w" + (depth * "'") + " := " + str(w_) + " ...")
-            witness = self.phi.denot(m, v, w_)
+            witness = self.phi.denot(m, g, w_)
 
             # if yes, we found a witnessing neighbor, the poss. statement is true, and we can stop checking (return)
             if witness:
@@ -1926,7 +1926,7 @@ class Nec(Formula):
     def subst(self, u, t):
         return Nec(self.phi.subst(u, t))
 
-    def denot(self, m, v, w):
+    def denot(self, m, g, w):
         """
         In CL, the denotation of a necessity formula is true iff
         phi is true at all worlds accessible from w.
@@ -1935,8 +1935,8 @@ class Nec(Formula):
         @type m
         @param w: the world to evaluate the formula in
         @type w: str
-        @param v: the assignment function to evaluate the formula in
-        @type v: dict[str,str]
+        @param g: the assignment function to evaluate the formula in
+        @type g: dict[str,str]
         """
         if mode_intuitionistic(m):
             return  # not implemented
@@ -1946,7 +1946,7 @@ class Nec(Formula):
 
         # short version
         if not verbose:
-            return all([self.phi.denot(m, v, w_) for w_ in neighbors])
+            return all([self.phi.denot(m, g, w_) for w_ in neighbors])
 
         # long version
         global depth
@@ -1957,7 +1957,7 @@ class Nec(Formula):
 
             # check whether phi is true in w
             print((depth * "  ") + "checking w" + (depth * "'") + " := " + str(w_) + " ...")
-            witness = self.phi.denot(m, v, w_)
+            witness = self.phi.denot(m, g, w_)
 
             # if yes, everything is fine until now, we do nothing and go check the next one (continue)
             if witness:
@@ -2053,19 +2053,19 @@ class Int(Expr):
     def subst(self, u, t):
         return Int(self.phi.subst(u, t))
 
-    def denot(self, m, v, w):
+    def denot(self, m, g, w):
         """
         The denotation of the intension of an expression is
-        a function from possible worlds to the extension of the expression in that world.
+        the function from possible worlds to the extension of the expression in that world.
 
         @param m: the structure to evaluate the formula in
         @type m
         @param w: the world to evaluate the formula in
         @type w: str
-        @param v: the assignment function to evaluate the formula in
-        @type v: dict[str,str]
+        @param g: the assignment function to evaluate the formula in
+        @type g: dict[str,str]
         """
-        return self.phi.denot(self, m, v, None)
+        return {w: self.phi.denot(m, g, w) for w in m.w}
 
 class Ext(Expr):
     """
@@ -2106,7 +2106,7 @@ class Ext(Expr):
     def subst(self, u, t):
         return Int(self.phi.subst(u, t))
 
-    def denot(self, m, v, w):
+    def denot(self, m, g, w):
         """
         The denotation of the extension of an intensional expression is
         the intension function applied to the possible world.
@@ -2115,10 +2115,10 @@ class Ext(Expr):
         @type m
         @param w: the world to evaluate the formula in
         @type w: str
-        @param v: the assignment function to evaluate the formula in
-        @type v: dict[str,str]
+        @param g: the assignment function to evaluate the formula in
+        @type g: dict[str,str]
         """
-        return self.phi.denot(self, m, v, w)[w]
+        return self.phi.denot(self, m, g, w)[w]
 
 
 class AllWorlds(Formula):
@@ -2148,7 +2148,7 @@ class AllWorlds(Formula):
     def propvars(self):
         return self.phi.propvars()
 
-    def freevars(self):
+    def freevars(self):#
         return self.phi.freevars()
 
     def boundvars(self):

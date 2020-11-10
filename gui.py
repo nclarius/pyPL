@@ -13,6 +13,7 @@ import tkinter.filedialog
 import tkinter.messagebox
 from tkinter import ttk
 
+debug = False
 
 class PyPLInst:
 
@@ -739,7 +740,7 @@ class PyPLGUI(tk.Frame):
         self.rbs_logic = {cat: dict() for cat in categories}
         for i, cat in enumerate(categories):
             for j, (txt, val) in enumerate(labels[cat]):
-                disabled = True if cat in ["constvar", "frame"] or val == "int" else False
+                disabled = True if cat in ["constvar", "frame"] else False
                 rb = tk.Radiobutton(tab,
                                     bg=white,
                                     text=txt,
@@ -1001,10 +1002,14 @@ class PyPLGUI(tk.Frame):
         hide_nonopen = True if self.inst.hide_nonopen else False
 
         if self.inst.action == "mc":
-            if not modal:
-                denot = all([fml.denotG(structure) for fml in premises])
-            else:
-                denot = all([fml.denotGW(structure) for fml in premises])
+            # model checking
+            premises = premises + [concl]
+            if not modal and classical:  # classical non-modal logic
+                denot = all([eval(fml.denotG(structure)) for fml in premises])
+            elif classical:  # modal logic
+                denot = all([eval(fml.denotGW(structure)) for fml in premises])
+            elif not classical:  # intuitionistic logic
+                denot = all([eval(fml.denotGK(structure)) for fml in premises])
 
             # todo make look nicer?
             # tk.messagebox.showinfo("", str(denot))
@@ -1056,10 +1061,11 @@ class PyPLGUI(tk.Frame):
 
 if __name__ == "__main__":
     # redirect output to log file
-    import sys
-    path_log = os.path.join(os.path.dirname(__file__), "pyPL.log")
-    sys.stdout = open(path_log, 'w')
-    sys.stderr = sys.stdout
+    if not debug:
+        import sys
+        path_log = os.path.join(os.path.dirname(__file__), "pyPL.log")
+        sys.stdout = open(path_log, 'w')
+        sys.stderr = sys.stdout
 
     # run
     PyPLGUI()

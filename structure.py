@@ -232,7 +232,7 @@ class PropModalStructure(ModalStructure):
                "\\multicolumn{5}{L}{\\set{" + ", ".join(
                 ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
                "\\mathcal{V} : &" + "\\\\\n    & ".join([str(p) + " & \\mapsto &" +
-                                                         ", \\\\\n &&& ".join([str(w) + " & \\mapsto " +
+                                                         ", \\\\\n &&& ".join([str(w) + " & \\mapsto &" +
                                                                                str(tv).replace("True", "1").replace(
                                                                                    "False", "0")
                                                                                for (w, tv) in
@@ -337,9 +337,9 @@ class ConstModalStructure(ModalStructure):
                "\\mathcal{D} = & " + \
                "\\multicolumn{4}{L}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" + \
                "\\mathcal{I} : & " + \
-               "\\\\\n    & ".join([str(p) + " & \\mapsto " + \
-                                    "\\\\\n && ".join(
-                                            [str(w) + " & \\mapsto " +
+               "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
+                                    "\\\\\n &&& ".join(
+                                            [str(w) + "& \\mapsto &" +
                                              (str(ipw) if isinstance(ipw, str) else
                                               (", \\\\\n && ".join(
                                                       ["\\tpl{" + str(ipwKey) + " \\mapsto " + str(ipwVal) + "}"
@@ -356,7 +356,6 @@ class ConstModalStructure(ModalStructure):
 
 
 class VarModalStructure(ModalStructure):
-    # todo rewrite with p -> w -> I notation
     """
     A structure of modal predicate logic with varying domains.
 
@@ -456,9 +455,9 @@ class VarModalStructure(ModalStructure):
                                     for w in sorted(self.w)]) + \
                "\\\\\n" + \
                "\\mathcal{I} : & " + \
-               "\\\\\n    & ".join([str(p) + " & \\mapsto " + \
-                                    "\\\\\n && ".join(
-                                            [str(w) + " & \\mapsto " +
+               "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
+                                    "\\\\\n &&& ".join(
+                                            [str(w) + "& \\mapsto &" +
                                              (str(ipw) if isinstance(ipw, str) else
                                               (", \\\\\n && ".join(
                                                       ["\\tpl{" + str(ipwKey) + " \\mapsto " + str(ipwVal) + "}"
@@ -583,19 +582,19 @@ class KripkePropStructure(KripkeStructure):
     #     return {k_ for k_ in self.k if (k_, k) in self.r}
 
     def __str__(self):
-        return "Structure " + self.s + " = (K,V) with\n" \
+        return "Structure " + self.s + " = (K,R,V) with\n" \
                                        "K = {" + ", ".join([str(k) for k in sorted(self.k)]) + "}\n" \
                                                                                                "R = {" + ", ".join(
                 ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
-                                                                                     "D : " + "\n    ".join(
-                [str(k) + " ↦ \n" +
-                 ", \n".join(["           " + str(p) + " ↦ " + str(tv)
-                              for (p, tv) in sorted(self.v[k].items())])
-                 for (k, vk) in sorted(self.v.items())]).replace("\n    \n", "\n")
+                                                                                     "V : " + "\n    ".join(
+                [str(p) + " ↦ \n" +
+                 ", \n".join(["        " + str(k) + " ↦ " + str(tv)
+                              for (k, tv) in sorted(self.v[p].items())])
+                 for (p, vp) in sorted(self.v.items())]).replace("\n    \n", "\n")
 
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
-               " = \\tpl{\\mathcal{K}, \\mathcal{V}}$ with \\\\\n" \
+               " = \\tpl{\\mathcal{K}, \\mathcal{R}, \\mathcal{V}}$ with \\\\\n" \
                "\\begin{tabular}{LLLL}\n" \
                "\\mathcal{K} = & " \
                "\\multicolumn{3}{L}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" \
@@ -604,7 +603,7 @@ class KripkePropStructure(KripkeStructure):
                                                                                             "\\set{" + ", ".join(
                 ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" \
                "\\mathcal{V} : &" + "\\\\\n    & ".join([str(p) + " & \\mapsto &" +
-                                                         ", \\\\\n &&& ".join([str(k) + " & \\mapsto " +
+                                                         ", \\\\\n &&& ".join([str(k) + " & \\mapsto &" +
                                                                                str(tv).replace("True", "1").replace(
                                                                                    "False", "0")
                                                                                for (k, tv) in
@@ -732,7 +731,7 @@ class KripkePredStructure(KripkeStructure):
     #     return {k_ for k_ in self.k if (k_, k) in self.r}
 
     def __str__(self):
-        return "Structure " + self.s + " = (K,R,D,F) with\n" \
+        return "Structure " + self.s + " = (K,R,D,I) with\n" \
                                        "K = {" + ", ".join([repr(k) for k in self.k]) + "}\n" \
                                                                                         "R = {" + ", ".join(
                 ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
@@ -781,9 +780,9 @@ class KripkePredStructure(KripkeStructure):
                  for k in sorted(self.k)]) + \
                "\\\\\n" \
                "\\mathcal{I} : & " + \
-               "\\\\\n    & ".join([str(p) + " & \\mapsto " + \
-                                    "\\\\\n && ".join(
-                                            [str(k) + " & \\mapsto " +
+               "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
+                                    "\\\\\n &&& ".join(
+                                            [str(k) + " & \\mapsto &" +
                                              (str(ipk) if isinstance(ipk, str) else
                                               (", \\\\\n && ".join(
                                                       ["\\tpl{" + str(ipkKey) + " \\mapsto " + str(ipkVal) + "}"

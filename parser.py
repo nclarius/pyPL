@@ -291,89 +291,107 @@ class FmlParser:
 
 class StructParser:
     """
-    Parse a structure given as string into a Structure object.
+    Parse a structure specification given as string into a Structure object.
     """
     def __init__(self):
         pass
 
     def parse(self, inp):
-        constituents = {const.split(" = ")[0]: const.split(" = ")[1] for const in inp.split("\n")}
-        modal = True if "W" in constituents or "K" in constituents else False
-        propositional = True if "V" in constituents else False
-        intuitionistic = True if "K" in constituents else False
+        # split lines into components
+        inp = inp.replace("\n", "")
+        inp = re.sub("([A-Z] = )", "\n\\1", inp)
+        # stringify content[p-u](_?\d+)
+        inp = re.sub("(\w+)", "'\\1'", inp)
+        # turn functions into dicts
+        inp = inp.replace("[", "{")
+        inp = inp.replace("]", "}")
+        # turn singleton tuples into tuples
+        inp = re.sub("\('(\w+)'\)", "('\\1',)", inp)
+
+        s = {eval(comp.split(" = ")[0]): eval(comp.split(" = ")[1]) for comp in inp.split("\n") if comp}
+        s["S"] = "S"
+        modal = True if "W" in s or "K" in s else False
+        propositional = True if "V" in s else False
+        intuitionistic = True if "K" in s else False
         vardomains = True
-        if "V" in constituents:
-            if not modal:
-                spec = constituents["V"].split("; ")
-                v = {s.split(": ")[0]: s.split(": ")[1] for s in spec}
-            else:  # todo doesn't work (double colon and semicolon meaning)
-                spec = constituents["V"].split(",, ")
-                v = {s.split(":: ")[0]: {s_.split(": ")[0]: s_[1] for s_ in s.split(": ")[1]} for s in spec}
-        if "D" in constituents:
-            spec = constituents["D"][1:-1].split(", ")
-            vardomains = True if ": " in spec else False
-            if not modal or not vardomains:
-                d = set(constituents["D"][1:-1].split(", "))
-            else:
-                d = {sp.split(": ")[0]: sp.split(": ")[1] for sp in spec}
-        if "I" in constituents:
-            spec = constituents["I"].split("; ")
-            i = dict()
-            if not modal:
-                for s in spec:
-                    [symbol, interpr] = s.split(": ")
-                    if "{" not in interpr:
-                        i[symbol] = interpr
-                    elif ": " not in interpr:
-                        i[symbol] = set([tuple(el[1:-1].split(" - ")) for el in interpr[1:-1].split(", ")])
-                    else:
-                        i[symbol] = {el.split(": ")[0]: tuple(el.split(": ")[1].split(", "))
-                                     for el in interpr.split(", ")}
-            else:
-                spec_ = spec.split(", ")
-                for s_ in spec_:
-                    [world, interprfunc] = s_.split(": ")
-                    interprfunc = interprfunc.split(", ")
-                    for sym in interprfunc:
-                        [symbol, interpr] = sym.split(": ")
-                        if "{" not in interpr:
-                            i[world][symbol] = interpr
-                        elif ": " not in interpr:
-                            i[world][symbol] = set([tuple(el[1:-1].split(" - ")) for el in interpr[1:-1].split(", ")])
-                        else:
-                            i[world][symbol] = {el.split(": ")[0]: tuple(el.split(": ")[1].split(", "))
-                                                for el in interpr.split("; ")}
-        if "W" in constituents:
-            spec = constituents["W"][1:-1].split(", ")
-            w = set(spec)
-        if "K" in constituents:
-            spec = constituents["K"][1:-1].split(", ")
-            k = set(spec)
-        if "R" in constituents:
-            spec = constituents["K"][1:-1].split(", ")
-            r = set([tuple(el.split(", ")) for el in spec])
-        s = "S"
+
+        # constituents = {const.split(" = ")[0]: const.split(" = ")[1] for const in inp.split("\n")}
+        # modal = True if "W" in constituents or "K" in constituents else False
+        # propositional = True if "V" in constituents else False
+        # intuitionistic = True if "K" in constituents else False
+        # vardomains = True
+        # if "V" in constituents:
+        #     if not modal:
+        #         spec = constituents["V"].split("; ")
+        #         v = {s.split(": ")[0]: s.split(": ")[1] for s in spec}
+        #     else:  # todo doesn't work (double colon and semicolon meaning)
+        #         spec = constituents["V"].split(",, ")
+        #         v = {s.split(":: ")[0]: {s_.split(": ")[0]: s_[1] for s_ in s.split(": ")[1]} for s in spec}
+        # if "D" in constituents:
+        #     spec = constituents["D"][1:-1].split(", ")
+        #     vardomains = True if ": " in spec else False
+        #     if not modal or not vardomains:
+        #         d = set(constituents["D"][1:-1].split(", "))
+        #     else:
+        #         d = {sp.split(": ")[0]: sp.split(": ")[1] for sp in spec}
+        # if "I" in constituents:
+        #     spec = constituents["I"].split("; ")
+        #     i = dict()
+        #     if not modal:
+        #         for s in spec:
+        #             [symbol, interpr] = s.split(": ")
+        #             if "{" not in interpr:
+        #                 i[symbol] = interpr
+        #             elif ": " not in interpr:
+        #                 i[symbol] = set([tuple(el[1:-1].split(" - ")) for el in interpr[1:-1].split(", ")])
+        #             else:
+        #                 i[symbol] = {el.split(": ")[0]: tuple(el.split(": ")[1].split(", "))
+        #                              for el in interpr.split(", ")}
+        #     else:
+        #         spec_ = spec.split(", ")
+        #         for s_ in spec_:
+        #             [world, interprfunc] = s_.split(": ")
+        #             interprfunc = interprfunc.split(", ")
+        #             for sym in interprfunc:
+        #                 [symbol, interpr] = sym.split(": ")
+        #                 if "{" not in interpr:
+        #                     i[world][symbol] = interpr
+        #                 elif ": " not in interpr:
+        #                     i[world][symbol] = set([tuple(el[1:-1].split(" - ")) for el in interpr[1:-1].split(", ")])
+        #                 else:
+        #                     i[world][symbol] = {el.split(": ")[0]: tuple(el.split(": ")[1].split(", "))
+        #                                         for el in interpr.split("; ")}
+        # if "W" in compoonents:
+        #     spec = compoonents["W"][1:-1].split(", ")
+        #     w = set(spec)
+        # if "K" in compoonents:
+        #     spec = compoonents["K"][1:-1].split(", ")
+        #     k = set(spec)
+        # if "R" in compoonents:
+        #     spec = compoonents["K"][1:-1].split(", ")
+        #     r = set([tuple(el.split(", ")) for el in spec])
+        # s = "S"
 
         structure = __import__("structure")
         if not intuitionistic:
             if not modal:
                 if propositional:
-                    return structure.PropStructure(s, v)
+                    return structure.PropStructure(s["S"], s["V"])
                 else:
-                    return structure.PredStructure(s, d, i)
+                    return structure.PredStructure(s["S"], s["D"], s["I"])
             else:
                 if propositional:
-                    return structure.PropModalStructure(s, w, r, w)
+                    return structure.PropModalStructure(s["S"], s["W"], s["R"], s["V"])
                 else:
                     if not vardomains:
-                        return structure.ConstModalStructure(s, w, r, d, i)
+                        return structure.ConstModalStructure(s["S"], s["W"], s["R"], s["D"], s["I"])
                     else:
-                        return structure.VarModalStructure(s, w, r, d, i)
+                        return structure.VarModalStructure(s["S"], s["W"], s["R"], s["D"], s["I"])
         else:
             if propositional:
-                return structure.KripkePropStructure(s, k, r, v)
+                return structure.KripkePropStructure(s["S"], s["K"], s["R"], s["V"])
             else:
-                return structure.KripkePredStructure(s, k, r, d, i)
+                return structure.KripkePredStructure(s["S"], s["K"], s["R"], s["D"], s["I"])
 
 if __name__ == "__main__":
     parser = FmlParser()
@@ -396,4 +414,4 @@ if __name__ == "__main__":
     # test = r"p v q v r"
     # print(test)
     # res = parser.parse(test)
-    # print(res
+    # print(res)

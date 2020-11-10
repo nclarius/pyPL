@@ -51,6 +51,9 @@ from timeit import default_timer as timer
 
 debug = False
 
+def least(lst, cond):
+    return min([x for x in lst if cond(x)])
+
 
 class Tableau(object):
     """
@@ -188,14 +191,14 @@ class Tableau(object):
                     ", \\\\\n".join(axs) + (" + \\\\\n" if axs and prems else "\\\\\n" if axs else "") + \
                     ", \\\\\n".join(prems) + ("\\\\\n" if len(lhs) > 1 else " " if not concl else "") + \
                     inf + \
-                    (" " if concl else "") + concl + ":" + "$\\\\\n\n"
+                    (" " if concl else "") + concl + ":" + "$\\\\\n"
         res += info
 
         # print the tableau
         if not self.latex:
             res += self.root.treestr()
         else:
-            res += self.root.treetex() + "\ \\\\\n\ \\\\\n"
+            res += self.root.treetex() + "\ \\\\\n\ \\\\\n\ \\\\\n"
 
         # print result
         result = ""
@@ -207,7 +210,7 @@ class Tableau(object):
                 if self.mode["satisfiability"]:
                     result += "The " + ("set of formulas" if self.premises else "formula") + " is unsatisfiable."
                 else:
-                    result += "The " + ("inference" if self.premises else "formula") + " is irrefutable."
+                    result += "The " + ("inference" if self.premises else "formula") + " is valid."
         elif self.open():
             result += "The tableau is open:" + ("\\\\" if self.latex else "") + "\n"
             if self.mode["validity"]:
@@ -216,7 +219,7 @@ class Tableau(object):
                 if self.mode["satisfiability"]:
                     result += "The " + ("set of formulas" if self.premises else "formula") + " is satisfiable."
                 else:
-                    result += "The " + ("inference" if self.premises else "formula") + " is refutable."
+                    result += "The " + ("inference" if self.premises else "formula") + " is invalid."
         elif self.infinite():
             result += "The tableau is potentially infinite:" + ("\\\\" if self.latex else "") + "\n"
             if self.mode["validity"]:
@@ -228,14 +231,15 @@ class Tableau(object):
                               " may or may not be satisfiable."
                 else:
                     result += "The " + ("inference" if self.premises else "formula") + " may or may not be refutable."
+        result += "\\\\\n\\\\\n" if self.latex else "\n\n"
         res += result
 
         # generate and print models
+        mdls = ""
         if self.models:
-            mdls = "\\\\\n\\\\\n" if self.latex else "\n\n"
             mdls += ("Countermodels:" \
                          if self.mode["validity"] or not self.mode["validity"] and not self.mode["satisfiability"] \
-                         else "Models:") + ("\\\\\n" if self.latex else "\n\n")
+                         else "Models:") + ("\\\\\n" if self.latex else "\n")
             if self.latex:
                 mdls += "% alignment for structures\n"
                 mdls += "\\renewcommand{\\arraystretch}{1}  % decrease spacing between rows\n"
@@ -246,14 +250,13 @@ class Tableau(object):
                 if not self.latex:
                     mdls += str(model) + "\n\n"
                 else:
-                    mdls += model.tex() + "\\\\\n\\\\\n"
+                    mdls += model.tex() + "\\ \\\\\n\\ \\\\\n\\ \\\\\n"
             res += mdls
 
         # measures size and time
         # size = len(self)
         elapsed = self.end - self.start
-        res += ("" if not self.latex else "\\ \\\\\n") + \
-               "This computation took " + str(round(elapsed, 3)) + " seconds.\n\n"
+        res += "This computation took " + str(round(elapsed, 3)) + " seconds.\n\n"
 
         if self.latex:
             postamble = "\\end{document}\n"
@@ -794,6 +797,7 @@ class Tableau(object):
                    [c if "_" not in c else c[:c.index("_")] for c in occurring_global]]
         usable = list(dict.fromkeys(usable))
         # choose first symbol from constants and parameters that has not already been used with this particular rule
+        # const_symbol = usable[least(range(len(usable)), lambda i: usable[i] not in used)]
         const_symbol = usable[(min([i for i in range(len(usable)) if usable[i] not in used]))]
         # todo prevent arg is empty sequence error when running out of symbols to use
         const = Const(const_symbol)
@@ -1237,9 +1241,9 @@ class Tableau(object):
                             w: [node.fml.p for node in branch if node.fml.atom() and node.world == w]
                             for w in worlds}
                     # valuation = make all positive propositional variables true and all others false
-                    v = {
-                            "w" + str(w): {p: (True if p in atoms[w] else False) for p in self.root.fml.propvars()}
-                            for w in worlds}
+                    v = {p: {"w" + str(w): (True if p in atoms[w] else False)
+                             for w in worlds}
+                         for p in self.root.fml.propvars()}
                     model = PropModalStructure(name, w, r, v)
 
             else:  # classical predicate logic
@@ -1278,10 +1282,10 @@ class Tableau(object):
                     atoms = {w: [(node.fml.pred, node.fml.terms) for node in branch
                                  if node.fml.atom() and not isinstance(node.fml, Eq) and node.world == w]
                              for w in worlds}
-                    i = {"w" + str(w): {p: {tuple([remove_sig(str(t)) for t in a[1]]) for a in atoms[w]
+                    i = {p: {"w" + str(w): {tuple([remove_sig(str(t)) for t in a[1]]) for a in atoms[w]
                                             if (Pred(p), a[1]) in atoms[w]}
-                                        for p in predicates}
-                         for w in worlds}
+                             for w in worlds}
+                         for p in predicates}
 
                     if not self.mode["vardomains"]:  # classical modal predicate logic with constant domains
                         d = set(chain(*[[remove_sig(t) for t in node.fml.nonlogs()[0]] for node in branch]))
@@ -1325,8 +1329,9 @@ class Tableau(object):
                              if node.fml.atom() and not isinstance(node.fml, Eq) and node.world == k]
                          for k in states}
                 # valuation = make all positive propositional variables true and all others false
-                v = {k: {p: (True if p in atoms[k] else False) for p in self.root.fml.propvars()}
-                     for k in states}
+                v = {p: {k: (True if p in atoms[k] else False)
+                         for k in states}
+                     for p in self.root.fml.propvars()}
                 model = KripkePropStructure(name, k, r, v)
 
             else:  # intuitionistic predicate logic
@@ -1355,10 +1360,10 @@ class Tableau(object):
                 d = {"k" + str(k): set(chain(*[[remove_sig(t) for t in node.fml.nonlogs()[0]] for node in branch
                                                if node.world == k]))
                      for k in states}
-                i = {"k" + str(k): {p: {tuple([remove_sig(str(t)) for t in a[1]]) for a in atoms[k]
+                i = {p: {"k" + str(k): {tuple([remove_sig(str(t)) for t in a[1]]) for a in atoms[k]
                                         if (Pred(p), a[1]) in atoms[k]}
-                                    for p in predicates}
-                     for k in states}
+                         for k in states}
+                     for p in predicates}
                 model = KripkePredStructure(name, k, r, d, i)
 
         return model

@@ -12,7 +12,7 @@ from functools import reduce
 
 
 # settings
-denots = [8, 9, 10, 11, 12, 13]  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
+denots = [11, 12, 13]  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
 tableaus = [1, 2]  # set here which tableaus to include in the output (see def.s in fnc. 'compute_denots')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
@@ -40,11 +40,11 @@ def compute_denots():
               "lid": {("roundlid", ), ("rectlid", )},
               "fit": {("roundlid", "roundbox"), ("rectlid", "rectbox")}
         }
-        m1 = PredStructure("S1", d1, i1)
+        s1 = PredStructure("S1", d1, i1)
         v1 = {"x": "roundbox", "y": "bunny"}
         vv1 = {"x": "bunny", "y": "rectbox"}
 
-        print(m1)
+        print(s1)
         print("v1 = " + str(v1))
         print("v'1 = " + str(vv1))
 
@@ -64,16 +64,16 @@ def compute_denots():
             if nr <= 3:
                 print()
                 print("⟦" + str(e) + "⟧^S1,v1 =")
-                print(e.denot(m1, v1))
+                print(e.denot(s1, v1))
                 depth = 0
                 print()
                 print("⟦" + str(e) + "⟧^S1,v'1 =")
-                print(e.denot(m1, vv1))
+                print(e.denot(s1, vv1))
                 depth = 0
             if nr > 3:
                 print()
                 print("⟦" + str(e) + "⟧^S1 =")
-                print(e.denotG(m1))
+                print(e.denotG(s1))
                 depth = 0
 
 
@@ -91,10 +91,10 @@ def compute_denots():
               "book": {("MMiL", )},
               "read": {("Mary", "MMiL")}
         }
-        m2 = PredStructure("D2", d2, i2)
+        s1 = PredStructure("D2", d2, i2)
         v2 = {"x": "Jane", "y": "Mary", "z": "MMiL"}
 
-        print(m2)
+        print(s1)
         print("v = " + str(v2))
 
         e2 = {
@@ -118,7 +118,7 @@ def compute_denots():
         for nr, e in e2.items():
             print()
             print("⟦" + str(e) + "⟧^S2,v2 =")
-            print(e.denot(m2, v2))
+            print(e.denot(s1, v2))
             depth = 0
 
 
@@ -136,11 +136,11 @@ def compute_denots():
               "man": {("John", ), ("Peter", )},
               "love": {("Mary", "John"), ("John", "Mary"), ("John", "John"), ("Peter", "Mary"), ("Peter", "John")},
               "jealous": {("Peter", "John", "Mary"), ("Peter", "Mary", "John")}}
-        m3 = PredStructure("S3", d3, i3)
+        s1 = PredStructure("S3", d3, i3)
         v3 = {"x": "Mary", "y": "Mary", "z": "Peter"}
         vv3 = {"x": "John", "y": "Peter", "z": "John"}
 
-        print(m3)
+        print(s1)
         print("v = " + str(v3))
         print("v' = " + str(vv3))
 
@@ -165,12 +165,12 @@ def compute_denots():
             if nr in [1, 2, 4, 5, 7, 8, 9]:
                 print()
                 print("⟦" + str(e) + "⟧^S3,v3 =")
-                print(e.denot(m3, v3))
+                print(e.denot(s1, v3))
                 depth = 0
             elif nr in [3, 6, 10]:
                 print()
                 print("⟦" + str(e) + "⟧^S3,v'3 =")
-                print(e.denot(m3, vv3))
+                print(e.denot(s1, vv3))
                 depth = 0
 
 
@@ -189,10 +189,10 @@ def compute_denots():
               "woman": {("Mary",), ("Susan",)}, "man": {("John",)},
               "love": {("John", "Mary"), ("Mary", "Susan"), ("Susan", "Mary"), ("Susan", "Susan")},
               "jealous": {("John", "Susan", "Mary")}}
-        m4 = PredStructure("S4", d4, i4)
-        v4 = m4.vs[5]
+        s1 = PredStructure("S4", d4, i4)
+        v4 = s1.vs[5]
 
-        print(m4)
+        print(s1)
         print("v = " + str(v4))
 
         e4 = {
@@ -224,12 +224,12 @@ def compute_denots():
             if 1 <= nr <= 4:
                 print()
                 print("⟦" + str(e) + "⟧^S4,v4 =")
-                print(e.denot(m4, v4))
+                print(e.denot(s1, v4))
                 depth = 0
             if 4 <= nr <= 16:
                 print()
                 print("⟦" + str(e) + "⟧^S4 =")
-                print(e.denotG(m4))
+                print(e.denotG(s1))
                 depth = 0
             # if nr == 14:
             #     print(e.freevars())
@@ -247,10 +247,10 @@ def compute_denots():
         d5 = {"Mary", "Peter", "Susan", "Jane"}
         i5 = {"m": "Mary", "s": "Susan", "j": "Jane",
               "mother": {("Mary",): "Susan", ("Peter",): "Susan", ("Susan",): "Jane"}}
-        m5 = PredStructure("S5", d5, i5)
+        s1 = PredStructure("S5", d5, i5)
         v5 = {"x": "Susan", "y": "Mary", "z": "Peter"}
 
-        print(m5)
+        print(s1)
         print("v = " + str(v5))
 
         e5 = {
@@ -263,7 +263,7 @@ def compute_denots():
         for nr, e in e5.items():
             print()
             print("⟦" + str(e) + "⟧^S5,v5 =")
-            print(e.denot(m5, v5))
+            print(e.denot(s1, v5))
             depth = 0
 
 
@@ -279,10 +279,10 @@ def compute_denots():
         r6 = {("w1", "w1"), ("w1", "w2"), ("w2", "w2"), ("w2", "w2")}
         d6 = {"a"}
         i6 = {"P": {"w1": {()}, "w2": set()}}
-        m6 = ConstModalStructure("S6", w6, r6, d6, i6)
-        v6 = m6.vs[0]
+        s1 = ConstModalStructure("S6", w6, r6, d6, i6)
+        v6 = s1.vs[0]
 
-        print(m6)
+        print(s1)
         print(v6)
 
         e6 = {
@@ -294,14 +294,14 @@ def compute_denots():
         for nr, e in e6.items():
             # print()
             # print("⟦" + str(e) + "⟧^S6,v6,w1 =")
-            # print(e.denot(m6, v6, "w1"))
+            # print(e.denot(s1, v6, "w1"))
             # depth = 0
             # print()
             # print("⟦" + str(e) + "⟧^S6,v6,w2 =")
-            # print(e.denot(m6, v6, "w2"))
+            # print(e.denot(s1, v6, "w2"))
             # depth = 0
             print("⟦" + str(e) + "⟧^S6,v6 =")
-            print(e.denotW(m6, v6))
+            print(e.denotW(s1, v6))
             depth = 0
 
 
@@ -318,10 +318,10 @@ def compute_denots():
         d7 = {"w1": {"a"},
               "w2": {"a", "b"}}
         i7 = {"P": {"w1": {("a",)}, "w2": {("b",)}}}
-        m7 = VarModalStructure("S7", w7, r7, d7, i7)
+        s1 = VarModalStructure("S7", w7, r7, d7, i7)
 
-        print(m7)
-        print(m7.vs)
+        print(s1)
+        print(s1.vs)
 
         e7 = {
             1: Exists(Var("x"), Exists(Var("y"), Neg(Eq(Var("x"), Var("y")))))
@@ -330,15 +330,15 @@ def compute_denots():
         for nr, e in e7.items():
             print()
             print("⟦" + str(e) + "⟧^S7,w1 =")
-            print(e.denot(m7, m7.vs["w1"][0], "w1"))
+            print(e.denot(s1, s1.vs["w1"][0], "w1"))
             depth = 0
             print()
             print("⟦" + str(e) + "⟧^S7,w2 =")
-            print(e.denot(m7, m7.vs["w2"][0], "w2"))
+            print(e.denot(s1, s1.vs["w2"][0], "w2"))
             depth = 0
-            # print(e.denotV(m7))
-            # print(e.denotW(m7, v7))
-            # print(e.denotVW(m7))
+            # print(e.denotV(s1))
+            # print(e.denotW(s1, v7))
+            # print(e.denotVW(s1))
             # depth = 0
 
     if 8 in denots:
@@ -350,9 +350,9 @@ def compute_denots():
         print()
 
         v8a = {"p": True, "q": False, "r": True}
-        m8a = PropStructure("S8", v8a)
+        s1a = PropStructure("S8", v8a)
 
-        print(m8a)
+        print(s1a)
 
         e8 = {
             1: Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r")))
@@ -361,20 +361,20 @@ def compute_denots():
         for nr, e in e8.items():
             print()
             print("⟦" + str(e) + "⟧^S9 =")
-            print(e.denot(m8a))
+            print(e.denot(s1a))
             depth = 0
 
         v8b = {"p": True, "q": True, "r": False}
-        m8b = PropStructure("S8'", v8b)
+        s1b = PropStructure("S8'", v8b)
 
         print()
 
-        print(m8b)
+        print(s1b)
 
         for nr, e in e8.items():
             print()
             print("⟦" + str(e) + "⟧^S8' =")
-            print(e.denot(m8b))
+            print(e.denot(s1b))
             depth = 0
 
     if 9 in denots:
@@ -385,13 +385,12 @@ def compute_denots():
         print("Example #9: predicate logic (logic for computer scientists lecture 07)")
         print()
 
-        d9a = {"m1", "m2"}
-        i9a = {"S": {("m1", )},
-               "R": {("m1", "m1"), ("m2", "m1")}
-              }
-        m9a = PredStructure("S9a", d9a, i9a)
+        d9a = {"s1", "s1"}
+        i9a = {"S": {("s1", )},
+               "R": {("s1", "s1"), ("s1", "s1")}}
+        s1a = PredStructure("S9a", d9a, i9a)
 
-        print(m9a)
+        print(s1a)
 
         e9 = {
             1: Forall(Var("x"), Exists(Var("y"),
@@ -401,23 +400,23 @@ def compute_denots():
         for nr, e in e9.items():
             print()
             print("⟦" + str(e) + "⟧^S9 =")
-            print(e.denotG(m9a))
+            print(e.denotG(s1a))
             depth = 0
 
         print()
 
-        d9b = {"m1", "m2"}
-        i9b = {"S": {("m2", )},
-               "R": {("m1", "m1"), ("m2", "m1")}
+        d9b = {"s1", "s1"}
+        i9b = {"S": {("s1", )},
+               "R": {("s1", "s1"), ("s1", "s1")}
               }
-        m9b = PredStructure("S9'", d9b, i9b)
+        s1b = PredStructure("S9'", d9b, i9b)
 
-        print(m9b)
+        print(s1b)
 
         for nr, e in e9.items():
             print()
             print("⟦" + str(e) + "⟧^S9' =")
-            print(e.denotG(m9b))
+            print(e.denotG(s1b))
             depth = 0
 
     if 10 in denots:
@@ -432,11 +431,10 @@ def compute_denots():
         i10 = {"P": {("a",)},
                "R": {("a", "a"), ("a", "b"), ("a", "c"), ("b", "c")},
                "k": "b",
-               "l": "a"
-              }
-        m10 = PredStructure("S10", d10, i10)
+               "l": "a"}
+        s1 = PredStructure("S10", d10, i10)
 
-        print(m10)
+        print(s1)
 
         e10 = {
             1: Neg(Atm(Pred("R"), (Const("l"), Var("x")))),
@@ -448,7 +446,7 @@ def compute_denots():
         for nr, e in e10.items():
             print()
             print("⟦" + str(e) + "⟧^S10 =")
-            print(e.denotG(m10))
+            print(e.denotG(s1))
             depth = 0
 
         print()
@@ -464,10 +462,10 @@ def compute_denots():
         k11 = {"k0", "k1"}
         r11 = {("k0", "k1")}
         v11 = {"p": {"k0": False, "k1": True}}
-        m11 = KripkePropStructure("S11", k11, r11, v11)
+        s1 = KripkePropStructure("S11", k11, r11, v11)
     
-        print(m11)
-        print(m11.r)
+        print(s1)
+        print(s1.r)
 
         e11 = {
             11: Disj(Prop("p"), Neg(Prop("p"))),
@@ -481,15 +479,15 @@ def compute_denots():
         for nr, e in e11.items():
             print()
             print("[[" + str(e) + "]]^S11 =")
-            print(e.denotK(m11))
+            print(e.denotGK(s1))
             depth = 0
             print()
             print("[[" + str(e) + "]]^S11,k0 =")
-            print(e.denotG(m11, "k0"))
+            print(e.denotG(s1, "k0"))
             depth = 0
             print()
             print("[[" + str(e) + "]]^S11,k1 =")
-            print(e.denotG(m11, "k1"))
+            print(e.denotG(s1, "k1"))
             depth = 0
     
     if 12 in denots:
@@ -498,14 +496,14 @@ def compute_denots():
         #############################
         print("Example 12: IL -- counter model of (p -> q) v (q -> p)")
     
-        k12 = {"k0", "k1", "k12"}
-        r12 = {("k0", "k1"), ("k0", "k12")}
+        k12 = {"k0", "k1", "k2"}
+        r12 = {("k0", "k1"), ("k0", "k2")}
         v12 = {"p": {"k0": False, "k1": True, "k2": False},
                "q": {"k0": False, "k1": False, "k2": True}}
-        m12 = KripkePropStructure("S12", k12, r12, v12)
+        s1 = KripkePropStructure("S12", k12, r12, v12)
     
-        print(m12)
-        print(m12.r)
+        print(s1)
+        print(s1.r)
 
         e12 = {
             1: Disj(Imp(Prop("p"), Prop("q")), Imp(Prop("q"), Prop("p")))
@@ -514,7 +512,7 @@ def compute_denots():
         for nr, e in e12.items():
             print()
             print("[[" + str(e) + "]]^S12 =")
-            print(e.denotK(m12))
+            print(e.denotGK(s1))
             depth = 0
 
     if 13 in denots:
@@ -527,10 +525,10 @@ def compute_denots():
         r13 = {("k0", "k1"), ("k0", "k2"), ("k1", "k13"), ("k2", "k3")}
         v13 = {"p": {"k0": False, "k1": False, "k2": True, "k3": True},
                "q": {"k0": False, "k1": True, "k2": True, "k3": True}}
-        m13 = KripkePropStructure("S113", k13, r13, v13)
+        s1 = KripkePropStructure("S113", k13, r13, v13)
     
-        print(m13)
-        print(m13.r)
+        print(s1)
+        print(s1.r)
 
         e13 = {
             1: Imp(Imp(Prop("p"), Prop("q")), Disj(Neg(Prop("p")), Prop("q"))),
@@ -544,21 +542,21 @@ def compute_denots():
             print()
             if nr in [1]:
                 print("[[" + str(e) + "]]^S13 =")
-                print(e.denotK(m13))
+                print(e.denotGK(s1))
                 depth = 0
             elif nr in [2]:
                 print("[[" + str(e) + "]]^S13,k3 =")
-                print(e.denotG(m13, "k3"))
+                print(e.denotG(s1, "k3"))
                 depth = 0
                 print("[[" + str(e) + "]]^S13,k1 =")
-                print(e.denotG(m13, "k1"))
+                print(e.denotG(s1, "k1"))
                 depth = 0
                 print("[[" + str(e) + "]]^S13,k0 =")
-                print(e.denotG(m13, "k0"))
+                print(e.denotG(s1, "k0"))
                 depth = 0
             elif nr in [13, 4, 5]:
                 print("[[" + str(e) + "]]^S13,k0 =")
-                print(e.denotG(m13, "k0"))
+                print(e.denotG(s1, "k0"))
                 depth = 0
     
         #############################
