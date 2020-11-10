@@ -2065,7 +2065,7 @@ class Int(Expr):
         @param g: the assignment function to evaluate the formula in
         @type g: dict[str,str]
         """
-        return {w: self.phi.denot(m, g, w) for w in m.w}
+        return frozenset({w: self.phi.denot(m, g, w) for w in m.w}.items())
 
 class Ext(Expr):
     """

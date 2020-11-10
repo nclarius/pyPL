@@ -13,7 +13,7 @@ import tkinter.filedialog
 import tkinter.messagebox
 from tkinter import ttk
 
-debug = False
+debug = True
 
 class PyPLInst:
 
@@ -300,7 +300,7 @@ class PyPLGUI(tk.Frame):
                     input_ents[i].insert(0, line)
                     parse(i)
             else:
-                empty_line = lines.index("")
+                empty_line = lines.index("") if "" in lines else len(lines)
                 structure = lines[0:empty_line]
                 formulas = lines[empty_line + 1:]
                 ent_struct.delete("1.0", tk.END)
@@ -1004,19 +1004,24 @@ class PyPLGUI(tk.Frame):
         if self.inst.action == "mc":
             # model checking
             premises = premises + [concl]
-            if not modal and classical:  # classical non-modal logic
-                denot = all([eval(fml.denotG(structure)) for fml in premises])
-            elif classical:  # modal logic
-                denot = all([eval(fml.denotGW(structure)) for fml in premises])
-            elif not classical:  # intuitionistic logic
-                denot = all([eval(fml.denotGK(structure)) for fml in premises])
+            premises = premises[::-1]
+            denot = ""
+            for fml in premises:
+                denot += "[[" + str(fml) + "]]" + structure.s + "\n= "
+                if not modal and classical:  # classical non-modal logic
+                    denot += str(fml.denotG(structure))
+                elif classical:  # modal logic
+                    denot += str(fml.denotGW(structure))
+                elif not classical:  # intuitionistic logic
+                    denot += str(fml.denotGK(structure))
+                denot += "\n\n"
 
             # todo make look nicer?
             # tk.messagebox.showinfo("", str(denot))
             win_output = tk.Toplevel(self.root, bg=white)
             icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
             win_output.tk.call('wm', 'iconphoto', win_output._w, tk.PhotoImage(file=icon_path))
-            win_output.geometry("300x100")
+            win_output.geometry("1000x605")  # todo geometry only applied on second opening
             # frame_output = tk.Frame(win_output)
             lbl_output = tk.Label(win_output, text=str(denot), font=font, bg=white)
             lbl_output.pack(pady=32)

@@ -99,7 +99,7 @@ class FmlParser:
         mode["classical"] = True if "!Int" not in [t[0] for t in tokens] else False
         mode["validity"] = True if "Noninf" not in [t[0] for t in tokens] else False
         mode["propositional"] = True if any([t[0] in ["Prop"] for t in tokens]) else False
-        mode["modal"] = True if any([t[0] in ["Poss", "Nec"] for t in tokens]) else False
+        mode["modal"] = True if any([t[0] in ["Poss", "Nec", "Int", "Ext"] for t in tokens]) else False
         mode["vardomains"] = False if "!VD" not in [t[0] for t in tokens] else False
 
         return tokens, mode
@@ -176,6 +176,8 @@ class FmlParser:
             c = getattr(expr, t)
             e = c(s)
             stack_ = ["Atm", e]
+            if len(stacks) > 1 and not stacks[-1]:
+                stacks = stacks[:-1]  # remove empty previous stack
             stacks.append(stack_)
             self.stacks = stacks
             return
@@ -189,7 +191,7 @@ class FmlParser:
             return
 
         # prefix operator: start new stack
-        if t in ["Verum", "Falsum", "Neg", "Exists", "Forall", "Poss", "Nec"]:
+        if t in ["Verum", "Falsum", "Neg", "Exists", "Forall", "Poss", "Nec", "Int", "Ext"]:
             stack_ = [t]
             stacks.append(stack_)
 
@@ -201,7 +203,7 @@ class FmlParser:
     def update_stacks(self, final=False):
         # todo check well-formedness of expressions
         # operator precedence
-        prec = {"Eq": 1, "Nec": 1, "Poss": 1, "Exists": 1, "Forall": 1, "Neg": 1,
+        prec = {"Eq": 1, "Int": 1, "Ext": 1, "Nec": 1, "Poss": 1, "Exists": 1, "Forall": 1, "Neg": 1,
                 "Conj": 2, "Disj": 3, "Imp": 4, "Biimp": 5, "Xor": 6}
 
         stacks = self.stacks
@@ -240,7 +242,7 @@ class FmlParser:
                 continue
 
             # unary operator: close if appropriate number of args is given
-            if bot in ["Neg", "Poss", "Nec"] and len(curr_stack) == 2:
+            if bot in ["Neg", "Poss", "Nec", "Int", "Ext"] and len(curr_stack) == 2:
                 c = getattr(expr, bot)
                 e = c(top)
                 prev_stack.append(e)
@@ -253,7 +255,7 @@ class FmlParser:
                 # operator ambiguity
                 # todo associativity not right with Eq
                 if mid and mid in ["Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall",
-                                   "Neg", "Poss", "Nec", "Eq"]:  # operator clash: resolve ambiguiy
+                                   "Neg", "Poss", "Nec", "Int", "Ext", "Eq"]:  # operator clash: resolve ambiguiy
                     # first op has precedence over second op: take current stack as subformula. to second op
                     # ops have equal precedence: apply left-associativity
                     if prec[mid] < prec[bot] or prec[mid] == prec[bot]:
@@ -297,23 +299,31 @@ class StructParser:
         pass
 
     def parse(self, inp):
-        # split lines into components
-        inp = inp.replace("\n", "")
-        inp = re.sub("([A-Z] = )", "\n\\1", inp)
+        # remove redundant whitespace
+        inp = re.sub("\s+", " ", inp)
         # stringify content[p-u](_?\d+)
-        inp = re.sub("(\w+)", "'\\1'", inp)
+        inp = re.sub("([\w]+)", "'\\1'", inp)
         # turn functions into dicts
         inp = inp.replace("[", "{")
         inp = inp.replace("]", "}")
         # turn singleton tuples into tuples
         inp = re.sub("\('(\w+)'\)", "('\\1',)", inp)
+        # turn empty sets into sets
+        inp = inp.replace("{}", "set()")
+        # turn intension sets into frozen sets so that they can be hashed
+        inp = re.sub("(\{\('w.*?\})", "frozenset(\\1)", inp)
+        # turn truth value strings into truth values
+        inp = inp.replace("'True'", "True").replace("'False'", "False")
+        # split lines into components
+        inp = inp.replace("\n", "")
+        inp = re.sub("('[A-Z]' = )", "\n\\1", inp)
 
         s = {eval(comp.split(" = ")[0]): eval(comp.split(" = ")[1]) for comp in inp.split("\n") if comp}
         s["S"] = "S"
         modal = True if "W" in s or "K" in s else False
         propositional = True if "V" in s else False
         intuitionistic = True if "K" in s else False
-        vardomains = True
+        vardomains = True if isinstance(s["D"], dict) else False
 
         # constituents = {const.split(" = ")[0]: const.split(" = ")[1] for const in inp.split("\n")}
         # modal = True if "W" in constituents or "K" in constituents else False
@@ -397,7 +407,6 @@ if __name__ == "__main__":
     parser = FmlParser()
     # test = r"R(f(a,b),y)"
     # test = "~ p v q |= p -> q"
-    print()
     # test = r"~ p ^ q <-> ~(\nec p v ~ q v r)"
     # print(test)
     # res = parser.parse(test)
@@ -415,3 +424,11 @@ if __name__ == "__main__":
     # print(test)
     # res = parser.parse(test)
     # print(res)
+    test = "Believe(j, \int Democrat(a))"
+    res = parser.parse(test)
+    print(res)
+    parser = StructParser()
+    # with open("input/believe2.txt") as f:
+    #     inp = f.read()
+    # outp = parser.parse(inp)
+    # print(outp)

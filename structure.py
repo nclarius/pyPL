@@ -313,7 +313,7 @@ class ConstModalStructure(ModalStructure):
                                                                                        if isinstance(ipw, dict) else
                                                                                        ("{" +
                                                                                         ", ".join(["⟨" + ", ".join(
-                                                                                                [str(t) for t in
+                                                                                                [str(t).replace("frozenset", "") for t in
                                                                                                  s]) + "⟩" for s in
                                                                                                    sorted(ipw)]) +
                                                                                         "}")))
@@ -346,7 +346,7 @@ class ConstModalStructure(ModalStructure):
                                                        for ipwKey, ipwVal in ipw.items()])
                                                if isinstance(ipw, dict) else
                                                ("\\set{" +
-                                                ", ".join(["\\tpl{" + ", ".join([str(t) for t in s]) + "}" for s in
+                                                ", ".join(["\\tpl{" + ", ".join([str(t).replace("frozenset", "") for t in s]) + "}" for s in
                                                            sorted(ipw)]) +
                                                 "}")))
                                              for (w, ipw) in sorted(self.i[p].items())])
