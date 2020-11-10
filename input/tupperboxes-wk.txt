@@ -1,0 +1,5 @@
+\exi y (Lid(y) ^ \all x (Box(x) -> Fit(y,x)))
+
+\all x (Box(x) -> \exi y (Lid(y) ^ Fit(y,x)))
+\exi x Box(x)
+\all x ((Box(x) -> - Lid(x)) ^ (Lid(x) -> - Box(x)))

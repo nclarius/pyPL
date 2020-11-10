@@ -1,0 +1,4 @@
+D = [w1: {John}, w2: {John, the Last Unicorn}, w3: {John, Twilight Sparkle, Rarity}]
+I = [j: [w0: John, w1: John, w2: John,
+     Unicorn: [w0: {}, w1: {(the Last Unicorn)}, w2: {(Twilight Sparkle), (Rarity)}],
+     Seek: [w0: {(John, {w0: {}, w1: {(the Last Unicorn)}, w2: {(Twilight Sparkle), (Rarity)}})}, w1: {(John, the Last Unicorn)}, w2: {}]]

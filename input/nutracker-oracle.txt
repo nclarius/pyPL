@@ -1,0 +1,2 @@
+
+∃ x_1 ∃ x_2 (Oracle(x_1) ∧ Form(x_2) ∧ ∃ x_3 ∃ x_4 (Fight(x_3) ∧ Agent(x_3,x_1) ∧ Theme(x_3,x_4) ∧ Proposition(x_4) ∧ ∃ x_5 ∃ x_6 ∃ x_7 (Keep(x_5) ∧ Agent(x_5 , x_1) ∧ Patient(x_5 , x_2) ∧ From(x_5,x_6) ∧ Release(x_7) ∧ Patient(x_7,x_6) ∧ Event(x_7) ∧ Event(x_5)) ∧ Event(x_3)))

@@ -1,0 +1,1 @@
+\exi x (Rabbit(x) ^ \exi y (Carrot(y) ^ Eat(x,y))) 
