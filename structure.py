@@ -114,10 +114,12 @@ class PredStructure(Structure):
     @type vs: list[dict[str,str]]]
     """
 
-    def __init__(self, s, d, i):
+    def __init__(self, s, d, i, g={}):
+        # todo set of assignments for other structures
         self.s = s
         self.d = d
         self.i = i
+        self.g = g
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D)
         dprod = list(product(list(d), repeat=len(indiv_vars)))
         # all variable assignment functions
@@ -135,7 +137,9 @@ class PredStructure(Structure):
                    ("{" +
                     ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in sorted(val)]) +
                     "}")))
-                 for (key, val) in sorted(self.i.items())])
+                 for (key, val) in sorted(self.i.items())]) + "\n" + \
+                 "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.g[g].items())])
+                            for g in self.g])
 
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
@@ -154,6 +158,9 @@ class PredStructure(Structure):
                     ", ".join(["\\tpl{" + ", ".join([str(t) for t in s]) + "}" for s in sorted(val)]) +
                     "}")))
                  for (key, val) in sorted(self.i.items())]) + "\\\\\n" + \
+               "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
+                                                     for key, val in sorted(self.g[g].items())])
+                          for g in self.g]) + "\\\\\n" + \
                "\\end{tabular}" \
                    .replace("\\set{}", "\\emptyset{}")
 
@@ -281,19 +288,19 @@ class ConstModalStructure(ModalStructure):
     """
 
     # todo doesnt work yet (assignment function)
-    def __init__(self, s, w, r, d, i):
+    def __init__(self, s, w, r, d, i, g={}):
         self.s = s
         self.w = w
         self.r = r
         self.d = d
         self.i = i
+        self.g = g
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D)
         dprod = list(product(list(d), repeat=len(indiv_vars)))
         # all variable assignment functions
         self.gs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
     def __str__(self):
-        # todo rewrite with p -> w -> I notation
         return "Structure " + self.s + " = ⟨W,R,D,I⟩ with\n" \
                                        "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" \
                                                                                                "R = {" + ", ".join(
@@ -322,10 +329,11 @@ class ConstModalStructure(ModalStructure):
                                                                             "\n    "
                                                                             for (p, ip) in
                                                                             sorted(self.i.items())]).replace("\n    \n",
-                                                                                                             "\n")
+                                                                                                             "\n") + "\n" + \
+                 "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.g[g].items())])
+                            for g in self.g])
 
     def tex(self):
-        # todo rewrite with p -> w -> I notation
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{D}, \\mathcal{I}}$ with \\\\\n" \
                "\\begin{tabular}{LLLLL}\n" \
@@ -351,6 +359,9 @@ class ConstModalStructure(ModalStructure):
                                                 "}")))
                                              for (w, ipw) in sorted(self.i[p].items())])
                                     for (p, ip) in sorted(self.i.items())]) + "\\\\\n" + \
+               "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
+                                                     for key, val in sorted(self.g[g].items())])
+                          for g in self.g]) + "\\\\\n" + \
                "\\end{tabular}" \
                    .replace("\\set{}", "\\emptyset{}")
 
@@ -395,12 +406,13 @@ class VarModalStructure(ModalStructure):
     @type i: dict[str,dict[str,Any]]
     """
 
-    def __init__(self, s, w, r, d, i):
+    def __init__(self, s, w, r, d, i, g={}):
         self.s = s
         self.w = w
         self.r = r
         self.d = d
         self.i = i
+        self.g = g
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D) per world
         dprods = {w: list(product(list(self.d[w]), repeat=len(indiv_vars))) for w in self.w}
         # all variable assignment functions per world
@@ -438,7 +450,9 @@ class VarModalStructure(ModalStructure):
                                                                             "\n    "
                                                                             for (p, ip) in
                                                                             sorted(self.i.items())]).replace("\n    \n",
-                                                                                                             "\n")
+                                                                                                             "\n") + "\n" + \
+                 "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.g[g].items())])
+                            for g in self.g])
 
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
@@ -469,6 +483,9 @@ class VarModalStructure(ModalStructure):
                                                 "}")))
                                              for (w, ipw) in sorted(self.i[p].items())])
                                     for (p, ip) in sorted(self.i.items())]) + "\\\\\n" + \
+               "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
+                                                     for key, val in sorted(self.g[g].items())])
+                          for g in self.g]) + "\\\\\n" + \
                "\\end{tabular}" \
                    .replace("\\set{}", "\\emptyset{}")
 
@@ -687,12 +704,13 @@ class KripkePredStructure(KripkeStructure):
     @type i: dict[str,dict[str,Any]]
     """
 
-    def __init__(self, s, k, r, d, i):
+    def __init__(self, s, k, r, d, i, g={}):
         self.s = s
         self.k = k
         self.r = r
         self.d = d
         self.i = i
+        self.g = g
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D) per state
         dprods = {k: list(product(list(self.d[k]), repeat=len(indiv_vars))) for k in self.k} if d else {}
         # all variable assignment functions
@@ -762,7 +780,9 @@ class KripkePredStructure(KripkeStructure):
                                                                           "\n    "
                                                                           for (p, ip) in
                                                                           sorted(self.i.items())]).replace("\n    \n",
-                                                                                                           "\n")
+                                                                                                           "\n") + "\n" + \
+                 "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.g[g].items())])
+                            for g in self.g])
 
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
@@ -794,5 +814,8 @@ class KripkePredStructure(KripkeStructure):
                                                 "}")))
                                              for (k, ipk) in sorted(self.i[p].items())])
                                     for (p, ip) in sorted(self.i.items())]) + "\\\\\n" + \
+               "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
+                                                     for key, val in sorted(self.g[g].items())])
+                          for g in self.g]) + "\\\\\n" + \
                "\\end{tabular}" \
                    .replace("\\set{}", "\\emptyset{}")

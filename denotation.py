@@ -12,7 +12,7 @@ from functools import reduce
 
 
 # settings
-denots = [14]  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
+denots = []  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
 tableaus = [1, 2]  # set here which tableaus to include in the output (see def.s in fnc. 'compute_denots')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 

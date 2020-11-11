@@ -25,6 +25,7 @@ class PyPLInst:
         self.conclusion = None
         self.axioms = []
         self.premises = []
+        self.formulas = []
         self.structure = None
         self.logic = {"proppred": "pred", "classint": "class", "modal": "nonmodal", "constvar": "var", "frame": "K"}
 
@@ -311,15 +312,24 @@ class PyPLGUI(tk.Frame):
                         continue
                     if i > 0:
                         add_formula()
+                    formula = line
+                    if "g:" in line:
+                        g, formula = line[2:line.index(" ")], line[line.index(" ")+1:]
+                        input_gs[i].delete(0, tk.END)
+                        input_gs[i].insert(0, g)
+                    if "w:" in line:
+                        w, formula = line[2:line.index(" ")], line[line.index(" ")+1:]
+                        input_ws[i].delete(0, tk.END)
+                        input_ws[i].insert(0, w)
                     input_ents[i+1].delete(0, tk.END)
-                    input_ents[i+1].insert(0, line)
+                    input_ents[i+1].insert(0, formula)
                     parse(i)
 
         def add_formula():
             # variable
-            raw = tk.StringVar()
+            raw, g, w = tk.StringVar(), tk.StringVar(), tk.StringVar()
             input_raws.append(raw)
-            iput_fmls.append(None)
+            input_fmls.append(None)
             input_modes.append(None)
             i = input_raws.index(raw)
             # frames
@@ -350,13 +360,21 @@ class PyPLGUI(tk.Frame):
             rem["font"] = font_large
             rem.bind("<Button>", lambda e: remove_formula(i))
             rems.append(rem)
-            if len(iput_fmls) > 1:
+            if len(input_fmls) > 1:
                 btn_swap.config(state="normal")
                 rem.config(state="normal")
+            # g and w fields
+            if self.inst.action == "mc":
+                ent_g = tk.Entry(tab, textvariable=g, width=2)
+                ent_w = tk.Entry(tab, textvariable=w, width=3)
+                ent_g.pack(in_=mids[row], side=tk.LEFT)
+                ent_w.pack(in_=mids[row], side=tk.LEFT)
+                input_gs.append(ent_g)
+                input_ws.append(ent_w)
             # entry field
             ent = tk.Entry(tab,
                            textvariable=raw,
-                           width=37)
+                           width=37 if self.inst.action != "mc" else 32)
             ent.pack(in_=mids[row], side=tk.LEFT)
             raw.trace("w", lambda *args: select_entry(i))
             input_ents.append(ent)
@@ -392,7 +410,7 @@ class PyPLGUI(tk.Frame):
             if not i < len(input_raws):
                 return
             del input_raws[i]
-            del iput_fmls[i]
+            del input_fmls[i]
             # start = 3 if self.inst.action != "mg" else 2
             # for j in range(6 + start * (i - 1), 6 + start * (i - 1) + 3):
             #     mids[j].pack_forget()
@@ -406,14 +424,14 @@ class PyPLGUI(tk.Frame):
             del rems[i]
             del input_ents[i]
             del btns[i]
-            if len(iput_fmls) > 1:
-                for j in range(1, len(iput_fmls)):
+            if len(input_fmls) > 1:
+                for j in range(1, len(input_fmls)):
                     pos = j if j <= i else j - 1
                     # caps[j].config(text="Premise " + str(pos) + ":")
                     rems[j].bind("<Button>", lambda e: remove_formula(pos))
                     input_raws[j].trace("w", lambda *args: select_entry(pos))
                     btns[j].bind("<Button>", lambda e: parse(pos))
-            if len(iput_fmls) == 1:
+            if len(input_fmls) == 1:
                 btn_swap.config(state="disabled")
             set()
 
@@ -442,7 +460,7 @@ class PyPLGUI(tk.Frame):
             lbl = input_lbls[i]
             parser = __import__("parser")
             fml, mode = parser.FmlParser().parse_(raw)
-            iput_fmls[i] = fml
+            input_fmls[i] = fml
             input_modes[i] = mode
             # lbl.configure(text=str(fml))
             lbl.configure(state="normal")
@@ -472,7 +490,7 @@ class PyPLGUI(tk.Frame):
                     "vardomains":    ("constvar", "var", "const")
             }
             for md, (cat, val1, val2) in mode_map.items():
-                if any([mode[md] for mode in modes]):
+                if any([mode[md] for mode in modes if mode]):
                     self.rbs_logic[cat][val1].invoke()
                     # self.rbs_logic[cat][val1].select()
                     # self.rbs_logic[cat][val2].deselect()
@@ -496,8 +514,12 @@ class PyPLGUI(tk.Frame):
                 self.rbs_logic["constvar"]["var"].config(state="disabled")
 
         def set():
-            self.inst.conclusion = iput_fmls[0] if iput_fmls else None
-            self.inst.premises = iput_fmls[1:] if len(iput_fmls) > 1 else []
+            if not self.inst.action == "mc":
+                self.inst.conclusion = input_fmls[0] if input_fmls else None
+                self.inst.premises = input_fmls[1:] if len(input_fmls) > 1 else []
+            else:
+                self.inst.formulas = [tuple([input_fmls[i], input_gs[i].get(), input_ws[i].get()])
+                                      for i in range(len(input_fmls))]
             # self.inst.structure = struct
             # update_summary()
             self.inst.completed.append(3)
@@ -549,10 +571,12 @@ class PyPLGUI(tk.Frame):
         btn_load.bind("<Button>", lambda e: load())
 
         # input fields
-        iput_fmls = []
+        input_fmls = []
         struct = None
         input_modes = []
         input_raws = []
+        input_gs = []
+        input_ws = []
         caps = []
         input_lbls = []
         rems = []
@@ -564,22 +588,22 @@ class PyPLGUI(tk.Frame):
             if self.inst.action == "tt":
                 txt = "You are searching for a proof or refutation that " + \
                       (str(concl) if concl else "...") + " is true in all structures" + \
-                      (" in which " + ", ".join([fml if fml else "..." for fml in iput_fmls[1:]]) + " is true"
-                       if len(iput_fmls) > 1 else "") + "."
+                      (" in which " + ", ".join([fml if fml else "..." for fml in input_fmls[1:]]) + " is true"
+                       if len(input_fmls) > 1 else "") + "."
             elif self.inst.action == "tp":
                 txt = "You are searching for a proof that " + \
                       (str(concl) if concl else "...") + " is true in all structures" + \
-                      (" in which " + ", ".join([fml if fml else "..." for fml in iput_fmls[1:]]) + " is true"
-                       if len(iput_fmls) > 1 else "") + "."
+                      (" in which " + ", ".join([fml if fml else "..." for fml in input_fmls[1:]]) + " is true"
+                       if len(input_fmls) > 1 else "") + "."
             elif self.inst.action == "cmg":
                 txt = "You are searching for a structure in which " + \
                       (str(concl) if concl else "...") + " is false" + \
-                      (" and " + ", ".join([fml if fml else "..." for fml in iput_fmls[1:]]) + " is true"
-                       if len(iput_fmls) > 1 else "") + "."
+                      (" and " + ", ".join([fml if fml else "..." for fml in input_fmls[1:]]) + " is true"
+                       if len(input_fmls) > 1 else "") + "."
             elif self.inst.action == "mg":
                 txt = "You are searching for a structure in which " + \
-                      ", ".join([str(fml) if fml else "..." for fml in iput_fmls]) + \
-                      (" is " if len(iput_fmls) == 1 else " are ") + "true."
+                      ", ".join([str(fml) if fml else "..." for fml in input_fmls]) + \
+                      (" is " if len(input_fmls) == 1 else " are ") + "true."
             else:
                 txt = "You are searching for the denotation of " + \
                       (str(concl) if concl else "...") + " in  " + "S."
@@ -712,7 +736,7 @@ class PyPLGUI(tk.Frame):
         mid.pack()
         mids = {i: tk.Frame(mid, bg=white) for i in range(5)}
         for i in mids:
-            mids[i].pack(ipadx=5, ipady=5)
+            mids[i].pack(ipadx=0, ipady=5)
 
         # heading
         lbl_head = tk.Label(tab,
@@ -750,7 +774,7 @@ class PyPLGUI(tk.Frame):
                                     state="normal" if not disabled else "disabled",
                                     selectcolor=darkgray, activebackground=lightgray, activeforeground=white,
                                     indicatoron=0,
-                                    width=20, pady=7.5)
+                                    width=25, pady=7.5)
                 rb.config(command=lambda arg=(rb, cat): select_rb(arg))
                 if val == self.inst.logic[cat] and not disabled:
                     initial_select_rb((rb, cat))
@@ -985,6 +1009,7 @@ class PyPLGUI(tk.Frame):
         tableau = __import__("tableau")
         concl = self.inst.conclusion
         premises = self.inst.premises
+        formulas = self.inst.formulas
         axioms = self.inst.axioms
         structure = self.inst.structure
 
@@ -1004,16 +1029,36 @@ class PyPLGUI(tk.Frame):
 
         if self.inst.action == "mc":
             # model checking
-            premises = [concl] + premises
             denot = ""
-            for fml in premises:
-                denot += "[[" + str(fml) + "]]" + structure.s + "\n= "
+            for fml, g, w in formulas:
+                denot += "[[" + str(fml) + "]]" + structure.s + ("," + g if g else "") + ("," + w if w else "") + "\n= "
                 if not modal and classical:  # classical non-modal logic
-                    denot += str(fml.denotG(structure))
-                elif classical:  # modal logic
-                    denot += str(fml.denotGW(structure))
+                    if not g:
+                        denot += str(fml.denotG(structure))
+                    else:
+                        denot += str(fml.denot(structure, structure.g[g]))
+                elif classical:  # classical modal logic
+                    if not g:
+                        if not w:
+                            denot += str(fml.denotGW(structure))
+                        else:
+                            denot += str(fml.denotG(structure, w))
+                    else:
+                        if not w:
+                            denot += str(fml.denotW(structure, structure.g[g]))
+                        else:
+                            denot += str(fml.denot(structure, structure.g[g], w))
                 elif not classical:  # intuitionistic logic
-                    denot += str(fml.denotGK(structure))
+                    if not g:
+                        if not w:
+                            denot += str(fml.denotGK(structure))
+                        else:
+                            denot += str(fml.denotG(structure, w))
+                    else:
+                        if not w:
+                            denot += str(fml.denotK(structure, structure.g[g]))
+                        else:
+                            denot += str(fml.denot(structure, structure.g[g], w))
                 denot += "\n\n"
 
             # todo make look nicer?

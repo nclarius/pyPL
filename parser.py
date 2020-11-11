@@ -324,64 +324,9 @@ class StructParser:
         modal = True if "W" in s or "K" in s else False
         propositional = True if "V" in s else False
         intuitionistic = True if "K" in s else False
-        vardomains = True if isinstance(s["D"], dict) else False
-
-        # constituents = {const.split(" = ")[0]: const.split(" = ")[1] for const in inp.split("\n")}
-        # modal = True if "W" in constituents or "K" in constituents else False
-        # propositional = True if "V" in constituents else False
-        # intuitionistic = True if "K" in constituents else False
-        # vardomains = True
-        # if "V" in constituents:
-        #     if not modal:
-        #         spec = constituents["V"].split("; ")
-        #         v = {s.split(": ")[0]: s.split(": ")[1] for s in spec}
-        #     else:  # todo doesn't work (double colon and semicolon meaning)
-        #         spec = constituents["V"].split(",, ")
-        #         v = {s.split(":: ")[0]: {s_.split(": ")[0]: s_[1] for s_ in s.split(": ")[1]} for s in spec}
-        # if "D" in constituents:
-        #     spec = constituents["D"][1:-1].split(", ")
-        #     vardomains = True if ": " in spec else False
-        #     if not modal or not vardomains:
-        #         d = set(constituents["D"][1:-1].split(", "))
-        #     else:
-        #         d = {sp.split(": ")[0]: sp.split(": ")[1] for sp in spec}
-        # if "I" in constituents:
-        #     spec = constituents["I"].split("; ")
-        #     i = dict()
-        #     if not modal:
-        #         for s in spec:
-        #             [symbol, interpr] = s.split(": ")
-        #             if "{" not in interpr:
-        #                 i[symbol] = interpr
-        #             elif ": " not in interpr:
-        #                 i[symbol] = set([tuple(el[1:-1].split(" - ")) for el in interpr[1:-1].split(", ")])
-        #             else:
-        #                 i[symbol] = {el.split(": ")[0]: tuple(el.split(": ")[1].split(", "))
-        #                              for el in interpr.split(", ")}
-        #     else:
-        #         spec_ = spec.split(", ")
-        #         for s_ in spec_:
-        #             [world, interprfunc] = s_.split(": ")
-        #             interprfunc = interprfunc.split(", ")
-        #             for sym in interprfunc:
-        #                 [symbol, interpr] = sym.split(": ")
-        #                 if "{" not in interpr:
-        #                     i[world][symbol] = interpr
-        #                 elif ": " not in interpr:
-        #                     i[world][symbol] = set([tuple(el[1:-1].split(" - ")) for el in interpr[1:-1].split(", ")])
-        #                 else:
-        #                     i[world][symbol] = {el.split(": ")[0]: tuple(el.split(": ")[1].split(", "))
-        #                                         for el in interpr.split("; ")}
-        # if "W" in compoonents:
-        #     spec = compoonents["W"][1:-1].split(", ")
-        #     w = set(spec)
-        # if "K" in compoonents:
-        #     spec = compoonents["K"][1:-1].split(", ")
-        #     k = set(spec)
-        # if "R" in compoonents:
-        #     spec = compoonents["K"][1:-1].split(", ")
-        #     r = set([tuple(el.split(", ")) for el in spec])
-        # s = "S"
+        vardomains = True if "D" in s and isinstance(s["D"], dict) else False
+        if not propositional and "G" not in s:
+            s["G"] = {}
 
         structure = __import__("structure")
         if not intuitionistic:
@@ -389,7 +334,7 @@ class StructParser:
                 if propositional:
                     return structure.PropStructure(s["S"], s["V"])
                 else:
-                    return structure.PredStructure(s["S"], s["D"], s["I"])
+                    return structure.PredStructure(s["S"], s["D"], s["I"], s["G"])
             else:
                 if propositional:
                     return structure.PropModalStructure(s["S"], s["W"], s["R"], s["V"])
@@ -437,8 +382,12 @@ if __name__ == "__main__":
     # test = "\\all x (Man(x) -> \exi y (Woman(y) ^ Love(x,y)))"
     # res = parser.parse(test)
     # print(res)
-    # parser = StructParser()
+    parser = StructParser()
     # with open("input/believe2.txt") as f:
+    #     inp = f.read()
+    # outp = parser.parse(inp)
+    # print(outp)
+    # with open("input/pl.txt") as f:
     #     inp = f.read()
     # outp = parser.parse(inp)
     # print(outp)
