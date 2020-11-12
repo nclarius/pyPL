@@ -5,7 +5,6 @@
 Define the structures (aka models) of standard logic.
 """
 
-
 from denotation import *
 
 import re
@@ -21,7 +20,17 @@ class Structure:
     @attr d: the domain of discourse
     @attr i: an interpretation function
     """
-    pass
+
+    def mode(self):
+        mode = []
+        mode.append("intuitionistic" if isinstance(self, KripkeStructure) else "classical")
+        mode.append("modal" if isinstance(self, ModalStructure) else "nonmodal")
+        mode.append("vardomains" if isinstance(self, VarModalStructure) else
+                    "constdomains" if (isinstance(self, ConstModalStructure)) else "")
+        mode.append("propositional" if isinstance(self, PropStructure) or \
+                                       isinstance(self, PropModalStructure) or isinstance(self, KripkePropStructure) else
+                    "predicational")
+        return [m for m in mode if m]
 
 
 class PropStructure(Structure):
@@ -64,11 +73,11 @@ class PredStructure(Structure):
       - D = domain of discourse
       - I = interpretation function assigning a denotation to each non-logical symbol
 
-    - The domain D is a set of individuals, specified as strings:
+    - The domain D is a set of individuals, specified as strinvs:
        D = {'a', 'b', 'c', ...}
 
     - The interpretation function F is a dictionary with
-      - non-logical symbols (specified as strings) as keys and
+      - non-logical symbols (specified as strinvs) as keys and
       - members/subsets/functions of D as values
 
        {'c': 'a', 'P': {('a', ), ('b', )}, 'f': {('c1',): 'a', ('c2',): 'b'}}
@@ -76,7 +85,7 @@ class PredStructure(Structure):
         - The denotation of individual constants is a member (string) of D:
            'c': 'a'
 
-        - The denotation of predicates is a set of tuples of members (strings) of D:
+        - The denotation of predicates is a set of tuples of members (strinvs) of D:
            'P': {('a', ), ('b', )}
            'R': {('a', 'b'), ('b', 'c')}
 
@@ -98,8 +107,8 @@ class PredStructure(Structure):
            'h': {('c1', 'c2'): 'a'}
 
     - An assignment function g is a dictionary with
-      - variables (specified as strings) as keys and
-      - members of D (specified as strings) as values
+      - variables (specified as strinvs) as keys and
+      - members of D (specified as strinvs) as values
        {'x': 'a', 'y': 'b', 'z': 'c'}
 
     ---------
@@ -114,16 +123,16 @@ class PredStructure(Structure):
     @type vs: list[dict[str,str]]]
     """
 
-    def __init__(self, s, d, i, g={}):
+    def __init__(self, s, d, i, v={}):
         # todo set of assignments for other structures
         self.s = s
         self.d = d
         self.i = i
-        self.g = g
+        self.v = v
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D)
         dprod = list(product(list(d), repeat=len(indiv_vars)))
         # all variable assignment functions
-        self.gs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
+        self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
     def __str__(self):  # todo sort interpretation by type and arity of symbol
         return "Structure " + self.s + "  = ⟨D,I⟩ with\n" \
@@ -138,8 +147,8 @@ class PredStructure(Structure):
                     ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in sorted(val)]) +
                     "}")))
                  for (key, val) in sorted(self.i.items())]) + "\n" + \
-                 "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.g[g].items())])
-                            for g in self.g])
+               "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v[g].items())])
+                          for g in self.v])
 
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
@@ -149,18 +158,18 @@ class PredStructure(Structure):
                "\\multicolumn{2}{A}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" \
                                                                                             "\\mathcal{I} : &" + \
                "\\\\\n    & ".join(
-                [str(key) + " & \\mapsto " +
-                 (str(val) if isinstance(val, str) else
-                  (", ".join(["\\tpl{" + str(key2) + " \\mapsto " + str(val2) + "}"
-                              for key2, val2 in val.items()])
-                   if isinstance(val, dict) else
-                   ("\\set{" +
-                    ", ".join(["\\tpl{" + ", ".join([str(t) for t in s]) + "}" for s in sorted(val)]) +
-                    "}")))
-                 for (key, val) in sorted(self.i.items())]) + "\\\\\n" + \
+                       [str(key) + " & \\mapsto " +
+                        (str(val) if isinstance(val, str) else
+                         (", ".join(["\\tpl{" + str(key2) + " \\mapsto " + str(val2) + "}"
+                                     for key2, val2 in val.items()])
+                          if isinstance(val, dict) else
+                          ("\\set{" +
+                           ", ".join(["\\tpl{" + ", ".join([str(t) for t in s]) + "}" for s in sorted(val)]) +
+                           "}")))
+                        for (key, val) in sorted(self.i.items())]) + "\\\\\n" + \
                "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
-                                                     for key, val in sorted(self.g[g].items())])
-                          for g in self.g]) + "\\\\\n" + \
+                                                      for key, val in sorted(self.v[g].items())])
+                              for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \
                    .replace("\\set{}", "\\emptyset{}")
 
@@ -188,7 +197,7 @@ class PropModalStructure(ModalStructure):
       - R = accessibility relation, a binary relation on W
       - V = valuation function
 
-    - The set of possible worlds W is a set of possible worlds, specified as strings:
+    - The set of possible worlds W is a set of possible worlds, specified as strinvs:
        W = {'w1', 'w2', ...}
 
     - The accessibility relation W is a set of tuples of possible worlds:
@@ -241,7 +250,7 @@ class PropModalStructure(ModalStructure):
                "\\mathcal{V} : &" + "\\\\\n    & ".join([str(p) + " & \\mapsto &" +
                                                          ", \\\\\n &&& ".join([str(w) + " & \\mapsto &" +
                                                                                str(tv).replace("True", "1").replace(
-                                                                                   "False", "0")
+                                                                                       "False", "0")
                                                                                for (w, tv) in
                                                                                sorted(self.v[p].items())])
                                                          for (p, vp) in sorted(self.v.items())]) + "\\\\\n" + \
@@ -260,20 +269,20 @@ class ConstModalStructure(ModalStructure):
       - I = interpretation function assigning to each member of w and each non-logical symbol a denotation
     and a set of assignment functions vs.
 
-    - The set of possible worlds W is a set of possible worlds, specified as strings:
+    - The set of possible worlds W is a set of possible worlds, specified as strinvs:
        W = {'w1', 'w2', ...}
 
     - The accessibility relation W is a set of tuples of possible worlds:
       R = {('w1', 'w2'), ('w2', 'w2'), ...}
 
-    - The domain D is a set of individuals, specified as strings:
+    - The domain D is a set of individuals, specified as strinvs:
       D = {'a', 'b', 'c', ...}
 
     - The interpretation function F is a dictionary with
       - the non-logical symbols as keys and
       - a dictionary with
         - possible worlds as keys and
-        - and interpretation (see Structure.f) as values.
+        - and interpretation (see f) as values.
       I = {'c': {'w1': 'a', 'w2':  'a'}, 'P': {'w1: {('a',)}, 'w2': {('a', ), ('b', )}}}
 
     @attr s: the name of the structure (such as "M1")
@@ -288,17 +297,17 @@ class ConstModalStructure(ModalStructure):
     """
 
     # todo doesnt work yet (assignment function)
-    def __init__(self, s, w, r, d, i, g={}):
+    def __init__(self, s, w, r, d, i, v={}):
         self.s = s
         self.w = w
         self.r = r
         self.d = d
         self.i = i
-        self.g = g
+        self.v = v
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D)
         dprod = list(product(list(d), repeat=len(indiv_vars)))
         # all variable assignment functions
-        self.gs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
+        self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
     def __str__(self):
         return "Structure " + self.s + " = ⟨W,R,D,I⟩ with\n" \
@@ -311,17 +320,21 @@ class ConstModalStructure(ModalStructure):
                                                                             ", \n".join(
                                                                                     ["           " + str(w) + " ↦ " +
                                                                                      (str(ipw) if isinstance(ipw,
-                                                                                                              str) else
+                                                                                                             str) else
                                                                                       (", ".join(["(" + str(
-                                                                                          ipwKey) + " ↦ " + str(
-                                                                                          ipwVal) + ")"
+                                                                                              ipwKey) + " ↦ " + str(
+                                                                                              ipwVal) + ")"
                                                                                                   for ipwKey, ipwVal in
                                                                                                   sorted(ipw.items())])
                                                                                        if isinstance(ipw, dict) else
                                                                                        ("{" +
                                                                                         ", ".join(["⟨" + ", ".join(
-                                                                                                [str(t).replace("frozenset", "") for t in
-                                                                                                 s]) + "⟩" for s in
+                                                                                                [str(t).replace(
+                                                                                                        "frozenset", "")
+                                                                                                        for
+                                                                                                        t in
+                                                                                                        s]) + "⟩" for s
+                                                                                                   in
                                                                                                    sorted(ipw)]) +
                                                                                         "}")))
                                                                                      for (w, ipw) in
@@ -329,9 +342,10 @@ class ConstModalStructure(ModalStructure):
                                                                             "\n    "
                                                                             for (p, ip) in
                                                                             sorted(self.i.items())]).replace("\n    \n",
-                                                                                                             "\n") + "\n" + \
-                 "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.g[g].items())])
-                            for g in self.g])
+                                                                                                             "\n") + \
+               "\n" + \
+               "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v[g].items())])
+                          for g in self.v])
 
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
@@ -354,14 +368,15 @@ class ConstModalStructure(ModalStructure):
                                                        for ipwKey, ipwVal in ipw.items()])
                                                if isinstance(ipw, dict) else
                                                ("\\set{" +
-                                                ", ".join(["\\tpl{" + ", ".join([str(t).replace("frozenset", "") for t in s]) + "}" for s in
+                                                ", ".join(["\\tpl{" + ", ".join(
+                                                        [str(t).replace("frozenset", "") for t in s]) + "}" for s in
                                                            sorted(ipw)]) +
                                                 "}")))
                                              for (w, ipw) in sorted(self.i[p].items())])
                                     for (p, ip) in sorted(self.i.items())]) + "\\\\\n" + \
                "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
-                                                     for key, val in sorted(self.g[g].items())])
-                          for g in self.g]) + "\\\\\n" + \
+                                                      for key, val in sorted(self.v[g].items())])
+                              for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \
                    .replace("\\set{}", "\\emptyset{}")
 
@@ -377,20 +392,20 @@ class VarModalStructure(ModalStructure):
       - I = interpretation function assigning to each member of W and each non-logical symbol a denotation
     and a set of assignment functions vs.
 
-    - The set of possible worlds W is a set of possible worlds, specified as strings:
+    - The set of possible worlds W is a set of possible worlds, specified as strinvs:
        W = {'w1', 'w2', ...}
 
     - The accessibility relation W is a set of tuples of possible worlds:
       R = {('w1', 'w2'), ('w2', 'w2'), ...}
 
     - The domain D is a a dictionary with
-      - possible worlds (specified as strings) as keys and
-      - domains (see Structure.D) as values
+      - possible worlds (specified as strinvs) as keys and
+      - domains (see D) as values
       D = {'w1': {'a', 'b', 'c'}, 'w2': {'b'}, ...}
 
     - The interpretation function F is a dictionary with
       - possible worlds as keys and
-      - and interpretation of the non-logical symbols (see Structure.f) as values.
+      - and interpretation of the non-logical symbols (see f) as values.
       I = {'c': {'w1': 'a', 'w2':  'a'}, 'P': {'w1: {('a',)}, 'w2': {('a', ), ('b', )}}}
 
 
@@ -406,17 +421,17 @@ class VarModalStructure(ModalStructure):
     @type i: dict[str,dict[str,Any]]
     """
 
-    def __init__(self, s, w, r, d, i, g={}):
+    def __init__(self, s, w, r, d, i, v={}):
         self.s = s
         self.w = w
         self.r = r
         self.d = d
         self.i = i
-        self.g = g
+        self.v = v
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D) per world
         dprods = {w: list(product(list(self.d[w]), repeat=len(indiv_vars))) for w in self.w}
         # all variable assignment functions per world
-        self.gs = {w: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[w]] for w in self.w}
+        self.vs = {w: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[w]] for w in self.w}
 
     def __str__(self):
         return "Structure " + self.s + " = ⟨W,R,D,F⟩ with\n" \
@@ -428,31 +443,31 @@ class VarModalStructure(ModalStructure):
                  "{" + ", ".join([str(d) for d in sorted(self.d[w])]) + "}"
                  for w in sorted(self.w)]) + \
                "\n" \
-                                                    "I : " + "\n    ".join([str(p) + " ↦ \n" + \
-                                                                            ", \n".join(
-                                                                                    ["           " + str(w) + " ↦ " +
-                                                                                     (str(ipw) if isinstance(ipw,
-                                                                                                              str) else
-                                                                                      (", ".join(["(" + str(
-                                                                                          ipwKey) + " ↦ " + str(
-                                                                                          ipwVal) + ")"
-                                                                                                  for ipwKey, ipwVal in
-                                                                                                  sorted(ipw.items())])
-                                                                                       if isinstance(ipw, dict) else
-                                                                                       ("{" +
-                                                                                        ", ".join(["⟨" + ", ".join(
-                                                                                                [str(t) for t in
-                                                                                                 s]) + "⟩" for s in
-                                                                                                   sorted(ipw)]) +
-                                                                                        "}")))
-                                                                                     for (w, ipw) in
-                                                                                     sorted(self.i[p].items())]) + \
-                                                                            "\n    "
-                                                                            for (p, ip) in
-                                                                            sorted(self.i.items())]).replace("\n    \n",
-                                                                                                             "\n") + "\n" + \
-                 "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.g[g].items())])
-                            for g in self.g])
+               "I : " + "\n    ".join([str(p) + " ↦ \n" + \
+                                       ", \n".join(
+                                               ["           " + str(w) + " ↦ " +
+                                                (str(ipw) if isinstance(ipw,
+                                                                        str) else
+                                                 (", ".join(["(" + str(
+                                                         ipwKey) + " ↦ " + str(
+                                                         ipwVal) + ")"
+                                                             for ipwKey, ipwVal in
+                                                             sorted(ipw.items())])
+                                                  if isinstance(ipw, dict) else
+                                                  ("{" +
+                                                   ", ".join(["⟨" + ", ".join(
+                                                           [str(t) for t in
+                                                            s]) + "⟩" for s in
+                                                              sorted(ipw)]) +
+                                                   "}")))
+                                                for (w, ipw) in
+                                                sorted(self.i[p].items())]) + \
+                                       "\n    "
+                                       for (p, ip) in
+                                       sorted(self.i.items())]).replace("\n    \n",
+                                                                        "\n") + "\n" + \
+               "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v[g].items())])
+                          for g in self.v])
 
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
@@ -484,8 +499,8 @@ class VarModalStructure(ModalStructure):
                                              for (w, ipw) in sorted(self.i[p].items())])
                                     for (p, ip) in sorted(self.i.items())]) + "\\\\\n" + \
                "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
-                                                     for key, val in sorted(self.g[g].items())])
-                          for g in self.g]) + "\\\\\n" + \
+                                                      for key, val in sorted(self.v[g].items())])
+                              for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \
                    .replace("\\set{}", "\\emptyset{}")
 
@@ -532,9 +547,9 @@ class KripkePropStructure(KripkeStructure):
       - K = set of states
       - R = the accessibility relation, a binary relation on K
       - I = valuation function assigning to each member of K and each propositional variabl a truth value
-    and a set of assignment functions gs assigning to each state k to each variable an element from the domain of k.
+    and a set of assignment functions vs assigning to each state k to each variable an element from the domain of k.
 
-    - The set of states K is a set of states, specified as strings, where the root state has to be specified as 'k0':
+    - The set of states K is a set of states, specified as strinvs, where the root state has to be specified as 'k0':
        K = {'k0', 'k1', 'k2' ...}
 
     - The accessibility relation R is a partial order on K,
@@ -619,13 +634,15 @@ class KripkePropStructure(KripkeStructure):
                                                                                             "\\multicolumn{3}{A}{" \
                                                                                             "\\set{" + ", ".join(
                 ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" \
-               "\\mathcal{V} : &" + "\\\\\n    & ".join([str(p) + " & \\mapsto &" +
-                                                         ", \\\\\n &&& ".join([str(k) + " & \\mapsto &" +
-                                                                               str(tv).replace("True", "1").replace(
-                                                                                   "False", "0")
-                                                                               for (k, tv) in
-                                                                               sorted(self.v[p].items())])
-                                                         for (p, vp) in sorted(self.v.items())]) + "\\\\\n" + \
+                                                                                           "\\mathcal{V} : &" + \
+               "\\\\\n    & ".join(
+                       [str(p) + " & \\mapsto &" +
+                        ", \\\\\n &&& ".join([str(k) + " & \\mapsto &" +
+                                              str(tv).replace("True", "1").replace(
+                                                      "False", "0")
+                                              for (k, tv) in
+                                              sorted(self.v[p].items())])
+                        for (p, vp) in sorted(self.v.items())]) + "\\\\\n" + \
                "\\end{tabular}" \
                    .replace("\\set{}", "\\emptyset{}")
 
@@ -639,9 +656,9 @@ class KripkePredStructure(KripkeStructure):
       - R = the accessibility relation, a binary relation on K
       - D = an assignment of states to domains of discourse
       - I = interpretation function assigning to each member of K and each non-logical symbol a denotation
-    and a set of assignment functions gs assigning to each state k to each variable an element from the domain of k.
+    and a set of assignment functions vs assigning to each state k to each variable an element from the domain of k.
 
-    - The set of states K is a set of states, specified as strings, where the root state has to be specified as 'k0':
+    - The set of states K is a set of states, specified as strinvs, where the root state has to be specified as 'k0':
        K = {'k0', 'k1', 'k2' ...}
 
     - The accessibility relation R is a partial order on K,
@@ -650,9 +667,9 @@ class KripkePredStructure(KripkeStructure):
        R = {('k0', 'k1'), ('k0', 'k2'), ...}
 
     - The domain D is a a dictionary with
-      - states (specified as strings) as keys and
+      - states (specified as strinvs) as keys and
       - domains as values
-        - The domain D_k is a set of individuals, specified as strings:
+        - The domain D_k is a set of individuals, specified as strinvs:
            {'a', 'b', 'c', ...}
        D = {'k0': {'a'}, 'k1': {'a', 'b'}, 'k2': {'a', 'c'}, ...}
 
@@ -661,7 +678,7 @@ class KripkePredStructure(KripkeStructure):
       - and an interpretation of the non-logical symbols as values
 
         - The interpretation function I_k is a dictionary with
-          - non-logical symbols (specified as strings) as keys and
+          - non-logical symbols (specified as strinvs) as keys and
           - members/subsets/functions of D as values
 
            {'c': 'a', 'P': {('a', ), ('b', )}, 'f': {('c1',): 'a', ('c2',): 'b'}}
@@ -669,7 +686,7 @@ class KripkePredStructure(KripkeStructure):
             - The denotation of individual constants is a member (string) of D:
                'c': 'a'
 
-            - The denotation of predicates is a set of tuples of members (strings) of D:
+            - The denotation of predicates is a set of tuples of members (strinvs) of D:
                'P': {('a', ), ('b', )}
                'R': {('a', 'b'), ('b', 'c')}
 
@@ -704,17 +721,17 @@ class KripkePredStructure(KripkeStructure):
     @type i: dict[str,dict[str,Any]]
     """
 
-    def __init__(self, s, k, r, d, i, g={}):
+    def __init__(self, s, k, r, d, i, v={}):
         self.s = s
         self.k = k
         self.r = r
         self.d = d
         self.i = i
-        self.g = g
+        self.v = v
         # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D) per state
         dprods = {k: list(product(list(self.d[k]), repeat=len(indiv_vars))) for k in self.k} if d else {}
         # all variable assignment functions
-        self.gs = {k: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[k]] for k in self.k} if d else {}
+        self.vs = {k: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[k]] for k in self.k} if d else {}
 
         # compute the relfexive and transitive closure of R
         closure = set(self.r)
@@ -780,9 +797,12 @@ class KripkePredStructure(KripkeStructure):
                                                                           "\n    "
                                                                           for (p, ip) in
                                                                           sorted(self.i.items())]).replace("\n    \n",
-                                                                                                           "\n") + "\n" + \
-                 "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.g[g].items())])
-                            for g in self.g])
+                                                                                                           "\n") + \
+                                                  "\n" + \
+                                                  "\n".join([g + " : " + ", ".join(
+                                                          [str(key) + " ↦ " + str(val) for key, val in
+                                                           sorted(self.v[g].items())])
+                                                             for g in self.v])
 
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
@@ -791,7 +811,8 @@ class KripkePredStructure(KripkeStructure):
                "\\mathcal{K} = & " \
                "\\multicolumn{5}{A}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" \
                                                                                             "\\mathcal{R} = &" \
-                                                                                            "\\multicolumn{5}{A}{\\set{" + ", ".join(
+                                                                                            "\\multicolumn{5}{A}{" \
+                                                                                            "\\set{" + ", ".join(
                 ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" \
                                                                                            "\\mathcal{D} = & " \
                                                                                            "\\\\\n    ".join(
@@ -815,7 +836,7 @@ class KripkePredStructure(KripkeStructure):
                                              for (k, ipk) in sorted(self.i[p].items())])
                                     for (p, ip) in sorted(self.i.items())]) + "\\\\\n" + \
                "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
-                                                     for key, val in sorted(self.g[g].items())])
-                          for g in self.g]) + "\\\\\n" + \
+                                                      for key, val in sorted(self.v[g].items())])
+                              for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \
                    .replace("\\set{}", "\\emptyset{}")

@@ -12,7 +12,7 @@ from functools import reduce
 
 
 # settings
-denots = []  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
+denots = [i for i in range(15)]  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
 tableaus = [1, 2]  # set here which tableaus to include in the output (see def.s in fnc. 'compute_denots')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
@@ -73,7 +73,7 @@ def compute_denots():
             if nr > 3:
                 print()
                 print("⟦" + str(e) + "⟧^S1 =")
-                print(e.denotG(s1))
+                print(e.denotV(s1))
                 depth = 0
 
 
@@ -158,9 +158,9 @@ def compute_denots():
                                                                Atm(Pred("love"), (Var("x"), Var("y"))))
                                                 )))),
             10: Neg(Exists(Var("y"), Exists(Var("z"), Atm(Pred("jealous"), (Const("j"), Var("y"), Var("z")))))),
-            11: Morethan(Var("x"), Atm(Pred("man"), (Var("x"),)), Atm(Pred("woman"), (Var("x"),)),
+            11: More(Var("x"), Atm(Pred("man"), (Var("x"),)), Atm(Pred("woman"), (Var("x"),)),
                          Exists(Var("y"), Exists(Var("z"), Atm(Pred("jealous"), (Var("x"), Var("y"), Var("z")))))),
-            12: Morethan(Var("x"), Atm(Pred("woman"), (Var("x"),)), Atm(Pred("man"), (Var("x"),)),
+            12: More(Var("x"), Atm(Pred("woman"), (Var("x"),)), Atm(Pred("man"), (Var("x"),)),
                          Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y"))))),
             13: Most(Var("x"), Atm(Pred("man"), (Var("x"),)), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y")))))
 
@@ -235,7 +235,7 @@ def compute_denots():
             if 4 <= nr <= 16:
                 print()
                 print("⟦" + str(e) + "⟧^S4 =")
-                print(e.denotG(s1))
+                print(e.denotV(s1))
                 depth = 0
             # if nr == 14:
             #     print(e.freevars())
@@ -406,7 +406,7 @@ def compute_denots():
         for nr, e in e9.items():
             print()
             print("⟦" + str(e) + "⟧^S9 =")
-            print(e.denotG(s1a))
+            print(e.denotV(s1a))
             depth = 0
 
         print()
@@ -422,7 +422,7 @@ def compute_denots():
         for nr, e in e9.items():
             print()
             print("⟦" + str(e) + "⟧^S9' =")
-            print(e.denotG(s1b))
+            print(e.denotV(s1b))
             depth = 0
 
     if 10 in denots:
@@ -452,7 +452,7 @@ def compute_denots():
         for nr, e in e10.items():
             print()
             print("⟦" + str(e) + "⟧^S10 =")
-            print(e.denotG(s1))
+            print(e.denotV(s1))
             depth = 0
 
         print()
@@ -485,15 +485,15 @@ def compute_denots():
         for nr, e in e11.items():
             print()
             print("[[" + str(e) + "]]^S11 =")
-            print(e.denotGK(s1))
+            print(e.denotVW(s1))
             depth = 0
             print()
             print("[[" + str(e) + "]]^S11,k0 =")
-            print(e.denotG(s1, "k0"))
+            print(e.denotV(s1, "k0"))
             depth = 0
             print()
             print("[[" + str(e) + "]]^S11,k1 =")
-            print(e.denotG(s1, "k1"))
+            print(e.denotV(s1, "k1"))
             depth = 0
     
     if 12 in denots:
@@ -518,7 +518,7 @@ def compute_denots():
         for nr, e in e12.items():
             print()
             print("[[" + str(e) + "]]^S12 =")
-            print(e.denotGK(s1))
+            print(e.denotVW(s1))
             depth = 0
 
     if 13 in denots:
@@ -548,26 +548,22 @@ def compute_denots():
             print()
             if nr in [1]:
                 print("[[" + str(e) + "]]^S13 =")
-                print(e.denotGK(s1))
+                print(e.denotVW(s1))
                 depth = 0
             elif nr in [2]:
                 print("[[" + str(e) + "]]^S13,k3 =")
-                print(e.denotG(s1, "k3"))
+                print(e.denotV(s1, "k3"))
                 depth = 0
                 print("[[" + str(e) + "]]^S13,k1 =")
-                print(e.denotG(s1, "k1"))
+                print(e.denotV(s1, "k1"))
                 depth = 0
                 print("[[" + str(e) + "]]^S13,k0 =")
-                print(e.denotG(s1, "k0"))
+                print(e.denotV(s1, "k0"))
                 depth = 0
             elif nr in [13, 4, 5]:
                 print("[[" + str(e) + "]]^S13,k0 =")
-                print(e.denotG(s1, "k0"))
+                print(e.denotV(s1, "k0"))
                 depth = 0
-    
-        #############################
-        print("\n---------------------------------\n")
-        #############################
 
     if 14 in denots:
         #############################
@@ -597,7 +593,7 @@ def compute_denots():
             print()
             if nr in [1, 2, 3, 4, 5]:
                 print("[[" + str(e) + "]]^S14,w0 =")
-                print(e.denotG(s14, "w0"))
+                print(e.denotV(s14, "w0"))
                 depth = 0
 
         #############################

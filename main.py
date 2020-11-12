@@ -12,15 +12,9 @@ from denotation import *
 from tableau import *
 
 if __name__ == "__main__":
-    parser = FmlParser()
+    parser = __import__("parser")
+    parse_fml = parser.FmlParser().parse
+    parse_strct = parser.StructParser().parse
 
-    # fml = parser.parse(r"\exi x \all y R(x,y) -> \all y \exi x R(x,y)")
-
-    impallout = parser.parse(r"\all x (P(x) -> Q(x))")
-    impallin = parser.parse(r"\all x P(x) -> \all x Q(x)")
-    biimpallout = parser.parse(r"\all x (P(x) <-> Q(x))")
-    biimpallin = parser.parse(r"\all x P(x) <-> \all x Q(x)")
-    tab1 = Tableau(impallin, premises=[impallout])
-    tab2 = Tableau(impallout, premises=[impallin])
-    tab3 = Tableau(biimpallin, premises=[biimpallout])
-    tab4 = Tableau(biimpallout, premises=[biimpallin])
+    print(len(parse_fml("R(x)")))
+    print(len(parse_fml("Know(x)")))
