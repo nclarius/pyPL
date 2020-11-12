@@ -48,7 +48,7 @@ class PropStructure(Structure):
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{V}}$ with \\\\\n" + \
-               "\\begin{tabular}{LL}\n" + \
+               "\\begin{tabular}{AA}\n" + \
                "\\mathcal{V} : &" + \
                ", ".join([str(p) + " \\mapsto " + str(tv).replace("True", "1").replace("False", "0")
                           for p, tv in sorted(self.v.items())]) + "\\\\\n" + \
@@ -144,9 +144,9 @@ class PredStructure(Structure):
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{D}, \\mathcal{I}}$ with \\\\\n" + \
-               "\\begin{tabular}{LLL}\n" + \
+               "\\begin{tabular}{AAA}\n" + \
                "\\mathcal{D} = & " \
-               "\\multicolumn{2}{L}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" \
+               "\\multicolumn{2}{A}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" \
                                                                                             "\\mathcal{I} : &" + \
                "\\\\\n    & ".join(
                 [str(key) + " & \\mapsto " +
@@ -232,11 +232,11 @@ class PropModalStructure(ModalStructure):
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{V}}$ with \\\\\n" \
-               "\\begin{tabular}{LLLLLL}\n" \
+               "\\begin{tabular}{AAAAAA}\n" \
                "\\mathcal{W} = & " + \
-               "\\multicolumn{5}{L}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
+               "\\multicolumn{5}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
                                                                                             "\\mathcal{R} = &" + \
-               "\\multicolumn{5}{L}{\\set{" + ", ".join(
+               "\\multicolumn{5}{A}{\\set{" + ", ".join(
                 ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
                "\\mathcal{V} : &" + "\\\\\n    & ".join([str(p) + " & \\mapsto &" +
                                                          ", \\\\\n &&& ".join([str(w) + " & \\mapsto &" +
@@ -336,14 +336,14 @@ class ConstModalStructure(ModalStructure):
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{D}, \\mathcal{I}}$ with \\\\\n" \
-               "\\begin{tabular}{LLLLL}\n" \
+               "\\begin{tabular}{AAAAA}\n" \
                "\\mathcal{W} = & " \
-               "\\multicolumn{4}{L}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
+               "\\multicolumn{4}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
                                                                                             "\\mathcal{R} = &" + \
-               "\\multicolumn{4}{L}{\\set{" + ", ".join(
+               "\\multicolumn{4}{A}{\\set{" + ", ".join(
                 ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
                "\\mathcal{D} = & " + \
-               "\\multicolumn{4}{L}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" + \
+               "\\multicolumn{4}{A}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" + \
                "\\mathcal{I} : & " + \
                "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
                                     "\\\\\n &&& ".join(
@@ -457,14 +457,14 @@ class VarModalStructure(ModalStructure):
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{D}, \\mathcal{I}}$ with \\\\\n" \
-               "\\begin{tabular}{LLLLLL}\n" \
+               "\\begin{tabular}{AAAAA}\n" \
                "\\mathcal{W} = & " \
-               "\\multicolumn{5}{L}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
+               "\\multicolumn{5}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
                                                                                             "\\mathcal{R} = &" + \
-               "\\multicolumn{5}{L}{\\set{" + ", ".join(
+               "\\multicolumn{5}{A}{\\set{" + ", ".join(
                 ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
                "\\mathcal{D} = & " + \
-               "\\\\\n    & ".join([str(w) + " & \\multicolumn{2}{L}{\\mapsto " + \
+               "\\\\\n    & ".join([str(w) + " & \\multicolumn{2}{A}{\\mapsto " + \
                                     "\\set{" + ", ".join([str(d) for d in sorted(self.d[w])]) + "}}"
                                     for w in sorted(self.w)]) + \
                "\\\\\n" + \
@@ -612,11 +612,11 @@ class KripkePropStructure(KripkeStructure):
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{K}, \\mathcal{R}, \\mathcal{V}}$ with \\\\\n" \
-               "\\begin{tabular}{LLLL}\n" \
+               "\\begin{tabular}{AAAA}\n" \
                "\\mathcal{K} = & " \
-               "\\multicolumn{3}{L}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" \
+               "\\multicolumn{3}{A}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" \
                                                                                             "\\mathcal{R} = &" \
-                                                                                            "\\multicolumn{3}{L}{" \
+                                                                                            "\\multicolumn{3}{A}{" \
                                                                                             "\\set{" + ", ".join(
                 ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" \
                "\\mathcal{V} : &" + "\\\\\n    & ".join([str(p) + " & \\mapsto &" +
@@ -787,15 +787,15 @@ class KripkePredStructure(KripkeStructure):
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{K}, \\mathcal{R}, \\mathcal{D}, \\mathcal{I}}$ with \\\\\n" \
-               "\\begin{tabular}{LLLLLL}\n" \
+               "\\begin{tabular}{AAAAAA}\n" \
                "\\mathcal{K} = & " \
-               "\\multicolumn{5}{L}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" \
+               "\\multicolumn{5}{A}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" \
                                                                                             "\\mathcal{R} = &" \
-                                                                                            "\\multicolumn{5}{L}{\\set{" + ", ".join(
+                                                                                            "\\multicolumn{5}{A}{\\set{" + ", ".join(
                 ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" \
                                                                                            "\\mathcal{D} = & " \
                                                                                            "\\\\\n    ".join(
-                [str(k) + " & \\multicolumn{2}{L}{\\mapsto " + \
+                [str(k) + " & \\multicolumn{2}{A}{\\mapsto " + \
                  "\\set{" + ", ".join([str(d) for d in sorted(self.d[k])]) + "}}"
                  for k in sorted(self.k)]) + \
                "\\\\\n" \

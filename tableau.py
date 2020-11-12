@@ -65,7 +65,7 @@ class Tableau(object):
                  validity=True, satisfiability=True, linguistic=False,
                  classical=True, propositional=False, modal=False, vardomains=False, frame="K",
                  latex=True, file=False, silent=False, verbose=False, underline_open=True, hide_nonopen=False,
-                 num_models=1, size_limit_factor=2):
+                 num_models=1, size_limit_factor=1.5):
 
         # settings
         # todo nicer specification of settings?
@@ -250,7 +250,7 @@ class Tableau(object):
                 if not self.latex:
                     mdls += str(model) + "\n\n"
                 else:
-                    mdls += model.tex() + "\\ \\\\\n\\ \\\\\n\\ \\\\\n"
+                    mdls += model.tex() + "\\ \\\\\n\\ \\\\\n"
             res += mdls
 
         # measures size and time
@@ -333,7 +333,7 @@ class Tableau(object):
             # todo when size limit factor is not high enough and no model is found,
             #  result should be "pot. inf." rather than closed
             # todo more models often just creates isomorphisms, rather than increasing the domain size
-            if num_nodes > 2 * self.size_limit_factor * len_assumptions * self.num_models:
+            if num_nodes > self.size_limit_factor * len_assumptions * self.num_models:
                 # mark abandoned branches
                 for leaf in self.root.leaves(True):
                     leaf.add_child((self, None, None, Infinite(), None, None, None))
@@ -1554,11 +1554,14 @@ class Node(object):
         if self.tableau.hide_nonopen and not self.tableau.mode["validity"] and \
                 not any([self in branch for branch in open_branches]):
             return ""
-        colspec = "{llcl}" if not self.tableau.mode["classical"] or self.tableau.mode["modal"] else "{lcl}"
+        colspec = ("{R{3.5em]cL{3.5em}" if self.tableau.mode["propositional"] else "{R{7.5em}cL{7.5em}}") \
+            if not self.tableau.mode["modal"] else "{R{5em}L{1.5em}cL{7.5em}}"
+        ssep = "-3.5em" if self.tableau.mode["propositional"] and not self.tableau.mode["modal"] else "-7.5em"
         res = ""
         if root:
+            res += "\\hspace*{%s}\n" % ssep
             res += "\\begin{forest}\n"
-            res += "for tree={anchor=north}\n"
+            res += "for tree={anchor=north, l sep=2em, s sep=%s}\n" % ssep
             indent += "    "
             res += indent + "[\n"
         if first:

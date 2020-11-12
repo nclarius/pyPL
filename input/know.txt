@@ -1,0 +1,2 @@
+\all x \exi y Know(x,y)
+\exi y \all x Know(x,y)

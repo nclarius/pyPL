@@ -1,0 +1,4 @@
+V = [p: True, q: False]
+
+p ^ q
+p v q

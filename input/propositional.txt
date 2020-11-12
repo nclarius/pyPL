@@ -1,3 +1,0 @@
-p ^ q
-
-V = p: True; q: False
