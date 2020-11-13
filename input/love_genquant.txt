@@ -1,10 +1,10 @@
 D = {Mary, Susan, Paula, John, Peter}
-I = [m: Mary,
-     Woman: {(Mary), (Susan), (Paula)},
+I = [Woman: {(Mary), (Susan), (Paula)},
      Man: {(John), (Peter)},
      Happy: {(Mary), (Susan), (John), (Peter)},
      Love: {(Mary, John), (Susan, John), (Paula, Peter), (Peter, John)}]
 
-Happy(m)
 \all x (Woman(x) -> \exi y (Man(y) ^ Love(x,y)))
 \all x (Man(x) -> \exi y (Woman(y) ^ Love(x,y)))
+\most x (Woman(x), Happy(x))
+\more x (Woman(x), Man(x), Happy(x))

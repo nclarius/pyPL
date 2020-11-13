@@ -623,10 +623,11 @@ def compute_denots():
         }
 
         for nr, e in e14.items():
-            print()
-            print("[[" + str(e) + "]]S15 =")
-            print(e.denotV(s14))
-            depth = 0
+            if nr in [1, 2]:
+                print()
+                print("[[" + str(e) + "]]S15 =")
+                print(e.denotV(s14))
+                depth = 0
 
         #############################
         print("\n---------------------------------\n")

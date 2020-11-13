@@ -65,6 +65,8 @@ class FmlParser:
             # quantifiers
             "Exists": r"(∃|\\exists|\\exi|\\ex)",
             "Forall": r"(∀|\\forall|\\all|\\fa)",
+            "Most": r"\\most",
+            "More": r"\\more",
             # modal operators
             "Poss": r"(◇|\*|\\Diamond|\\poss)",
             "Nec": r"(◻|#|\\Box||\\nec)",
@@ -132,7 +134,7 @@ class FmlParser:
 
         # opening bracket: start new stack if begin of complex formula rather than term tuple
         if t in ["Lbrack"]:
-            if bot not in ["Atm", "FuncTerm"]:
+            if bot not in ["Atm", "FuncTerm", "Most", "More"]:
                 new_stack = []
                 stacks.append(new_stack)
                 self.stacks = stacks
@@ -189,7 +191,7 @@ class FmlParser:
             return
 
         # prefix operator: start new stack
-        if t in ["Verum", "Falsum", "Neg", "Exists", "Forall", "Poss", "Nec", "Int", "Ext"]:
+        if t in ["Verum", "Falsum", "Neg", "Exists", "Forall", "Most", "More", "Poss", "Nec", "Int", "Ext"]:
             stack_ = [t]
             stacks.append(stack_)
 
@@ -201,8 +203,8 @@ class FmlParser:
     def update_stacks(self, final=False):
         # todo check well-formedness of expressions
         # operator precedence
-        prec = {"Eq": 1, "Nec": 1, "Poss": 1, "Int": 1, "Ext": 1, "Exists": 1, "Forall": 1, "Neg": 1,
-                "Conj": 2, "Disj": 3, "Imp": 4, "Biimp": 5, "Xor": 6}
+        prec = {"Eq": 1, "Nec": 1, "Poss": 1, "Int": 1, "Ext": 1, "More": 1, "Most": 1, "Exists": 1, "Forall": 1,
+                "Neg": 1, "Conj": 2, "Disj": 3, "Imp": 4, "Biimp": 5, "Xor": 6}
 
         stacks = self.stacks
         expr = __import__("expr")
@@ -230,11 +232,18 @@ class FmlParser:
             mid = curr_stack[1] if len(curr_stack) > 1 else None
             top = curr_stack[-1]
 
-            # function or predicate expression: close if closure symbol is on top
+            # function, predicate or gen. quant. expression: close if closure symbol is on top
             if bot in ["Atm", "FuncTerm"] and top == "#":
                 o = curr_stack[1]
                 c = getattr(expr, bot)
                 e = c(o, curr_stack[2:-1])
+                prev_stack.append(e)
+                stacks = stacks[:-1]
+                continue
+            elif bot in ["Most", "More"] and top == "#":
+                o = curr_stack[1]
+                c = getattr(expr, bot)
+                e = c(o, *curr_stack[2:-1])
                 prev_stack.append(e)
                 stacks = stacks[:-1]
                 continue
@@ -252,7 +261,7 @@ class FmlParser:
 
                 # operator ambiguity
                 # todo associativity not right with Eq
-                if mid and mid in ["Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall",
+                if mid and mid in ["Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall", "Most", "More",
                                    "Neg", "Poss", "Nec", "Int", "Ext", "Eq"]:  # operator clash: resolve ambiguiy
                     # first op has precedence over second op: take current stack as subformula. to second op
                     # ops have equal precedence: apply left-associativity
@@ -276,7 +285,7 @@ class FmlParser:
                     stacks = stacks[:-1]
                     continue
 
-            # quantifier: clsoe if appropriate number of args is given
+            # quantifier: close if appropriate number of args is given
             if bot in ["Exists", "Forall"] and len(curr_stack) == 3:
                 c = getattr(expr, bot)
                 e = c(mid, top)
