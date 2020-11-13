@@ -83,7 +83,7 @@ class PyPLGUI(tk.Frame):
         self.root.title("pyPL")
         icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
         self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file=icon_path))
-        self.root.geometry("1333x750")
+        self.root.geometry("1244x700")
 
         # style
         self.style = ttk.Style()
@@ -848,7 +848,7 @@ class PyPLGUI(tk.Frame):
         mid = tk.Frame(tab, bg=white)
         mid.pack()
         mids = []
-        for i in range(11):
+        for i in range(9):
             if i in [2, 5]:
                 sep = tk.Frame(mid)
                 sep.pack(pady=10)
@@ -985,7 +985,6 @@ class PyPLGUI(tk.Frame):
                                   bg=white,
                                   text="Number of models to compute:")
         lbl_num_models.pack(in_=mids[m], side=tk.LEFT, padx=15)
-        m += 1
         btn_num_models_dn = tk.Button(tab,
                                       bg=white,
                                       text="-",
@@ -1017,7 +1016,6 @@ class PyPLGUI(tk.Frame):
                                   bg=white,
                                   text="Tableau tree size limit factor:")
         lbl_size_limit.pack(in_=mids[m], side=tk.LEFT, padx=15)
-        m += 1
         btn_size_limit_dn = tk.Button(tab,
                                       bg=white,
                                       text="-",
