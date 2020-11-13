@@ -349,4 +349,3 @@ class StructParser:
 if __name__ == "__main__":
     parse_f = FmlParser().parse
     parse_s = StructParser.parse
-    print(parse_f(r"* \exi x P(x) -> \exi x * P(x)"))

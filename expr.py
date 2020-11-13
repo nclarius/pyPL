@@ -340,10 +340,10 @@ class FuncTerm(Term):
     @attr f: the function symbol
     @type f: Func
     @attr terms: the term tuple to apply the function symbol to
-    @type terms: tuple[Term]
+    @type terms: tuple[Term, ...]
     """
 
-    def __init__(self, f: Func, terms: tuple[Term]):
+    def __init__(self, f: Func, terms: tuple[Term, ...]):
         self.f = f
         self.terms = terms
 
@@ -725,10 +725,10 @@ class Atm(Formula):
     @attr pred: the predicate symbol
     @type pred: Pred
     @attr terms: the terms to apply the predicate symbol to
-    @type terms: tuple[Term]
+    @type terms: tuple[Term, ...]
     """
 
-    def __init__(self, pred: Pred, terms: tuple[Term]):
+    def __init__(self, pred: Pred, terms: tuple[Term, ...]):
         self.pred = pred
         self.terms = terms
 
@@ -760,7 +760,7 @@ class Atm(Formula):
 
     def subst(self, u, t):
         return Atm(self.pred, tuple([term.subst(u, t) for term in self.terms]))
-#
+
     def denot(self, s, v=None, w=None):
         """
         The denotation of an atomic predication P(t1, ..., tn) is true iff the tuple of the denotation of the terms is
@@ -1548,7 +1548,7 @@ class Exists(Formula):
             v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
 
             # check whether the current x-variant under consideration makes phi true
-            print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_) + " ...")
+            print((depth * 2 * " ") + "checking v" + (depth * "'") + ": " + str(self.u) + " ↦ " + str(d_) + " ...")
             witness = self.phi.denot(s, v_, w)
 
             # if yes, we found a witness, the existential statement is true and we can stop checking (return)
@@ -1673,7 +1673,7 @@ class Forall(Formula):
                 g_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
 
                 # check whether the current x-variant under consideration makes phi true
-                print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_) + " ...")
+                print((depth * 2 * " ") + "checking v" + (depth * "'") + ": " + str(self.u) + "  ↦ " + str(d_) + " ...")
                 witness = self.phi.denot(s, g_, w)
 
                 # if yes, everything is fine until now, we do nothing and go check the next one (continue)
@@ -1712,7 +1712,7 @@ class Forall(Formula):
                     v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
 
                     # check whether the current indiv. d under consideration makes phi true at k'
-                    print((depth * 2 * " ") + "checking v" + (depth * "'") + "(" + str(self.u) + ") := " + str(
+                    print((depth * 2 * " ") + "checking v" + (depth * "'") + ": " + str(self.u) + " ↦ " + str(
                             d_) + " ...")
                     witness = self.phi.denot(s, v, w_)
 
@@ -1724,7 +1724,7 @@ class Forall(Formula):
                     else:
                         print(((depth + 1) * 2 * " ") + "✗")
                         print(((depth + 1) * 2 * " ") + "counter witness: k' = " + str(w_) + ", " +
-                              "v" + (depth * "'") + "(" + str(self.u) + ") := " + str(d_))
+                              "v" + (depth * "'") + ": " + str(self.u) + " ↦ " + str(d_))
                         return False
 
                 # if no counter witness has been found, the universal statement is true at k'
@@ -1829,12 +1829,12 @@ class Most(Formula):
     def denot(self, s, v=None, w=None):
         """
         The denotation of most u(phi, psi) is true iff
-        |phi ∩ psi| > |phi - psi|
+        |phi ∩ psi| > |phi - psi|.
         """
         return len({d for d in s.d if self.phi.denot(s, v | {self.u.u: d}, w)} &
                    {d for d in s.d if self.psi.denot(s, v | {self.u.u: d}, w)}) \
                > \
-               len({d for d in s.d if self.psi.denot(s, v | {self.u.u: d}, w)} -
+               len({d for d in s.d if self.phi.denot(s, v | {self.u.u: d}, w)} -
                    {d for d in s.d if self.psi.denot(s, v | {self.u.u: d}, w)})
 
 

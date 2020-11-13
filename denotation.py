@@ -12,7 +12,7 @@ from functools import reduce
 
 
 # settings
-denots = [i for i in range(15)]  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
+denots = [15]  # set here which denotations to include in the output (see def.s in fnc. 'compute_denots')
 tableaus = [1, 2]  # set here which tableaus to include in the output (see def.s in fnc. 'compute_denots')
 verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
@@ -157,12 +157,7 @@ def compute_denots():
                                          Exists(Var("y"), Conj(Atm(Pred("man"), (Var("y"),)),
                                                                Atm(Pred("love"), (Var("x"), Var("y"))))
                                                 )))),
-            10: Neg(Exists(Var("y"), Exists(Var("z"), Atm(Pred("jealous"), (Const("j"), Var("y"), Var("z")))))),
-            11: More(Var("x"), Atm(Pred("man"), (Var("x"),)), Atm(Pred("woman"), (Var("x"),)),
-                         Exists(Var("y"), Exists(Var("z"), Atm(Pred("jealous"), (Var("x"), Var("y"), Var("z")))))),
-            12: More(Var("x"), Atm(Pred("woman"), (Var("x"),)), Atm(Pred("man"), (Var("x"),)),
-                         Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y"))))),
-            13: Most(Var("x"), Atm(Pred("man"), (Var("x"),)), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y")))))
+            10: Neg(Exists(Var("y"), Exists(Var("z"), Atm(Pred("jealous"), (Const("j"), Var("y"), Var("z"))))))
 
         }
 
@@ -578,7 +573,7 @@ def compute_denots():
                "j": {"w0": "John", "w1": "John", "w3": "John"},
                "b": {"w0": "JoeBiden", "w1": "JoeBiden", "w3": "JoeBiden"},
                "t": {"w0": "DonaldTrump", "w1": "DonaldTrump", "w3": "DonaldTrump"}}
-        
+
         s14 = ConstModalStructure("S14", w14, r14, d14, i14)
         print(s14)
 
@@ -600,7 +595,43 @@ def compute_denots():
         print("\n---------------------------------\n")
         #############################
 
+    if 15 in denots:
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+        print("Example 15: PL - love")
+
+        d15 = {"Mary", "Susan", "John", "Peter"}
+        i15 = {"Woman": {("Mary", ), ("Susan",)},
+               "Man": {("John",), ("Peter", )},
+               "Love": {("Mary", "John"), ("Susan", "Peter"), ("John", "Mary"), ("John", "Peter")}}
+        
+        s14 = PredStructure("S15", d15, i15)
+        print(s14)
+
+        e14 = {
+                1: Forall(Var("x"), Imp(Atm(Pred("Woman"), (Var("x"),)),
+                          Exists(Var("y"), Conj(Atm(Pred("Man"), (Var("y"),)),
+                                                Atm(Pred("Love"), (Var("x"), Var("y"))))))),
+                2: Forall(Var("x"), Imp(Atm(Pred("Man"), (Var("x"),)),
+                          Exists(Var("y"), Conj(Atm(Pred("Woman"), (Var("y"),)),
+                                                Atm(Pred("Love"), (Var("x"), Var("y"))))))),
+                3: More(Var("x"), Atm(Pred("Woman"), (Var("x"),)), Atm(Pred("Man"), (Var("x"),)),
+                        Exists(Var("y"), Atm(Pred("Love"), (Var("x"), Var("y"))))),
+                4: Most(Var("x"), Atm(Pred("Man"), (Var("x"),)),
+                        Exists(Var("y"), Atm(Pred("Love"), (Var("x"), Var("y")))))
+        }
+
+        for nr, e in e14.items():
+            print()
+            print("[[" + str(e) + "]]S15 =")
+            print(e.denotV(s14))
+            depth = 0
+
+        #############################
+        print("\n---------------------------------\n")
+        #############################
+
 
 if __name__ == "__main__":
     compute_denots()
-    # compute_tableaus()

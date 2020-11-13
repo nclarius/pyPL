@@ -2,5 +2,5 @@ D = {a, b, c}
 I = [P: {(a)},
      Q: {(a), (b)},
      R: {(a, b), (b, c)}]
-G = [g1: [x: a, y: b],
-     g2: [x: a, y: a]]
+V = [v1: [x: a, y: b],
+     v2: [x: a, y: a]]

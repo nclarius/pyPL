@@ -35,17 +35,18 @@ class PyPLInst:
         self.size_limit_factor = 1
         self.underline_open = True
         self.hide_nonopen = False
+        self.verbose = False
 
 
 # style
 white = "#ffffff"
 black = "#000000"
-green = "#52c462"
-red = "#bf5050"
-yellow = "#ffb94f"
+# green = "#52c462"
+# red = "#bf5050"
+# yellow = "#ffb94f"
 # blue = "#2493ff"
 # lightblue = "#80ccff"
-darkgray = "#333333"
+darkgray = "#404040"
 lightgray = "#666666"
 font = "-family {OpenSans} -size 12 -weight normal -slant roman -underline 0 -overstrike 0"
 font_large = "-family {OpenSans} -size 14 -weight normal -slant roman -underline 0 -overstrike 0"
@@ -82,7 +83,7 @@ class PyPLGUI(tk.Frame):
         self.root.title("pyPL")
         icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
         self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file=icon_path))
-        self.root.geometry("1000x605")
+        self.root.geometry("1333x750")
 
         # style
         self.style = ttk.Style()
@@ -232,6 +233,7 @@ class PyPLGUI(tk.Frame):
             self.inst.action = action.get()
             update_summary()
             self.tab_2()
+            # self.tab_4()
             self.inst.completed.append(1)
 
         # frames
@@ -313,8 +315,8 @@ class PyPLGUI(tk.Frame):
                     if i > 0:
                         add_formula()
                     formula = line
-                    if "g:" in line:
-                        g, formula = line[2:line.index(" ")], line[line.index(" ")+1:]
+                    if "v:" in line:
+                        v, formula = line[2:line.index(" ")], line[line.index(" ")+1:]
                         input_gs[i].delete(0, tk.END)
                         input_gs[i].insert(0, g)
                     if "w:" in line:
@@ -327,7 +329,7 @@ class PyPLGUI(tk.Frame):
 
         def add_formula():
             # variable
-            raw, g, w = tk.StringVar(), tk.StringVar(), tk.StringVar()
+            raw, v, w = tk.StringVar(), tk.StringVar(), tk.StringVar()
             input_raws.append(raw)
             input_fmls.append(None)
             input_modes.append(None)
@@ -365,16 +367,16 @@ class PyPLGUI(tk.Frame):
                 rem.config(state="normal")
             # g and w fields
             if self.inst.action == "mc":
-                ent_g = tk.Entry(tab, textvariable=g, width=2)
+                ent_v = tk.Entry(tab, textvariable=v, width=2)
                 ent_w = tk.Entry(tab, textvariable=w, width=3)
-                ent_g.pack(in_=mids[row], side=tk.LEFT)
+                ent_v.pack(in_=mids[row], side=tk.LEFT)
                 ent_w.pack(in_=mids[row], side=tk.LEFT)
-                input_gs.append(ent_g)
+                input_gs.append(ent_v)
                 input_ws.append(ent_w)
             # entry field
             ent = tk.Entry(tab,
                            textvariable=raw,
-                           width=37 if self.inst.action != "mc" else 32)
+                           width=45 if self.inst.action != "mc" else 40)
             ent.pack(in_=mids[row], side=tk.LEFT)
             raw.trace("w", lambda *args: select_entry(i))
             input_ents.append(ent)
@@ -392,7 +394,7 @@ class PyPLGUI(tk.Frame):
             btn_parse.bind("<Button>", lambda e: parse(i))
             btns.append(btn_parse)
             # formula in plain text
-            lbl = tk.Text(tab, height=1, width=40, borderwidth=0, bg=white, wrap=tk.CHAR)
+            lbl = tk.Text(tab, height=1, width=45, borderwidth=0, bg=white, wrap=tk.CHAR)
             lbl.configure(inactiveselectbackground=lbl.cget("selectbackground"))
             lbl.configure(state="disabled")
             # lbl.pack(in_=mids[row + 1], side=tk.LEFT)
@@ -645,7 +647,7 @@ class PyPLGUI(tk.Frame):
             #                textvariable=struct_raw)
             # ent_struct.pack(in_=mids[6], side=tk.LEFT, expand=True)
             # ent_struct.trace("w", lambda *args: select_entry(-1))
-            ent_struct = tk.Text(tab, height=6, width=37)
+            ent_struct = tk.Text(tab, height=8, width=45)
             ent_struct.pack(in_=mids[1], side=tk.LEFT)
             input_ents.append(ent_struct)
             btn_parse_struct = tk.Button(tab,
@@ -765,19 +767,19 @@ class PyPLGUI(tk.Frame):
         self.rbs_logic = {cat: dict() for cat in categories}
         for i, cat in enumerate(categories):
             for j, (txt, val) in enumerate(labels[cat]):
-                disabled = True if cat in ["constvar", "frame"] else False
+                enabled = False if cat in ["constvar", "frame"] else True
                 rb = tk.Radiobutton(tab,
                                     bg=white,
-                                    fg=white if disabled else black,
+                                    fg=black if enabled else white,
                                     text=txt,
                                     variable=variables[cat],
                                     value=val,
-                                    state="normal" if not disabled else "disabled",
+                                    state="normal" if enabled else "disabled",
                                     selectcolor=darkgray, activebackground=lightgray, activeforeground=white,
                                     indicatoron=0,
                                     width=25, pady=7.5)
                 rb.config(command=lambda arg=(rb, cat): select_rb(arg))
-                if val == self.inst.logic[cat] and not disabled:
+                if val == self.inst.logic[cat] and enabled:
                     initial_select_rb((rb, cat))
                 rb.pack(in_=mids[i], side=(tk.LEFT if j == 0 else tk.RIGHT))  # todo slightly off-center
                 self.rbs_logic[cat][val] = rb
@@ -798,7 +800,7 @@ class PyPLGUI(tk.Frame):
             set()
 
         def initial_select_cb(cb):
-            cb.config(fg=white)
+            cb.config(fg=white, bg=darkgray)
 
         def select_cb(cb):
             cb.config(fg=white)
@@ -846,13 +848,14 @@ class PyPLGUI(tk.Frame):
         mid = tk.Frame(tab, bg=white)
         mid.pack()
         mids = []
-        for i in range(8):
-            if i in [4, 7]:
+        for i in range(11):
+            if i in [2, 5]:
                 sep = tk.Frame(mid)
                 sep.pack(pady=10)
             midi = tk.Frame(mid, bg=white)
             midi.pack()
             mids.append(midi)
+        m = 0
 
         # heading
         lbl_head = tk.Label(tab,
@@ -862,13 +865,41 @@ class PyPLGUI(tk.Frame):
                             anchor=tk.NW, justify=tk.LEFT) \
             .pack(in_=top)
 
-        # output format
-        output = tk.StringVar(None, self.inst.output)
+        # denotation output format
         lbl_output = tk.Label(tab,
                               bg=white,
-                              text="Output format:")
-        lbl_output.pack(in_=mids[1])
+                              text="Denotation output format:")
+        lbl_output.pack(in_=mids[m])
+        m += 1
+        
+        cbs = []
+        verbose = tk.BooleanVar(None, self.inst.verbose)
+        enabled = True if self.inst.action == "mc" else False
+        cb = tk.Checkbutton(tab,
+                            bg=white,
+                            fg=black,
+                            text="verbose",
+                            variable=verbose,
+                            onvalue=True, offvalue=False,
+                            state="disabled",  # not yet implemented
+                            # state="normal" if enabled else "disabled",
+                            selectcolor=darkgray, activebackground=lightgray, activeforeground=white,
+                            indicatoron=0,
+                            width=25, pady=7.5)
+        cb.pack(in_=mids[m], side=tk.LEFT, pady=5)
+        m += 1
+        cb.config(command=lambda arg=cb: select_cb(arg))
+        cbs.append(cb)
+        
+        # tableau output format
+        lbl_output = tk.Label(tab,
+                              bg=white,
+                              text="Tableau output format:")
+        lbl_output.pack(in_=mids[m])
+        m += 1
 
+        enabled = True if self.inst.action != "mc" else False
+        output = tk.StringVar(None, self.inst.output)
         outputs1 = [("LaTeX PDF", "tex"), ("plain text", "txt")]
         rbs = []
         rbs1 = []
@@ -878,27 +909,29 @@ class PyPLGUI(tk.Frame):
                                 text=txt,
                                 variable=output,
                                 value=val,
+                                # state="normal" if enabled else "disabled",
                                 selectcolor=darkgray, activebackground=lightgray, activeforeground=white,
                                 indicatoron=0,
                                 width=25, pady=7.5)
-            rb.pack(in_=mids[2], side=(tk.LEFT if i == 0 else tk.RIGHT), pady=5)
+            rb.pack(in_=mids[m], side=(tk.LEFT if i == 0 else tk.RIGHT), pady=5)
             rbs1.append(rb)
             rb.config(command=lambda arg=rb: select_rb(arg, rbs1))
             if val == self.inst.output:
                 initial_select_rb(rb)
             rbs.append(rb)
-
-        cbs = []
+        m += 1
+            
         underline = tk.BooleanVar(None, self.inst.underline_open)
         cb = tk.Checkbutton(tab,
                             bg=white,
                             text="mark open literals",
                             variable=underline,
                             onvalue=True, offvalue=False,
+                            # state="normal" if enabled else "disabled",
                             selectcolor=darkgray, activebackground=lightgray, activeforeground=white,
                             indicatoron=0,
                             width=25, pady=7.5)
-        cb.pack(in_=mids[3], side=tk.LEFT, pady=5)
+        cb.pack(in_=mids[m], side=tk.LEFT, pady=5)
         cb.config(command=lambda arg=cb: select_cb(arg))
         initial_select_cb(cb)
         cbs.append(cb)
@@ -908,19 +941,23 @@ class PyPLGUI(tk.Frame):
                             text="hide non-open branches",
                             variable=hide,
                             onvalue=True, offvalue=False,
+                            # state="normal" if enabled else "disabled",
                             selectcolor=darkgray, activebackground=lightgray, activeforeground=white,
                             indicatoron=0,
                             width=25, pady=7.5)
         cb.config(command=lambda arg=cb: select_cb(arg))
-        cb.pack(in_=mids[3], side=tk.RIGHT, pady=5)
+        cb.pack(in_=mids[m], side=tk.RIGHT, pady=5)
         cbs.append(cb)
+        m += 1
 
         # mathematical vs linguistic mode
+        enabled = True if self.inst.action in ["tt", "mg", "cmg"] else False
         generation = tk.StringVar(None, self.inst.generation_mode)
         lbl_output = tk.Label(tab,
                               bg=white,
                               text="Model generation mode:")
-        lbl_output.pack(in_=mids[4])
+        lbl_output.pack(in_=mids[m])
+        m += 1
         generations = [("mathematical", "mathematical"), ("linguistic", "linguistic")]
         rbs = []
         rbs2 = []
@@ -930,69 +967,81 @@ class PyPLGUI(tk.Frame):
                                 text=txt,
                                 variable=generation,
                                 value=val,
+                                # state="normal" if enabled else "disabled",
                                 selectcolor=darkgray, activebackground=lightgray, activeforeground=white,
                                 indicatoron=0,
                                 width=25, pady=7.5)
-            rb.pack(in_=mids[5], side=(tk.LEFT if i == 0 else tk.RIGHT), pady=5)
+            rb.pack(in_=mids[m], side=(tk.LEFT if i == 0 else tk.RIGHT), pady=5)
             rbs2.append(rb)
             rb.config(command=lambda arg=rb: select_rb(arg, rbs2))
             if val == self.inst.generation_mode:
                 initial_select_rb(rb)
             rbs.append(rb)
+        m += 1
 
         # number of models to generate
         num_models = tk.StringVar(None, self.inst.num_models)
         lbl_num_models = tk.Label(tab,
                                   bg=white,
                                   text="Number of models to compute:")
-        lbl_num_models.pack(in_=mids[6], side=tk.LEFT, padx=15)
+        lbl_num_models.pack(in_=mids[m], side=tk.LEFT, padx=15)
+        m += 1
         btn_num_models_dn = tk.Button(tab,
                                       bg=white,
                                       text="-",
+                                      # state="normal" if enabled else "disabled",
                                       activebackground=lightgray, activeforeground=white,
                                       width=1)
         btn_num_models_dn.bind("<Button>", lambda e: decrease_num_models())
-        btn_num_models_dn.pack(in_=mids[6], side=tk.LEFT, padx=5)
+        btn_num_models_dn.pack(in_=mids[m], side=tk.LEFT, padx=5)
         ent_num_models = tk.Entry(tab,
                                   textvariable=num_models,
                                   justify=tk.RIGHT,
                                   width=2)
-        ent_num_models.pack(in_=mids[6], side=tk.LEFT, padx=5)
+        ent_num_models.pack(in_=mids[m], side=tk.LEFT, padx=5)
         num_models.trace("w", lambda *args: select_entry())
         btn_num_models_up = tk.Button(tab,
                                       bg=white,
                                       text="+",
+                                      # state="normal" if enabled else "disabled",
                                       activebackground=lightgray, activeforeground=white,
                                       width=1)
         btn_num_models_up.bind("<Button>", lambda e: increase_num_models())
-        btn_num_models_up.pack(in_=mids[6], side=tk.LEFT, padx=5)
+        btn_num_models_up.pack(in_=mids[m], side=tk.LEFT, padx=5)
+        m += 1
 
         # size limit factor
+        enabled = True if self.inst.action != "mc" else False
         size_limit = tk.StringVar(None, self.inst.size_limit_factor)
         lbl_size_limit = tk.Label(tab,
                                   bg=white,
-                                  text="Size limit factor for tableau trees:")
-        lbl_size_limit.pack(in_=mids[7], side=tk.LEFT, padx=15)
+                                  text="Tableau tree size limit factor:")
+        lbl_size_limit.pack(in_=mids[m], side=tk.LEFT, padx=15)
+        m += 1
         btn_size_limit_dn = tk.Button(tab,
                                       bg=white,
                                       text="-",
+                                      # state="normal" if enabled else "disabled",
                                       activebackground=lightgray, activeforeground=white,
                                       width=1)
         btn_size_limit_dn.bind("<Button>", lambda e: decrease_size_limit())
-        btn_size_limit_dn.pack(in_=mids[7], side=tk.LEFT, padx=5)
+        btn_size_limit_dn.pack(in_=mids[m], side=tk.LEFT, padx=5)
         ent_size_limit = tk.Entry(tab,
                                   textvariable=size_limit,
                                   justify=tk.RIGHT,
+                                  # state="normal" if enabled else "disabled",
                                   width=2)
-        ent_size_limit.pack(in_=mids[7], side=tk.LEFT, padx=5)
+        ent_size_limit.pack(in_=mids[m], side=tk.LEFT, padx=5)
         size_limit.trace("w", lambda *args: select_entry())
         btn_size_limit_up = tk.Button(tab,
                                       bg=white,
                                       text="+",
+                                      # state="normal" if enabled else "disabled",
                                       activebackground=lightgray, activeforeground=white,
                                       width=1)
         btn_size_limit_up.bind("<Button>", lambda e: increase_size_limit())
-        btn_size_limit_up.pack(in_=mids[7], side=tk.LEFT, padx=5)
+        btn_size_limit_up.pack(in_=mids[m], side=tk.LEFT, padx=5)
+        m += 1
 
     def switch_to_tab(self, i):
         tab_id = self.tabs.tabs()[i]
@@ -1031,41 +1080,30 @@ class PyPLGUI(tk.Frame):
         if self.inst.action == "mc":
             # model checking
             denot = ""
-            for fml, g, w in formulas:
-                denot += "[[" + str(fml) + "]]" + structure.s + ("," + g if g else "") + ("," + w if w else "") + "\n= "
+            for fml, v, w in formulas:
+                denot += "[[" + str(fml) + "]]" + structure.s + ("," + v if v else "") + ("," + w if w else "") + "\n= "
                 if not modal and classical:  # classical non-modal logic
-                    if not g:
-                        denot += str(fml.denotG(structure))
+                    if not v:
+                        denot += str(fml.denotV(structure))
                     else:
-                        denot += str(fml.denot(structure, structure.g[g]))
-                elif classical:  # classical modal logic
-                    if not g:
+                        denot += str(fml.denot(structure, structure.v[v]))
+                else:  # classical modal logic or intuitionistic logic
+                    if not v:
                         if not w:
-                            denot += str(fml.denotGW(structure))
+                            denot += str(fml.denotVW(structure))
                         else:
-                            denot += str(fml.denotG(structure, w))
-                    else:
-                        if not w:
-                            denot += str(fml.denotW(structure, structure.g[g]))
-                        else:
-                            denot += str(fml.denot(structure, structure.g[g], w))
-                elif not classical:  # intuitionistic logic
-                    if not g:
-                        if not w:
-                            denot += str(fml.denotGK(structure))
-                        else:
-                            denot += str(fml.denotG(structure, w))
+                            denot += str(fml.denotV(structure, w))
                     else:
                         if not w:
-                            denot += str(fml.denotK(structure, structure.g[g]))
+                            denot += str(fml.denotW(structure, structure.v[v]))
                         else:
-                            denot += str(fml.denot(structure, structure.g[g], w))
+                            denot += str(fml.denot(structure, structure.v[v], w))
                 denot += "\n\n"
 
             # todo make look nicer?
             # tk.messagebox.showinfo("", str(denot))
             win_output = tk.Toplevel(self.root, bg=white)
-            win_output.geometry("1000x605")  # todo geometry only applied on second opening
+            # win_output.geometry("1000x605")  # todo geometry only applied on second opening
             win_output.destroy()
             win_output = tk.Toplevel(self.root, bg=white)
             icon_path = os.path.join(os.path.dirname(__file__), "icon.png")

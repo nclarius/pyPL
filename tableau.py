@@ -1188,10 +1188,11 @@ class Tableau(object):
         @return The models associated with the open branches the tableau.
         @rtype set[Structure]
         """
+        structure = __import__("structure")
 
         branch = [node for node in leaf.branch if not isinstance(node.fml, Pseudo)]
-        # name = "S" + str(len(self.models)+1)
-        name = "S" + str(leaf.line)
+        # s = "S" + str(len(self.models)+1)
+        s = "S" + str(leaf.line)
 
         def remove_sig(term):
             if "_" not in term:
@@ -1204,7 +1205,7 @@ class Tableau(object):
             if self.mode["modal"]:  # classical modal logic
                 # sigs = list(dict.fromkeys([tuple(node.sig) for node in branch]))
                 # sigs_ = list(dict.fromkeys([tuple(node.sig) for node in branch if node.fml.liteal()]))
-                # # use w1, ..., wn as names for worlds instead of signatures
+                # # use w1, ..., wn as ss for worlds instead of signatures
                 # worlds = {sig: "w" + str(i) for (i, sig) in enumerate(sigs)}
                 # w = {worlds[sig] for sig in sigs}
                 # r_ = {(sig[:-1], sig) for sig in sigs if len(sig) > 1}
@@ -1226,7 +1227,7 @@ class Tableau(object):
                     # valuation = make all positive propositional variables true and all others false
                     v = {p: (True if p in atoms else False) for p in
                          list(dict.fromkeys(atoms + natoms + list(self.root.fml.propvars())))}
-                    model = PropStructure(name, v)
+                    model = structure.PropStructure(s, v)
 
                 else:  # classical modal propositional logic
 
@@ -1246,7 +1247,7 @@ class Tableau(object):
                     v = {p: {"w" + str(w): (True if p in atoms[w] else False)
                              for w in worlds}
                          for p in self.root.fml.propvars()}
-                    model = PropModalStructure(name, w, r, v)
+                    model = structure.PropModalStructure(s, w, r, v)
 
             else:  # classical predicate logic
                 # predicates = all predicates occurring in the conclusion and premises
@@ -1269,7 +1270,7 @@ class Tableau(object):
                     # interpretation = make all unnegated predications true and all others false
                     i = {p: {tuple([remove_sig(str(t)) for t in a[1]]) for a in atoms if (Pred(p), a[1]) in atoms}
                          for p in predicates}
-                    model = PredStructure(name, d, i)
+                    model = structure.PredStructure(s, d, i)
 
                 else:  # classical modal predicate logic
                     # todo test
@@ -1291,7 +1292,7 @@ class Tableau(object):
 
                     if not self.mode["vardomains"]:  # classical modal predicate logic with constant domains
                         d = set(chain(*[[remove_sig(t) for t in node.fml.nonlogs()[0]] for node in branch]))
-                        model = ConstModalStructure(name, w, r, d, i)
+                        model = structure.ConstModalStructure(s, w, r, d, i)
 
                     else:  # classical modal predicate logic with varying domains
                         # d = {worlds[sig]: set(chain(*[node.fml.nonlogs()[0] for node in branch
@@ -1303,11 +1304,11 @@ class Tableau(object):
                                   if node.inst and len(node.inst) > 2 and isinstance(node.inst[3], str)])
                         d = {"w" + str(w): set([c[:c.index("_")] for c in d_ if c.endswith("_" + str(w))]) for w in
                              worlds}
-                        model = VarModalStructure(name, w, r, d, i)
+                        model = structure.VarModalStructure(s, w, r, d, i)
 
         else:  # intuitionistic logic
             # sigs = [tuple(node.sig) for node in branch]
-            # # use k1, ..., kn as names for states instead of signatures
+            # # use k1, ..., kn as ss for states instead of signatures
             # states = {sig: "k" + str(i) for (i, sig) in enumerate(sigs)}
             # k = {states[sig] for sig in sigs}
             # r_ = {(sig[:-1], sig) for sig in sigs if len(sig) > 1}
@@ -1334,7 +1335,7 @@ class Tableau(object):
                 v = {p: {k: (True if p in atoms[k] else False)
                          for k in states}
                      for p in self.root.fml.propvars()}
-                model = KripkePropStructure(name, k, r, v)
+                model = structure.KripkePropStructure(s, k, r, v)
 
             else:  # intuitionistic predicate logic
                 # predicates = all predicates occurring in the conclusion and premises
@@ -1366,7 +1367,7 @@ class Tableau(object):
                                         if (Pred(p), a[1]) in atoms[k]}
                          for k in states}
                      for p in predicates}
-                model = KripkePredStructure(name, k, r, d, i)
+                model = structure.KripkePredStructure(s, k, r, d, i)
 
         return model
 
