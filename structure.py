@@ -56,11 +56,11 @@ class PropStructure(Structure):
 
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
-               " = \\tpl{\\mathcal{V}}$ with \\\\\n" + \
+                    " = \\tpl{\\mathcal{V}}$ with \\\\\n" + \
                "\\begin{tabular}{AA}\n" + \
                "\\mathcal{V} : &" + \
-               ", ".join([str(p) + " \\mapsto " + str(tv).replace("True", "1").replace("False", "0")
-                          for p, tv in sorted(self.v.items())]) + "\\\\\n" + \
+                   ", ".join([str(p) + " \\mapsto " + str(tv).replace("True", "1").replace("False", "0")
+                              for p, tv in sorted(self.v.items())]) + "\\\\\n" + \
                "\\end{tabular}" \
                    .replace("\\set{}", "\\emptyset{}")
 
@@ -155,9 +155,9 @@ class PredStructure(Structure):
                " = \\tpl{\\mathcal{D}, \\mathcal{I}}$ with \\\\\n" + \
                "\\begin{tabular}{AAA}\n" + \
                "\\mathcal{D} = & " \
-               "\\multicolumn{2}{A}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" \
-                                                                                            "\\mathcal{I} : &" + \
-               "\\\\\n    & ".join(
+                    "\\multicolumn{2}{A}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" \
+               "\\mathcal{I} : &" + \
+                    "\\\\\n    & ".join(
                        [str(key) + " & \\mapsto " +
                         (str(val) if isinstance(val, str) else
                          (", ".join(["\\tpl{" + str(key2) + " \\mapsto " + str(val2) + "}"
@@ -171,7 +171,7 @@ class PredStructure(Structure):
                                                       for key, val in sorted(self.v[g].items())])
                               for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \
-                   .replace("\\set{}", "\\emptyset{}")
+                .replace("\\set{}", "\\emptyset{}")
 
 
 class ModalStructure(Structure):
@@ -229,33 +229,32 @@ class PropModalStructure(ModalStructure):
 
     def __str__(self):
         return "Structure " + self.s + " = ⟨W,V⟩ with\n" \
-                                       "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" \
-                                                                                               "R = {" + ", ".join(
-                ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
-                                                                                     "V : " + ", \n    ".join(
-                [str(p) + " ↦ \n" +
-                 ", \n".join(["           " + str(w) + " ↦ " + str(tv)
-                              for (w, tv) in sorted(self.v[p].items())])
-                 for (p, vp) in sorted(self.v.items())])
+                    "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" \
+                    "R = {" + ", ".join(
+                        ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
+                    "V : " + ", \n    ".join(
+                        [str(p) + " ↦ \n" +
+                            ", \n".join(["           " + str(w) + " ↦ " + str(tv)
+                            for (w, tv) in sorted(self.v[p].items())])
+                        for (p, vp) in sorted(self.v.items())])
 
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{V}}$ with \\\\\n" \
                "\\begin{tabular}{AAAAAA}\n" \
                "\\mathcal{W} = & " + \
-               "\\multicolumn{5}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
-                                                                                            "\\mathcal{R} = &" + \
-               "\\multicolumn{5}{A}{\\set{" + ", ".join(
-                ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
-               "\\mathcal{V} : &" + "\\\\\n    & ".join([str(p) + " & \\mapsto &" +
-                                                         ", \\\\\n &&& ".join([str(w) + " & \\mapsto &" +
-                                                                               str(tv).replace("True", "1").replace(
-                                                                                       "False", "0")
-                                                                               for (w, tv) in
-                                                                               sorted(self.v[p].items())])
-                                                         for (p, vp) in sorted(self.v.items())]) + "\\\\\n" + \
+                    "\\multicolumn{5}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
+               "\\mathcal{R} = &" + \
+                    "\\multicolumn{5}{A}{\\set{" + ", ".join(
+                        ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
+               "\\mathcal{V} : &" + \
+                    "\\\\\n    & ".join([str(p) + " & \\mapsto &" +
+                        ", \\\\\n &&& ".join([str(w) + " & \\mapsto &" +
+                        str(tv).replace("True", "1").replace("False", "0")
+                        for (w, tv) in sorted(self.v[p].items())])
+                    for (p, vp) in sorted(self.v.items())]) + "\\\\\n" + \
                "\\end{tabular}" \
-                   .replace("\\set{}", "\\emptyset{}")
+                .replace("\\set{}", "\\emptyset{}")
 
 
 class ConstModalStructure(ModalStructure):
@@ -311,74 +310,53 @@ class ConstModalStructure(ModalStructure):
 
     def __str__(self):
         return "Structure " + self.s + " = ⟨W,R,D,I⟩ with\n" \
-                                       "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" \
-                                                                                               "R = {" + ", ".join(
-                ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
-                                                                                     "D = {" + ", ".join(
-                [str(d) for d in sorted(self.d)]) + "}\n" \
-                                                    "I : " + "\n    ".join([str(p) + " ↦ \n" + \
-                                                                            ", \n".join(
-                                                                                    ["           " + str(w) + " ↦ " +
-                                                                                     (str(ipw) if isinstance(ipw,
-                                                                                                             str) else
-                                                                                      (", ".join(["(" + str(
-                                                                                              ipwKey) + " ↦ " + str(
-                                                                                              ipwVal) + ")"
-                                                                                                  for ipwKey, ipwVal in
-                                                                                                  sorted(ipw.items())])
-                                                                                       if isinstance(ipw, dict) else
-                                                                                       ("{" +
-                                                                                        ", ".join(["⟨" + ", ".join(
-                                                                                                [str(t).replace(
-                                                                                                        "frozenset", "")
-                                                                                                        for
-                                                                                                        t in
-                                                                                                        s]) + "⟩" for s
-                                                                                                   in
-                                                                                                   sorted(ipw)]) +
-                                                                                        "}")))
-                                                                                     for (w, ipw) in
-                                                                                     sorted(self.i[p].items())]) + \
-                                                                            "\n    "
-                                                                            for (p, ip) in
-                                                                            sorted(self.i.items())]).replace("\n    \n",
-                                                                                                             "\n") + \
+                "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" \
+                "R = {" + ", ".join(["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
+                "D = {" + ", ".join([str(d) for d in sorted(self.d)]) + "}\n" \
+                "I : " + \
+                    "\n    ".join([str(p) + " ↦ \n" + \
+                        ", \n".join(["           " + str(w) + " ↦ " +
+                            (str(ipw)
+                                if isinstance(ipw, str) else
+                            (", ".join(["(" + str(ipwKey) + " ↦ " + str(ipwVal) + ")"
+                                        for ipwKey, ipwVal in sorted(ipw.items())]) if isinstance(ipw, dict) else
+                            ("{" + ", ".join(["⟨" + ", ".join([str(t).replace("frozenset", "")
+                                for t in s]) + "⟩" for s in sorted(ipw)]) + "}")))
+                        for (w, ipw) in sorted(self.i[p].items())]) + \
+                    "\n    " for (p, ip) in sorted(self.i.items())]).replace("\n    \n", "\n") + \
                "\n" + \
                "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v[g].items())])
-                          for g in self.v])
+                    for g in self.v])
 
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{D}, \\mathcal{I}}$ with \\\\\n" \
                "\\begin{tabular}{AAAAA}\n" \
                "\\mathcal{W} = & " \
-               "\\multicolumn{4}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
-                                                                                            "\\mathcal{R} = &" + \
-               "\\multicolumn{4}{A}{\\set{" + ", ".join(
-                ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
+                    "\\multicolumn{4}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" + \
+               "\\mathcal{R} = &" \
+                    "\\multicolumn{4}{A}{\\set{" + ", ".join(
+                    ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
                "\\mathcal{D} = & " + \
-               "\\multicolumn{4}{A}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" + \
+                    "\\multicolumn{4}{A}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" + \
                "\\mathcal{I} : & " + \
-               "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
-                                    "\\\\\n &&& ".join(
-                                            [str(w) + "& \\mapsto &" +
-                                             (str(ipw) if isinstance(ipw, str) else
-                                              (", \\\\\n && ".join(
-                                                      ["\\tpl{" + str(ipwKey) + " \\mapsto " + str(ipwVal) + "}"
-                                                       for ipwKey, ipwVal in ipw.items()])
-                                               if isinstance(ipw, dict) else
-                                               ("\\set{" +
-                                                ", ".join(["\\tpl{" + ", ".join(
-                                                        [str(t).replace("frozenset", "") for t in s]) + "}" for s in
-                                                           sorted(ipw)]) +
-                                                "}")))
-                                             for (w, ipw) in sorted(self.i[p].items())])
-                                    for (p, ip) in sorted(self.i.items())]) + "\\\\\n" + \
+                    "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
+                        "\\\\\n &&& ".join(
+                            [str(w) + "& \\mapsto &" +
+                                 (str(ipw) if isinstance(ipw, str) else
+                                 (", \\\\\n && ".join(
+                                          ["\\tpl{" + str(ipwKey) + " \\mapsto " + str(ipwVal) + "}"
+                                           for ipwKey, ipwVal in ipw.items()])
+                                   if isinstance(ipw, dict) else
+                                 ("\\set{" + ", ".join(["\\tpl{" + ", ".join(
+                                            [str(t).replace("frozenset", "") for t in s]) + "}" for s in sorted(ipw)]) +
+                                 "}")))
+                            for (w, ipw) in sorted(self.i[p].items())])
+                        for (p, ip) in sorted(self.i.items())]) + "\\\\\n" + \
                "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
-                                                      for key, val in sorted(self.v[g].items())])
-                              for g in self.v]) + "\\\\\n" + \
+                    for key, val in sorted(self.v[g].items())]) for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \
-                   .replace("\\set{}", "\\emptyset{}")
+               .replace("\\set{}", "\\emptyset{}")
 
 
 class VarModalStructure(ModalStructure):
@@ -435,74 +413,63 @@ class VarModalStructure(ModalStructure):
 
     def __str__(self):
         return "Structure " + self.s + " = ⟨W,R,D,F⟩ with\n" \
-                                       "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" \
-                                                                                               "R = {" + ", ".join(
-                ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
-                                                                                     "D : " + "\n    ".join(
-                [str(w) + " ↦ " + \
-                 "{" + ", ".join([str(d) for d in sorted(self.d[w])]) + "}"
-                 for w in sorted(self.w)]) + \
-               "\n" \
-               "I : " + "\n    ".join([str(p) + " ↦ \n" + \
-                                       ", \n".join(
-                                               ["           " + str(w) + " ↦ " +
-                                                (str(ipw) if isinstance(ipw,
-                                                                        str) else
-                                                 (", ".join(["(" + str(
-                                                         ipwKey) + " ↦ " + str(
-                                                         ipwVal) + ")"
-                                                             for ipwKey, ipwVal in
-                                                             sorted(ipw.items())])
-                                                  if isinstance(ipw, dict) else
-                                                  ("{" +
-                                                   ", ".join(["⟨" + ", ".join(
-                                                           [str(t) for t in
-                                                            s]) + "⟩" for s in
-                                                              sorted(ipw)]) +
-                                                   "}")))
-                                                for (w, ipw) in
-                                                sorted(self.i[p].items())]) + \
-                                       "\n    "
-                                       for (p, ip) in
-                                       sorted(self.i.items())]).replace("\n    \n",
-                                                                        "\n") + "\n" + \
-               "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v[g].items())])
-                          for g in self.v])
+                "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" \
+                "R = {" + ", ".join(
+                    ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
+                "D : " + "\n    ".join(
+                    [str(w) + " ↦ " + \
+                    "{" + ", ".join([str(d) for d in sorted(self.d[w])]) + "}"
+                    for w in sorted(self.w)]) + "\n" + \
+                "I : " + \
+                    "\n    ".join([str(p) + " ↦ \n" + \
+                        ", \n".join(
+                       ["           " + str(w) + " ↦ " +
+                            (str(ipw) if isinstance(ipw, str) else
+                            (", ".join(["(" + str(ipwKey) + " ↦ " + str(ipwVal) + ")"
+                                        for ipwKey, ipwVal in sorted(ipw.items())])
+                                if isinstance(ipw, dict) else
+                            ("{" +
+                                ", ".join(["⟨" + ", ".join(
+                                   [str(t) for t in s]) + "⟩" for s in sorted(ipw)]) +
+                            "}")))
+                        for (w, ipw) in sorted(self.i[p].items())]) + "\n    " \
+                    for (p, ip) in sorted(self.i.items())]).replace("\n    \n",  "\n") + "\n" + \
+                "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val)
+                    for key, val in sorted(self.v[g].items())]) for g in self.v])
 
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{D}, \\mathcal{I}}$ with \\\\\n" \
-               "\\begin{tabular}{AAAAA}\n" \
+               "\\begin{tabular}{AAAAAA}\n" \
                "\\mathcal{W} = & " \
-               "\\multicolumn{5}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
-                                                                                            "\\mathcal{R} = &" + \
-               "\\multicolumn{5}{A}{\\set{" + ", ".join(
-                ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
+                    "\\multicolumn{5}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
+               "\\mathcal{R} = &" + \
+                    "\\multicolumn{5}{A}{\\set{" + ", ".join(
+                        ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
                "\\mathcal{D} = & " + \
-               "\\\\\n    & ".join([str(w) + " & \\multicolumn{2}{A}{\\mapsto " + \
-                                    "\\set{" + ", ".join([str(d) for d in sorted(self.d[w])]) + "}}"
-                                    for w in sorted(self.w)]) + \
-               "\\\\\n" + \
+                    "\\\\\n    & ".join([str(w) + " & \\multicolumn{2}{A}{\\mapsto " + \
+                        "\\set{" + ", ".join([str(d) for d in sorted(self.d[w])]) + "}}" for w in sorted(self.w)]) + \
+                    "\\\\\n" + \
                "\\mathcal{I} : & " + \
-               "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
-                                    "\\\\\n &&& ".join(
-                                            [str(w) + "& \\mapsto &" +
-                                             (str(ipw) if isinstance(ipw, str) else
-                                              (", \\\\\n && ".join(
-                                                      ["\\tpl{" + str(ipwKey) + " \\mapsto " + str(ipwVal) + "}"
-                                                       for ipwKey, ipwVal in ipw.items()])
-                                               if isinstance(ipw, dict) else
-                                               ("\\set{" +
-                                                ", ".join(["\\tpl{" + ", ".join([str(t) for t in s]) + "}" for s in
-                                                           sorted(ipw)]) +
-                                                "}")))
-                                             for (w, ipw) in sorted(self.i[p].items())])
-                                    for (p, ip) in sorted(self.i.items())]) + "\\\\\n" + \
+                    "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
+                        "\\\\\n &&& ".join(
+                            [str(w) + "& \\mapsto &" +
+                             (str(ipw) if isinstance(ipw, str) else
+                              (", \\\\\n && ".join(
+                                      ["\\tpl{" + str(ipwKey) + " \\mapsto " + str(ipwVal) + "}"
+                                       for ipwKey, ipwVal in ipw.items()])
+                               if isinstance(ipw, dict) else
+                               ("\\set{" +
+                                ", ".join(["\\tpl{" + ", ".join([str(t) for t in s]) + "}" for s in
+                                           sorted(ipw)]) +
+                                "}")))
+                             for (w, ipw) in sorted(self.i[p].items())])
+                        for (p, ip) in sorted(self.i.items())]) + "\\\\\n" + \
                "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
                                                       for key, val in sorted(self.v[g].items())])
                               for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \
-                   .replace("\\set{}", "\\emptyset{}")
+                .replace("\\set{}", "\\emptyset{}")
 
 
 class KripkeStructure(Structure):
@@ -615,36 +582,33 @@ class KripkePropStructure(KripkeStructure):
 
     def __str__(self):
         return "Structure " + self.s + " = (K,R,V) with\n" \
-                                       "K = {" + ", ".join([str(k) for k in sorted(self.k)]) + "}\n" \
-                                                                                               "R = {" + ", ".join(
-                ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
-                                                                                     "V : " + "\n    ".join(
-                [str(p) + " ↦ \n" +
-                 ", \n".join(["        " + str(k) + " ↦ " + str(tv)
-                              for (k, tv) in sorted(self.v[p].items())])
-                 for (p, vp) in sorted(self.v.items())]).replace("\n    \n", "\n")
+                "K = {" + ", ".join([str(k) for k in sorted(self.k)]) + "}\n" \
+                "R = {" + ", ".join(
+                    ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
+                "V : " + "\n    ".join(
+                    [str(p) + " ↦ \n" + ", \n".join(["        " + str(k) + " ↦ " + str(tv)
+                        for (k, tv) in sorted(self.v[p].items())])
+                    for (p, vp) in sorted(self.v.items())]).replace("\n    \n", "\n")
 
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{K}, \\mathcal{R}, \\mathcal{V}}$ with \\\\\n" \
                "\\begin{tabular}{AAAA}\n" \
                "\\mathcal{K} = & " \
-               "\\multicolumn{3}{A}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" \
-                                                                                            "\\mathcal{R} = &" \
-                                                                                            "\\multicolumn{3}{A}{" \
-                                                                                            "\\set{" + ", ".join(
-                ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" \
-                                                                                           "\\mathcal{V} : &" + \
-               "\\\\\n    & ".join(
+                    "\\multicolumn{3}{A}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" \
+               "\\mathcal{R} = &" \
+                    "\\multicolumn{3}{A}{" \
+                    "\\set{" + ", ".join(
+                        ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" \
+               "\\mathcal{V} : &" + \
+                    "\\\\\n    & ".join(
                        [str(p) + " & \\mapsto &" +
                         ", \\\\\n &&& ".join([str(k) + " & \\mapsto &" +
-                                              str(tv).replace("True", "1").replace(
-                                                      "False", "0")
-                                              for (k, tv) in
-                                              sorted(self.v[p].items())])
+                                              str(tv).replace("True", "1").replace("False", "0")
+                            for (k, tv) in sorted(self.v[p].items())])
                         for (p, vp) in sorted(self.v.items())]) + "\\\\\n" + \
                "\\end{tabular}" \
-                   .replace("\\set{}", "\\emptyset{}")
+               .replace("\\set{}", "\\emptyset{}")
 
 
 class KripkePredStructure(KripkeStructure):
@@ -767,76 +731,54 @@ class KripkePredStructure(KripkeStructure):
 
     def __str__(self):
         return "Structure " + self.s + " = (K,R,D,I) with\n" \
-                                       "K = {" + ", ".join([repr(k) for k in self.k]) + "}\n" \
-                                                                                        "R = {" + ", ".join(
-                ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
-                                                                                     "D : " + "\n    ".join(
-                [repr(k) + " ↦ " + \
-                 ", ".join([repr(d) for d in self.d[k]]) + "}"
-                 for k in self.k]) if self.d else "" + \
-                                                  "\n" + \
-                                                  "I : " + "\n    ".join([str(p) + " ↦ \n" + \
-                                                                          ", \n".join(
-                                                                                  ["           " + str(k) + " ↦ " +
-                                                                                   (str(ipk) if isinstance(ipk,
-                                                                                                           str) else
-                                                                                    (", ".join(["(" + str(
-                                                                                            ipkKey) + " ↦ " + str(
-                                                                                            ipkVal) + ")"
-                                                                                                for ipkKey, ipkVal in
-                                                                                                sorted(ipk.items())])
-                                                                                     if isinstance(ipk, dict) else
-                                                                                     ("{" +
-                                                                                      ", ".join(["⟨" + ", ".join(
-                                                                                              [str(t) for t in
-                                                                                               s]) + "⟩" for s in
-                                                                                                 sorted(ipk)]) +
-                                                                                      "}")))
-                                                                                   for (k, ipk) in
-                                                                                   sorted(self.i[p].items())]) + \
-                                                                          "\n    "
-                                                                          for (p, ip) in
-                                                                          sorted(self.i.items())]).replace("\n    \n",
-                                                                                                           "\n") + \
-                                                  "\n" + \
-                                                  "\n".join([g + " : " + ", ".join(
-                                                          [str(key) + " ↦ " + str(val) for key, val in
-                                                           sorted(self.v[g].items())])
-                                                             for g in self.v])
+                "K = {" + ", ".join([str(k) for k in self.k]) + "}\n" \
+                "R = {" + ", ".join(
+                    ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
+                "D : " + "\n    ".join(
+                    [str(k) + " ↦ " + \
+                        ", ".join([str(d) for d in self.d[k]]) + "}"
+                     for k in self.k]) if self.d else "" + "\n" + \
+                "I : " + \
+                    "\n    ".join([str(p) + " ↦ \n" + \
+                        ", \n".join(["           " + str(k) + " ↦ " +
+                            (str(ipk) if isinstance(ipk, str) else
+                            (", ".join(["(" + str(ipkKey) + " ↦ " + str(ipkVal) + ")"
+                                        for ipkKey, ipkVal in sorted(ipk.items())])
+                                 if isinstance(ipk, dict) else
+                            ("{" + ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in sorted(ipk)]) + "}")))
+                                              for (k, ipk) in sorted(self.i[p].items())]) +  "\n    "
+                    for (p, ip) in sorted(self.i.items())]).replace("\n    \n", "\n") + "\n" + \
+                "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val)
+                    for key, val in sorted(self.v[g].items())]) for g in self.v])
 
     def tex(self):
         return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
                " = \\tpl{\\mathcal{K}, \\mathcal{R}, \\mathcal{D}, \\mathcal{I}}$ with \\\\\n" \
                "\\begin{tabular}{AAAAAA}\n" \
                "\\mathcal{K} = & " \
-               "\\multicolumn{5}{A}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" \
-                                                                                            "\\mathcal{R} = &" \
-                                                                                            "\\multicolumn{5}{A}{" \
-                                                                                            "\\set{" + ", ".join(
-                ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" \
-                                                                                           "\\mathcal{D} = & " \
-                                                                                           "\\\\\n    ".join(
-                [str(k) + " & \\multicolumn{2}{A}{\\mapsto " + \
-                 "\\set{" + ", ".join([str(d) for d in sorted(self.d[k])]) + "}}"
-                 for k in sorted(self.k)]) + \
-               "\\\\\n" \
+                    "\\multicolumn{5}{A}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" \
+               "\\mathcal{R} = &" \
+                    "\\multicolumn{5}{A}{" \
+                    "\\set{" + ", ".join(["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}"
+                                          for r in sorted(self.r)]) + "}}\\\\\n" \
+               "\\mathcal{D} = & " \
+                    "\\\\\n    ".join([str(k) + " & \\multicolumn{2}{A}{\\mapsto " + \
+                    "\\set{" + ", ".join([str(d) for d in sorted(self.d[k])]) + "}}" for k in sorted(self.k)]) + \
+                    "\\\\\n" \
                "\\mathcal{I} : & " + \
-               "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
-                                    "\\\\\n &&& ".join(
-                                            [str(k) + " & \\mapsto &" +
-                                             (str(ipk) if isinstance(ipk, str) else
-                                              (", \\\\\n && ".join(
-                                                      ["\\tpl{" + str(ipkKey) + " \\mapsto " + str(ipkVal) + "}"
-                                                       for ipkKey, ipkVal in ipk.items()])
-                                               if isinstance(ipk, dict) else
-                                               ("\\set{" +
-                                                ", ".join(["\\tpl{" + ", ".join([str(t) for t in s]) + "}" for s in
-                                                           sorted(ipk)]) +
-                                                "}")))
-                                             for (k, ipk) in sorted(self.i[p].items())])
-                                    for (p, ip) in sorted(self.i.items())]) + "\\\\\n" + \
+                    "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
+                        "\\\\\n &&& ".join(
+                        [str(k) + " & \\mapsto &" +
+                            (str(ipk) if isinstance(ipk, str) else
+                            (", \\\\\n && ".join(
+                                ["\\tpl{" + str(ipkKey) + " \\mapsto " + str(ipkVal) + "}"
+                                 for ipkKey, ipkVal in ipk.items()])
+                                if isinstance(ipk, dict) else
+                            ("\\set{" + ", ".join(["\\tpl{" + ", ".join([str(t) for t in s]) + "}"
+                                                   for s in sorted(ipk)]) + "}")))
+                        for (k, ipk) in sorted(self.i[p].items())])
+                    for (p, ip) in sorted(self.i.items())]) + "\\\\\n" + \
                "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
-                                                      for key, val in sorted(self.v[g].items())])
-                              for g in self.v]) + "\\\\\n" + \
+                        for key, val in sorted(self.v[g].items())]) for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \
-                   .replace("\\set{}", "\\emptyset{}")
+                .replace("\\set{}", "\\emptyset{}")

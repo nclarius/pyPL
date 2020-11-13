@@ -347,47 +347,6 @@ class StructParser:
                 return structure.KripkePredStructure(s["S"], s["K"], s["R"], s["D"], s["I"])
 
 if __name__ == "__main__":
-    parser = FmlParser()
-    # inp = r"* \exi x P(x) -> \exi x * P(x)"
-    # outp = parser.parse(inp)
-    # print(outp)
-    # test = r"R(f(a,b),y)"
-    # test = "~ p v q |= p -> q"
-    # test = r"~ p ^ q <-> ~(\nec p v ~ q v r)"
-    # print(test)
-    # res = parser.parse(test)
-    # print(res)
-    # print()
-    # test = r"\exi x \all y (P(x) ^ R(x,y)) -> \all y \exi x R(x,y)"
-    # print(test)
-    # res = parser.parse(test)
-    # print(res)
-    # test = r"\all x \all y \all z (x = y v x = z v y = z)"
-    # print(test)
-    # res = parser.parse(test)
-    # print(res)
-    # test = r"p v q v r"
-    # print(test)
-    # res = parser.parse(test)
-    # print(res)
-    # test = "Believe(j, \int Democrat(a))"
-    # res = parser.parse(test)
-    # print(res)
-    # test = "\most x (Man(x), \exists y Love(x,y))))"
-    # res = parser.parse(test)
-    # print(res)
-    # test = "\more x(Woman(x), Man(x), \exists y Love(x,y))"
-    # res = parser.parse(test)
-    # print(res)
-    # test = "\\all x (Man(x) -> \exi y (Woman(y) ^ Love(x,y)))"
-    # res = parser.parse(test)
-    # print(res)
-    parser = StructParser()
-    # with open("input/believe2.txt") as f:
-    #     inp = f.read()
-    # outp = parser.parse(inp)
-    # print(outp)
-    # with open("input/pl.txt") as f:
-    #     inp = f.read()
-    # outp = parser.parse(inp)
-    # print(outp)
+    parse_f = FmlParser().parse
+    parse_s = StructParser.parse
+    print(parse_f(r"* \exi x P(x) -> \exi x * P(x)"))

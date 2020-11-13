@@ -51,6 +51,7 @@ from timeit import default_timer as timer
 
 debug = False
 
+
 def least(lst, cond):
     return min([x for x in lst if cond(x)])
 
@@ -608,7 +609,8 @@ class Tableau(object):
         # if the only rules applicable to an unfinished branch are
         # δ, θ, ε or κ rules that have already been applied on this branch,
         # it is declared open and, in the case of validity tableaus, its applicable rules cleared
-        for leaf in [node for node in self.root.leaves() if node.fml and not (isinstance(node.fml, Pseudo))]:
+        for leaf in [node for node in self.root.leaves() if
+                     node and node.fml != None and not (isinstance(node.fml, Pseudo))]:
             if all([appl[6] and appl[3] in ["δ", "θ", "ε", "κ"]
                     for appl in applicable if appl[0] in leaf.branch]):
                 if not isinstance(leaf.fml, Pseudo):
@@ -1156,7 +1158,7 @@ class Tableau(object):
         @rtype: bool
         """
         return all([isinstance(leaf.fml, Closed) for leaf in self.root.leaves()
-                    if leaf.fml and not isinstance(leaf.fml, Empty)])
+                    if leaf.fml is not None and not isinstance(leaf.fml, Empty)])
 
     def open(self) -> bool:
         """
@@ -1166,7 +1168,7 @@ class Tableau(object):
         @rtype: bool
         """
         return any([isinstance(leaf.fml, Open) for leaf in self.root.leaves()
-                    if leaf.fml and not isinstance(leaf.fml, Empty)])
+                    if leaf.fml is not None and not isinstance(leaf.fml, Empty)])
 
     def infinite(self) -> bool:
         """
@@ -1176,7 +1178,7 @@ class Tableau(object):
         @rtype: bool
         """
         return any([isinstance(leaf.fml, Infinite) for leaf in self.root.leaves()
-                    if leaf.fml and not isinstance(leaf.fml, Empty)])
+                    if leaf.fml is not None and not isinstance(leaf.fml, Empty)])
 
     def model(self, leaf):
         """
@@ -1556,10 +1558,13 @@ class Node(object):
             return ""
         colspec = ("{R{3.5em]cL{3.5em}" if self.tableau.mode["propositional"] else "{R{7.5em}cL{7.5em}}") \
             if not self.tableau.mode["modal"] else "{R{5em}L{1.5em}cL{7.5em}}"
-        ssep = "-3.5em" if self.tableau.mode["propositional"] and not self.tableau.mode["modal"] else "-7.5em"
+        ssep = "-3.5em" if self.tableau.mode["propositional"] else "-7.5em" if not self.tableau.mode["modal"] else \
+            "-5em"
+        hoffset = "-3.5em" if self.tableau.mode["propositional"] else "-7.5em" if not self.tableau.mode["modal"] else \
+            "-5em"
         res = ""
         if root:
-            res += "\\hspace*{%s}\n" % ssep
+            res += "\\hspace*{%s}\n" % hoffset
             res += "\\begin{forest}\n"
             res += "for tree={anchor=north, l sep=2em, s sep=%s}\n" % ssep
             indent += "    "
@@ -1575,7 +1580,7 @@ class Node(object):
                 res += "\n"
                 res += indent + "\\end{tabular}\n"
                 for child in self.children:
-                    if child.fml and child.fml.tex() and not isinstance(child.fml, Empty) and \
+                    if child.fml is not None and child.fml.tex() and not isinstance(child.fml, Empty) and \
                             not (self.tableau.hide_nonopen and not self.tableau.mode["validity"] and not
                             any([child in branch for branch in open_branches])):
                         indent += "    "
@@ -1865,7 +1870,7 @@ if __name__ == "__main__":
     # Barcan formulas
     # fml1 = Imp(Forall(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))), Nec(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))))
     # fml2 = Imp(Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))), Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),
-    # )))))
+    #                                                                                                       )))))
     # fml3 = Imp(Nec(Forall(Var("x"), Atm(Pred("P"), (Var("x"),)))), Forall(Var("x"), Nec(Atm(Pred("P"), (Var("x"),)))))
     # fml4 = Imp(Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))), Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),
     # )))))

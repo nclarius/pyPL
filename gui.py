@@ -768,6 +768,7 @@ class PyPLGUI(tk.Frame):
                 disabled = True if cat in ["constvar", "frame"] else False
                 rb = tk.Radiobutton(tab,
                                     bg=white,
+                                    fg=white if disabled else black,
                                     text=txt,
                                     variable=variables[cat],
                                     value=val,
