@@ -10,7 +10,12 @@ from denotation import *
 import re
 from itertools import product
 
-indiv_vars = ["x", "y", "z"]  # the individual variables of the language
+sort_i = lambda kv: (  # sort interpretation functions by ...
+        sort_type(kv[1]),  # type (1. constants, 2. functions, 3. predicates)
+        sort_val(kv[1]),  # valency (shorter tuples first)
+        kv[0])  # name of the symbol (alphabetical)
+sort_type = lambda v: {str: 1, dict: 2, set: 3}[type(v)]
+sort_val = lambda v: len(list(v)[0]) if v and type(v) in [set, dict] else 0
 
 
 class Structure:
@@ -67,6 +72,7 @@ class PropStructure(Structure):
                "\\end{tabular}" \
                    .replace("\\set{}", "\\emptyset{}")
 
+indiv_vars = ["x", "y", "z"]
 
 class PredStructure(Structure):
     """
@@ -143,6 +149,7 @@ class PredStructure(Structure):
         suffix = self.s.removeprefix("S") if self.s[-1].isdigit() else ""
         s, d, i = self.s, "D" + suffix, "I" + suffix
         return "Structure " + s + " = ⟨" + ",".join([d, i]) + "⟩ with \n" + \
+        d + " = " + "{" + ", ".join(self.d) + "}" + "\n" + \
         i + " : " + ", \n    ".join(
                 [str(key) + " ↦ " +
                  (str(val) if isinstance(val, str) else
@@ -152,13 +159,13 @@ class PredStructure(Structure):
                    ("{" +
                     ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in sorted(val)]) +
                     "}")))
-                 for (key, val) in sorted(self.i.items())]) + "\n" + \
+                 for (key, val) in sorted(self.i.items(), key=sort_i)]) + "\n" + \
                "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v[g].items())])
                           for g in self.v])
 
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
-        s, d, i = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{D}" + suffix, "\\mathcal{I]" + suffix
+        s, d, i = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{D}" + suffix, "\\mathcal{I}" + suffix
         return "Structure $" + s + " = \\tpl{" + ", ".join([d, i]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAA}\n" + \
                d + " = & " \
@@ -173,7 +180,7 @@ class PredStructure(Structure):
                           ("\\set{" +
                            ", ".join(["\\tpl{" + ", ".join([str(t) for t in s]) + "}" for s in sorted(val)]) +
                            "}")))
-                        for (key, val) in sorted(self.i.items())]) + "\\\\\n" + \
+                        for (key, val) in sorted(self.i.items(), key=sort_i)]) + "\\\\\n" + \
                "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
                                                       for key, val in sorted(self.v[g].items())])
                               for g in self.v]) + "\\\\\n" + \
@@ -340,7 +347,7 @@ class ConstModalStructure(ModalStructure):
                             ("{" + ", ".join(["⟨" + ", ".join([str(t).replace("frozenset", "")
                                 for t in s]) + "⟩" for s in sorted(ipw)]) + "}")))
                         for (w, ipw) in sorted(self.i[p].items())]) + \
-                    "\n    " for (p, ip) in sorted(self.i.items())]).replace("\n    \n", "\n") + \
+                    "\n    " for (p, ip) in sorted(self.i.items(), key=sort_i)]).replace("\n    \n", "\n") + \
                "\n" + \
                "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v[g].items())])
                     for g in self.v])
@@ -348,7 +355,7 @@ class ConstModalStructure(ModalStructure):
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
         s, w, r, d, i = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{W}" + suffix, "\\mathcal{R}" + suffix, \
-                        "\\mathcal{D}" + suffix, "\\mathcal{I]" + suffix
+                        "\\mathcal{D}" + suffix, "\\\mathcal{I}" + suffix
         return "Structure $" + s + " = \\tpl{" + ", ".join([w, r, d, i]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAA}\n" +\
                w + " = & " \
@@ -371,7 +378,7 @@ class ConstModalStructure(ModalStructure):
                                             [str(t).replace("frozenset", "") for t in s]) + "}" for s in sorted(ipw)]) +
                                  "}")))
                             for (w, ipw) in sorted(self.i[p].items())])
-                        for (p, ip) in sorted(self.i.items())]) + "\\\\\n" + \
+                        for (p, ip) in sorted(self.i.items(), key=sort_i)]) + "\\\\\n" + \
                "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
                     for key, val in sorted(self.v[g].items())]) for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \
@@ -458,14 +465,14 @@ class VarModalStructure(ModalStructure):
                                    [str(t) for t in s]) + "⟩" for s in sorted(ipw)]) +
                             "}")))
                         for (w, ipw) in sorted(self.i[p].items())]) + "\n    " \
-                    for (p, ip) in sorted(self.i.items())]).replace("\n    \n",  "\n") + "\n" + \
+                    for (p, ip) in sorted(self.i.items(), key=sort_i)]).replace("\n    \n",  "\n") + "\n" + \
                 "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val)
                     for key, val in sorted(self.v[g].items())]) for g in self.v])
 
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
         s, w, r, d, i = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{W}" + suffix, "\\mathcal{R}" + suffix, \
-                        "\\mathcal{D}" + suffix, "\\mathcal{I]" + suffix
+                        "\\mathcal{D}" + suffix, "\\\mathcal{I}" + suffix
         return "Structure $" + s + " = \\tpl{" + ", ".join([w, r, d, i]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAAA}\n" +\
                w + " = & " \
@@ -491,7 +498,7 @@ class VarModalStructure(ModalStructure):
                                            sorted(ipw)]) +
                                 "}")))
                              for (w, ipw) in sorted(self.i[p].items())])
-                        for (p, ip) in sorted(self.i.items())]) + "\\\\\n" + \
+                        for (p, ip) in sorted(self.i.items(), key=sort_i)]) + "\\\\\n" + \
                "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
                                                       for key, val in sorted(self.v[g].items())])
                               for g in self.v]) + "\\\\\n" + \
@@ -784,14 +791,14 @@ class KripkePredStructure(KripkeStructure):
                                  if isinstance(ipk, dict) else
                             ("{" + ", ".join(["⟨" + ", ".join([str(t) for t in s]) + "⟩" for s in sorted(ipk)]) + "}")))
                                               for (k, ipk) in sorted(self.i[p].items())]) +  "\n    "
-                    for (p, ip) in sorted(self.i.items())]).replace("\n    \n", "\n") + "\n" + \
+                    for (p, ip) in sorted(self.i.items(), key=sort_i)]).replace("\n    \n", "\n") + "\n" + \
                 "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val)
                     for key, val in sorted(self.v[g].items())]) for g in self.v])
 
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
         s, k, r, d, i = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{K}" + suffix, "\\mathcal{R}" + suffix, \
-                        "\\mathcal{D}" + suffix, "\\mathcal{I]" + suffix
+                        "\\mathcal{D}" + suffix, "\\\mathcal{I}" + suffix
         return "Structure $" + s + " = \\tpl{" + ", ".join([k, r, d, i]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAAA}\n" + \
                k + " = & " \
@@ -816,7 +823,7 @@ class KripkePredStructure(KripkeStructure):
                             ("\\set{" + ", ".join(["\\tpl{" + ", ".join([str(t) for t in s]) + "}"
                                                    for s in sorted(ipk)]) + "}")))
                         for (k, ipk) in sorted(self.i[p].items())])
-                    for (p, ip) in sorted(self.i.items())]) + "\\\\\n" + \
+                    for (p, ip) in sorted(self.i.items(), key=sort_i)]) + "\\\\\n" + \
                "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
                         for key, val in sorted(self.v[g].items())]) for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \

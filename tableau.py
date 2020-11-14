@@ -1755,8 +1755,8 @@ if __name__ == "__main__":
     # basic examples
     ############
 
-    fml = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
-    tab = Tableau(fml, propositional=True)
+    # fml = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
+    # tab = Tableau(fml, propositional=True)
     # 
     # fml = Conj(Imp(Prop("p"), Prop("q")), Prop("r"))
     # tab = Tableau(fml, validity=True, propositional=True)

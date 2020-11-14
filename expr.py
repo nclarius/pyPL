@@ -218,6 +218,8 @@ class Var(Term):
         """
         return v[self.u]
 
+indiv_vars = ["x", "y", "z"]  # the individual variables of the language
+
 
 class Const(Term):
     """

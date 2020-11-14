@@ -83,7 +83,7 @@ class PyPLGUI(tk.Frame):
         self.root.title("pyPL")
         icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
         self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file=icon_path))
-        self.root.geometry("1244x700")
+        self.root.geometry("1333x750")
 
         # style
         self.style = ttk.Style()
@@ -376,7 +376,7 @@ class PyPLGUI(tk.Frame):
             # entry field
             ent = tk.Entry(tab,
                            textvariable=raw,
-                           width=45 if self.inst.action != "mc" else 40)
+                           width=55 if self.inst.action != "mc" else 50)
             ent.pack(in_=mids[row], side=tk.LEFT)
             raw.trace("w", lambda *args: select_entry(i))
             input_ents.append(ent)
@@ -394,7 +394,7 @@ class PyPLGUI(tk.Frame):
             btn_parse.bind("<Button>", lambda e: parse(i))
             btns.append(btn_parse)
             # formula in plain text
-            lbl = tk.Text(tab, height=1, width=45, borderwidth=0, bg=white, wrap=tk.CHAR)
+            lbl = tk.Text(tab, height=1, width=55, borderwidth=0, bg=white, wrap=tk.CHAR)
             lbl.configure(inactiveselectbackground=lbl.cget("selectbackground"))
             lbl.configure(state="disabled")
             # lbl.pack(in_=mids[row + 1], side=tk.LEFT)
@@ -630,12 +630,14 @@ class PyPLGUI(tk.Frame):
             mids.update(new_mids)
             # todo add field for specification of g and w
             cap_struct.pack(in_=mids[0], padx=15, pady=15)
+            phantom_struct = tk.Label(text="", width=5)
+            phantom_struct.pack(in_=mids[1], side=tk.LEFT)
             # raw_struct = tk.StringVar()
             # ent_struct = tk.Entry(tab,
             #                textvariable=struct_raw)
             # ent_struct.pack(in_=mids[6], side=tk.LEFT, expand=True)
             # ent_struct.trace("w", lambda *args: select_entry(-1))
-            ent_struct = tk.Text(tab, height=8, width=45)
+            ent_struct = tk.Text(tab, height=8, width=60)
             ent_struct.pack(in_=mids[1], side=tk.LEFT)
             # input_ents.append(ent_struct)
             btn_parse_struct = tk.Button(tab,
@@ -647,7 +649,7 @@ class PyPLGUI(tk.Frame):
             btn_parse_struct.pack(in_=mids[1], side=tk.LEFT, padx=5)
             btn_parse_struct.bind("<Button>", lambda e: parse_struct())
             # btns.append(btn_parse_struct)
-            lbl_struct = tk.Text(tab, height=8, width=40, borderwidth=0, bg=white)
+            lbl_struct = tk.Text(tab, height=8, width=60, borderwidth=0, bg=white)
             lbl_struct.configure(inactiveselectbackground=lbl_struct.cget("selectbackground"))
             lbl_struct.configure(state="disabled")
             lbl_struct.pack(in_=mids[1], side=tk.LEFT, padx=15, expand=True)
