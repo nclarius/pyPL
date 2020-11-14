@@ -1500,7 +1500,8 @@ class Node(object):
         elif not self.rule:
             str_cite = "(" + str(self.source.line) + ")"
         else:
-            str_rule = "\\! ".join([str2tex[c] if c in str2tex else c for c in str(self.rule)]) \
+            str_rule = ("\\! ".join([str2tex[c] if c in str2tex else c for c in str(self.rule)]) \
+                            if not str(self.rule).isnumeric() else str(self.rule))\
                 .replace("\\neg\\! \\", "\\neg  \\") if self.rule else ""
             str_comma = "{,}\\ " if self.rule and self.source else ""
             str_source = str(self.source.line) if self.source else ""
@@ -1558,11 +1559,11 @@ class Node(object):
         if self.tableau.hide_nonopen and not self.tableau.mode["validity"] and \
                 not any([self in branch for branch in open_branches]):
             return ""
-        colspec = ("{R{3.5em}cL{3.5em}}" if self.tableau.mode["propositional"] else "{R{7.5em}cL{7.5em}}") \
+        colspec = ("{R{4.5em}cL{4.5em}}" if self.tableau.mode["propositional"] else "{R{7.5em}cL{7.5em}}") \
             if not self.tableau.mode["modal"] else "{R{5em}L{1.5em}cL{7.5em}}"
-        ssep = "-3.5em" if self.tableau.mode["propositional"] else "-7.5em" if not self.tableau.mode["modal"] else \
+        ssep = "-4em" if self.tableau.mode["propositional"] else "-7em" if not self.tableau.mode["modal"] else \
             "-5em"
-        hoffset = "-3.5em" if self.tableau.mode["propositional"] else "-7.5em" if not self.tableau.mode["modal"] else \
+        hoffset = "-4.5em" if self.tableau.mode["propositional"] else "-7.5em" if not self.tableau.mode["modal"] else \
             "-5em"
         res = ""
         if root:
@@ -1754,8 +1755,8 @@ if __name__ == "__main__":
     # basic examples
     ############
 
-    # fml = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
-    # tab = Tableau(fml, propositional=True)
+    fml = Biimp(Neg(Conj(Prop("p"), Prop("q"))), Disj(Neg(Prop("p")), Neg(Prop("q"))))
+    tab = Tableau(fml, propositional=True)
     # 
     # fml = Conj(Imp(Prop("p"), Prop("q")), Prop("r"))
     # tab = Tableau(fml, validity=True, propositional=True)
@@ -1965,9 +1966,6 @@ if __name__ == "__main__":
     # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
-
-    fml = parse_f("(p -> q v r) ^ (q -> - r)")
-    tab = Tableau(fml, validity=False)
 
     ####################
     # parser
