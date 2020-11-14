@@ -8,7 +8,7 @@ CURRENTLY UNDER CONSTRUCTION.
 
 import re
 
-debug = False
+debug = True
 
 
 class FmlParser:
@@ -257,6 +257,7 @@ class FmlParser:
                 continue
 
             # binary operator: close if closure symbol is on top, else resolve ambiguity
+            # todo doesn't work correctly, e.g. "(p -> q v r) ^ s" = "p -> ((q v r) ^ s)" instead of "(p -> q v r) ^ s"
             if bot in ["Eq", "Conj", "Disj", "Imp", "Biimp", "Xor"]:
 
                 # operator ambiguity
@@ -328,11 +329,11 @@ class StructParser:
         s = {eval(comp.split(" = ")[0]): eval(comp.split(" = ")[1]) for comp in inp.split("\n") if comp}
         s["S"] = "S"
         modal = True if "W" in s or "K" in s else False
-        propositional = True if "V" in s else False
+        propositional = True if "D" not in s else False
         intuitionistic = True if "K" in s else False
         vardomains = True if "D" in s and isinstance(s["D"], dict) else False
-        if not propositional and "G" not in s:
-            s["G"] = {}
+        if not propositional and "V" not in s:
+            s["V"] = {}
 
         structure = __import__("structure")
         if not intuitionistic:
@@ -340,20 +341,20 @@ class StructParser:
                 if propositional:
                     return structure.PropStructure(s["S"], s["V"])
                 else:
-                    return structure.PredStructure(s["S"], s["D"], s["I"], s["G"])
+                    return structure.PredStructure(s["S"], s["D"], s["I"], s["V"])
             else:
                 if propositional:
                     return structure.PropModalStructure(s["S"], s["W"], s["R"], s["V"])
                 else:
                     if not vardomains:
-                        return structure.ConstModalStructure(s["S"], s["W"], s["R"], s["D"], s["I"])
+                        return structure.ConstModalStructure(s["S"], s["W"], s["R"], s["D"], s["I"], s["V"])
                     else:
-                        return structure.VarModalStructure(s["S"], s["W"], s["R"], s["D"], s["I"])
+                        return structure.VarModalStructure(s["S"], s["W"], s["R"], s["D"], s["I"], s["V"])
         else:
             if propositional:
                 return structure.KripkePropStructure(s["S"], s["K"], s["R"], s["V"])
             else:
-                return structure.KripkePredStructure(s["S"], s["K"], s["R"], s["D"], s["I"])
+                return structure.KripkePredStructure(s["S"], s["K"], s["R"], s["D"], s["I"], s["V"])
 
 if __name__ == "__main__":
     parse_f = FmlParser().parse

@@ -5,6 +5,5 @@ I = [m: Mary,
      Happy: {(Mary), (Susan), (John), (Peter)},
      Love: {(Mary, John), (Susan, John), (Paula, Peter), (Peter, John)}]
 
-Happy(m)
 \all x (Woman(x) -> \exi y (Man(y) ^ Love(x,y)))
 \all x (Man(x) -> \exi y (Woman(y) ^ Love(x,y)))

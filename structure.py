@@ -51,14 +51,17 @@ class PropStructure(Structure):
         self.v = v
 
     def __str__(self):
-        return "Structure " + self.s + " = ⟨V⟩ with \n" + \
-               "V: " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v.items())])
+        suffix = self.s.removeprefix("S") if self.s[-1].isdigit() else ""
+        s, v = self.s, "V" + suffix
+        return "Structure " + s + " = ⟨" + ",".join([v]) + "⟩ with \n" + \
+               v + ": " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v.items())])
 
     def tex(self):
-        return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
-                    " = \\tpl{\\mathcal{V}}$ with \\\\\n" + \
+        suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
+        s, v = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{V}" + suffix
+        return "Structure $" + s + " = \\tpl{" + ", ".join([v]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AA}\n" + \
-               "\\mathcal{V} : &" + \
+               v + " : & " + \
                    ", ".join([str(p) + " \\mapsto " + str(tv).replace("True", "1").replace("False", "0")
                               for p, tv in sorted(self.v.items())]) + "\\\\\n" + \
                "\\end{tabular}" \
@@ -119,7 +122,9 @@ class PredStructure(Structure):
     @type d: set[str]
     @attr i: the interpretation function assigning denotations to the non-logical symbols
     @type i: dict[str,Any]
-    @type vs: the assignment functions associated with the structure
+    @type v: some assignment functions associated with the structure
+    @type v: dict[str,dict[str,str]]]
+    @type vs: all assignment functions associated with the structure
     @type vs: list[dict[str,str]]]
     """
 
@@ -135,9 +140,10 @@ class PredStructure(Structure):
         self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
     def __str__(self):  # todo sort interpretation by type and arity of symbol
-        return "Structure " + self.s + "  = ⟨D,I⟩ with\n" \
-                                       "D = {" + ", ".join([str(d) for d in sorted(self.d)]) + "}\n" \
-                                                                                               "I : " + ", \n    ".join(
+        suffix = self.s.removeprefix("S") if self.s[-1].isdigit() else ""
+        s, d, i = self.s, "D" + suffix, "I" + suffix
+        return "Structure " + s + " = ⟨" + ",".join([d, i]) + "⟩ with \n" + \
+        i + " : " + ", \n    ".join(
                 [str(key) + " ↦ " +
                  (str(val) if isinstance(val, str) else
                   (", ".join(["(" + str(key2) + " ↦ " + str(val2) + "⟩"
@@ -151,13 +157,14 @@ class PredStructure(Structure):
                           for g in self.v])
 
     def tex(self):
-        return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
-               " = \\tpl{\\mathcal{D}, \\mathcal{I}}$ with \\\\\n" + \
+        suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
+        s, d, i = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{D}" + suffix, "\\mathcal{I]" + suffix
+        return "Structure $" + s + " = \\tpl{" + ", ".join([d, i]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAA}\n" + \
-               "\\mathcal{D} = & " \
-                    "\\multicolumn{2}{A}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" \
-               "\\mathcal{I} : &" + \
-                    "\\\\\n    & ".join(
+               d + " = & " \
+                   "\\multicolumn{2}{A}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" +\
+               i + " : &" + \
+                   "\\\\\n    & ".join(
                        [str(key) + " & \\mapsto " +
                         (str(val) if isinstance(val, str) else
                          (", ".join(["\\tpl{" + str(key2) + " \\mapsto " + str(val2) + "}"
@@ -228,27 +235,31 @@ class PropModalStructure(ModalStructure):
         self.v = v
 
     def __str__(self):
-        return "Structure " + self.s + " = ⟨W,V⟩ with\n" \
-                    "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" \
-                    "R = {" + ", ".join(
-                        ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
-                    "V : " + ", \n    ".join(
-                        [str(p) + " ↦ \n" +
-                            ", \n".join(["           " + str(w) + " ↦ " + str(tv)
-                            for (w, tv) in sorted(self.v[p].items())])
-                        for (p, vp) in sorted(self.v.items())])
+        suffix = self.s.removeprefix("S") if self.s[-1].isdigit() else ""
+        s, w, r, v = self.s, "W" + suffix, "R" + suffix, "V" + suffix
+        return "Structure " + s + " = ⟨" + ",".join([w, r, v]) + "⟩ with \n" + \
+                w + " = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" +\
+                r + " = {" + ", ".join(
+                    ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" +\
+                v + " : " + ", \n    ".join(
+                    [str(p) + " ↦ \n" +
+                        ", \n".join(["           " + str(w) + " ↦ " + str(tv)
+                        for (w, tv) in sorted(self.v[p].items())])
+                    for (p, vp) in sorted(self.v.items())])
 
     def tex(self):
-        return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
-               " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{V}}$ with \\\\\n" \
-               "\\begin{tabular}{AAAAAA}\n" \
-               "\\mathcal{W} = & " + \
-                    "\\multicolumn{5}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
-               "\\mathcal{R} = &" + \
-                    "\\multicolumn{5}{A}{\\set{" + ", ".join(
+        suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
+        s, w, r, v = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{W}" + suffix, "\\mathcal{R}" + suffix, \
+                     "\\mathcal{V}" + suffix
+        return "Structure $" + s + " = \\tpl{" + ", ".join([w, r, v]) + "}$ with \\\\\n" + \
+               "\\begin{tabular}{AAAAAA}\n" +\
+               w + " = & " + \
+                   "\\multicolumn{5}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" +\
+               r + " = &" + \
+                   "\\multicolumn{5}{A}{\\set{" + ", ".join(
                         ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
-               "\\mathcal{V} : &" + \
-                    "\\\\\n    & ".join([str(p) + " & \\mapsto &" +
+               v + " : & " + \
+                   "\\\\\n    & ".join([str(p) + " & \\mapsto &" +
                         ", \\\\\n &&& ".join([str(w) + " & \\mapsto &" +
                         str(tv).replace("True", "1").replace("False", "0")
                         for (w, tv) in sorted(self.v[p].items())])
@@ -293,6 +304,10 @@ class ConstModalStructure(ModalStructure):
     @type d: set[str]
     @attr i: the interpretation function
     @type i: dict[str,dict[str,Any]]
+    @type v: some assignment functions associated with the structure
+    @type v: dict[str,dict[str,str]]]
+    @type vs: all assignment functions associated with the structure
+    @type vs: list[dict[str,str]]]
     """
 
     # todo doesnt work yet (assignment function)
@@ -309,11 +324,13 @@ class ConstModalStructure(ModalStructure):
         self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
     def __str__(self):
-        return "Structure " + self.s + " = ⟨W,R,D,I⟩ with\n" \
-                "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" \
-                "R = {" + ", ".join(["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
-                "D = {" + ", ".join([str(d) for d in sorted(self.d)]) + "}\n" \
-                "I : " + \
+        suffix = self.s.removeprefix("S") if self.s[-1].isdigit() else ""
+        s, w, r, d, i = self.s, "W" + suffix, "R" + suffix, "D" + suffix, "I" + suffix
+        return "Structure " + s + " = ⟨" + ",".join([w, r, d, i]) + "⟩ with \n" + \
+                w + " = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" +\
+                r + " = {" + ", ".join(["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" +\
+                d + " = {" + ", ".join([str(d) for d in sorted(self.d)]) + "}\n" +\
+                i +" : " + \
                     "\n    ".join([str(p) + " ↦ \n" + \
                         ", \n".join(["           " + str(w) + " ↦ " +
                             (str(ipw)
@@ -329,18 +346,20 @@ class ConstModalStructure(ModalStructure):
                     for g in self.v])
 
     def tex(self):
-        return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
-               " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{D}, \\mathcal{I}}$ with \\\\\n" \
-               "\\begin{tabular}{AAAAA}\n" \
-               "\\mathcal{W} = & " \
-                    "\\multicolumn{4}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" + \
-               "\\mathcal{R} = &" \
-                    "\\multicolumn{4}{A}{\\set{" + ", ".join(
+        suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
+        s, w, r, d, i = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{W}" + suffix, "\\mathcal{R}" + suffix, \
+                        "\\mathcal{D}" + suffix, "\\mathcal{I]" + suffix
+        return "Structure $" + s + " = \\tpl{" + ", ".join([w, r, d, i]) + "}$ with \\\\\n" + \
+               "\\begin{tabular}{AAAAA}\n" +\
+               w + " = & " \
+                   "\\multicolumn{4}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" + \
+               r + "\\mathcal{R} = &" \
+                   "\\multicolumn{4}{A}{\\set{" + ", ".join(
                     ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
-               "\\mathcal{D} = & " + \
-                    "\\multicolumn{4}{A}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" + \
-               "\\mathcal{I} : & " + \
-                    "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
+               d + "\\mathcal{D} = & " + \
+                   "\\multicolumn{4}{A}{\\set{" + ", ".join([str(d) for d in sorted(self.d)]) + "}}\\\\\n" + \
+               i + "\\mathcal{I} : & " + \
+                   "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
                         "\\\\\n &&& ".join(
                             [str(w) + "& \\mapsto &" +
                                  (str(ipw) if isinstance(ipw, str) else
@@ -397,6 +416,10 @@ class VarModalStructure(ModalStructure):
     @type d: dict[str,set[str]]
     @attr i: the interpretation function
     @type i: dict[str,dict[str,Any]]
+    @type v: some assignment functions associated with the structure
+    @type v: dict[str,dict[str,str]]]
+    @type vs: all assignment functions associated with the structure
+    @type vs: list[dict[str,str]]]
     """
 
     def __init__(self, s, w, r, d, i, v={}):
@@ -412,15 +435,17 @@ class VarModalStructure(ModalStructure):
         self.vs = {w: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[w]] for w in self.w}
 
     def __str__(self):
-        return "Structure " + self.s + " = ⟨W,R,D,F⟩ with\n" \
-                "W = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" \
-                "R = {" + ", ".join(
-                    ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
-                "D : " + "\n    ".join(
+        suffix = self.s.removeprefix("S") if self.s[-1].isdigit() else ""
+        s, w, r, d, i = self.s, "W" + suffix, "R" + suffix, "D" + suffix, "I" + suffix
+        return "Structure " + s + " = ⟨" + ",".join([w, r, d, i]) + "⟩ with \n" + \
+                w + " = {" + ", ".join([str(w) for w in sorted(self.w)]) + "}\n" +\
+                r + " = {" + ", ".join(
+                    ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" +\
+                d + " : " + "\n    ".join(
                     [str(w) + " ↦ " + \
                     "{" + ", ".join([str(d) for d in sorted(self.d[w])]) + "}"
                     for w in sorted(self.w)]) + "\n" + \
-                "I : " + \
+                i + " : " + \
                     "\n    ".join([str(p) + " ↦ \n" + \
                         ", \n".join(
                        ["           " + str(w) + " ↦ " +
@@ -438,20 +463,22 @@ class VarModalStructure(ModalStructure):
                     for key, val in sorted(self.v[g].items())]) for g in self.v])
 
     def tex(self):
-        return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
-               " = \\tpl{\\mathcal{W}, \\mathcal{R}, \\mathcal{D}, \\mathcal{I}}$ with \\\\\n" \
-               "\\begin{tabular}{AAAAAA}\n" \
-               "\\mathcal{W} = & " \
-                    "\\multicolumn{5}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" \
-               "\\mathcal{R} = &" + \
-                    "\\multicolumn{5}{A}{\\set{" + ", ".join(
+        suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
+        s, w, r, d, i = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{W}" + suffix, "\\mathcal{R}" + suffix, \
+                        "\\mathcal{D}" + suffix, "\\mathcal{I]" + suffix
+        return "Structure $" + s + " = \\tpl{" + ", ".join([w, r, d, i]) + "}$ with \\\\\n" + \
+               "\\begin{tabular}{AAAAAA}\n" +\
+               w + " = & " \
+                   "\\multicolumn{5}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" + \
+               r + " = &" + \
+                   "\\multicolumn{5}{A}{\\set{" + ", ".join(
                         ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
-               "\\mathcal{D} = & " + \
-                    "\\\\\n    & ".join([str(w) + " & \\multicolumn{2}{A}{\\mapsto " + \
+               d + " = & " + \
+                   "\\\\\n    & ".join([str(w) + " & \\multicolumn{2}{A}{\\mapsto " + \
                         "\\set{" + ", ".join([str(d) for d in sorted(self.d[w])]) + "}}" for w in sorted(self.w)]) + \
-                    "\\\\\n" + \
-               "\\mathcal{I} : & " + \
-                    "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
+                   "\\\\\n" + \
+               i + " : & " + \
+                   "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
                         "\\\\\n &&& ".join(
                             [str(w) + "& \\mapsto &" +
                              (str(ipw) if isinstance(ipw, str) else
@@ -581,27 +608,31 @@ class KripkePropStructure(KripkeStructure):
     #     return {k_ for k_ in self.k if (k_, k) in self.r}
 
     def __str__(self):
-        return "Structure " + self.s + " = (K,R,V) with\n" \
-                "K = {" + ", ".join([str(k) for k in sorted(self.k)]) + "}\n" \
-                "R = {" + ", ".join(
-                    ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
-                "V : " + "\n    ".join(
+        suffix = self.s.removeprefix("S") if self.s[-1].isdigit() else ""
+        s, k, r, v = self.s, "K" + suffix, "R" + suffix, "V" + suffix
+        return "Structure " + s + " = ⟨" + ",".join([k, r, v]) + "⟩ with \n" + \
+                k + " = {" + ", ".join([str(k) for k in sorted(self.k)]) + "}\n" +\
+                r + " = {" + ", ".join(
+                    ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" +\
+                v + " : " + "\n    ".join(
                     [str(p) + " ↦ \n" + ", \n".join(["        " + str(k) + " ↦ " + str(tv)
                         for (k, tv) in sorted(self.v[p].items())])
                     for (p, vp) in sorted(self.v.items())]).replace("\n    \n", "\n")
 
     def tex(self):
-        return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
-               " = \\tpl{\\mathcal{K}, \\mathcal{R}, \\mathcal{V}}$ with \\\\\n" \
-               "\\begin{tabular}{AAAA}\n" \
-               "\\mathcal{K} = & " \
-                    "\\multicolumn{3}{A}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" \
-               "\\mathcal{R} = &" \
-                    "\\multicolumn{3}{A}{" \
-                    "\\set{" + ", ".join(
-                        ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" \
-               "\\mathcal{V} : &" + \
-                    "\\\\\n    & ".join(
+        suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
+        s, k, r, v = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{K}" + suffix, "\\mathcal{R}" + suffix, \
+                        "\\mathcal{V}" + suffix
+        return "Structure $" + s + " = \\tpl{" + ", ".join([k, r, v]) + "}$ with \\\\\n" + \
+               "\\begin{tabular}{AAAA}\n" + \
+               k + " = & " \
+                   "\\multicolumn{3}{A}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" + \
+               r + " = &" \
+                   "\\multicolumn{3}{A}{" \
+                   "\\set{" + ", ".join(
+                        ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
+               v + " : & " + \
+                   "\\\\\n    & ".join(
                        [str(p) + " & \\mapsto &" +
                         ", \\\\\n &&& ".join([str(k) + " & \\mapsto &" +
                                               str(tv).replace("True", "1").replace("False", "0")
@@ -683,6 +714,10 @@ class KripkePredStructure(KripkeStructure):
     @type d: dict[str,set[str]]
     @attr i: the interpretation function
     @type i: dict[str,dict[str,Any]]
+    @type v: some assignment functions associated with the structure
+    @type v: dict[str,dict[str,str]]]
+    @type vs: all assignment functions associated with the structure
+    @type vs: list[dict[str,str]]]
     """
 
     def __init__(self, s, k, r, d, i, v={}):
@@ -730,15 +765,17 @@ class KripkePredStructure(KripkeStructure):
     #     return {k_ for k_ in self.k if (k_, k) in self.r}
 
     def __str__(self):
-        return "Structure " + self.s + " = (K,R,D,I) with\n" \
-                "K = {" + ", ".join([str(k) for k in self.k]) + "}\n" \
-                "R = {" + ", ".join(
-                    ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" \
-                "D : " + "\n    ".join(
+        suffix = self.s.removeprefix("S") if self.s[-1].isdigit() else ""
+        s, k, r, d, i = self.s, "K" + suffix, "R" + suffix, "D" + suffix, "I" + suffix
+        return "Structure " + s + " = ⟨" + ",".join([k, r, d, i]) + "⟩ with \n" + \
+                k + " = {" + ", ".join([str(k) for k in self.k]) + "}\n" +\
+                r + " = {" + ", ".join(
+                    ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" +\
+                d + " : " + "\n    ".join(
                     [str(k) + " ↦ " + \
                         ", ".join([str(d) for d in self.d[k]]) + "}"
                      for k in self.k]) if self.d else "" + "\n" + \
-                "I : " + \
+                i + " : " + \
                     "\n    ".join([str(p) + " ↦ \n" + \
                         ", \n".join(["           " + str(k) + " ↦ " +
                             (str(ipk) if isinstance(ipk, str) else
@@ -752,21 +789,23 @@ class KripkePredStructure(KripkeStructure):
                     for key, val in sorted(self.v[g].items())]) for g in self.v])
 
     def tex(self):
-        return "Structure $" + re.sub("S(\d*)", "S_{\\1}", self.s).replace("S", "\\mathcal{S}") + \
-               " = \\tpl{\\mathcal{K}, \\mathcal{R}, \\mathcal{D}, \\mathcal{I}}$ with \\\\\n" \
-               "\\begin{tabular}{AAAAAA}\n" \
-               "\\mathcal{K} = & " \
-                    "\\multicolumn{5}{A}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" \
-               "\\mathcal{R} = &" \
-                    "\\multicolumn{5}{A}{" \
-                    "\\set{" + ", ".join(["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}"
-                                          for r in sorted(self.r)]) + "}}\\\\\n" \
-               "\\mathcal{D} = & " \
-                    "\\\\\n    ".join([str(k) + " & \\multicolumn{2}{A}{\\mapsto " + \
-                    "\\set{" + ", ".join([str(d) for d in sorted(self.d[k])]) + "}}" for k in sorted(self.k)]) + \
-                    "\\\\\n" \
-               "\\mathcal{I} : & " + \
-                    "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
+        suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
+        s, k, r, d, i = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{K}" + suffix, "\\mathcal{R}" + suffix, \
+                        "\\mathcal{D}" + suffix, "\\mathcal{I]" + suffix
+        return "Structure $" + s + " = \\tpl{" + ", ".join([k, r, d, i]) + "}$ with \\\\\n" + \
+               "\\begin{tabular}{AAAAAA}\n" + \
+               k + " = & " \
+                   "\\multicolumn{5}{A}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" + \
+               r + " = &" \
+                   "\\multicolumn{5}{A}{" \
+                   "\\set{" + ", ".join(["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}"
+                                          for r in sorted(self.r)]) + "}}\\\\\n" + \
+               d + " = & " \
+                   "\\\\\n    ".join([str(k) + " & \\multicolumn{2}{A}{\\mapsto " + \
+                   "\\set{" + ", ".join([str(d) for d in sorted(self.d[k])]) + "}}" for k in sorted(self.k)]) + \
+                    "\\\\\n" + \
+               i + " : & " + \
+                   "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
                         "\\\\\n &&& ".join(
                         [str(k) + " & \\mapsto &" +
                             (str(ipk) if isinstance(ipk, str) else
@@ -781,4 +820,4 @@ class KripkePredStructure(KripkeStructure):
                "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + str(val)
                         for key, val in sorted(self.v[g].items())]) for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \
-                .replace("\\set{}", "\\emptyset{}")
+               .replace("\\set{}", "\\emptyset{}")

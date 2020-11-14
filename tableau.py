@@ -1226,7 +1226,7 @@ class Tableau(object):
                     natoms = [node.fml.phi.p for node in branch if node.fml.literal() and not node.fml.atom()]
                     # valuation = make all positive propositional variables true and all others false
                     v = {p: (True if p in atoms else False) for p in
-                         list(dict.fromkeys(atoms + natoms + list(self.root.fml.propvars())))}
+                         list(dict.fromkeys(atoms + natoms))}
                     model = structure.PropStructure(s, v)
 
                 else:  # classical modal propositional logic
@@ -1490,6 +1490,7 @@ class Node(object):
         # underline literals of open branches in MG
         if self.tableau.underline_open and not self.tableau.mode["validity"] and \
                 any([self in branch for branch in open_branches]) and self.fml.literal():
+            # str_fml = "\\fbox{\\vphantom{A}" + str_fml + "}"
             str_fml = "\\underline{" + str_fml + "}"
         str_cite = ""
         if isinstance(self.fml, Open) or isinstance(self.fml, Infinite):
@@ -1557,7 +1558,7 @@ class Node(object):
         if self.tableau.hide_nonopen and not self.tableau.mode["validity"] and \
                 not any([self in branch for branch in open_branches]):
             return ""
-        colspec = ("{R{3.5em]cL{3.5em}" if self.tableau.mode["propositional"] else "{R{7.5em}cL{7.5em}}") \
+        colspec = ("{R{3.5em}cL{3.5em}}" if self.tableau.mode["propositional"] else "{R{7.5em}cL{7.5em}}") \
             if not self.tableau.mode["modal"] else "{R{5em}L{1.5em}cL{7.5em}}"
         ssep = "-3.5em" if self.tableau.mode["propositional"] else "-7.5em" if not self.tableau.mode["modal"] else \
             "-5em"
@@ -1747,8 +1748,7 @@ class Node(object):
 if __name__ == "__main__":
     pass
 
-    parser = FmlParser()
-    parse = parser.parse
+    parse_f = FmlParser().parse
 
     #############
     # basic examples
@@ -1965,6 +1965,9 @@ if __name__ == "__main__":
     # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
+
+    fml = parse_f("(p -> q v r) ^ (q -> - r)")
+    tab = Tableau(fml, validity=False)
 
     ####################
     # parser

@@ -335,11 +335,10 @@ class PyPLGUI(tk.Frame):
             input_modes.append(None)
             i = len(input_raws)-1
             # frames
-            if i > 0 or self.inst.action in ["mc", "mg"]:
-                new_mids = {j: tk.Frame(mid, bg=white) for j in range(len(mids), len(mids) + 1)}
-                mids.update(new_mids)
-                for j in new_mids:
-                    mids[j].pack(ipadx=5, ipady=5, padx=50)
+            new_mids = {j: tk.Frame(mid, bg=white) for j in range(len(mids), len(mids) + 1)}
+            mids.update(new_mids)
+            for j in new_mids:
+                mids[j].pack(ipadx=5, ipady=5, padx=50)
             # row = len(mids) - 3 if i > 0 else 1 if self.inst.action != "mg" else len(mids) - 2 if i > 0 else 2
             # # caption
             # cap = tk.Label(tab,
@@ -529,6 +528,7 @@ class PyPLGUI(tk.Frame):
         # mid
         mid = tk.Frame(tab, bg=white)
         mid.pack()
+        mids = {}
 
         # reset button
         btn_reset = tk.Button(tab,
@@ -624,9 +624,10 @@ class PyPLGUI(tk.Frame):
         btn_add_fml.bind("<Button>", lambda e: add_formula())
 
         if self.inst.action == "mc":
-            mids = {i: tk.Frame(mid, bg=white) for i in range(3)}
-            for i in mids:
-                mids[i].pack(ipadx=5, ipady=5, padx=50)
+            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+2)}
+            for i in new_mids:
+                new_mids[i].pack(ipadx=5, ipady=5, padx=50)
+            mids.update(new_mids)
             # todo add field for specification of g and w
             cap_struct.pack(in_=mids[0], padx=15, pady=15)
             # raw_struct = tk.StringVar()
@@ -650,6 +651,10 @@ class PyPLGUI(tk.Frame):
             lbl_struct.configure(inactiveselectbackground=lbl_struct.cget("selectbackground"))
             lbl_struct.configure(state="disabled")
             lbl_struct.pack(in_=mids[1], side=tk.LEFT, padx=15, expand=True)
+            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+1)}
+            for i in new_mids:
+                new_mids[i].pack(ipadx=5, ipady=5, padx=50)
+            mids.update(new_mids)
             mid2 = tk.Frame(mid, bg=white)
             mids[2] = mid2
             mids[2].pack(ipadx=5, ipady=5)
@@ -659,7 +664,10 @@ class PyPLGUI(tk.Frame):
             ent_struct.focus()
 
         elif self.inst.action == "mg":
-            mids = {i: tk.Frame(mid, bg=white) for i in range(1)}
+            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+1)}
+            for i in new_mids:
+                new_mids[i].pack(ipadx=5, ipady=5, padx=50)
+            mids.update(new_mids)
             for i in mids:
                 mids[i].pack(ipadx=5, ipady=5, padx=50)
             # cap_pseudo.pack(in_=mids[0], side=tk.LEFT, padx=15)
@@ -668,11 +676,16 @@ class PyPLGUI(tk.Frame):
             add_formula()
             input_ents[0].focus()
         else:
-            mids = {i: tk.Frame(mid, bg=white) for i in range(3)}
-            for i in mids:
-                mids[i].pack(ipadx=5, ipady=5, padx=50)
+            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+3)}
+            for i in new_mids:
+                new_mids[i].pack(ipadx=5, ipady=5, padx=50)
+            mids.update(new_mids)
             cap_concl.pack(in_=mids[0], side=tk.LEFT, padx=15, pady=15)
             add_formula()
+            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+1)}
+            for i in new_mids:
+                new_mids[i].pack(ipadx=5, ipady=5, padx=50)
+            mids.update(new_mids)
             btn_swap.pack(in_=mids[2], side=tk.LEFT, padx=15)
             cap_prems.pack(in_=mids[2], side=tk.LEFT, pady=15)
             btn_add_fml.pack(in_=mids[2], side=tk.LEFT, padx=15)
