@@ -5,8 +5,8 @@
 Main module.
 """
 
+import gui
+
 
 if __name__ == "__main__":
-    parser = __import__("parser")
-    parse_fml = parser.FmlParser().parse
-    parse_strct = parser.StructParser().parse
+    gui.main()  # start the graphical interface

@@ -1172,7 +1172,7 @@ class PyPLGUI(tk.Frame):
              # todo output sometimes shown twice?
 
 
-if __name__ == "__main__":
+def main():
     # redirect output to log file
     if not debug:
         import sys
@@ -1182,3 +1182,6 @@ if __name__ == "__main__":
 
     # run
     PyPLGUI()
+
+if __name__ == "__main__":
+    main()
