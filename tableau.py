@@ -40,7 +40,6 @@ import os
 from datetime import datetime
 from itertools import chain
 from subprocess import DEVNULL, STDOUT, check_call
-from timeit import default_timer as timer
 
 # todo specify partial model to start with?
 # todo documentation
@@ -112,9 +111,14 @@ class Tableau(object):
         self.models = []  # generated models
 
         # run the tableau
-        self.start = timer()
-        self.expand()
-        self.end = timer()
+        try:
+            from timeit import default_timer as timer
+            self.start = timer()
+            self.expand()
+            self.end = timer()
+        except ImportError as e:
+            self.start, self.end = None, None
+            self.expand()
         if not self.silent:
             self.show()
 
@@ -255,8 +259,9 @@ class Tableau(object):
 
         # measures size and time
         # size = len(self)
-        elapsed = self.end - self.start
-        res += "This computation took " + str(round(elapsed, 4)) + " seconds.\n\n"
+        if self.start and self.end:
+            elapsed = self.end - self.start
+            res += "This computation took " + str(round(elapsed, 4)) + " seconds.\n\n"
 
         if self.latex:
             postamble = "\\end{document}\n"

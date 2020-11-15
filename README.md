@@ -23,7 +23,8 @@ If you want to dive in deeper, I recommend downloading pyPL to your own computer
 ### Install and run
 To run this tool locally on your machine:
 1. Install dependencies:
-   - core software: `Python` (version >= 3.9) + Python packages: `tkinter`, `os`, `re`, `timeit`
+   - core software: `Python` (version >= 3.9) + Python packages: `os`, `re`, `timeit`
+   - for graphical interface: Python `tkinter`
    - for nicely formatted output: `LaTeX` with `pdflatex` + LaTeX packages: `geometry`, `forest`, `amssymb`, `amsmath`, `amstext`, `wasysym`
 2. Clone this repository.
 3. Execute `main.py`.

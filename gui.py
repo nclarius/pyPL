@@ -329,6 +329,8 @@ class PyPLGUI(tk.Frame):
                     parse(i)
 
         def add_formula():
+            print("add formula")
+            print(len(mids))
             # variable
             raw, v, w = tk.StringVar(), tk.StringVar(), tk.StringVar()
             input_raws.append(raw)
@@ -336,7 +338,7 @@ class PyPLGUI(tk.Frame):
             input_modes.append(None)
             i = len(input_raws)-1
             # frames
-            new_mids = {j: tk.Frame(mid, bg=white) for j in range(len(mids), len(mids) + 1)}
+            new_mids = {j: tk.Frame(mid, bg=white) for j in range(len(mids), len(mids)+1)}
             mids.update(new_mids)
             for j in new_mids:
                 mids[j].pack(ipadx=5, ipady=5, padx=50)
@@ -407,6 +409,7 @@ class PyPLGUI(tk.Frame):
             # lbl.configure(inactiveselectbackground=lbl.cget("selectbackground"))
             # lbl.pack(in_=mids[row + 1], side=tk.LEFT)
             input_lbls.append(lbl)
+            print(len(mids))
 
         def remove_formula(i):
             del input_raws[i]
@@ -633,7 +636,7 @@ class PyPLGUI(tk.Frame):
             add_formula()
 
         elif self.inst.action == "mc":
-            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+3)}
+            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids), len(mids)+2)}
             for i in new_mids:
                 new_mids[i].pack(ipadx=5, ipady=5, padx=50)
             mids.update(new_mids)
@@ -662,7 +665,7 @@ class PyPLGUI(tk.Frame):
             lbl_struct.configure(inactiveselectbackground=lbl_struct.cget("selectbackground"))
             lbl_struct.configure(state="disabled")
             lbl_struct.pack(in_=mids[1], side=tk.LEFT, padx=15, expand=True)
-            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+1)}
+            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids), len(mids)+1)}
             for i in new_mids:
                 new_mids[i].pack(ipadx=5, ipady=5, padx=50)
             mids.update(new_mids)
@@ -675,7 +678,7 @@ class PyPLGUI(tk.Frame):
             ent_struct.focus()
 
         elif self.inst.action == "mg":
-            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+1)}
+            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids), len(mids)+1)}
             for i in new_mids:
                 new_mids[i].pack(ipadx=5, ipady=5, padx=50)
             mids.update(new_mids)

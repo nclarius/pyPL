@@ -101,10 +101,18 @@ class Truthtable():
         # generate the tex file and open the compiled pdf
 
         # compute truth table
-        start = timer()
-        tt = self.truthtable()
-        end = timer()
-        comptime = "This computation took " + str(round(end - start, 4)) + " seconds."
+        try:
+            from timeit import default_timer as timer
+            start = timer()
+            tt = self.truthtable()
+            end = timer()
+        except ImportError as e:
+            start, end = None, None
+            tt = self.truthtable()
+        if start and end:
+            comptime = "This computation took " + str(round(end - start, 4)) + " seconds."
+        else:
+            comptime = None
 
         # heading
         if not self.tex:
@@ -121,13 +129,13 @@ class Truthtable():
 
         # assemble string
         if not self.tex:
-            res = heading + tt + "\n\n" + comptime + "\n"
+            res = heading + tt + ("\n\n" + comptime if comptime else "") + "\n"
         else:
             res = preamble + \
                   "\n\n\\begin{document}\n\n" + \
                   heading + \
-                  tt + "\\\\ \\ \\\\ \\ \\\\ \n" + \
-                  comptime +\
+                  tt + \
+                  ("\\\\ \\ \\\\ \\ \\\\ \n" + comptime if comptime else "") +\
                   "\n\n\\end{document}"
 
         # generate and open output file
