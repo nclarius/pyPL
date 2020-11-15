@@ -1808,7 +1808,7 @@ class Most(Formula):
                self.phi == other.phi and self.psi == other.psi
 
     def __len__(self):
-        return 2 + len(self.phi) + len(self.psi)
+        return 1 + len(self.phi) + len(self.psi)
 
     def propvars(self):
         return set()
@@ -1872,7 +1872,7 @@ class More(Formula):
                self.phi == other.phi and self.psi == other.psi and self.chi == other.chi
 
     def __len__(self):
-        return 2 + len(self.phi) + len(self.psi) + len(self.chi)
+        return 1 + len(self.phi) + len(self.psi) + len(self.chi)
 
     def propvars(self):
         return set()

@@ -257,7 +257,7 @@ class Tableau(object):
         # measures size and time
         # size = len(self)
         elapsed = self.end - self.start
-        res += "This computation took " + str(round(elapsed, 3)) + " seconds.\n\n"
+        res += "This computation took " + str(round(elapsed, 4)) + " seconds.\n\n"
 
         if self.latex:
             postamble = "\\end{document}\n"
@@ -1714,7 +1714,7 @@ class Node(object):
         if isinstance(self.fml, Pseudo):
             return
         # todo smarter implementation (check for loops in rule appls.)
-        len_assumptions = sum([len(str(node.fml)) for node in self.branch
+        len_assumptions = sum([len(node.fml) for node in self.branch
                                if node.rule == "A"])
         height = len(self.branch)
         width = len(self.branch[-2].children)

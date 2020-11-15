@@ -206,18 +206,17 @@ class PyPLGUI(tk.Frame):
         tab = self.tabs.nametowidget(self.tabs.tabs()[0])
 
         def update_summary():
-            if self.inst.action == "tt":
-                txt = "Test whether or not the conclusion is true in all structures [in which the premises are true]," \
-                      "\nand generate a proof or counter model."
-            elif self.inst.action == "tp":
-                txt = "Generate a proof that the conclusion is true in all structures [in which the premises are true]."
-            elif self.inst.action == "cmg":
-                txt = "Generate a structure in which the conclusion is false [and the premises are true]."
-            elif self.inst.action == "mg":
-                txt = "Generate a structure in which the formula[s] is [/are] true."
-            else:
-                txt = "Check whether the formula is true in the structure."
-            lbl_sum.config(text="(" + txt + ")")
+            summary = {
+                    "tt": "Test whether or not the conclusion is true in all structures "
+                          "[in which the premises are true], \nand generate a proof or counter model.",
+                    "tp": "Generate a proof that the conclusion is true in all structures "
+                          "[in which the premises are true].",
+                    "cmg": "Generate a structure in which the conclusion is false [and the premises are true].",
+                    "mg":"Generate a structure in which the formula[s] is [/are] true.",
+                    "mc": "Check whether the formula is true in the structure.",
+                    "tc": "Compute the truth table for the formula."
+            }
+            lbl_sum.config(text="(" + summary[self.inst.action] + ")")
 
         def initial_select_rb(rb):
             rb.config(fg=white)
@@ -254,7 +253,8 @@ class PyPLGUI(tk.Frame):
 
         # radio buttons
         action = tk.StringVar(None, self.inst.action)
-        actions = [("Model checking", "mc"), ("Model generation", "mg"), ("Counter model generation", "cmg"),
+        actions = [("Truth table computation", "tc"), ("Model checking", "mc"),
+                   ("Model generation", "mg"), ("Counter model generation", "cmg"),
                    ("Theorem proving", "tp"), ("Theorem testing", "tt")]
         radiobuttons = []
         for txt, val in actions[::-1]:
@@ -346,7 +346,7 @@ class PyPLGUI(tk.Frame):
             #                text=(("Conclusion:" if i == 0 else "Premise " + str(i) + ":")
             #                      if self.inst.action in ["tt", "tp", "cmg"]
             #                       else "Formula " + str(i+1) + ":" if self.inst.action in ["mg"] else "Formula:"))
-            offset = 1 if self.inst.action in ["mg"] else (3 if self.inst.action in ["tt", "tp", "cmg"] else 3)
+            offset = 1 if self.inst.action in ["mg", "tc"] else (3 if self.inst.action in ["tt", "tp", "cmg"] else 3)
             row = len(mids)-1
             # cap.pack(in_=mids[row], side=tk.LEFT)
             # caps.append(cap)
@@ -410,7 +410,7 @@ class PyPLGUI(tk.Frame):
         def remove_formula(i):
             del input_raws[i]
             del input_fmls[i]
-            offset = 1 if self.inst.action in ["mg"] else (3 if self.inst.action in ["tt", "tp", "cmg"] else 3)
+            offset = 1 if self.inst.action in ["mg", "tc"] else (3 if self.inst.action in ["tt", "tp", "cmg"] else 3)
             row = i + offset
             mids[row].pack_forget()
             del mids[row]
@@ -502,10 +502,10 @@ class PyPLGUI(tk.Frame):
                 self.rbs_logic["constvar"]["var"].config(state="disabled")
 
         def set():
-            if not self.inst.action == "mc":
+            if self.inst.action != "mc":
                 self.inst.conclusion = input_fmls[0] if input_fmls else None
                 self.inst.premises = input_fmls[1:] if len(input_fmls) > 1 else []
-            else:
+            elif self.inst.action == "mc":
                 self.inst.formulas = [tuple([input_fmls[i], input_vs[i].get(), input_ws[i].get()])
                                       for i in range(len(input_fmls))]
             # self.inst.structure = struct
@@ -623,8 +623,16 @@ class PyPLGUI(tk.Frame):
         btn_add_fml["font"] = font_large
         btn_add_fml.bind("<Button>", lambda e: add_formula())
 
-        if self.inst.action == "mc":
-            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+2)}
+        if self.inst.action == "tc":
+            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+1)}
+            for i in new_mids:
+                new_mids[i].pack(ipadx=5, ipady=5, padx=50)
+            mids.update(new_mids)
+            cap_fml.pack(in_=mids[0], side=tk.LEFT, padx=15, pady=15)
+            add_formula()
+
+        elif self.inst.action == "mc":
+            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+3)}
             for i in new_mids:
                 new_mids[i].pack(ipadx=5, ipady=5, padx=50)
             mids.update(new_mids)
@@ -678,7 +686,7 @@ class PyPLGUI(tk.Frame):
             add_formula()
             input_ents[0].focus()
         else:
-            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+3)}
+            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+1)}
             for i in new_mids:
                 new_mids[i].pack(ipadx=5, ipady=5, padx=50)
             mids.update(new_mids)
@@ -1066,6 +1074,7 @@ class PyPLGUI(tk.Frame):
         # lbl_wait.pack(pady=32)
 
         tableau = __import__("tableau")
+        truthtable = __import__("truthtable")
         concl = self.inst.conclusion
         premises = self.inst.premises
         formulas = self.inst.formulas
@@ -1086,7 +1095,11 @@ class PyPLGUI(tk.Frame):
         underline_open = True if self.inst.underline_open else False
         hide_nonopen = True if self.inst.hide_nonopen else False
 
-        if self.inst.action == "mc":
+        if self.inst.action == "tc":
+            tt = truthtable.Truthtable(concl, True if self.inst.output == "tex" else False)
+            tt.show()
+
+        elif self.inst.action == "mc":
             # model checking
             denot = ""
             for fml, v, w in formulas:
