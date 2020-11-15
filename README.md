@@ -1,3 +1,5 @@
+# pyPL
+
 A naive model generator, model checker and theorem prover   
 for some combinations of classical and intuitionistic, non-modal and modal, propositional and first-order logic.  
 
