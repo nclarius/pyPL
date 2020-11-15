@@ -27,10 +27,10 @@ Features
  |    propositional    |    predicational    |    propositional    |    predicational    |
  | non-modal |  modal  | non-modal |  modal  | non-modal |  modal  | non-modal |  modal  |  
  |           |         |           | CD | VD |           |         |           | CD | VD |
- | MC |  MG  | MC | MG | MC |  MG  | MC | MG | MC |  MG  | MC | MG | MC |  MG  | MC | MG |
+ | TT | MC |  MG  | MC | MG | MC |  MG  | MC | MG | MC |  MG  | MC | MG | MC |  MG  | MC | MG |
  |-------------------------------------------|-------------------------------------------|
- | 🗸  |  🗸  |  🗸 | 🗸  | 🗸  |  🗸  | 🗸  | 🗸  |  🗸 |  ✗  |  ✗ | ✗  |  🗸 |  ✗   | ✗  | ✗  |
-MC = model checking, MG = model generation + tableau calculus;
+ | 🗸  | 🗸  |  🗸  |  🗸 | 🗸  | 🗸  |  🗸  | 🗸  | 🗸  |  🗸 |  ✗  |  ✗ | ✗  |  🗸 |  ✗   | ✗  | ✗  |
+TT = truth table generation, MC = model checking, MG = model generation + tableau calculus;
 CD = with constant domains, VD = with varying domains;  
 modal MG only for K frames.
 ```
@@ -80,55 +80,18 @@ Wish list
 Usage notes
 -----------
 
-(Usage instructions currently only apply to the model checking feature.)
-
 ### Try it out
-**You can try this tool out [here](https://trinket.io/python3/757871dd18).**  
+**You can try the model checkinf feature of this tool out [here](https://trinket.io/python3/757871dd18).**  
 If you want to dive in deeper, I recommend downloading pyPL to your own computer.
 
 ### Installation and execution
 To run this tool locally on your machine:
-1. Clone this repository.
-2. *Optional:* To specify custom input (see next subsection), edit the file `denotation.py` in a text editor of your choice.
-3. Execute `denotation.py` in a terminal.
-
-Running this program requires Python (version >= 3.9) to be installed on your machine.  
-How to 'clone github repository', 'install python', 'edit .py file' and 'execute .py script in terminal' is all easily googleable for your respective operating system.
+1. Install dependencies: `Python` (version >= 3.9), `tkinter`, `pdflatex` (if you want nicely formatted output).
+2. Clone this repository.
+3. Execute `gui.py`.
+How to 'clone github repository', 'install python', 'edit .py file' and 'execute .py script' is all easily googleable for your respective operating system.
 
 ### Specifying input
-**This tool is not equipped with an interactive user interface; input has to be specified in the source code.**  
-A number of examples are already set up; this is the stuff you see when running the program.  
-To specify your own input:  
-- Structures and formulas to compute denotations for are defined in the function `compute_denot` in `denotation.py`.  
-  Formulas, unfortunately, have to be entered in prefix notation.  
-  Follow the existing examples and the documentations of the classes and methods to get an idea.  
-- You can select which structures to include in the output by editing the variable `active` (near top of source code).
-- You can select whether or not to print out intermediate steps by editing the variable `verbose` (same place).
-
-After specifying your input in the source code, execute `denotation.py` in a terminal to view the output.
-
-### If you would like to understand what's going on under the hood
-- `denotation.py` is the main module in which input is specified and from which the computations are run.  
-  `expr.py` defines the language and semantics, and `structure.py` the form of structures, of the logics.
-  `tableau.py` computes tableau proofs and extracts models from them.
-  `parser.py` is a formula parser.
-- The interesting part for you are the `denot` (denotation) methods in each of the expression classes in `expr.py`.  
-  Compare how the formal definitions can be translated into code almost 1:1,
-  and try to follow why the implementation works the way it does, especially the loop logic for the quantifiers
-  (classes `Exists` and `Forall` in `expr.py`).  
-- To follow an evaluation process, I recommend to
-  - set breakpoints at each of the `denot` method instances and step through an evaluation process symbol by symbol
-    to see how a denotation is computed recursively in line with the inductive definitions.
-  - trace (watch or simply print) the variables `v` and `v_` in the `denot` methods
-    to keep track of what the current variable assignment looks like during quantifier evaluation.  
-- The `__str__` methods are what makes the expressions formatted human-readable in the output.  
-- Simply ignore all the print statements and anything that looks completely unfamiliar to you (such as `w`/modal stuff).  
-
-### Notes on notation
-- 'S' = structure/model (aka 'M')
-- 'D' = domain of discourse (aka 'M', 'A')
-- 'I' = interpretation function for non-logical symbols (aka 'F')
-- 'g' = variable assignment function for individual variables (aka 'v')
-- 'V' = valuation function for propositional variables
+Documentation on how to enter formulas, structures and input files can be found in `doc/Parser.md`.
 
 ### Have fun!

@@ -3,7 +3,6 @@
 
 """
 Graphical interface.
-CURRENTLY UNDER CONSTRUCTION.
 """
 
 

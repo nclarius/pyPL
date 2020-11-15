@@ -10,7 +10,7 @@ Lowrecase letters `x` - `z`, optionally followed by a (optionally separatd by `_
 Examples: `x`, `y`, `x_23`, `z5`.
 
 ### Individual constants
-Lowercase letters `a` - `e` and `i` - `o`, optionally followed by a (optionally separatd by `_`) number. 
+Lowercase letters `a` - `e` and `i` - `o`, optionally followed by a (optionally separatd by `_`) number.  
 Examples: `a`, `m`, `c12`, `zc_345`.
 
 ### Functions
@@ -25,11 +25,10 @@ Examples: `p`, `q`, `p_1`, `u_23`.
 
 ### Predicates
 A sequence of letters, numbers and underscore, with the first symbol an uppercase letter.  
-Examples: `P`, `Loves`, `P_123`.
+Examples: `P`, `Loves`, `P_123`, not: `p`, `loves`.
 
 ### Equality
 `=`, `\eq`.
-
 
 ## Connectives
 
@@ -89,14 +88,22 @@ Example: `\more x(Boy(x), Girl(x), Sleep(x))`.
 ### Extension
 `\ext`
 
-## Bracketing conventions
-- Outer brackets may be omitted.  
+## Auxiliary symbols
+- All formulas use round brackets.  
+  Example: `\exi x (P(x) ^ Q(x))`, not: `\exi x [P(x) ^ Q(x)]`.
+
+- Terms inside function expressions and atomic predications are enclosed by brackets and separated by commas.  
+  Example: `P(a,b)`, not: `Pab`.
+  
+- Bracketing conventions:
+
+  - Outer brackets may be omitted.  
   Example: `p ^ q` = `(p ^ q)`.
 
-- Occurrences of the same operator are left-associative.  
+  - Occurrences of the same operator are left-associative.  
    Example: `p ^ q ^ r` = `(p ^ q) ^ r`.
 
-- Operator precedence: `∃`,`∀`, `¬` < `∧` < `∨` < `→` < `↔` < `⊕`.  
+  - Operator precedence: `∃`,`∀`, `¬` < `∧` < `∨` < `→` < `↔` < `⊕`.  
   Examples:  `¬ p ∨ q ∧ r` = `(¬p ∨ (q ∧ r))`, `∃x P(x) ^ Q(x)` = `((∃x P(x)) ^ Q(x))`.
 
 ## Formulas

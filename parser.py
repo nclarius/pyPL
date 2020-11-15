@@ -3,7 +3,6 @@
 
 """
 Parse a formula given as string into an Expr object.
-CURRENTLY UNDER CONSTRUCTION.
 """
 
 import re

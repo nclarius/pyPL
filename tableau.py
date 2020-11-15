@@ -3,7 +3,6 @@
 
 """
 Tableau proofs and model extraction.
-THIS PART IS STILL UNDER CONSTRUCTION.
 """
 
 # Workflow:
