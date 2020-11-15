@@ -49,16 +49,16 @@ class FmlParser:
             "Var": r"(x|y|z)(_?\d+)?",
             "Const": r"(([a-e]|[i-o])(_?\d+)?)",
             "Func": r"(f|g|h)(_?\d+)?",
-            "Pred": r"[A-Z]\w*",
             # atom symbols
             "Prop": r"[p-u](_?\d+)?",
             "Eq": r"(=|\\eq)",
+            "Pred": r"[A-Z]\w*",
             # connectives
             "Verum": r"(⊤|\\top|\\verum|\\ltrue)",
             "Falsum": r"(⊥|\\bot|\\falsum|\\lfalse)",
             "Neg": r"(¬|-|~|\\neg|\\lnot)",
             "Conj": r"(∧|\^|&|\\wedge|\\land)",
-            "Disj": r"(∨|v|\||\\vee|\\lnot)",
+            "Disj": r"(∨|v|\||\\vee|\\lor)",
             "Imp": r"(→|⇒|⊃|(-|=)+>|\\rightarrow|\\Rightarrow|\\to|\\limp)",
             "Biimp": r"(↔|⇔|≡|<(-|=)+>|\\leftrightarrow|\\Leftrightarrow|\\oto|\\lbiimp)",
             "Xor": r"(⊕|⊻|\\oplus|\\lxor)",
