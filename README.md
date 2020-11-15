@@ -23,11 +23,11 @@ If you want to dive in deeper, I recommend downloading pyPL to your own computer
 ### Install and run
 To run this tool locally on your machine:
 1. Install dependencies:
-   - core software: `Python` (version >= 3.9) + Python packages: `os`, `re`, `timeit`
+   - core software: `Python` (version >= 3.9) + Python packages: `os`, `re`
    - for graphical interface: Python `tkinter`
-   - for nicely formatted output: `LaTeX` with `pdflatex` + LaTeX packages: `geometry`, `forest`, `amssymb`, `amsmath`, `amstext`, `wasysym`
+   - for nicely formatted output: `LaTeX` with `pdflatex` + LaTeX packages: `geometry`, `array`, `forest`, `amssymb`, `amsmath`, `amstext`, `wasysym`
 2. Clone this repository.
-3. Execute `main.py`.
+3. Execute `pyPL/main.py`.
 
 How to 'clone github repository', 'install python' and 'execute .py script' is all easily googleable for your respective operating system.
 
@@ -63,7 +63,7 @@ Documentation on how to enter formulas, structures and input files can be found 
 
 # Known issues
  - tableau algorithm relatively inefficient
- - GUI and parser sometimes glitchy (window not scrollable, add/remove buttons not always working properly, bracketing not always interpreted correctly)
+ - GUI and parser sometimes glitchy window not scrollable
  - global variables are bad
 
 # Wish list

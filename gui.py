@@ -49,6 +49,7 @@ black = "#000000"
 # lightblue = "#80ccff"
 darkgray = "#404040"
 lightgray = "#666666"
+darkwhite = "#F5F5F5"
 font = "-family {OpenSans} -size 12 -weight normal -slant roman -underline 0 -overstrike 0"
 font_large = "-family {OpenSans} -size 14 -weight normal -slant roman -underline 0 -overstrike 0"
 
@@ -73,6 +74,44 @@ class ScrollableFrame(ttk.Frame):
 
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
+
+class Tooltip(object):
+
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tipwindow = None
+        self.id = None
+        self.x = self.y = 0
+        widget.bind("<Enter>", lambda e: self.showtip())
+        widget.bind("<Leave>", lambda e: self.hidetip())
+
+    def showtip(self):
+        if self.tipwindow or not self.text:
+            return
+        x, y, cx, cy = self.widget.bbox("insert")
+        x = x + self.widget.winfo_rootx() + 27
+        y = y + cy + self.widget.winfo_rooty() +27
+        self.tipwindow = tw = tk.Toplevel(self.widget)
+        tw.wm_overrideredirect(1)
+        tw.wm_geometry("+%d+%d" % (x, y))
+        try:
+            # For Mac OS
+            tw.tk.call("::tk::unsupported::MacWindowStyle",
+                       "style", tw._w,
+                       "help", "noActivates")
+        except tk.TclError:
+            pass
+        label = tk.Label(tw, text=self.text, justify=tk.LEFT,
+                      background=white, relief=tk.SOLID, borderwidth=1,
+                      font=("OpenSans", "10", "normal"))
+        label.pack(ipadx=1)
+
+    def hidetip(self):
+        tw = self.tipwindow
+        self.tipwindow = None
+        if tw:
+            tw.destroy()
 
 
 class PyPLGUI(tk.Frame):
@@ -288,12 +327,16 @@ class PyPLGUI(tk.Frame):
 
         def load():
             while len(input_raws) > 1:
-                remove_formula(len(input_raws) - 1)  # todo remove structure
+                remove_formula(len(input_raws) - 1)
+                ent_struct.delete("1.0", tk.END)
+                lbl_struct.delete("1.0", tk.END)
+                lbl_struct.configure(state="disabled")
+                self.inst.structure = None
             initial_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "input")
             if not os.path.exists(initial_dir):
                 initial_dir = os.getcwd()
             file = tkinter.filedialog.askopenfile(initialdir=initial_dir)
-            lines = [line.strip() for line in file]
+            lines = [line.strip() for line in file if line]  # todo don't drop whitespace
             if self.inst.action != "mc":
                 for i, line in enumerate(lines):
                     if not line:
@@ -304,9 +347,9 @@ class PyPLGUI(tk.Frame):
                     input_ents[i].insert(0, line)
                     parse(i)
             else:
-                empty_line = lines.index("") if "" in lines else len(lines)
-                structure = lines[0:empty_line]
-                formulas = lines[empty_line + 1:]
+                blankline = lines.index("") if "" in lines else len(lines) if " = " in "".join(lines) else 0
+                structure = lines[0:blankline]
+                formulas = lines[blankline + 1:]
                 ent_struct.delete("1.0", tk.END)
                 ent_struct.insert(1.0, "\n".join(structure))
                 parse_struct("\n".join(structure))
@@ -351,25 +394,57 @@ class PyPLGUI(tk.Frame):
             row = len(mids)-1
             # cap.pack(in_=mids[row], side=tk.LEFT)
             # caps.append(cap)
-            # remove button
-            rem = tk.Button(tab,
-                            bg=white,
-                            text="-",
-                            # bg=darkgray, fg=white,
-                            state="disabled",
-                            activebackground=lightgray, activeforeground=white,
-                            width=1, height=1)
-            rem.pack(in_=mids[row], side=tk.LEFT, padx=5)
-            rem["font"] = font_large
-            rem.bind("<Button>", lambda e: remove_formula(i))
-            rems.append(rem)
-            if len(input_fmls) > 1 or self.inst.action not in ["tt", "tp", "cmg"]:
-                btn_swap.config(state="normal")
-                rem.config(state="normal")
+            if not self.inst.action == "tc":
+                # remove button
+                rem = tk.Button(tab,
+                                bg=white,
+                                text="-",
+                                # bg=darkgray, fg=white,
+                                state="disabled" if i == 0 and self.inst.action in ["tt", "tp", "cmg"] else "normal",
+                                activebackground=lightgray, activeforeground=white,
+                                width=1, height=1)
+                rem.pack(in_=mids[row], side=tk.LEFT, padx=5)
+                rem["font"] = font_large
+                Tooltip(rem, "remove this formula")
+                rem.bind("<Button>", lambda e: remove_formula(i))
+                rems.append(rem)
+                # swap buttons
+                swap_up = tk.Button(tab,
+                                     bg=white,
+                                     text="⇅",
+                                     # text="⇡",
+                                     state="disabled" if i == 0 else "normal",
+                                     activebackground=lightgray, activeforeground=white,
+                                     width=1, height=1)
+                swap_up["font"] = font_large
+                Tooltip(swap_up, "move this formula one position up")
+                swap_up.bind("<Button>", lambda e: swap_up_formula(i))
+                swap_up.pack(in_=mids[row], side=tk.LEFT, padx=5)
+                swap_ups.append(swap_up)
+                swap_dn = tk.Button(tab,
+                                     bg=white,
+                                     text="⇣",
+                                     state="disabled" if i == len(input_raws)-1 else "normal",
+                                     activebackground=lightgray, activeforeground=white,
+                                     width=1, height=1)
+                swap_dn["font"] = font_large
+                Tooltip(swap_dn, "move this formula one position down")
+                swap_dn.bind("<Button>", lambda e: swap_dn_formula(i))
+                # swap_dn.pack(in_=mids[row], side=tk.LEFT, padx=5)
+                swap_dns.append(swap_dn)
+                for j in range(len(input_fmls)):
+                    if j < i:
+                        swap_dns[j].configure(state="normal")
             # v and w fields
             if self.inst.action == "mc":
-                ent_v = tk.Entry(tab, textvariable=v, width=2)
-                ent_w = tk.Entry(tab, textvariable=w, width=3)
+                ent_v = tk.Entry(tab, textvariable=v, width=2, disabledbackground=darkwhite,
+                                 state="disabled" if self.inst.logic["proppred"] == "prop" else "normal")
+                Tooltip(ent_v, "the variable assignment to evaluate the expression against (e.g. 'v1')\n"
+                               "if left empty, the expression will be evaluated relative to all assignments")
+                ent_w = tk.Entry(tab, textvariable=w, width=3, disabledbackground=darkwhite,
+                                 state="disabled" if self.inst.logic["modal"] == "nonmodal" else "normal")
+                Tooltip(ent_w, "the possible world to evaluate the expression against (e.g. 'w1')\n"
+                               "if left empty, the expression will be evaluated relative to all possible worlds")
                 ent_v.pack(in_=mids[row], side=tk.LEFT)
                 ent_w.pack(in_=mids[row], side=tk.LEFT)
                 input_vs.append(ent_v)
@@ -377,7 +452,27 @@ class PyPLGUI(tk.Frame):
             # entry field
             ent = tk.Entry(tab,
                            textvariable=raw,
-                           width=55 if self.inst.action != "mc" else 50)
+                           # font=("Consolas", 12),
+                           width=50 if self.inst.action != "mc" else 45)
+            tt = {
+                    True: {
+                        "tt": "enter the conclusion to be proven or refuted",
+                        "tp": "enter the conclusion to be proven",
+                        "cmg": "enter the conclusion to be refuted",
+                        "mg": "enter a formula to be satisfied",
+                        "mc": "enter an expression (formula or term) to be evaluated in the structure",
+                        "tc": "enter the formula to compute the truth table for"
+                    },
+                    False: {
+                        "tt": "enter a premise to be assumed",
+                        "tp": "enter a premise to be assumed",
+                        "cmg": "enter a premise to be assumed",
+                        "mg": "enter a formula to be satisfied",
+                        "mc": "enter an expression (formula or term) to be evaluated in the structure",
+                        "tc": "enter the formula to compute the truth table for"
+                    }
+                }
+            Tooltip(ent, tt[i == 0][self.inst.action])
             ent.pack(in_=mids[row], side=tk.LEFT)
             raw.trace("w", lambda *args: select_entry(i))
             input_ents.append(ent)
@@ -394,6 +489,7 @@ class PyPLGUI(tk.Frame):
             btn_parse.pack(in_=mids[row], side=tk.LEFT, padx=5)
             btn_parse.bind("<Button>", lambda e: parse(i))
             btns.append(btn_parse)
+            Tooltip(btn_parse, "parse this formula")
             # formula in plain text
             lbl = tk.Text(tab, height=1, width=55, borderwidth=0, bg=white, wrap=tk.CHAR)
             lbl.configure(inactiveselectbackground=lbl.cget("selectbackground"))
@@ -417,25 +513,49 @@ class PyPLGUI(tk.Frame):
             # del caps[i]
             del input_lbls[i]
             del rems[i]
+            del swap_ups[i]
+            del swap_dns[i]
             del input_ents[i]
             del btns[i]
             for j in range(len(input_fmls)):
                 if j >= i:
                     mids[j+offset] = mids[j+offset+1]
                 rems[j].bind("<Button>", lambda e: remove_formula(j))
+                swap_ups[j].bind("<Button>", lambda e: swap_up_formula(j))
+                swap_dns[j].bind("<Button>", lambda e: swap_dn_formula(j))
                 input_raws[j].trace("w", lambda *args: select_entry(j))
                 btns[j].bind("<Button>", lambda e: parse(j))
+                if j == 0:
+                    swap_ups[j].configure(state="disabled")
+                    if self.inst.action in ["tt", "tp", "cmg"]:
+                        rems[j].configure(state="disabled")
+                if j == len(input_fmls)-1:
+                    swap_dns[j].configure(sate="disabled")
             del mids[max(mids)]
-            if len(input_fmls) == 1:
-                btn_swap.config(state="disabled")
             set()
 
-        def swap_formulas():
-            c, p1 = input_raws[0].get(), input_raws[1].get()
-            input_raws[0].set(p1)
-            input_raws[1].set(c)
-            parse(0)
-            parse(1)
+        def swap_up_formula(i):
+            f1, f2 = input_raws[i-1].get(), input_raws[i].get()
+            input_raws[i-1].set(f2)
+            input_raws[i].set(f1)
+            parse(i-1)
+            parse(i)
+            if i == 1:
+                swap_ups[i-1].configure(state="disabled")
+                swap_dns[i].configure(state="normal")
+                if self.inst.action in ["tt", "tp", "cmg"]:
+                    rems[i-1].configure(state="disabled")
+                    rems[i].configure(state="normal")
+
+        def swap_dn_formula(i):
+            f1, f2 = input_raws[i].get(), input_raws[i+1].get()
+            input_raws[i].set(f2)
+            input_raws[i+1].set(f1)
+            parse(i)
+            parse(i+1)
+            if i == len(input_fmls)-2:
+                swap_ups[i].configure(state="normal")
+                swap_dns[i+1].configure(state="disabled")
 
         def select_entry(i):
             raw = input_raws[i]
@@ -501,6 +621,10 @@ class PyPLGUI(tk.Frame):
                 self.rbs_logic["frame"]["K"].config(state="disabled")
                 self.rbs_logic["constvar"]["const"].config(state="disabled")
                 self.rbs_logic["constvar"]["var"].config(state="disabled")
+            if self.inst.action == "mc":
+                for i in range(len(input_fmls)):
+                    input_vs[i].config(state="disabled" if self.inst.logic["proppred"] == "prop" else "normal")
+                    input_ws[i].config(state="disabled" if self.inst.logic["modal"] == "nonmodal" else "normal")
 
         def set():
             if self.inst.action != "mc":
@@ -537,6 +661,7 @@ class PyPLGUI(tk.Frame):
                               text="↶",
                               activebackground=lightgray, activeforeground=white)
         btn_reset.pack(in_=topmid, padx=15, side=tk.LEFT)
+        Tooltip(btn_reset, "reset")
         btn_reset.bind("<Button>", lambda e: self.tab_2())
 
         # heading
@@ -555,6 +680,7 @@ class PyPLGUI(tk.Frame):
                              # bg=darkgray, fg=white,
                              activebackground=lightgray, activeforeground=white)
         btn_load.pack(in_=topmid, padx=15, side=tk.LEFT)
+        Tooltip(btn_load, "load input from file")
         btn_load.bind("<Button>", lambda e: load())
 
         # input fields
@@ -567,6 +693,8 @@ class PyPLGUI(tk.Frame):
         caps = []
         input_lbls = []
         rems = []
+        swap_ups = []
+        swap_dns = []
         input_ents = []
         btns = []
 
@@ -602,6 +730,7 @@ class PyPLGUI(tk.Frame):
         # lbl_sum.pack(in_=mids[0])
 
         # captions
+        cap_exprs = tk.Label(tab, text="Expressions:", bg=white)
         cap_fml = tk.Label(tab, text="Formula:", bg=white)
         cap_fmls = tk.Label(tab, text="Formulas:", bg=white)
         cap_concl = tk.Label(tab, text="Conclusion:", bg=white)
@@ -609,19 +738,13 @@ class PyPLGUI(tk.Frame):
         cap_struct = tk.Label(tab, text="Structure:", bg=white)
 
         # buttons
-        btn_swap = tk.Button(tab,
-                             bg=white,
-                             text="⇅",
-                             state="disabled",
-                             activebackground=lightgray, activeforeground=white,
-                             width=1, height=1)
-        btn_swap.bind("<Button>", lambda e: swap_formulas())
         btn_add_fml = tk.Button(tab,
                                 bg=white,
                                 text="+",
                                 activebackground=lightgray, activeforeground=white,
                                 width=1, height=1)
         btn_add_fml["font"] = font_large
+        Tooltip(btn_add_fml, "add a formula")
         btn_add_fml.bind("<Button>", lambda e: add_formula())
 
         if self.inst.action == "tc":
@@ -646,7 +769,8 @@ class PyPLGUI(tk.Frame):
             #                textvariable=struct_raw)
             # ent_struct.pack(in_=mids[6], side=tk.LEFT, expand=True)
             # ent_struct.trace("w", lambda *args: select_entry(-1))
-            ent_struct = tk.Text(tab, height=8, width=60)
+            ent_struct = tk.Text(tab, height=8, width=60)  # , font=("Consolas", 12)
+            Tooltip(ent_struct, "enter the structure to evaluate the expressions against")
             ent_struct.pack(in_=mids[1], side=tk.LEFT)
             # input_ents.append(ent_struct)
             btn_parse_struct = tk.Button(tab,
@@ -655,6 +779,7 @@ class PyPLGUI(tk.Frame):
                                          # bg=darkgray, fg=white,
                                          activebackground=lightgray, activeforeground=white)
             btn_parse_struct["font"] = font_large
+            Tooltip(btn_parse_struct, "parse this structure")
             btn_parse_struct.pack(in_=mids[1], side=tk.LEFT, padx=5)
             btn_parse_struct.bind("<Button>", lambda e: parse_struct())
             # btns.append(btn_parse_struct)
@@ -669,7 +794,7 @@ class PyPLGUI(tk.Frame):
             mid2 = tk.Frame(mid, bg=white)
             mids[2] = mid2
             mids[2].pack(ipadx=5, ipady=5)
-            cap_fmls.pack(in_=mids[2], side=tk.LEFT, padx=15, pady=15)
+            cap_exprs.pack(in_=mids[2], side=tk.LEFT, padx=15, pady=15)
             btn_add_fml.pack(in_=mids[2], side=tk.LEFT)
             add_formula()
             ent_struct.focus()
@@ -697,7 +822,6 @@ class PyPLGUI(tk.Frame):
             for i in new_mids:
                 new_mids[i].pack(ipadx=5, ipady=5, padx=50)
             mids.update(new_mids)
-            btn_swap.pack(in_=mids[2], side=tk.LEFT, padx=15)
             cap_prems.pack(in_=mids[2], side=tk.LEFT, pady=15)
             btn_add_fml.pack(in_=mids[2], side=tk.LEFT, padx=15)
             input_ents[0].focus()
