@@ -29,7 +29,7 @@ Examples: `x`, `y`, `x_23`, `z5`.
 
 ### Individual constants
 Lowercase letters `a` - `e` and `i` - `o`, optionally followed by a (optionally separatd by `_`) number.  
-Examples: `a`, `m`, `c12`, `zc_345`.
+Examples: `a`, `m`, `c12`, not: `mary`, `p`.  
 
 ### Functions
 Lowercase letters `f` - `h`, optionally followed by a (optionally separatd by `_`) number.  
