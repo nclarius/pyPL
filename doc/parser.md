@@ -1,14 +1,16 @@
+Here is how to enter formulas, structures and input files.
+
 # Entering formulas
 
 ## Auxiliary symbols
 - All symbols except parentheses and commas must be separated by whitespace.  
- Example: `- (p ^ q)`, not: `-(p^q)`.
+ Example: `- (p ^ q)`; not: `-(p^q)`.
  
 - All formulas use round brackets.  
-  Example: `\exi x (P(x) ^ Q(x))`, not: `\exi x [P(x) ^ Q(x)]`.
+  Example: `\exi x (P(x) ^ Q(x))`; not: `\exi x [P(x) ^ Q(x)]`.
 
 - Terms inside function expressions and atomic predications are enclosed by brackets and separated by commas.  
-  Example: `P(a,b)`, not: `Pab`.
+  Example: `P(a,b)`; not: `Pab`.
   
 - Bracketing conventions:
 
@@ -19,31 +21,32 @@
    Example: `p ^ q ^ r` = `(p ^ q) ^ r`.
 
   - Operator precedence: `∃`,`∀`, `¬` < `∧` < `∨` < `→` < `↔` < `⊕`.  
-  Examples:  `¬ p ∨ q ∧ r` = `(¬p ∨ (q ∧ r))`, `∃x P(x) ^ Q(x)` = `((∃x P(x)) ^ Q(x))`.
+    Example:  `¬ p ∨ q ∧ r` = `(¬p ∨ (q ∧ r))`, `∃x P(x) ^ Q(x)` = `(∃x P(x)) ^ Q(x)`.
 
 ## Term symbols
 
 ### Individual variables
-Lowrecase letters `x` - `z`, optionally followed by a (optionally separatd by `_`) number.  
+Lowrecase letters `x` - `z`, optionally followed by a number, optionally separated by an underscore.  
 Examples: `x`, `y`, `x_23`, `z5`.
 
 ### Individual constants
-Lowercase letters `a` - `e` and `i` - `o`, optionally followed by a (optionally separatd by `_`) number.  
-Examples: `a`, `m`, `c12`, `zc_345`.
+A sequence of letters, numbers and underscore, with the first symbol a lower letter, or    
+lowercase letters `a` - `e` and `i` - `o`, optionally followed by a number, optionally separated by an underscore.  
+Examples: `a`, `m`, `peter`, `c12`, `c_345`; not: `Mary`, `p`.
 
 ### Functions
-Lowercase letters `f` - `h`, optionally followed by a (optionally separatd by `_`) number.  
+Lowercase letters `f` - `h`, optionally followed by a number, optionally separated by an underscore.  
 Examples: `f`, `g2`.
 
 ## Atomic symbols
 
 ### Propositional variables
-Lowercase letters `p` - `u`, optionally followed by a (optionally separatd by `_`) number.  
+Lowercase letters `p` - `u`, optionally followed by a number, optionally separated by an underscore.  
 Examples: `p`, `q`, `p_1`, `u_23`.
 
 ### Predicates
 A sequence of letters, numbers and underscore, with the first symbol an uppercase letter.  
-Examples: `P`, `Loves`, `P_123`, not: `p`, `loves`.
+Examples: `P`, `Loves`, `P_123`; not: `p`, `loves`.
 
 ### Term equality
 `=`, `\eq`.
@@ -114,7 +117,7 @@ p ^ q -> (- r v p)
 P(a)  
 \all x (Woman(x) -> \exi y (- (x = y) ^ Man(y) ^ Love(x,y)))
 # p -> \falsum
-Believe(j, \int Bald(k))
+Believe(john, \int Bald(theking))
 ```
 
 
@@ -135,7 +138,7 @@ Component names:
 
 Component specifications:
 - Names (formal symbols and real-world objects) are entered as bare srings. Names can not contain whitespace.  
-  Example: `a`, `John`, not: `Santa Claus`.
+  Example: `a`, `John`; not: `Santa Claus`.
 - Sets are enclosed by `{`, `}`, with the elements separated by `,`.
 - Tuples are enclosed by `(`, `)`, with the elements separated by `,`.
 - Functions are enclosed by `[`, `]`, with the elements separated by `,` and argument - value pairs separated by `:`.

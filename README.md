@@ -16,20 +16,20 @@ License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
 # Usage notes
 
-### Try it out
-**You can try the model checking feature of this tool out [here](https://trinket.io/python3/757871dd18).**  
+### Try it outfh
+You can try the model checking feature of this tool out [here](https://trinket.io/python3/757871dd18).  
 If you want to dive in deeper, I recommend downloading pyPL to your own computer.
 
 ### Install and run
 To run this tool locally on your machine:
-1. Install dependencies: `Python` (version >= 3.9), `tkinter`, `pdflatex` (if you want nicely formatted output).
+1. Install dependencies: `Python` (version >= 3.9); `tkinter`; `texlive` and `pdflatex` (if you want nicely formatted output).
 2. Clone this repository.
 3. Execute `main.py`.
 
-How to 'clone github repository', 'install python', 'edit .py file' and 'execute .py script' is all easily googleable for your respective operating system.
+How to 'clone github repository', 'install python' and 'execute .py script' is all easily googleable for your respective operating system.
 
 ### Specify input
-Documentation on how to enter formulas, structures and input files can be found in `doc/Parser.md`.
+Documentation on how to enter formulas, structures and input files can be found in `doc/parser.md`.
 
 # Disclaimer
 - This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.  

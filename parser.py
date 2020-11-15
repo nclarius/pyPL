@@ -46,7 +46,7 @@ class FmlParser:
             "Noninf": r"(\|/=||\\nvDash|\\nmodels|\\lninf)",
             # term symbols
             "Var": r"(x|y|z)(_?\d+)?",
-            "Const": r"(([a-e]|[i-o])(_?\d+)?)",
+            "Const": r"(([a-z]\w+)|(([a-e]|[i-o])(_?\d+)?))",
             "Func": r"(f|g|h)(_?\d+)?",
             # atom symbols
             "Prop": r"[p-u](_?\d+)?",
