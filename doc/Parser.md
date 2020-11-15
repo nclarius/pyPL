@@ -200,6 +200,6 @@ like modal propositional structure and modal varying predicational structure, ex
 - Each formulas is written on one line.
 - The first formula in the list is interpreted as the conclusion (if applicable).
 - If a structure and formulas are specified, they are separated by a blank line.  
-- Assignment functions and possible worlds to evaluate formulas against can be specified by prepending their names to the formula prefixed with `v:` and `w:` respectively and suffixed with ` `.  
+- Assignments and worlds to evaluate expressions against in model checking are specified by prepending their names to the formula prefixed with `v:` and `w:` respectively and suffixed with ` `.  
 
 Examples: see the examplary files in `pyPL/input`.

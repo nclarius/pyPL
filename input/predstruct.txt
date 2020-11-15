@@ -4,3 +4,6 @@ I = [P: {(a)},
      R: {(a, b), (b, c)}]
 V = [v1: [x: a, y: b],
      v2: [x: a, y: a]]
+
+v:v1 P(x)
+v:v2 P(x)
