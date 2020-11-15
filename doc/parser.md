@@ -212,5 +212,5 @@ Examples: see the examplary files in `pyPL/input`.
 
 - If the program is not responding or crashed, check the log file `pyPL/pyPL.log` for error messages. Please note that tableaus for largish (sets of) formulas may take a couple seconds to compute.
 - If the formula or structure you entered won't update, you probably made a typo. Unfortunately there are no error messages telling you what exactly went wrong; you will have to check back with this documentation to see where the issue might be.  
+- If no output file opens and only a `.tex` file and no `.pdf` file was generated, compiling the `.tex` file via `pdflatex` probably went wrong. Try to compile the `.tex` file manually to see where the issue is (perhaps a missing package). If LaTeX causes problems, select plain text instead of LaTeX PDF output in the settings. 
 - If no output file opens, the automatic file opening via `xdg-open` probably isn't working on your machine. You can find all your output files in `pyPL/output`.  
-- If only a `.tex` file and no `.pdf` file is generated in `pyPL/output`, compiling the `.tex` file via `pdflatex` probably went wrong. Try to compile the `.tex` file manually to see where the issue is (perhaps a missing package). If that doesn't work, select plain text output instead of LaTeX PDF in the settings. 
