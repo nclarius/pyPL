@@ -329,8 +329,6 @@ class PyPLGUI(tk.Frame):
                     parse(i)
 
         def add_formula():
-            print("add formula")
-            print(len(mids))
             # variable
             raw, v, w = tk.StringVar(), tk.StringVar(), tk.StringVar()
             input_raws.append(raw)
@@ -409,7 +407,6 @@ class PyPLGUI(tk.Frame):
             # lbl.configure(inactiveselectbackground=lbl.cget("selectbackground"))
             # lbl.pack(in_=mids[row + 1], side=tk.LEFT)
             input_lbls.append(lbl)
-            print(len(mids))
 
         def remove_formula(i):
             del input_raws[i]
@@ -417,7 +414,6 @@ class PyPLGUI(tk.Frame):
             offset = 1 if self.inst.action in ["mg", "tc"] else (3 if self.inst.action in ["tt", "tp", "cmg"] else 3)
             row = i + offset
             mids[row].pack_forget()
-            del mids[row]
             # del caps[i]
             del input_lbls[i]
             del rems[i]
@@ -429,6 +425,7 @@ class PyPLGUI(tk.Frame):
                 rems[j].bind("<Button>", lambda e: remove_formula(j))
                 input_raws[j].trace("w", lambda *args: select_entry(j))
                 btns[j].bind("<Button>", lambda e: parse(j))
+            del mids[max(mids)]
             if len(input_fmls) == 1:
                 btn_swap.config(state="disabled")
             set()
@@ -492,7 +489,7 @@ class PyPLGUI(tk.Frame):
                     # self.rbs_logic[cat][val2].select()
                     # self.rbs_logic[cat][val1].deselect()
                     # select_rb((self.rbs_logic[cat][val2], cat))
-            if any([mode["modal"] for mode in modes]):
+            if any([mode["modal"] for mode in modes if mode]):
                 self.rbs_logic["frame"]["K"].config(state="normal")
                 if any([not mode["propositional"] for mode in modes]):
                     self.rbs_logic["constvar"]["const"].config(state="normal")
