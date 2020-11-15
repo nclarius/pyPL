@@ -8,18 +8,15 @@ Truth tables.
 from expr import *
 
 import os
-from subprocess import DEVNULL, STDOUT, check_call
-from datetime import datetime
-from timeit import default_timer as timer
 from itertools import product
 
 # todo plain text output
 
 class Truthtable():
 
-    def __init__(self, e: Expr, tex: bool):
+    def __init__(self, e: Expr, latex: bool):
         self.e = e
-        self.tex = tex
+        self.latex = latex
 
     def truthtable(self):
         pvs = sorted(list(self.e.propvars()))
@@ -28,7 +25,7 @@ class Truthtable():
         syms = [c for c in self.e.tex().split(" ")]
         parens = [c for c in self.e.tex() if c in ["(", ")"]]
 
-        if not self.tex:
+        if not self.latex:
             tt = ""
             tt += ((len(str(len(valuations))) + 2) * " ") + " ".join(pvs) + " | " + str(self.e) + "\n"
             tt += (len(tt)-1) * "-" + "\n"
@@ -53,7 +50,7 @@ class Truthtable():
     
     def truthrow(self, e, v, mainconn=False):
         s = PropStructure("S", v)
-        if not self.tex:
+        if not self.latex:
             # todo columns not properly aligned (extra space inserted when component is compound expression)
             if hasattr(e, "phi"):
                 if hasattr(e, "psi"):
@@ -92,7 +89,7 @@ class Truthtable():
                     return self.truthvalue(e.denot(s, v), mainconn)
     
     def truthvalue(self, b, mainconn=False):
-        if not self.tex:
+        if not self.latex:
             return "1" if b else "0"  # todo mark main connective
         else:
             return "$" + ("\\boldsymbol{" if mainconn else "") + ("1" if b else "0") + ("}" if mainconn else "") + "$"
@@ -115,20 +112,20 @@ class Truthtable():
             comptime = None
 
         # heading
-        if not self.tex:
+        if not self.latex:
             heading = "Truth table for " + str(self.e) + ":\n\n"
         else:
             heading = "Truth table for $" + self.e.tex() + "$:\\\\ \\ \\\\ \n"
 
         # load preamble
-        if self.tex:
+        if self.latex:
             path_preamble = os.path.join(os.path.dirname(__file__), "preamble.tex")
             with open(path_preamble) as f:
                 preamble = f.read()
                 preamble += "\n\n\setlength\\tabcolsep{3pt}\n"
 
         # assemble string
-        if not self.tex:
+        if not self.latex:
             res = heading + tt + ("\n\n" + comptime if comptime else "") + "\n"
         else:
             res = preamble + \
@@ -138,45 +135,9 @@ class Truthtable():
                   ("\\\\ \\ \\\\ \\ \\\\ \n" + comptime if comptime else "") +\
                   "\n\n\\end{document}"
 
-        # generate and open output file
-        if not self.tex:
-            # generate the txt file and open it
-            path_output = os.path.join(os.path.dirname(__file__), "output")
-            if not os.path.exists(path_output):
-                os.mkdir(path_output)
-            timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
-            file_txt = "output_" + timestamp + ".txt"
-            path_txt = os.path.join(path_output, file_txt)
-            os.chdir(path_output)
-            with open(path_txt, "w", encoding="utf-8") as f:
-                f.write(res)
-            # open file
-            check_call(["xdg-open", path_txt], stdout=DEVNULL, stderr=STDOUT)
-            os.chdir(os.path.dirname(__file__))
-        else:
-            # prepare output files
-            path_output = os.path.join(os.path.dirname(__file__), "output")
-            if not os.path.exists(path_output):
-                os.mkdir(path_output)
-            timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
-            file_tex = "output_" + timestamp + ".tex"
-            file_pdf = "output_" + timestamp + ".pdf"
-            path_tex = os.path.join(path_output, file_tex)
-            path_pdf = os.path.join(path_output, file_pdf)
-            os.chdir(path_output)
-            # write LaTeX code
-            with open(path_tex, "w") as texfile:
-                texfile.write(res)
-            # compile LaTeX to PDF
-            check_call(["pdflatex", file_tex], stdout=DEVNULL, stderr=STDOUT)
-            # open file
-            check_call(["xdg-open", path_pdf], stdout=DEVNULL, stderr=STDOUT)
-            # cleanup
-            for file in os.listdir(path_output):
-                path_file = os.path.join(path_output, file)
-                if os.path.exists(path_file) and file.endswith(".log") or file.endswith(".aux") or file.endswith(".gz"):
-                    os.remove(path_file)
-            os.chdir(os.path.dirname(__file__))
+        # write and open output
+        write_output = __import__("gui").write_output
+        write_output(res, self.latex)
 
 if __name__ == "__main__":
     pass

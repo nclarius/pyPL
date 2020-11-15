@@ -270,49 +270,8 @@ class Tableau(object):
             sep = 80 * "-"
             res += sep
 
-        # generate output
-        if not self.latex:
-            if not self.file:
-                # print the result in plain tex
-                print(res)
-            else:
-                # generate the txt file and open it
-                path_output = os.path.join(os.path.dirname(__file__), "output")
-                if not os.path.exists(path_output):
-                    os.mkdir(path_output)
-                timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
-                file_txt = "output_" + timestamp + ".txt"
-                path_txt = os.path.join(path_output, file_txt)
-                os.chdir(path_output)
-                with open(path_txt, "w", encoding="utf-8") as f:
-                    f.write(res)
-                # open file
-                check_call(["xdg-open", path_txt], stdout=DEVNULL, stderr=STDOUT)
-                os.chdir(os.path.dirname(__file__))
-        else:
-            # generate the tex file and open the compiled pdf
-            path_output = os.path.join(os.path.dirname(__file__), "output")
-            if not os.path.exists(path_output):
-                os.mkdir(path_output)
-            timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
-            file_tex = "output_" + timestamp + ".tex"
-            file_pdf = "output_" + timestamp + ".pdf"
-            path_tex = os.path.join(path_output, file_tex)
-            path_pdf = os.path.join(path_output, file_pdf)
-            os.chdir(path_output)
-            # write LaTeX code
-            with open(path_tex, "w") as texfile:
-                texfile.write(res)
-            # compile LaTeX to PDF
-            check_call(["pdflatex", file_tex], stdout=DEVNULL, stderr=STDOUT)
-            # open file
-            check_call(["xdg-open", path_pdf], stdout=DEVNULL, stderr=STDOUT)
-            # cleanup
-            for file in os.listdir(path_output):
-                path_file = os.path.join(path_output, file)
-                if os.path.exists(path_file) and file.endswith(".log") or file.endswith(".aux") or file.endswith(".gz"):
-                    os.remove(path_file)
-            os.chdir(os.path.dirname(__file__))
+        write_output = __import__("gui").write_output
+        write_output(res, self.latex)
 
     rule_names = {"α": "alpha", "β": "beta",  # connective rules
                   "γ": "gamma", "δ": "delta", "η": "eta", "θ": "theta", "ε": "epsilon",  # quantifier rules

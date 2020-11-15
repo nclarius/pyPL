@@ -5,8 +5,10 @@
 Graphical interface.
 """
 
-
 import os
+from subprocess import DEVNULL, STDOUT, check_call
+from datetime import datetime
+
 import tkinter as tk
 import tkinter.filedialog
 import tkinter.messagebox
@@ -136,7 +138,7 @@ class PyPLGUI(tk.Frame):
                        )  # todo no rounded corners for tabs
         self.style.theme_settings("default", {
                 "TNotebook":     {"configure": {"tabposition": "n", "borderwidth": 0}},
-                "TNotebook.Tab": {"configure": {"padding": [10, 7.5]}}})
+                "TNotebook.Tab": {"configure": {"padding": [10, 6.25]}}})
         # todo visually distinguish action buttons, radio buttons and check buttons?
         self.root.configure(bg=white)
         self.root.option_add("*Font", "NotoSans 12")
@@ -476,9 +478,15 @@ class PyPLGUI(tk.Frame):
             ent.pack(in_=mids[row], side=tk.LEFT)
             raw.trace("w", lambda *args: select_entry(i))
             input_ents.append(ent)
+            ent.bind("<Up>", lambda e: input_ents[(i-1 if i-1 in range(len(input_ents)) else i)].focus_set())
+            ent.bind("<Down>", lambda e: input_ents[(i+1 if i+1 in range(len(input_ents)) else i)].focus_set())
             ent.bind("<Return>", lambda e: parse(i))
             ent.bind("<Control-plus>", lambda e: add_formula())
             ent.bind("<Control-minus>", lambda e: remove_formula(i))
+            ent.bind("<Control-Up>", lambda e: swap_up_formula(i))
+            ent.bind("<Control-Down>", lambda e: swap_dn_formula(i))
+            ent.bind("<Control-R>", lambda e: self.tab_2())
+            ent.bind("<Control-L>", lambda e: load())  # todo not working
             # parse button
             btn_parse = tk.Button(tab,
                                   bg=white,
@@ -1295,8 +1303,48 @@ class PyPLGUI(tk.Frame):
                     # win_wait.destroy()
                     tab2.show()
 
-             # todo output sometimes shown twice?
 
+def write_output(res, latex=True):
+    # generate and open output file
+    if not latex:
+        # generate and open txt file
+        path_output = os.path.join(os.path.dirname(__file__), "output")
+        if not os.path.exists(path_output):
+            os.mkdir(path_output)
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
+        file_txt = "output_" + timestamp + ".txt"
+        path_txt = os.path.join(path_output, file_txt)
+        os.chdir(path_output)
+        with open(path_txt, "w", encoding="utf-8") as f:
+            f.write(res)
+        # open file
+        check_call(["xdg-open", path_txt], stdout=DEVNULL, stderr=STDOUT)
+        os.chdir(os.path.dirname(__file__))
+    else:
+        # generate and open latex and pdf file
+        # prepare output files
+        path_output = os.path.join(os.path.dirname(__file__), "output")
+        if not os.path.exists(path_output):
+            os.mkdir(path_output)
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
+        file_tex = "output_" + timestamp + ".tex"
+        file_pdf = "output_" + timestamp + ".pdf"
+        path_tex = os.path.join(path_output, file_tex)
+        path_pdf = os.path.join(path_output, file_pdf)
+        os.chdir(path_output)
+        # write LaTeX code
+        with open(path_tex, "w") as texfile:
+            texfile.write(res)
+        # compile LaTeX to PDF
+        check_call(["pdflatex", file_tex], stdout=DEVNULL, stderr=STDOUT)
+        # open file
+        check_call(["xdg-open", path_pdf], stdout=DEVNULL, stderr=STDOUT)
+        # cleanup
+        for file in os.listdir(path_output):
+            path_file = os.path.join(path_output, file)
+            if os.path.exists(path_file) and file.endswith(".log") or file.endswith(".aux") or file.endswith(".gz"):
+                os.remove(path_file)
+        os.chdir(os.path.dirname(__file__))
 
 def main():
     # redirect output to log file
