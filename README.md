@@ -81,7 +81,7 @@ Usage notes
 -----------
 
 ### Try it out
-**You can try the model checkinf feature of this tool out [here](https://trinket.io/python3/757871dd18).**  
+**You can try the model checking feature of this tool out [here](https://trinket.io/python3/757871dd18).**  
 If you want to dive in deeper, I recommend downloading pyPL to your own computer.
 
 ### Installation and execution
@@ -89,6 +89,7 @@ To run this tool locally on your machine:
 1. Install dependencies: `Python` (version >= 3.9), `tkinter`, `pdflatex` (if you want nicely formatted output).
 2. Clone this repository.
 3. Execute `gui.py`.
+
 How to 'clone github repository', 'install python', 'edit .py file' and 'execute .py script' is all easily googleable for your respective operating system.
 
 ### Specifying input

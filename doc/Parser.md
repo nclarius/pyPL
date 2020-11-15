@@ -110,9 +110,9 @@ Example: `\more x(Boy(x), Girl(x), Sleep(x))`.
 Examples:
 
 ```
-p ^ q -> (- r v z)  
+p ^ q -> (- r v p)  
 P(a)  
-\all x (Woman(x) -> \exi y Man(y) ^ - Love(x,y)))
+\all x (Woman(x) -> \exi y (- (x = y) ^ Man(y) ^ Love(x,y)))
 # p -> \falsum
 Believe(j, \int Bald(k))
 ```
@@ -120,8 +120,8 @@ Believe(j, \int Bald(k))
 
 # Entering structures
 
-- A structure is specified by its components, with components separated by linebreaks and the component name and its specification separated by ` = `.
-- Whitespace and linebreaks within components are ignored.
+- A structure is specified by listing its components, with components separated by linebreaks (without commas), and the component name and its specification separated by ` = `.
+- Whitespace and linebreaks within component specificaions are ignored.
 
 Component names:
 
@@ -134,11 +134,12 @@ Component names:
 - `V`: set of designated assignment functions for predicate logics (optional)
 
 Component specifications:
-- Names (formal symbols and real-world objects) are entered as bare srings. Whitespace in names is not permitted.
+- Names (formal symbols and real-world objects) are entered as bare srings. Names can not contain whitespace.  
+  Example: `a`, `John`, not: `Santa Claus`.
 - Sets are enclosed by `{`, `}`, with the elements separated by `,`.
 - Tuples are enclosed by `(`, `)`, with the elements separated by `,`.
 - Functions are enclosed by `[`, `]`, with the elements separated by `,` and argument - value pairs separated by `:`.
-- Elements of interpretations of one-place predicates have to be entered as singleton tuples enclosed in braces `(a)` rather than as bare elements `a`.
+- Elements of interpretations of one-place predicates and the domain of one-place functions have to be entered as singleton tuples enclosed in brackets `(a)` rather than as bare elements `a`.
 
 Examples:
 
@@ -160,7 +161,7 @@ I = [m: Mary,
 V = [v1: [x: Mary, y: Paula, z: Peter],
      v2: [x: Paula, y: Paula, z: Peter]]
 ```
-Modal propositoinal structure:
+Modal propositional structure:
 ```
 W = {w1, w2}
 R = {(w1, w1), (w1, w2)}
@@ -174,8 +175,7 @@ Modal predicational structure with constant domains:
 W = {w1, w2}
 R = {(w1, w1), (w1, w2)}
 D = {Mary, John}
-I = [m: [w1: Mary, 
-        w2: Mary],
+I = [m: [w1: Mary, w2: Mary],
      Love: [w1: {(Mary, Peter)}, 
             w2: {(Mary, Peter), (Peter, Mary)}]]
 ```
@@ -187,20 +187,19 @@ W = {w1, w2}
 R = {(w1, w1), (w1, w2)}
 D = [w1: {Mary, John},
      w2: {Mary, Susan}]
-I = [m: [w1: Mary, 
-         w2: Mary],
+I = [m: [w1: Mary, w2: Mary],
      Love: [w1: {(Mary, Peter)}, 
             w2: {(Mary, Susan), (Mary, Mary)}]]
 ```
 
 Kripke (intuitionistic) structures:  
-Like modal propositional structure and modal varying predicatoinal structure, except with the set of worlds named `K` instead of `W`.
+like modal propositional structure and modal varying predicational structure, except with the set of worlds named `K` instead of `W`.
 
 
 # Entering file input
 - Each formulas is written on one line.
 - The first formula in the list is interpreted as the conclusion (if applicable).
 - If a structure and formulas are specified, they are separated by a blank line.  
-- Assignment functions and possible worlds to evaluate formulas against can be specified by prepending their names to the formula separated with ` ` and prefixed with `v:` and `w:`, respectively.  
+- Assignment functions and possible worlds to evaluate formulas against can be specified by prepending their names to the formula prefixed with `v:` and `w:` respectively and suffixed with ` `.  
 
 Examples: see the examplary files in `pyPL/input`.
