@@ -22,7 +22,9 @@ If you want to dive in deeper, I recommend downloading pyPL to your own computer
 
 ### Install and run
 To run this tool locally on your machine:
-1. Install dependencies (see below).
+1. Install dependencies:
+   - core software: `Python` (version >= 3.9) + Python packages: `tkinter`, `os`, `re`, `timeit`
+   - for nicely formatted output: `LaTeX` with `pdflatex` + LaTeX packages: `geometry`, `forest`, `amssymb`, `amsmath`, `amstext`, `wasysym`
 2. Clone this repository.
 3. Execute `main.py`.
 
@@ -30,10 +32,6 @@ How to 'clone github repository', 'install python' and 'execute .py script' is a
 
 ### Specify input
 Documentation on how to enter formulas, structures and input files can be found in `doc/parser.md`.
-
-### Dependencies
-- core software: `Python` (version >= 3.9) + Python packages: `tkinter`, `os`, `re`, `timeit`
-- for nicely formatted output: `LaTeX` with `pdflatex` + LaTeX packages: `geometry`, `forest`, `amssymb`, `amsmath`, `amstext`, `wasysym`
 
 # Disclaimer
 - This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.  
