@@ -542,6 +542,7 @@ class PyPLGUI(tk.Frame):
             input_lbls.append(lbl)
 
         def remove_formula(i):
+            # todo not wokring properly (wrong formulas removed sometimes)
             del input_raws[i]
             del input_fmls[i]
             offset = 1 if self.inst.action in ["mg", "tc"] else (3 if self.inst.action in ["tt", "tp", "cmg"] else 3)
@@ -555,6 +556,7 @@ class PyPLGUI(tk.Frame):
             del input_ents[i]
             del btns[i]
             for j in range(len(input_fmls)):
+                print(j)
                 if j >= i:
                     mids[j+offset] = mids[j+offset+1]
                 rems[j].bind("<Button>", lambda e: remove_formula(j))
@@ -1274,8 +1276,8 @@ class PyPLGUI(tk.Frame):
             tt.show()
 
         elif self.inst.action == "mc":
-            denot = denotation.Denotation([(fml, structure, v, w) for fml, v, w in formulas], latex)
-            denot.show()
+            denot = denotation.Denotation([(fml, structure, v, w) for fml, v, w in formulas])
+            denot.show(latex)
 
             # # todo make look nicer?
             # # tk.messagebox.showinfo("", str(denot))

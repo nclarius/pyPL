@@ -63,21 +63,19 @@ class Tableau(object):
                  conclusion=None, premises=[], axioms=[],
                  validity=True, satisfiability=True, linguistic=False,
                  classical=True, propositional=False, modal=False, vardomains=False, frame="K",
-                 latex=True, file=False, silent=False, verbose=False, underline_open=True, hide_nonopen=False,
-                 num_models=1, size_limit_factor=1.5):
+                 num_models=1, size_limit_factor=1.5,
+                 file=True, hide_nonopen=False, underline_open=True, silent=False):
 
         # settings
         # todo nicer specification of settings?
         # todo check consistency of settings
         self.mode = {
-                "latex":     latex,
                 "validity":  validity, "satisfiability": satisfiability, "linguistic": linguistic,
                 "classical": classical, "propositional": propositional,
                 "modal":     modal, "vardomains": vardomains, "frame": frame
         }
-        self.latex, self.file, self.silent, self.verbose, self.underline_open, self.hide_nonopen, \
-        self.num_models, self.size_limit_factor = \
-            latex, file, silent, verbose, underline_open, hide_nonopen, num_models, size_limit_factor
+        self.num_models, self.size_limit_factor, self.file, self.hide_nonopen, self.underline_open, self.silent = \
+            num_models, size_limit_factor, file, hide_nonopen, underline_open, silent
 
         # append initial nodes
         line = 1
@@ -128,13 +126,13 @@ class Tableau(object):
     def __len__(self):
         return len(self.root.nodes())
 
-    def show(self):
+    def show(self, latex=True):
         """
         Print tableau info.
         """
         res = ""
         # create preamble
-        if self.latex:
+        if latex:
             path_preamble = os.path.join(os.path.dirname(__file__), "preamble.tex")
             with open(path_preamble) as f:
                 preamble = f.read()
@@ -158,9 +156,9 @@ class Tableau(object):
                  if self.mode["modal"] and not self.mode["propositional"] else "") + \
                 (" in a " + self.mode["frame"] + " frame"
                  if self.mode["modal"] else "") + \
-                "." + ("\\\\" if self.latex else "") + "\n\n"
+                "." + ("\\\\" if latex else "") + "\n\n"
 
-        if not self.latex:
+        if not latex:
             axs = ["  " + str(node.fml) for node in self.axioms]
             prems = ["  " + str(self.root.fml)] if not self.conclusion else [] + \
                                                                             ["  " + str(node.fml) for node in
@@ -199,7 +197,7 @@ class Tableau(object):
         res += info
 
         # print the tableau
-        if not self.latex:
+        if not latex:
             res += self.root.treestr()
         else:
             res += self.root.treetex() + "\ \\\\\n\ \\\\\n\ \\\\\n"
@@ -207,7 +205,7 @@ class Tableau(object):
         # print result
         result = ""
         if self.closed():
-            result += "The tableau is closed:" + ("\\\\" if self.latex else "") + "\n"
+            result += "The tableau is closed:" + ("\\\\" if latex else "") + "\n"
             if self.mode["validity"]:
                 result += "The " + ("inference" if self.premises else "formula") + " is valid."
             else:
@@ -216,7 +214,7 @@ class Tableau(object):
                 else:
                     result += "The " + ("inference" if self.premises else "formula") + " is valid."
         elif self.open():
-            result += "The tableau is open:" + ("\\\\" if self.latex else "") + "\n"
+            result += "The tableau is open:" + ("\\\\" if latex else "") + "\n"
             if self.mode["validity"]:
                 result += "The " + ("inference" if self.premises else "formula") + " is invalid."
             else:
@@ -225,7 +223,7 @@ class Tableau(object):
                 else:
                     result += "The " + ("inference" if self.premises else "formula") + " is invalid."
         elif self.infinite():
-            result += "The tableau is potentially infinite:" + ("\\\\" if self.latex else "") + "\n"
+            result += "The tableau is potentially infinite:" + ("\\\\" if latex else "") + "\n"
             if self.mode["validity"]:
                 result += "The " + ("inference" if self.premises else "formula") + " may or may not be valid."
             else:
@@ -235,7 +233,7 @@ class Tableau(object):
                               " may or may not be satisfiable."
                 else:
                     result += "The " + ("inference" if self.premises else "formula") + " may or may not be refutable."
-        result += "\\\\\n\\\\\n" if self.latex else "\n\n"
+        result += "\\\\\n\\\\\n" if latex else "\n\n"
         res += result
 
         # generate and print models
@@ -243,15 +241,15 @@ class Tableau(object):
         if self.models:
             mdls += ("Countermodels:" \
                          if self.mode["validity"] or not self.mode["validity"] and not self.mode["satisfiability"] \
-                         else "Models:") + ("\\\\\n" if self.latex else "\n")
-            if self.latex:
+                         else "Models:") + ("\\\\\n" if latex else "\n")
+            if latex:
                 mdls += "% alignment for structures\n"
                 mdls += "\\renewcommand{\\arraystretch}{1}  % decrease spacing between rows\n"
                 mdls += "\\setlength{\\tabcolsep}{1.5pt}  % decrease spacing between columns\n"
                 mdls += "\n"
             for model in sorted(self.models, key=lambda m:
             {n.line: i for (i, n) in enumerate(self.root.nodes(preorder=True))}[int(m.s[1:])]):
-                if not self.latex:
+                if not latex:
                     mdls += str(model) + "\n\n"
                 else:
                     mdls += model.tex() + "\\ \\\\\n\\ \\\\\n"
@@ -263,15 +261,15 @@ class Tableau(object):
             elapsed = self.end - self.start
             res += "This computation took " + str(round(elapsed, 4)) + " seconds.\n\n"
 
-        if self.latex:
+        if latex:
             postamble = "\\end{document}\n"
             res += postamble
-        if not self.latex and not self.file:
+        if not latex and not self.file:
             sep = 80 * "-"
             res += sep
 
         write_output = __import__("gui").write_output
-        write_output(res, self.latex)
+        write_output(res, latex)
 
     rule_names = {"α": "alpha", "β": "beta",  # connective rules
                   "γ": "gamma", "δ": "delta", "η": "eta", "θ": "theta", "ε": "epsilon",  # quantifier rules

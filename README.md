@@ -64,7 +64,7 @@ Your generated output files will be stored in `pyPL/output`.
 
 # Known issues
  - tableau algorithm relatively inefficient
- - GUI and parser sometimes glitchy window not scrollable
+ - GUI and parser can be glitchy (window not scrollable, buttons sometimes not behaving as expected, parser not always recognizing bracketing correctly)
  - global variables are bad
 
 # Wish list

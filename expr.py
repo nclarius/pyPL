@@ -1801,7 +1801,7 @@ class Most(Formula):
         return "most " + str(self.u) + "(" + ",".join([str(self.phi), str(self.psi)]) + ")"
 
     def tex(self):
-        return "\\mathrm{most }" + self.u.tex() + "(" + ",".join([self.phi.tex(), self.psi.tex()]) + ")"
+        return "\\mathrm{most}\ " + self.u.tex() + "(" + ",".join([self.phi.tex(), self.psi.tex()]) + ")"
 
     def __eq__(self, other):
         return isinstance(other, Most) and self.u == other.u and \
@@ -1865,7 +1865,7 @@ class More(Formula):
         return "more " + str(self.u) + "(" + ",".join([str(self.phi), str(self.psi), str(self.chi)]) + ")"
 
     def tex(self):
-        return "\\mathrm{more }" + self.u.tex() + "(" + ",".join([self.phi.tex(), self.psi.tex(), self.chi.tex()]) + ")"
+        return "\\mathrm{more}\ " + self.u.tex() + "(" + ",".join([self.phi.tex(), self.psi.tex(), self.chi.tex()]) + ")"
 
     def __eq__(self, other):
         return isinstance(other, More) and self.u == other.u and \
