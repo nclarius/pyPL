@@ -1,7 +1,25 @@
 # Entering formulas
 
-All symbols except auxiliary symbols (parentheses and commas) must be separated by whitespace.  
+## Auxiliary symbols
+- All symbols except parentheses and commas must be separated by whitespace.  
  Example: `- (p ^ q)`, not: `-(p^q)`.
+ 
+- All formulas use round brackets.  
+  Example: `\exi x (P(x) ^ Q(x))`, not: `\exi x [P(x) ^ Q(x)]`.
+
+- Terms inside function expressions and atomic predications are enclosed by brackets and separated by commas.  
+  Example: `P(a,b)`, not: `Pab`.
+  
+- Bracketing conventions:
+
+  - Outer brackets may be omitted.  
+  Example: `p ^ q` = `(p ^ q)`.
+
+  - Occurrences of the same operator are left-associative.  
+   Example: `p ^ q ^ r` = `(p ^ q) ^ r`.
+
+  - Operator precedence: `∃`,`∀`, `¬` < `∧` < `∨` < `→` < `↔` < `⊕`.  
+  Examples:  `¬ p ∨ q ∧ r` = `(¬p ∨ (q ∧ r))`, `∃x P(x) ^ Q(x)` = `((∃x P(x)) ^ Q(x))`.
 
 ## Term symbols
 
@@ -27,7 +45,7 @@ Examples: `p`, `q`, `p_1`, `u_23`.
 A sequence of letters, numbers and underscore, with the first symbol an uppercase letter.  
 Examples: `P`, `Loves`, `P_123`, not: `p`, `loves`.
 
-### Equality
+### Term equality
 `=`, `\eq`.
 
 ## Connectives
@@ -87,24 +105,6 @@ Example: `\more x(Boy(x), Girl(x), Sleep(x))`.
 
 ### Extension
 `\ext`
-
-## Auxiliary symbols
-- All formulas use round brackets.  
-  Example: `\exi x (P(x) ^ Q(x))`, not: `\exi x [P(x) ^ Q(x)]`.
-
-- Terms inside function expressions and atomic predications are enclosed by brackets and separated by commas.  
-  Example: `P(a,b)`, not: `Pab`.
-  
-- Bracketing conventions:
-
-  - Outer brackets may be omitted.  
-  Example: `p ^ q` = `(p ^ q)`.
-
-  - Occurrences of the same operator are left-associative.  
-   Example: `p ^ q ^ r` = `(p ^ q) ^ r`.
-
-  - Operator precedence: `∃`,`∀`, `¬` < `∧` < `∨` < `→` < `↔` < `⊕`.  
-  Examples:  `¬ p ∨ q ∧ r` = `(¬p ∨ (q ∧ r))`, `∃x P(x) ^ Q(x)` = `((∃x P(x)) ^ Q(x))`.
 
 ## Formulas
 Examples:
