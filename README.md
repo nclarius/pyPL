@@ -32,7 +32,8 @@ To run this tool locally on your machine:
 How to 'clone github repository', 'install python' and 'execute .py script' is all easily googleable for your respective operating system.
 
 ### Specify input
-Documentation on how to enter formulas, structures and input files can be found in `doc/parser.md`.
+Documentation on how to enter formulas, structures and input files can be found in `pyPL/doc/parser.md`.  
+Your generated output files can be found in `pyPL/output`.
 
 # Disclaimer
 - This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.  
