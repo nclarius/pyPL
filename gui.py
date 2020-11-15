@@ -1246,8 +1246,9 @@ class PyPLGUI(tk.Frame):
         # lbl_wait = tk.Label(win_wait, text="...", font=font, bg=white)
         # lbl_wait.pack(pady=32)
 
-        tableau = __import__("tableau")
         truthtable = __import__("truthtable")
+        denotation = __import__("denotation")
+        tableau = __import__("tableau")
         concl = self.inst.conclusion
         premises = self.inst.premises
         formulas = self.inst.formulas
@@ -1273,40 +1274,21 @@ class PyPLGUI(tk.Frame):
             tt.show()
 
         elif self.inst.action == "mc":
-            # model checking
-            denot = ""
-            for fml, v, w in formulas:
-                denot += "[[" + str(fml) + "]]" + structure.s + ("," + v if v else "") + ("," + w if w else "") + "\n= "
-                if not modal and classical:  # classical non-modal logic
-                    if not v:
-                        denot += str(fml.denotV(structure))
-                    else:
-                        denot += str(fml.denot(structure, structure.v[v]))
-                else:  # classical modal logic or intuitionistic logic
-                    if not v:
-                        if not w:
-                            denot += str(fml.denotVW(structure))
-                        else:
-                            denot += str(fml.denotV(structure, w))
-                    else:
-                        if not w:
-                            denot += str(fml.denotW(structure, structure.v[v]))
-                        else:
-                            denot += str(fml.denot(structure, structure.v[v], w))
-                denot += "\n\n"
+            denot = denotation.Denotation([(fml, structure, v, w) for fml, v, w in formulas], latex)
+            denot.show()
 
-            # todo make look nicer?
-            # tk.messagebox.showinfo("", str(denot))
-            win_output = tk.Toplevel(self.root, bg=white)
-            # win_output.geometry("1000x605")  # todo geometry only applied on second opening
-            win_output.destroy()
-            win_output = tk.Toplevel(self.root, bg=white)
-            icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
-            win_output.tk.call('wm', 'iconphoto', win_output._w, tk.PhotoImage(file=icon_path))
-            lbl_output = tk.Label(win_output, text=str(denot), font=font, bg=white)
-            lbl_output.pack(pady=32)
-            # frame_output = tk.Frame(win_output)
+            # # todo make look nicer?
+            # # tk.messagebox.showinfo("", str(denot))
+            # win_output = tk.Toplevel(self.root, bg=white)
+            # # win_output.geometry("1000x605")  # todo geometry only applied on second opening
             # win_output.destroy()
+            # win_output = tk.Toplevel(self.root, bg=white)
+            # icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
+            # win_output.tk.call('wm', 'iconphoto', win_output._w, tk.PhotoImage(file=icon_path))
+            # lbl_output = tk.Label(win_output, text=str(denot), font=font, bg=white)
+            # lbl_output.pack(pady=32)
+            # # frame_output = tk.Frame(win_output)
+            # # win_output.destroy()
 
         elif self.inst.action != "tt":
             validity = True if self.inst.action == "tp" else False
