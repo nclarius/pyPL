@@ -325,7 +325,7 @@ class StructParser:
         inp = inp.replace("\n", "")
         inp = re.sub("('[A-Z]' = )", "\n\\1", inp)
 
-        s = {eval(comp.split(" = ")[0]): eval(comp.split(" = ")[1]) for comp in inp.split("\n") if comp}
+        s = {eval(comp.split(" = ")[0]): eval(comp.split(" = ")[1]) for comp in inp.split("\n") if comp.strip()}
         s["S"] = "S"
         modal = True if "W" in s or "K" in s else False
         propositional = True if "D" not in s else False

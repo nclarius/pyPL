@@ -1,0 +1,4 @@
+r v q
+p v q
+q -> r ^ s
+- p

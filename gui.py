@@ -78,6 +78,7 @@ class ScrollableFrame(ttk.Frame):
         scrollbar.pack(side="right", fill="y")
 
 class Tooltip(object):
+    # todo add info for keyboard shortcuts
 
     def __init__(self, widget, text):
         self.widget = widget
@@ -89,7 +90,7 @@ class Tooltip(object):
         widget.bind("<Leave>", lambda e: self.hidetip())
 
     def showtip(self):
-        if self.tipwindow or not self.text:
+        if self.tipwindow or not self.text or not self.widget.bbox("insert"):
             return
         x, y, cx, cy = self.widget.bbox("insert")
         x = x + self.widget.winfo_rootx() + 27
@@ -338,7 +339,9 @@ class PyPLGUI(tk.Frame):
             if not os.path.exists(initial_dir):
                 initial_dir = os.getcwd()
             file = tkinter.filedialog.askopenfile(initialdir=initial_dir)
-            lines = [line.strip() for line in file if line]  # todo don't drop whitespace
+            if file is None:  # asksaveasfile return `None` if dialog closed with "cancel".
+                return
+            lines = [line.rstrip() for line in file if line]
             if self.inst.action != "mc":
                 for i, line in enumerate(lines):
                     if not line:
@@ -372,6 +375,30 @@ class PyPLGUI(tk.Frame):
                     input_ents[i].delete(0, tk.END)
                     input_ents[i].insert(0, formula)
                     parse(i)
+
+        def save():
+            # generate text string
+            res = ""
+            if self.inst.action == "mc":
+                res = ent_struct.get(1.0, "end-1c") + "\n\n"
+            for i, fml in enumerate(input_raws):
+                if not fml.get():
+                    continue
+                if self.inst.action == "mc":
+                    if input_vs[i].get():
+                        res += "v:" + input_vs[i].get() + " "
+                    if input_ws[i].get():
+                        res += "w:" + input_vs[i].get() + " "
+                res += input_raws[i].get() + "\n"
+            # ask for file
+            initial_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "input")
+            if not os.path.exists(initial_dir):
+                initial_dir = os.getcwd()
+            file = tk.filedialog.asksaveasfile(initialdir=initial_dir)
+            if file is None:  # asksaveasfile return `None` if dialog closed with "cancel".
+                return
+            file.write(res)
+            file.close()
 
         def add_formula():
             # variable
@@ -486,7 +513,9 @@ class PyPLGUI(tk.Frame):
             ent.bind("<Control-Up>", lambda e: swap_up_formula(i))
             ent.bind("<Control-Down>", lambda e: swap_dn_formula(i))
             ent.bind("<Control-R>", lambda e: self.tab_2())
-            ent.bind("<Control-L>", lambda e: load())  # todo not working
+            ent.bind("<Control-L>", lambda e: load())
+            ent.bind("<Control-S>", lambda e: save())  # todo not working
+            ent.focus_set()
             # parse button
             btn_parse = tk.Button(tab,
                                   bg=white,
@@ -538,7 +567,7 @@ class PyPLGUI(tk.Frame):
                     if self.inst.action in ["tt", "tp", "cmg"]:
                         rems[j].configure(state="disabled")
                 if j == len(input_fmls)-1:
-                    swap_dns[j].configure(sate="disabled")
+                    swap_dns[j].configure(state="disabled")
             del mids[max(mids)]
             set()
 
@@ -690,6 +719,17 @@ class PyPLGUI(tk.Frame):
         btn_load.pack(in_=topmid, padx=15, side=tk.LEFT)
         Tooltip(btn_load, "load input from file")
         btn_load.bind("<Button>", lambda e: load())
+        # .grid(row=0, columnspan=4, sticky="NESW")
+
+        # save to file button
+        btn_save = tk.Button(tab,
+                             bg=white,
+                             text="⤓",
+                             # bg=darkgray, fg=white,
+                             activebackground=lightgray, activeforeground=white)
+        btn_save.pack(in_=topmid, padx=15, side=tk.LEFT)
+        Tooltip(btn_save, "save input to file")
+        btn_save.bind("<Button>", lambda e: save())
 
         # input fields
         input_fmls = []
