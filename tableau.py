@@ -1489,7 +1489,7 @@ class Node(object):
         # underline literals of open branches in MG
         if self.tableau.underline_open and not self.tableau.mode["validity"] and \
                 any([self in branch for branch in open_branches]) and self.fml.literal():
-            # str_fml = "\\fbox{\\vphantom{A}" + str_fml + "}"
+            # str_fml = "\\fbox{\\vphantom{Pp}" + str_fml + "}"
             str_fml = "\\underline{" + str_fml + "}"
         str_cite = ""
         if isinstance(self.fml, Open) or isinstance(self.fml, Infinite):
