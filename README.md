@@ -5,14 +5,14 @@ for some combinations of classical and intuitionistic, non-modal and modal, prop
 
 This tool can compute  
 - the denotation (truth value) of a given logical expression in a given structure,  
-- an analytic tableau with associated (counter) models for a given inference or set of formulas.   
+- an analytic tableau with associated (counter) models for a given inference or set of formulas.
+
+© Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
+License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).   
 
 ![pyPL GUI -- start](doc/img/pyPL_1_MG.png)
 ![pyPL GUI -- input](doc/img/pyPL_2_MG.png)
 ![pyPL GUI -- output](doc/img/pyPL_5_MG.png)
-
-© Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
-License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
 # Usage notes
 
