@@ -16,13 +16,13 @@ License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
 # Usage notes
 
-### Try it outfh
+### Try it out
 You can try the model checking feature of this tool out [here](https://trinket.io/python3/757871dd18).  
 If you want to dive in deeper, I recommend downloading pyPL to your own computer.
 
 ### Install and run
 To run this tool locally on your machine:
-1. Install dependencies: `Python` (version >= 3.9); `tkinter`; `texlive` and `pdflatex` (if you want nicely formatted output).
+1. Install dependencies (see below).
 2. Clone this repository.
 3. Execute `main.py`.
 
@@ -30,6 +30,10 @@ How to 'clone github repository', 'install python' and 'execute .py script' is a
 
 ### Specify input
 Documentation on how to enter formulas, structures and input files can be found in `doc/parser.md`.
+
+### Dependencies
+- core software: `Python` (version >= 3.9) + Python packages: `tkinter`, `os`, `re`, `timeit`
+- for nicely formatted output: `LaTeX` with `pdflatex` + LaTeX packages: `geometry`, `forest`, `amssymb`, `amsmath`, `amstext`, `wasysym`
 
 # Disclaimer
 - This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.  
@@ -60,7 +64,7 @@ Documentation on how to enter formulas, structures and input files can be found 
 
 # Known issues
  - tableau algorithm relatively inefficient
- - GUI and parser sometimes glitchy
+ - GUI and parser sometimes glitchy (window not scrollable, add/remove buttons not always working properly, bracketing not always interpreted correctly)
  - global variables are bad
 
 # Wish list

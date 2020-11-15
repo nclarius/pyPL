@@ -12,7 +12,9 @@ import tkinter.filedialog
 import tkinter.messagebox
 from tkinter import ttk
 
-debug = True
+debug = False
+if os.name == "posix" and os.uname()[1] == "montague" and os.getlogin() == "natalie":
+    debug = True
 
 class PyPLInst:
 
