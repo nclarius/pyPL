@@ -158,7 +158,7 @@ I = [m: Mary,
      Woman: {(Mary), (Susan), (Paula)},
      Man: {(John), (Peter)},
      Happy: {(Mary), (Susan), (John), (Peter)},
-     Love: {(Mary, John), (Susan, John), (Paula, Peter), (Peter, John)},
+     Love: {(Mary, John), (Susan, John), (Paula, Peter), (Peter, John)}]
 V = [v1: [x: Mary, y: Paula, z: Peter],
      v2: [x: Paula, y: Paula, z: Peter]]
 ```
