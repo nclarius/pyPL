@@ -26,13 +26,13 @@ Here is how to enter formulas, structures and input files.
 ## Term symbols
 
 ### Individual variables
-Lowrecase letters `x` - `z`, optionally followed by a number, optionally separated by an underscore.  
-Examples: `x`, `y`, `x_23`, `z5`.
+Lowercase letters `x` - `z`, optionally followed by a number, optionally separated by an underscore.  
+Examples: `x`, `y`, `z5`, `x_23`.
 
 ### Individual constants
-A sequence of letters, numbers and underscore, with the first symbol a lower letter, or    
+A sequence of letters, numbers and underscore, with the first symbol a lowercase letter; or    
 lowercase letters `a` - `e` and `i` - `o`, optionally followed by a number, optionally separated by an underscore.  
-Examples: `a`, `m`, `peter`, `c12`, `c_345`; not: `Mary`, `p`.
+Examples: `peter`, `a`, `m`, `c12`, `c_345`; not: `Mary`, `p`.
 
 ### Functions
 Lowercase letters `f` - `h`, optionally followed by a number, optionally separated by an underscore.  
@@ -66,7 +66,7 @@ Examples: `P`, `Loves`, `P_123`; not: `p`, `loves`.
 `∧`, `^`, `&`, `\wedge`, `\land`
 
 ### Disjunction
-`∨`, `v`, `\`, ``, `\vee`, `\lor`  
+`∨`, `v`, `|`, `\vee`, `\lor`  
 
 ### Implication
 `→`, `⇒`, `⊃`, `->`, `=>`, `\rightarrow`, `\Rightarrow`, `\to`, `\limp`
@@ -112,13 +112,11 @@ Example: `\more x(Boy(x), Girl(x), Sleep(x))`.
 ## Formulas
 Examples:
 
-```
-p ^ q -> (- r v p)  
-P(a)  
-\all x (Woman(x) -> \exi y (- (x = y) ^ Man(y) ^ Love(x,y)))
-# p -> \falsum
-Believe(john, \int Bald(theking))
-```
+`p ^ q -> (- r v p)`  
+`P(a)`  
+`\all x (Woman(x) -> \exi y (- (x = y) ^ Man(y) ^ Love(x,y)))`  
+`# p -> \falsum`  
+`Believe(john, \int Bald(theking))`  
 
 
 # Entering structures
@@ -142,7 +140,7 @@ Component specifications:
 - Sets are enclosed by `{`, `}`, with the elements separated by `,`.
 - Tuples are enclosed by `(`, `)`, with the elements separated by `,`.
 - Functions are enclosed by `[`, `]`, with the elements separated by `,` and argument - value pairs separated by `:`.
-- Elements of interpretations of one-place predicates and the domain of one-place functions have to be entered as singleton tuples enclosed in brackets `(a)` rather than as bare elements `a`.
+- Elements of interpretations of one-place predicates and one-place function domains have to be entered as singleton tuples enclosed in brackets `(a)` rather than as bare elements `a`.  
 
 Examples:
 
@@ -204,7 +202,8 @@ like modal propositional structure and modal varying predicational structure, ex
 - Each formulas is written on one line.
 - The first formula in the list is interpreted as the conclusion and the others as the premises (if applicable).
 - If a structure and formulas are specified, they are separated by a blank line.  
-- If expressions are to be evaluated against assignment functions and/or possible worlds in a structure, they are specified by prepending their names to the formula prefixed with `v:` and `w:` respectively and suffixed with ` `.  Example: `v:v1 w:w0 Love(m,x)`.
+- If expressions are to be evaluated against assignment functions and/or possible worlds in a structure, they are specified by prepending their names to the formula prefixed with `v:` and `w:` respectively and suffixed with ` `.  
+  Examples: `v:v1 Love(m,x)`, `w:w2 \exi x Unicorn(x)`, `v:v1 w:w2 Unicorn(x)`.
 
 Examples: see the examplary files in `pyPL/input`.
 

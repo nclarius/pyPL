@@ -33,7 +33,7 @@ How to 'clone github repository', 'install python' and 'execute .py script' is a
 
 ### Specify input and view output
 Documentation on how to enter formulas, structures and input files can be found in `pyPL/doc/parser.md`.  
-Your generated output files will be stored in `pyPL/output`.
+Generated output files are stored in `pyPL/output`.
 
 # Disclaimer
 - This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.  
@@ -56,7 +56,6 @@ Your generated output files will be stored in `pyPL/output`.
 ### Interface
 - input of formulas and structures with ordinary keyboard characters, directly or from a file
 - output in plain text or LaTeX-generated PDF
-
 
 # Restrictions
  - model checking works only on structures with finite domains
