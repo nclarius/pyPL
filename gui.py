@@ -542,35 +542,33 @@ class PyPLGUI(tk.Frame):
             input_lbls.append(lbl)
 
         def remove_formula(i):
-            # todo not wokring properly (wrong formulas removed sometimes)
+            if not i < len(input_raws):
+                return
             del input_raws[i]
             del input_fmls[i]
-            offset = 1 if self.inst.action in ["mg", "tc"] else (3 if self.inst.action in ["tt", "tp", "cmg"] else 3)
+            # start = 3 if self.inst.action != "mg" else 2
+            # for j in range(6 + start * (i - 1), 6 + start * (i - 1) + 3):
+            #     mids[j].pack_forget()
+            # for j in range(3):
+            #     del mids[6 + start * (i - 1) + j]
+            offset = 1 if self.inst.action in ["mg", "tc"] else (2 if self.inst.action in ["tt", "tp", "cmg"] else 3)
             row = i + offset
             mids[row].pack_forget()
-            # del caps[i]
+            del mids[row]
             del input_lbls[i]
             del rems[i]
-            del swap_ups[i]
-            del swap_dns[i]
             del input_ents[i]
             del btns[i]
             for j in range(len(input_fmls)):
-                print(j)
                 if j >= i:
                     mids[j+offset] = mids[j+offset+1]
                 rems[j].bind("<Button>", lambda e: remove_formula(j))
-                swap_ups[j].bind("<Button>", lambda e: swap_up_formula(j))
-                swap_dns[j].bind("<Button>", lambda e: swap_dn_formula(j))
                 input_raws[j].trace("w", lambda *args: select_entry(j))
                 btns[j].bind("<Button>", lambda e: parse(j))
-                if j == 0:
-                    swap_ups[j].configure(state="disabled")
-                    if self.inst.action in ["tt", "tp", "cmg"]:
-                        rems[j].configure(state="disabled")
-                if j == len(input_fmls)-1:
-                    swap_dns[j].configure(state="disabled")
-            del mids[max(mids)]
+            swap_ups[0].configure(state="disabled")
+            if self.inst.action in ["tt", "tp", "cmg"]:
+                rems[0].configure(state="disabled")
+            swap_dns[len(swap_dns)-1].configure(state="disabled")
             set()
 
         def swap_up_formula(i):
@@ -1300,7 +1298,7 @@ class PyPLGUI(tk.Frame):
                             validity=validity, satisfiability=satisfiability, linguistic=linguistic,
                             classical=classical, propositional=propositional,
                             modal=modal, vardomains=vardomains, frame=frame,
-                            latex=latex, file=True, num_models=num_models,
+                            file=True, num_models=num_models,
                             underline_open=underline_open, hide_nonopen=hide_nonopen)
 
         else:
@@ -1309,23 +1307,23 @@ class PyPLGUI(tk.Frame):
                                    validity=True, satisfiability=False, linguistic=linguistic,
                                    classical=classical, propositional=propositional,
                                    modal=modal, vardomains=vardomains, frame=frame,
-                                   latex=latex, file=True, silent=True, num_models=num_models,
+                                   file=True, silent=True, num_models=num_models,
                                    underline_open=underline_open, hide_nonopen=hide_nonopen)
 
             if tab1.closed():
                 # win_wait.destroy()
-                tab1.show()
+                tab1.show(latex)
             else:
                 # test if non-theorem
                 tab2 = tableau.Tableau(concl, premises=premises, axioms=axioms,
                                        validity=False, satisfiability=False, linguistic=linguistic,
                                        classical=classical, propositional=propositional,
                                        modal=modal, vardomains=vardomains, frame=frame,
-                                       latex=latex, file=True, silent=True, num_models=num_models,
+                                       file=True, silent=True, num_models=num_models,
                                        underline_open=underline_open, hide_nonopen=hide_nonopen)
                 if not tab2.infinite():
                     # win_wait.destroy()
-                    tab2.show()
+                    tab2.show(latex)
 
 
 def write_output(res, latex=True):

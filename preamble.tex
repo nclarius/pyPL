@@ -1,20 +1,20 @@
 \documentclass{article}
 
 % layout
-\usepackage[a4paper, landscape, margin={2cm}]{geometry} % size, orientation, small margns
+\usepackage[a4paper, landscape, margin={2cm}]{geometry} % size, orientation, small margins
 \pagenumbering{gobble}  % no page numbers
 \setlength{\parindent}{0pt}  % no paragraph indentation
 
-% math formatting
+% math symbols
 \usepackage{amssymb, amsmath, amstext, wasysym}
-
-% tableau trees
-\usepackage[linguistics]{forest}
-\renewcommand{\arraystretch}{1.125}
 
 % structures
 \usepackage{array}
 \newcolumntype{A}{>{$}l<{$}}
+
+% tableau trees
+\usepackage[linguistics]{forest}
+\renewcommand{\arraystretch}{1.125}
 \newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 \newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 \newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}

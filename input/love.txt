@@ -2,7 +2,7 @@ D = {Mary, Susan, Paula, John, Peter}
 I = [m: Mary,
      Woman: {(Mary), (Susan), (Paula)},
      Man: {(John), (Peter)},
-     Happy: {(Mary), (Susan), (John), (Peter)},
+     Happy: {(Susan), (Paula), (John), (Peter)},
      Love: {(Mary, John), (Susan, John), (Paula, Peter), (Peter, John)}]
 
 \all x (Woman(x) -> \exi y (Man(y) ^ Love(x,y)))
