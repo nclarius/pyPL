@@ -1,0 +1,1 @@
+\exi x (Student(x) ^ \exi y (Book(y) ^ Read(x,y))) 

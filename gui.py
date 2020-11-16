@@ -542,7 +542,7 @@ class PyPLGUI(tk.Frame):
             input_lbls.append(lbl)
 
         def remove_formula(i):
-            # todo run after removing formulas sometimes doesn't work anymore
+            # todo sometimes not working properly
             if not i < len(input_raws):
                 return
             del input_raws[i]
@@ -571,7 +571,6 @@ class PyPLGUI(tk.Frame):
                 rems[0].configure(state="disabled")
             swap_dns[len(swap_dns)-1].configure(state="disabled")
             set()
-            print(self.inst.premises)
 
         def swap_up_formula(i):
             f1, f2 = input_raws[i-1].get(), input_raws[i].get()

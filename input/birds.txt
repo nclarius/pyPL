@@ -1,0 +1,4 @@
+\exi x \exi y (- (x = y) ^ Bird(x) ^ Bird(y) ^ Garden(x) ^ Garden(y))
+\exi x (Robin(x) ^ Chirp(x))
+\exi x (Chaffinch(x) ^ Bath(x))
+\all x ((Robin(x) -> - Chaffinch(x)) ^ (Chaffinch(x) -> - Robin(x)))

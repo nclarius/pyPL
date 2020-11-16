@@ -1,0 +1,2 @@
+\exi x (Student(x) ^ \exi y (Book(y) ^ Read(x,y)))
+\all x ((Student(x) -> - Book(x)) ^ (Book(x) -> - Student(x)))

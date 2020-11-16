@@ -1,3 +1,0 @@
-\exi x (Rabbit(x) ^ \exi y (Carrot(y) ^ Eat(x,y)))
-
-\all x ((Rabbit(x) -> - Carrot(x)) ^ (Carrot(x) -> - Rabbit(x)))
