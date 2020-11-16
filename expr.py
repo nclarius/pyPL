@@ -807,10 +807,10 @@ class Eq(Formula):
         self.t2 = t2
 
     def __str__(self):
-        return str(self.t1) + " = " + str(self.t2)
+        return "(" + str(self.t1) + " = " + str(self.t2) + ")"
 
     def tex(self):
-        return self.t1.tex() + " = " + self.t2.tex()
+        return "(" + self.t1.tex() + " = " + self.t2.tex() + ")"
 
     def __eq__(self, other):
         return isinstance(other, Eq) and self.t1 == other.t1 and self.t2 == other.t2
@@ -996,12 +996,12 @@ class Neg(Formula):
 
     def __str__(self):
         if isinstance(self.phi, Eq):  # todo double negated equality ("- t1 \= t2")
-            return str(self.phi.t1) + "≠" + str(self.phi.t2)
+            return "(" + str(self.phi.t1) + "≠" + str(self.phi.t2) + ")"
         return "¬" + str(self.phi)
 
     def tex(self):
         if isinstance(self.phi, Eq):
-            return self.phi.t1.tex() + " \\neq " + self.phi.t2.tex()
+            return "(" + self.phi.t1.tex() + " \\neq " + self.phi.t2.tex() + ")"
         return "\\neg " + self.phi.tex()
 
     def __eq__(self, other):
@@ -2175,7 +2175,7 @@ class Int(Expr):
         return "^" + str(self.phi)
 
     def tex(self):
-        return "\\{}^{\\wedge} " + " " + self.phi.tex()
+        return "{}^{\\wedge} " + " " + self.phi.tex()
 
     def __eq__(self, other):
         return isinstance(other, Nec) and self.phi == other.phi
@@ -2228,7 +2228,7 @@ class Ext(Expr):
         return "ⱽ" + str(self.phi)
 
     def tex(self):
-        return "\\{}^{\\vee} " + " " + self.phi.tex()
+        return "{}^{\\vee} " + " " + self.phi.tex()
 
     def __eq__(self, other):
         return isinstance(other, Nec) and self.phi == other.phi

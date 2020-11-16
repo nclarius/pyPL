@@ -1,14 +1,14 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-  (classes `Exists` and `Forall` in `expr.py`).
+# -*- coding: utf-8 -*-
 
-
-"""Main module. Input specification and program execution are defined here."""
-
-# todo adapt readme for IL
+"""
+Helper file for denotations.
+"""
 
 from expr import *
 
 import os
+import re
 
 from functools import reduce
 
@@ -21,6 +21,7 @@ class Denotation:
     def show(self, latex):
         res = ""
 
+        # print preamble
         if latex:
             path_preamble = os.path.join(os.path.dirname(__file__), "preamble.tex")
             with open(path_preamble) as f:
@@ -28,16 +29,27 @@ class Denotation:
                 preamble += "\n\n\setlength\\tabcolsep{3pt}\n"
             res += preamble + "\n\n\\begin{document}\n\n"
 
+        # print structure
+        if not latex:
+            res += str(self.exprs[0][1]) + "\n\n"
+        else:
+            res += self.exprs[0][1].tex() + "\\\\ \\ \\\\ \n"
+
         for fml, s, v, w in self.exprs:
+            # print expression
             if not latex:
                 res += "[[" + str(fml) + "]]" + s.s + ("," + v if v else "") + ("," + w if w else "") + "\n= "
             else:
                 res += "$[\![" + fml.tex() + "]\!]^" + "{" + \
                        "\\mathcal{" + s.s[0] + ("_{" + s.s[1:] + "}" if len(s.s) > 1 else "") + "}" + \
-                       ("," + "\\mathcal{" + v[0] + "_{" + v + "}" if v else "") + \
-                       ("," + w + "_{" + w[1:] + "}" if w else "") + \
-                       "}\\\\ \n= "
+                       ("," + v if v else "") + \
+                       ("," + w if w else "") + \
+                       "}\\\\\n= "
+                res = re.sub("v(\d+)", "v_{\\1}", res)
+                res = re.sub("w(\d+)", "w_{\\1}", res)
 
+            # print denotation
+            print(fml, v, w)
             if "modal" not in s.mode() and "classical" in s.mode():  # classical non-modal logic
                 if not v:
                     res += str(fml.denotV(s))
@@ -59,6 +71,7 @@ class Denotation:
             else:
                 res += "$\\\\ \n\n" if latex else ""
 
+        # print postamble
         if latex:
             res = res.replace("True", "\\text{True}").replace("False", "\\text{False}")
             res += "\n\n\\end{document}"
@@ -376,17 +389,22 @@ def compute_active():
         print(s1.vs)
 
         e7 = {
-            1: Exists(Var("x"), Exists(Var("y"), Neg(Eq(Var("x"), Var("y")))))
+            1: Exists(Var("x"), Exists(Var("y"), Neg(Eq(Var("x"), Var("y"))))),
+            2: Exists(Var("x"), Eq(Var("x"), Var("x")))
         }
 
         for nr, e in e7.items():
             print()
             print("⟦" + str(e) + "⟧^S7,w1 =")
-            print(e.denot(s1, s1.vs["w1"][0], "w1"))
+            print(e.denotV(s1, "w1"))
             depth = 0
             print()
             print("⟦" + str(e) + "⟧^S7,w2 =")
-            print(e.denot(s1, s1.vs["w2"][0], "w2"))
+            print(e.denotV(s1, "w2"))
+            depth = 0
+            print()
+            print("⟦" + str(e) + "⟧^S7 =")
+            print(e.denotVW(s1))
             depth = 0
             # print(e.denotV(s1))
             # print(e.denotW(s1, v7))

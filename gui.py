@@ -473,7 +473,7 @@ class PyPLGUI(tk.Frame):
                 ent_w = tk.Entry(tab, textvariable=w, width=3, disabledbackground=darkwhite,
                                  state="disabled" if self.inst.logic["modal"] == "nonmodal" else "normal")
                 Tooltip(ent_w, "the possible world to evaluate the expression against (e.g. 'w1')\n"
-                               "if left empty, the expression will be evaluated relative to all possible worlds")
+                               "if left empty, the expression will be evaluated relative to all worlds")
                 ent_v.pack(in_=mids[row], side=tk.LEFT)
                 ent_w.pack(in_=mids[row], side=tk.LEFT)
                 input_vs.append(ent_v)

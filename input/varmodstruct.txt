@@ -1,0 +1,14 @@
+W = {w1, w2}
+R = {(w1, w1), (w1, w2)}
+D = [w1: {Mary, John},
+     w2: {Mary, Susan}]
+I = [m: [w1: Mary, w2: Mary],
+     Love: [w1: {(Mary, Peter)},
+            w2: {(Mary, Susan), (Mary, Mary)}]] 
+            W = {w1, w2}
+            R = {(w1, w1), (w1, w2)}
+            D = [w1: {Mary, John},
+                 w2: {Mary, Susan}]
+            I = [m: [w1: Mary, w2: Mary],
+                 Love: [w1: {(Mary, Peter)},
+                        w2: {(Mary, Susan), (Mary, Mary)}]]
