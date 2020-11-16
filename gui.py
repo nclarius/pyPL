@@ -542,6 +542,7 @@ class PyPLGUI(tk.Frame):
             input_lbls.append(lbl)
 
         def remove_formula(i):
+            # todo run after removing formulas sometimes doesn't work anymore
             if not i < len(input_raws):
                 return
             del input_raws[i]
@@ -570,6 +571,7 @@ class PyPLGUI(tk.Frame):
                 rems[0].configure(state="disabled")
             swap_dns[len(swap_dns)-1].configure(state="disabled")
             set()
+            print(self.inst.premises)
 
         def swap_up_formula(i):
             f1, f2 = input_raws[i-1].get(), input_raws[i].get()
@@ -1321,7 +1323,7 @@ class PyPLGUI(tk.Frame):
                                        modal=modal, vardomains=vardomains, frame=frame,
                                        file=True, silent=True, num_models=num_models,
                                        underline_open=underline_open, hide_nonopen=hide_nonopen)
-                if not tab2.infinite():
+                if tab2.open() or tab2.infinite():
                     # win_wait.destroy()
                     tab2.show(latex)
 
