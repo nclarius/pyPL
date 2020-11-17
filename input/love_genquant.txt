@@ -1,8 +1,0 @@
-D = {Mary, Susan, Paula, John, Peter}
-I = [Woman: {(Mary), (Susan), (Paula)},
-     Man: {(John), (Peter)},
-     Happy: {(Mary), (Susan), (John), (Peter)},
-     Love: {(Mary, John), (Susan, John), (Paula, Peter), (Peter, John)}]
-
-\most x (Woman(x), Happy(x))
-\more x (Woman(x), Man(x), Happy(x))

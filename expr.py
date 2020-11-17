@@ -237,7 +237,7 @@ class Const(Term):
         return self.c
 
     def tex(self):
-        return self.c
+        return "\\mathit{" + self.c + "}"
 
     def __eq__(self, other):
         return isinstance(other, Const) and self.c == other.c
@@ -287,7 +287,7 @@ class Func(Expr):
         return self.f
 
     def tex(self):
-        return self.f
+        return "\\mathit{" + self.f + "}"
 
     def __eq__(self, other):
         return isinstance(other, Func) and self.f == other.f
@@ -406,7 +406,7 @@ class Pred(Expr):
         return self.p
 
     def tex(self):
-        return self.p
+        return "\\mathit{" + self.p + "}"
 
     def __eq__(self, other):
         return isinstance(other, Pred) and self.p == other.p
@@ -1697,7 +1697,7 @@ class Forall(Formula):
 
             # short version
             if not verbose:
-                return all([all([self.phi.denot(s, w_, v | {self.u.u: d_}) for d_ in s.d[w_]]) for w_ in s.future(w)])
+                return all([all([self.phi.denot(s, v | {self.u.u: d_}, w_) for d_ in s.d[w_]]) for w_ in s.future(w)])
 
             # long version
 

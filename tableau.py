@@ -47,7 +47,7 @@ from subprocess import DEVNULL, STDOUT, check_call
 # todo tableaux for IL
 # todo formulas with free variables?
 
-debug = True
+debug = False
 
 
 def least(lst, cond):
@@ -64,7 +64,7 @@ class Tableau(object):
                  validity=True, satisfiability=True, linguistic=False,
                  classical=True, propositional=False, modal=False, vardomains=False, frame="K",
                  num_models=1, size_limit_factor=2,
-                 file=True, hide_nonopen=False, underline_open=True, silent=False):
+                 file=True, latex=True, stepwise=False, hide_nonopen=False, underline_open=True, silent=False):
 
         # settings
         # todo nicer specification of settings?
@@ -74,8 +74,10 @@ class Tableau(object):
                 "classical": classical, "propositional": propositional,
                 "modal":     modal, "vardomains": vardomains, "frame": frame
         }
-        self.num_models, self.size_limit_factor, self.file, self.hide_nonopen, self.underline_open, self.silent = \
-            num_models, size_limit_factor, file, hide_nonopen, underline_open, silent
+        self.num_models, self.size_limit_factor, \
+        self.silent, self.file, self.latex, self.stepwise, self.hide_nonopen, self.underline_open = \
+            num_models, size_limit_factor, silent, file, latex, stepwise, hide_nonopen, underline_open
+        self.num_branches = 1
 
         # append initial nodes
         line = 1
@@ -107,6 +109,7 @@ class Tableau(object):
 
         self.appl = []  # list of applicable rules
         self.models = []  # generated models
+        self.steps = []  # stepwise representation
 
         # run the tableau
         try:
@@ -124,7 +127,7 @@ class Tableau(object):
         return self.root.treestr()
 
     def __len__(self):
-        return len(self.root.nodes())
+        return max([int(node.line) for node in self.root.nodes() if node.line])
 
     def show(self, latex=True):
         """
@@ -178,7 +181,13 @@ class Tableau(object):
             # axs = ["\\phantom{\\vDash\ }" + node.fml.tex() for node in self.axioms]
             axs = []
             prems = ["\\phantom{\\vDash\ }" + self.root.fml.tex()] if not self.conclusion else [] + \
-                    ["\\phantom{\\vDash\ }" + node.fml.tex() for node in self.premises + self.axioms]
+                                                                                               [
+                                                                                                       "\\phantom{" \
+                                                                                                       "\\vDash\ }" +
+                                                                                                       node.fml.tex()
+                                                                                                       for node in
+                                                                                                       self.premises
+                                                                                                       + self.axioms]
             prems += [("\\phantom{\\vDash\ }" if len(prems) > 0 else "") + self.conclusion.tex()] \
                 if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else []
             concl = self.conclusion.tex() if \
@@ -203,32 +212,32 @@ class Tableau(object):
         if self.closed():
             result += "The tableau is closed:" + ("\\\\" if latex else "") + "\n"
             if self.mode["validity"]:
-                result += "The " + ("inference" if self.premises else "formula") + " is valid."
+                result += "The " + ("inference" if self.premises else "sentence") + " is valid."
             else:
                 if self.mode["satisfiability"]:
-                    result += "The " + ("set of formulas" if self.premises else "formula") + " is unsatisfiable."
+                    result += "The " + ("set of sentences" if self.premises else "sentence") + " is unsatisfiable."
                 else:
-                    result += "The " + ("inference" if self.premises else "formula") + " is valid."
+                    result += "The " + ("inference" if self.premises else "sentence") + " is valid."
         elif self.open():
             result += "The tableau is open:" + ("\\\\" if latex else "") + "\n"
             if self.mode["validity"]:
-                result += "The " + ("inference" if self.premises else "formula") + " is invalid."
+                result += "The " + ("inference" if self.premises else "sentence") + " is invalid."
             else:
                 if self.mode["satisfiability"]:
-                    result += "The " + ("set of formulas" if self.premises else "formula") + " is satisfiable."
+                    result += "The " + ("set of sentences" if self.premises else "sentence") + " is satisfiable."
                 else:
-                    result += "The " + ("inference" if self.premises else "formula") + " is invalid."
+                    result += "The " + ("inference" if self.premises else "sentence") + " is invalid."
         elif self.infinite():
             result += "The tableau is potentially infinite:" + ("\\\\" if latex else "") + "\n"
             if self.mode["validity"]:
-                result += "The " + ("inference" if self.premises else "formula") + " may or may not be valid."
+                result += "The " + ("inference" if self.premises else "sentence") + " may or may not be valid."
             else:
                 if self.mode["satisfiability"]:
                     result += "The " + \
-                              ("set of formulas" if self.premises else "formula") + \
+                              ("set of sentences" if self.premises else "sentence") + \
                               " may or may not be satisfiable."
                 else:
-                    result += "The " + ("inference" if self.premises else "formula") + " may or may not be refutable."
+                    result += "The " + ("inference" if self.premises else "sentence") + " may or may not be refutable."
         result += "\\\\\n\\\\\n" if latex else "\n\n"
         res += result
 
@@ -255,7 +264,9 @@ class Tableau(object):
         # size = len(self)
         if self.start and self.end:
             elapsed = self.end - self.start
-            res += "This computation took " + str(round(elapsed, 4)) + " seconds and " + str(len(self)) + " nodes.\n\n"
+            res += "This computation took " + str(round(elapsed, 4)) + " seconds, " + \
+                   str(self.num_branches) + " branch" + ("es" if self.num_branches > 1 else "") + \
+                   " and " + str(len(self)) + " nodes.\n\n"
 
         if latex:
             postamble = "\\end{document}\n"
@@ -277,6 +288,8 @@ class Tableau(object):
         """
         Recursively expand all nodes in the tableau.
         """
+        # input()
+        # print(self.root.treestr())
         if debug:
             pass
             print(self.root.treestr())
@@ -363,10 +376,15 @@ class Tableau(object):
                         if not any([applied(node) for node in branch]):
                             # whether or not the source is an instance of an implication
                             # whose antecedent does not occur on the target's branch
-                            irrelevant = rule_name == "→" and str(fmls[0].phi) not in [str(node.fml) for node in branch]
+                            irrelevant = universal and \
+                                         ((rule_name == "→" and
+                                           str(fmls[0].phi) not in [str(node.fml) for node in branch]) or \
+                                          (rule_name == "¬∧" and
+                                           str(fmls[0]) not in [str(node.fml) for node in branch] and
+                                           str(fmls[1]) not in [str(node.fml) for node in branch]))
                             new = False
                             # compose arguments
-                            args = irrelevant, universal, new
+                            args = universal, irrelevant, new
                             insts = 0
                             applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
 
@@ -440,7 +458,7 @@ class Tableau(object):
                         # count instantiations
                         insts = len(used)
                         # compose the arguments
-                        args = irrelevant, universal, new, indexed, used, occurring_local, occurring_global
+                        args = universal, irrelevant, new, indexed, used, occurring_local, occurring_global
 
                         if rule_type in ["γ", "δ", "θ", "ε"]:
                             # the rule is applied with some constant
@@ -538,7 +556,7 @@ class Tableau(object):
                         # count instantiations
                         insts = len(used)
                         # compose the arguments
-                        args = irrelevant, universal, new, used, occurring_global, extensions, reductions
+                        args = universal, irrelevant, new, used, occurring_global, extensions, reductions
 
                         # todo not correctly reusing already introduced accessible worlds
 
@@ -594,11 +612,8 @@ class Tableau(object):
         #     if all([appl[6] for appl in appl_on_branch]) and all([node.inst[2] for node in nary_on_branch]):
         #         applicable = []
 
-        print(applicable)
-
         # decide which boolean values are good and bad
-        rank_irrel = {True: 1, False: 0}
-        rank_univ = {True: 0, False: 1}
+        rank_univ_irrel = {(True, True): 0, (False, False): 1, (True, False): 2}
         rank_new = {True: 1, False: 0}
         # define a preference order for rule types
         rule_order = {r: i for (i, r) in enumerate(
@@ -634,15 +649,14 @@ class Tableau(object):
         )
         sort_v2 = lambda i: (  # for satisfiability tableaus:
                 i[6],  # 1. number of times the rule has already been applied on this branch (prefer least used)
-                rank_irrel[i[5][0]],  # 2. whether the formula is irrelevant (prefer no)
-                rank_univ[i[5][1]],  # 3. whether the formula comes from a universal formula (prefer yes)
-                rank_new[i[5][2]],  # 4. whether to introduce a new constant or world (prefer not to)
-                branching[i[3]],  # 5. whether the rules branches (prefer non-branching)
-                operator[i[3]],  # 6. what type of operator the rule belongs to (connective > quant., modal > int.)
-                rule_order[i[3]],  # 7. remaining rule type rank (prefer earlier in order)
-                pos_by_type[i[3]][i[1]],  # 8. position of the source node in the tree
+                rank_univ_irrel[(i[5][0], i[5][1])],  # 2. whether the formula comes from a relevant axiom (prefer yes)
+                rank_new[i[5][2]],  # 3. whether to introduce a new constant or world (prefer not to)
+                branching[i[3]],  # 4. whether the rules branches (prefer non-branching)
+                operator[i[3]],  # 5. what type of operator the rule belongs to (connective > quant., modal > int.)
+                rule_order[i[3]],  # 6. remaining rule type rank (prefer earlier in order)
+                pos_by_type[i[3]][i[1]],  # 7. position of the source node in the tree
                 # (prefer leftmost lowest for sat. quant. and mod. rules, leftmost highest for others)
-                pos[i[0]],  # 9. position of the target node in the tree
+                pos[i[0]],  # 8. position of the target node in the tree
         )
         # sort_v2 = lambda i: (  # for satisfiability tableaus:
         #     i[6],              # 1. number of times the rule has already been applied on this branch (prefer least
@@ -751,13 +765,15 @@ class Tableau(object):
         if len(fmls) == 4 and topright:
             botright = topright.add_child((self, line := line + 1, world, fmls[3], rule, source, list(args)))
 
+        self.num_branches += 1
+
     def rule_gamma(self, target, source, rule, fmls, args):
         """
         γ
         Branch unary with an arbitrary constant.
         """
         phi, var = fmls
-        irrelevant, universal, new, indexed, used, occurring_local, occurring_global = args
+        universal, irrelevant, new, indexed, used, occurring_local, occurring_global = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
@@ -790,7 +806,7 @@ class Tableau(object):
         Branch unary with a new constant.
         """
         phi, var = fmls
-        irrelevant, universal, new, indexed, used, occurring_local, occurring_global = args
+        universal, irrelevant, new, indexed, used, occurring_local, occurring_global = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
@@ -820,7 +836,7 @@ class Tableau(object):
         Branch n-ary with an existing constant.
         """
         phi, var = fmls
-        irrelevant, universal, new, indexed, used, occurring_local, occurring_global = args
+        universal, irrelevant, new, indexed, used, occurring_local, occurring_global = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
@@ -852,7 +868,7 @@ class Tableau(object):
         Branch n-ay with an arbitrary constant.
         """
         phi, var = fmls
-        irrelevant, universal, new, indexed, used, occurring_local, occurring_global = args
+        universal, irrelevant, new, indexed, used, occurring_local, occurring_global = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
@@ -880,13 +896,15 @@ class Tableau(object):
         # add node
         target.add_child((self, line + 1, world, fml, rule, source, inst))
 
+        self.num_branches += 1 if len(target.children) > 2 else 0
+
     def rule_epsilon(self, target, source, rule, fmls, args):
         """
         θ
         Branch n-ay with a new constant.
         """
         phi, var = fmls
-        irrelevant, universal, new, indexed, used, occurring_local, occurring_global = args
+        universal, irrelevant, new, indexed, used, occurring_local, occurring_global = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
@@ -915,12 +933,14 @@ class Tableau(object):
         # add node
         target.add_child((self, line + 1, world, fml, rule, source, inst))
 
+        self.num_branches += 1
+
     def rule_mu(self, target, source, rule, fmls, args):
         """
         μ
         Branch unary with a new signature.
         """
-        irrelevant, universal, new, indexed, used, occurring_local, occurring_global = args
+        universal, irrelevant, new, used, occurring, extensions, reductions = args
         line = max([node.line for node in self.root.nodes() if node.line])
 
         # choose a signature that does not already occur in this branch
@@ -946,7 +966,7 @@ class Tableau(object):
         ν
         Branch unary with an existing signature.
         """
-        irrelevant, universal, new, used, occurring, extensions, reductions = args
+        universal, irrelevant, new, used, occurring, extensions, reductions = args
         max_line = max([node.line for node in self.root.nodes() if node.line])
         line = max_line
 
@@ -973,7 +993,7 @@ class Tableau(object):
         κ
         Branch n-ay with an arbitrary signature.
         """
-        irrelevant, universal, new, used, occurring, extensions, reductions = args
+        universal, irrelevant, new, used, occurring, extensions, reductions = args
         line = max([node.line for node in self.root.nodes() if node.line])
 
         # choose a signature that has not already been used with this rule
@@ -1004,7 +1024,7 @@ class Tableau(object):
         λ
         Branch unary with an existing signature.
         """
-        irrelevant, universal, new, used, occurring, extensions, reductions = args
+        universal, irrelevant, new, used, occurring, extensions, reductions = args
         max_line = max([node.line for node in self.root.nodes() if node.line])
         line = max_line
 
@@ -1032,7 +1052,7 @@ class Tableau(object):
         π
         Branch unary with a previous signature.
         """
-        irrelevant, universal, new, used, occurring, extensions, reductions = args
+        universal, irrelevant, new, used, occurring, extensions, reductions = args
         max_line = max([node.line for node in self.root.nodes() if node.line])
         line = max_line
 
@@ -1055,7 +1075,7 @@ class Tableau(object):
         ξ
         Branch binary with a new signature.
         """
-        irrelevant, universal, new, used, occurring, extensions, reductions = args
+        universal, irrelevant, new, used, occurring, extensions, reductions = args
         line = max([node.line for node in self.root.nodes() if node.line])
 
         # find a signature that does not already occur in this branch
@@ -1080,7 +1100,7 @@ class Tableau(object):
         χ
         Branch binary with an existing signature.
         """
-        irrelevant, universal, new, used, occurring, extensions, reductions = args
+        universal, irrelevant, new, used, occurring, extensions, reductions = args
         max_line = max([node.line for node in self.root.nodes() if node.line])
         line = max_line
 
@@ -1473,7 +1493,7 @@ class Node(object):
             str_cite = "(" + str(self.source.line) + ")"
         else:
             str_rule = ("\\! ".join([str2tex[c] if c in str2tex else c for c in str(self.rule)]) \
-                            if not str(self.rule).isnumeric() else str(self.rule))\
+                            if not str(self.rule).isnumeric() else str(self.rule)) \
                 .replace("\\neg\\! \\", "\\neg  \\") if self.rule else ""
             str_comma = "{,}\\ " if self.rule and self.source else ""
             str_source = str(self.source.line) if self.source else ""

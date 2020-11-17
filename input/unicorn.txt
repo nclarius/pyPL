@@ -1,2 +1,0 @@
-* \exi x U(x)
-- \exi x * U(x)

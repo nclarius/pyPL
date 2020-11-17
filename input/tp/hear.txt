@@ -1,0 +1,2 @@
+\all x \exi y Heard(x,y)
+\exi y \all x Heard(x,y)

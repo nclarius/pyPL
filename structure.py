@@ -179,7 +179,7 @@ class PredStructure(Structure):
                    "\\multicolumn{2}{A}{\\set{" + ", ".join([self.text(d) for d in sorted(self.d)]) + "}}\\\\\n" +\
                i + " : &" + \
                    "\\\\\n    & ".join(
-                       [str(key) + " & \\mapsto " +
+                       ["\\mathit{" + str(key) + "} & \\mapsto " +
                         (self.text(val) if isinstance(val, str) else
                          (", ".join(["\\tpl{" + ", ".join([self.text(t) for t in key2]) + "}" +
                                      " \\mapsto " + self.text(val2)
@@ -366,16 +366,18 @@ class ConstModalStructure(ModalStructure):
         return "Structure $" + s + " = \\tpl{" + ", ".join([w, r, d, i]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAAA}\n" +\
                w + " = & " \
-                   "\\multicolumn{5}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" + \
+                   "\\multicolumn{5}{A}{\\set{" + ", ".join([re.sub("w(\d+)", "w_\\1", str(w))
+                                                             for w in sorted(self.w)]) + "}}\\\\\n" + \
                r + " = &" \
                    "\\multicolumn{5}{A}{\\set{" + ", ".join(
-                    ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
+                    ["\\tpl{" + re.sub("w(\d+)", "w_\\1", str(r[0])) + ", " + re.sub("w(\d+)", "w_\\1", str(r[1])) + "}"
+                     for r in sorted(self.r)]) + "}}\\\\\n" + \
                d + " = & " + \
                    "\\multicolumn{5}{A}{\\set{" + ", ".join([self.text(d) for d in sorted(self.d)]) + "}}\\\\\n" + \
                i + " : & " + \
-                   "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
+                   "\\\\\n    & ".join(["\\mathit{" + str(p) + "} & \\mapsto &" + \
                         "\\\\\n &&& ".join(
-                            [str(w) + "& \\mapsto &" +
+                            [re.sub("w(\d+)", "w_\\1", str(w)) + "& \\mapsto &" +
                                  (self.text(ipw) if isinstance(ipw, str) else
                                  (", \\\\\n && ".join(
                                           ["\\tpl{" + ", ".join([self.text(t) for t in ipwKey]) + "}"
@@ -487,18 +489,20 @@ class VarModalStructure(ModalStructure):
         return "Structure $" + s + " = \\tpl{" + ", ".join([w, r, d, i]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAAA}\n" +\
                w + " = & " \
-                   "\\multicolumn{5}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" + \
+                   "\\multicolumn{5}{A}{\\set{" + ", ".join([re.sub("w(\d+)", "w_\\1", str(w))
+                                                             for w in sorted(self.w)]) + "}}\\\\\n" + \
                r + " = &" + \
                    "\\multicolumn{5}{A}{\\set{" + ", ".join(
-                        ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
-               d + " = & " + \
-                   "\\\\\n    & ".join([str(w) + " & \\multicolumn{4}{A}{\\mapsto " + \
+                        ["\\tpl{" + re.sub("w(\d+)", "w_\\1", str(r[0])) + ", " + re.sub("w(\d+)", "w_\\1", str(r[1])) + "}"
+                         for r in sorted(self.r)]) + "}}\\\\\n" + \
+               d + " : & " + \
+                   "\\\\\n    & ".join([re.sub("w(\d+)", "w_\\1", str(w)) + " & \\multicolumn{4}{A}{\\mapsto " + \
                         "\\set{" + ", ".join([self.text(d) for d in sorted(self.d[w])]) + "}}" for w in sorted(self.w)]) + \
                    "\\\\\n" + \
                i + " : & " + \
-                   "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
+                   "\\\\\n    & ".join(["\\mathit{" + str(p) + "} & \\mapsto &" + \
                         "\\\\\n &&& ".join(
-                            [str(w) + "& \\mapsto &" +
+                            [re.sub("w(\d+)", "w_\\1", str(w)) + "& \\mapsto &" +
                              (self.text(ipw) if isinstance(ipw, str) else
                               (", \\\\\n && ".join(
                                       ["\\tpl{" + ", ".join([self.text(t) for t in (ipwKey)]) + "}" +
@@ -788,13 +792,13 @@ class KripkePredStructure(KripkeStructure):
         suffix = self.s.removeprefix("S") if self.s[-1].isdigit() else ""
         s, k, r, d, i = self.s, "K" + suffix, "R" + suffix, "D" + suffix, "I" + suffix
         return "Structure " + s + " = ⟨" + ",".join([k, r, d, i]) + "⟩ with \n" + \
-                k + " = {" + ", ".join([str(k) for k in self.k]) + "}\n" +\
+                k + " = {" + ", ".join([str(k) for k in sorted(self.k)]) + "}\n" +\
                 r + " = {" + ", ".join(
                     ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" +\
-                d + " : " + "\n    ".join(
+                d + " : " + ("\n    ".join(
                     [str(k) + " ↦ " + \
-                        ", ".join([str(d) for d in self.d[k]]) + "}"
-                     for k in self.k]) if self.d else "" + "\n" + \
+                        "{" + ", ".join([str(d) for d in sorted(self.d[k])]) + "}"
+                     for k in sorted(self.k)]) if self.d else "") + "\n" + \
                 i + " : " + \
                     "\n    ".join([str(p) + " ↦ \n" + \
                         ", \n".join(["           " + str(k) + " ↦ " +
@@ -811,37 +815,38 @@ class KripkePredStructure(KripkeStructure):
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
         s, k, r, d, i = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{K}" + suffix, "\\mathcal{R}" + suffix, \
-                        "\\mathcal{D}" + suffix, "\\\mathcal{I}" + suffix
+                        "\\mathcal{D}" + suffix, "\\mathcal{I}" + suffix
         return "Structure $" + s + " = \\tpl{" + ", ".join([k, r, d, i]) + "}$ with \\\\\n" + \
-               "\\begin{tabular}{AAAAAA}\n" + \
+               "\\begin{tabular}{AAAAAA}\n" +\
                k + " = & " \
                    "\\multicolumn{5}{A}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" + \
-               r + " = &" \
-                   "\\multicolumn{5}{A}{" \
-                   "\\set{" + ", ".join(["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}"
-                                          for r in sorted(self.r)]) + "}}\\\\\n" + \
-               d + " = & " \
-                   "\\\\\n    ".join([str(k) + " & \\multicolumn{2}{A}{\\mapsto " + \
-                   "\\set{" + ", ".join([self.text(d) for d in sorted(self.d[k])]) + "}}" for k in sorted(self.k)]) + \
-                    "\\\\\n" + \
+               r + " = &" + \
+                   "\\multicolumn{5}{A}{\\set{" + ", ".join(
+                        ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
+               d + " : & " + \
+                   "\\\\\n    & ".join([str(k) + " & \\multicolumn{4}{A}{\\mapsto " + \
+                        "\\set{" + ", ".join([self.text(d) for d in sorted(self.d[k])]) + "}}" for k in sorted(self.k)]) + \
+                   "\\\\\n" + \
                i + " : & " + \
-                   "\\\\\n    & ".join([str(p) + " & \\mapsto &" + \
+                   "\\\\\n    & ".join(["\\mathit{" + str(p) + "} & \\mapsto &" + \
                         "\\\\\n &&& ".join(
-                        [str(k) + " & \\mapsto &" +
-                            (self.text(ipk) if isinstance(ipk, str) else
-                            (", \\\\\n && ".join(
-                                ["\\tpl{" + ", ".join([self.text(t) for t in ipkKey]) + "}" +
-                                 " \\mapsto " + self.text(ipkVal)
-                                 for ipkKey, ipkVal in ipk.items()])
-                                if isinstance(ipk, dict) else
-                             ("\\set{" + ", ".join(["\\tpl{" + ", ".join(
-                                     [self.text(t) if "frozenset" not in str(t) else
-                                      str(t).replace("frozenset", "").replace("'", "")
-                                      for t in e]) + "}"
-                                    for e in sorted(ipk)]) + "}")))
-                        for (k, ipk) in sorted(self.i[p].items())])
-                    for (p, ip) in sorted(self.i.items(), key=sort_i_w)]) + "\\\\\n" + \
+                            [str(k) + "& \\mapsto &" +
+                             (self.text(ipk) if isinstance(ipk, str) else
+                              (", \\\\\n && ".join(
+                                      ["\\tpl{" + ", ".join([self.text(t) for t in (ipkKey)]) + "}" +
+                                                            " \\mapsto " + self.text(ipkVal)
+                                       for ipkKey, ipkVal in ipk.items()])
+                               if isinstance(ipk, dict) else
+                               ("\\set{" + ", ".join(["\\tpl{" + ", ".join(
+                                       [self.text(t) if "frozenset" not in str(t) else
+                                        str(t).replace("frozenset", "").replace("'", "")
+                                        for t in e]) + "}"
+                                                      for e in sorted(ipk)]) +
+                                "}")))
+                             for (k, ipk) in sorted(self.i[p].items())])
+                        for (p, ip) in sorted(self.i.items(), key=sort_i_w)]) + "\\\\\n" + \
                "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + self.text(val)
-                        for key, val in sorted(self.v[g].items())]) for g in self.v]) + "\\\\\n" + \
+                                                      for key, val in sorted(self.v[g].items())])
+                              for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \
-               .replace("\\set{}", "\\emptyset{}")
+                .replace("\\set{}", "\\emptyset{}")
