@@ -1,4 +1,4 @@
-r
+s
 p v q
 q -> r ^ s
-- p 
+- p

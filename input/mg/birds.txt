@@ -1,4 +1,0 @@
-\exi x \exi y (- (x = y) ^ Bird(x) ^ Bird(y) ^ Garden(x) ^ Garden(y))
-\exi x (Sparrow(x) ^ Chirp(x))
-\exi x (Blackbird(x) ^ Bath(x))
-\all x - (Sparrow(x) ^ Blackbird(x))

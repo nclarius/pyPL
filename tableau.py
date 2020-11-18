@@ -110,6 +110,9 @@ class Tableau(object):
         self.appl = []  # list of applicable rules
         self.models = []  # generated models
         self.steps = []  # stepwise representation
+        if self.stepwise:
+            # todo treat contradiction check as separate step
+            self.steps.append(self.root.treestr() if not self.latex else self.root.treetex())
 
         # run the tableau
         try:
@@ -129,13 +132,13 @@ class Tableau(object):
     def __len__(self):
         return max([int(node.line) for node in self.root.nodes() if node.line])
 
-    def show(self, latex=True):
+    def show(self):
         """
         Print tableau info.
         """
         res = ""
         # create preamble
-        if latex:
+        if self.latex:
             path_preamble = os.path.join(os.path.dirname(__file__), "preamble.tex")
             with open(path_preamble) as f:
                 preamble = f.read()
@@ -159,9 +162,9 @@ class Tableau(object):
                  if self.mode["modal"] and not self.mode["propositional"] else "") + \
                 (" in a " + self.mode["frame"] + " frame"
                  if self.mode["modal"] else "") + \
-                "." + ("\\\\" if latex else "") + "\n\n"
+                "." + ("\\\\" if self.latex else "") + "\n\n"
 
-        if not latex:
+        if not self.latex:
             axs = ["  " + str(node.fml) for node in self.axioms]
             prems = ["  " + str(self.root.fml)] if not self.conclusion else [] + \
                                                                             ["  " + str(node.fml) for node in
@@ -199,10 +202,18 @@ class Tableau(object):
                     ", \\\\\n".join(prems) + ("\\\\\n" if len(lhs) > 1 else " " if not concl else "") + \
                     inf + \
                     (" " if concl else "") + concl + ":" + "$\\\\\n"
+
+        if self.stepwise:
+            if not self.latex:
+                res += info + "\n\n"
+                res += "\n\n".join([step for step in self.steps])
+            else:
+                res += "\n\n\\pagebreak\n\n".join([info + step for step in self.steps]) + "\n\n\\pagebreak\n\n"
+
         res += info
 
         # print the tableau
-        if not latex:
+        if not self.latex:
             res += self.root.treestr()
         else:
             res += self.root.treetex() + "\ \\\\\n\ \\\\\n\ \\\\\n"
@@ -210,7 +221,7 @@ class Tableau(object):
         # print result
         result = ""
         if self.closed():
-            result += "The tableau is closed:" + ("\\\\" if latex else "") + "\n"
+            result += "The tableau is closed:" + ("\\\\" if self.latex else "") + "\n"
             if self.mode["validity"]:
                 result += "The " + ("inference" if self.premises else "sentence") + " is valid."
             else:
@@ -219,7 +230,7 @@ class Tableau(object):
                 else:
                     result += "The " + ("inference" if self.premises else "sentence") + " is valid."
         elif self.open():
-            result += "The tableau is open:" + ("\\\\" if latex else "") + "\n"
+            result += "The tableau is open:" + ("\\\\" if self.latex else "") + "\n"
             if self.mode["validity"]:
                 result += "The " + ("inference" if self.premises else "sentence") + " is invalid."
             else:
@@ -228,7 +239,7 @@ class Tableau(object):
                 else:
                     result += "The " + ("inference" if self.premises else "sentence") + " is invalid."
         elif self.infinite():
-            result += "The tableau is potentially infinite:" + ("\\\\" if latex else "") + "\n"
+            result += "The tableau is potentially infinite:" + ("\\\\" if self.latex else "") + "\n"
             if self.mode["validity"]:
                 result += "The " + ("inference" if self.premises else "sentence") + " may or may not be valid."
             else:
@@ -238,7 +249,7 @@ class Tableau(object):
                               " may or may not be satisfiable."
                 else:
                     result += "The " + ("inference" if self.premises else "sentence") + " may or may not be refutable."
-        result += "\\\\\n\\\\\n" if latex else "\n\n"
+        result += "\\\\\n\\\\\n" if self.latex else "\n\n"
         res += result
 
         # generate and print models
@@ -246,15 +257,15 @@ class Tableau(object):
         if self.models:
             mdls += ("Countermodels:" \
                          if self.mode["validity"] or not self.mode["validity"] and not self.mode["satisfiability"] \
-                         else "Models:") + ("\\\\\n" if latex else "\n")
-            if latex:
+                         else "Models:") + ("\\\\\n" if self.latex else "\n")
+            if self.latex:
                 mdls += "% alignment for structures\n"
                 mdls += "\\renewcommand{\\arraystretch}{1}  % decrease spacing between rows\n"
                 mdls += "\\setlength{\\tabcolsep}{1.5pt}  % decrease spacing between columns\n"
                 mdls += "\n"
             for model in sorted(self.models, key=lambda m:
             {n.line: i for (i, n) in enumerate(self.root.nodes(preorder=True))}[int(m.s[1:])]):
-                if not latex:
+                if not self.latex:
                     mdls += str(model) + "\n\n"
                 else:
                     mdls += model.tex() + "\\ \\\\\n\\ \\\\\n"
@@ -268,15 +279,15 @@ class Tableau(object):
                    str(self.num_branches) + " branch" + ("es" if self.num_branches > 1 else "") + \
                    " and " + str(len(self)) + " nodes.\n\n"
 
-        if latex:
+        if self.latex:
             postamble = "\\end{document}\n"
             res += postamble
-        if not latex and not self.file:
+        if not self.latex and not self.file:
             sep = 80 * "-"
             res += sep
 
         write_output = __import__("gui").write_output
-        write_output(res, latex)
+        write_output(res, self.latex)
 
     rule_names = {"α": "alpha", "β": "beta",  # connective rules
                   "γ": "gamma", "δ": "delta", "η": "eta", "θ": "theta", "ε": "epsilon",  # quantifier rules
@@ -290,10 +301,6 @@ class Tableau(object):
         """
         # input()
         # print(self.root.treestr())
-        if debug:
-            pass
-            print(self.root.treestr())
-            print([(node.fml, node.inst) for node in self.root.nodes()])
         while applicable := self.applicable():
             # todo stop search when only contradictions found after all new instantiations
             # check whether to continue expansion
@@ -334,12 +341,21 @@ class Tableau(object):
                 print("expanding:")
                 print(str(source), " with ", rule_name, " on ", str(target))
             # apply the rule
-            rule_type_func(target, source, rule_name, fmls, args)
+            new_children = rule_type_func(target, source, rule_name, fmls, args)
+
+            # # check properties of new children
+            # for child in new_children:
+            #     # todo yields open branch if only first child is contradictory
+            #     if not isinstance(child.fml, Pseudo):
+            #         child.branch_closed()
+            #         child.branch_infinite()
             if debug:
                 print()
                 print(self.root.treestr())
                 print("--------")
                 print()
+            if self.stepwise:
+                self.steps.append(self.root.treestr() if not self.latex else self.root.treetex())
 
     parameters = list("abcdefghijklmnopqrst") + ["c" + str(i) for i in range(1, 1000)]
 
@@ -736,11 +752,13 @@ class Tableau(object):
         world = source.world
 
         # append (top) node
-        top = target.add_child((self, line := line + 1, world, fmls[0], rule, source, args))
+        top = child = target.add_child((self, line := line + 1, world, fmls[0], rule, source, args))
 
         # append bottom node
         if len(fmls) == 2:
             bot = top.add_child((self, line := line + 1, world, fmls[1], rule, source, []))
+
+        return [bot]
 
     def rule_beta(self, target, source, rule, fmls, args):
         """
@@ -752,20 +770,25 @@ class Tableau(object):
         world = source.world
 
         # append (top) left node
-        topleft = target.add_child((self, line := line + 1, world, fmls[0], rule, source, list(args)))
+        topleft = child = target.add_child((self, line := line + 1, world, fmls[0], rule, source, list(args)))
 
         # append bottom left node
         if len(fmls) == 4 and topleft:
             botleft = topleft.add_child((self, line := line + 1, world, fmls[2], rule, source, list(args)))
 
         # append (top) right node
-        topright = target.add_child((self, line := line + 1, world, fmls[1], rule, source, list(args)))
+        topright = child = target.add_child((self, line := line + 1, world, fmls[1], rule, source, list(args)))
 
         # append bottom right node
         if len(fmls) == 4 and topright:
             botright = topright.add_child((self, line := line + 1, world, fmls[3], rule, source, list(args)))
 
         self.num_branches += 1
+
+        if len(fmls) == 4 and topleft and topright:
+            return [topleft, botleft, topright, botright]
+        else:
+            return [topleft, topright]
 
     def rule_gamma(self, target, source, rule, fmls, args):
         """
@@ -798,7 +821,9 @@ class Tableau(object):
         fml = phi.subst(var, const)
 
         # add node
-        target.add_child((self, line + 1, world, fml, rule, source, inst))
+        child = child = target.add_child((self, line + 1, world, fml, rule, source, inst))
+
+        return [child]
 
     def rule_delta(self, target, source, rule, fmls, args):
         """
@@ -828,7 +853,9 @@ class Tableau(object):
         fml = phi.subst(var, const)
 
         # add node
-        target.add_child((self, line + 1, world, fml, rule, source, inst))
+        child = target.add_child((self, line + 1, world, fml, rule, source, inst))
+
+        return [child]
 
     def rule_eta(self, target, source, rule, fmls, args):
         """
@@ -860,7 +887,9 @@ class Tableau(object):
         fml = phi.subst(var, const)
 
         # add node
-        target.add_child((self, line + 1, world, fml, rule, source, inst))
+        child = target.add_child((self, line + 1, world, fml, rule, source, inst))
+
+        return [child]
 
     def rule_theta(self, target, source, rule, fmls, args):
         """
@@ -891,12 +920,14 @@ class Tableau(object):
 
         # add pseudo-node to indicate branching
         if not target.children:
-            target.add_child((self, None, None, Empty(), rule, source, None))
+            pseudo = target.add_child((self, None, None, Empty(), rule, source, None))
 
         # add node
-        target.add_child((self, line + 1, world, fml, rule, source, inst))
+        child = target.add_child((self, line + 1, world, fml, rule, source, inst))
 
         self.num_branches += 1 if len(target.children) > 2 else 0
+
+        return [child]
 
     def rule_epsilon(self, target, source, rule, fmls, args):
         """
@@ -928,12 +959,14 @@ class Tableau(object):
 
         # add pseudo-node to indicate branching
         if not target.children:
-            target.add_child((self, None, None, Empty(), rule, source, None))
+            pseudo = target.add_child((self, None, None, Empty(), rule, source, None))
 
         # add node
-        target.add_child((self, line + 1, world, fml, rule, source, inst))
+        child = target.add_child((self, line + 1, world, fml, rule, source, inst))
 
-        self.num_branches += 1
+        self.num_branches += 1 if len(target.children) > 2 else 0
+
+        return [child]
 
     def rule_mu(self, target, source, rule, fmls, args):
         """
@@ -955,11 +988,16 @@ class Tableau(object):
         inst = (universal, new, source.world, world)
 
         # add (top) node
-        top = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
+        top = child = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
 
         # add bottom node
         if len(fmls) == 2 and top:
             bot = top.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
+
+        if len(fmls) == 2 and top:
+            return [top, bot]
+        else:
+            return [top]
 
     def rule_nu(self, target, source, rule, fmls, args):
         """
@@ -982,11 +1020,16 @@ class Tableau(object):
         inst = (universal, new, source.world, world)
 
         # add (top) node
-        top = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
+        top = child = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
 
         # add bottom node
         if len(fmls) == 2 and top:
             bot = top.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
+
+        if len(fmls) == 2 and top:
+            return [top, bot]
+        else:
+            return [top]
 
     def rule_kappa(self, target, source, rule, fmls, args):
         """
@@ -1010,14 +1053,19 @@ class Tableau(object):
 
         # add pseudo-node to indicate branching
         if not target.children:
-            target.add_child((self, None, None, Empty(), rule, source, None))
+            child = target.add_child((self, None, None, Empty(), rule, source, None))
 
         # add (top) node
-        top = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
+        top = child = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
 
         # add bottom node
         if len(fmls) == 2 and top:
             bot = top.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
+
+        if len(fmls) == 2 and top:
+            return [top, bot]
+        else:
+            return [top]
 
     def rule_lambda(self, target, source, rule, fmls, args):
         """
@@ -1041,11 +1089,16 @@ class Tableau(object):
         inst = (universal, new, source.world, world)
 
         # add (top) node
-        top = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
+        top = child = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
 
         # add bottom node
         if len(fmls) == 2 and top:
             bot = top.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
+
+        if len(fmls) == 2 and top:
+            return [top, bot]
+        else:
+            return [top]
 
     def rule_pi(self, target, source, rule, fmls, args):
         """
@@ -1064,11 +1117,16 @@ class Tableau(object):
         inst = (universal, new, source.world, world)
 
         # add (top) node
-        top = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
+        top = child = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
 
         # add bottom node
         if len(fmls) == 2 and top:
             bot = top.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
+
+        if len(fmls) == 2 and top:
+            return [top, bot]
+        else:
+            return [top]
 
     def rule_xi(self, target, source, rule, fmls, args):
         """
@@ -1095,6 +1153,8 @@ class Tableau(object):
         # add right node
         right = target.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
 
+        return [left, right]
+
     def rule_chi(self, target, source, rule, fmls, args):
         """
         χ
@@ -1116,10 +1176,12 @@ class Tableau(object):
         inst = (universal, new, source.world, world)
 
         # add left node
-        left = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
+        left = child = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
 
         # add right node
-        right = target.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
+        right = child = target.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
+
+        return [left, right]
 
     def rule_omicron(self, target, source, rule, fmls, args):
         """
@@ -1658,6 +1720,7 @@ class Node(object):
             # check properties of new child
             child.branch_closed()
             child.branch_infinite()
+
         return child
 
     def rules(self):

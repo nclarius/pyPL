@@ -1007,10 +1007,12 @@ class PyPLGUI(tk.Frame):
 
         def select_cb(cb):
             cb.config(fg=white)
-            if not underline.get():
+            if not stepwise.get():
                 cbs[0].config(fg=black)
-            if not hide.get():
+            if not underline.get():
                 cbs[1].config(fg=black)
+            if not hide.get():
+                cbs[2].config(fg=black)
             set()
 
         def select_entry():
@@ -1034,6 +1036,7 @@ class PyPLGUI(tk.Frame):
 
         def set():
             self.inst.output = output.get()
+            self.inst.stepwise = stepwise.get()
             self.inst.underline_open = underline.get()
             self.inst.hide_nonopen = hide.get()
             self.inst.generation_mode = generation.get()
@@ -1168,7 +1171,7 @@ class PyPLGUI(tk.Frame):
                               text="Model generation mode:")
         lbl_output.pack(in_=mids[m])
         m += 1
-        generations = [("minimal model", "mathematical"), ("non-minimal model", "linguistic")]
+        generations = [("minimal domain", "mathematical"), ("non-minimal domain", "linguistic")]
         rbs = []
         rbs2 = []
         for i, (txt, val) in enumerate(generations):
@@ -1320,9 +1323,9 @@ class PyPLGUI(tk.Frame):
                             validity=validity, satisfiability=satisfiability, linguistic=linguistic,
                             classical=classical, propositional=propositional,
                             modal=modal, vardomains=vardomains, frame=frame,
-                            file=True, latex=latex, stepwise=stepwise,
+                            silent=True, file=True, latex=latex, stepwise=stepwise,
                             num_models=num_models, size_limit_factor=size_limit,
-                            underline_open=underline_open, hide_nonopen=hide_nonopen).show(latex)
+                            underline_open=underline_open, hide_nonopen=hide_nonopen).show()
 
         else:
             # test if theorem
@@ -1330,7 +1333,7 @@ class PyPLGUI(tk.Frame):
                                    validity=True, satisfiability=False, linguistic=linguistic,
                                    classical=classical, propositional=propositional,
                                    modal=modal, vardomains=vardomains, frame=frame,
-                                   file=True, latex=latex, stepwise=stepwise,
+                                   silent=True, file=True, latex=latex, stepwise=stepwise,
                                    num_models=num_models, size_limit_factor=size_limit,
                                    underline_open=underline_open, hide_nonopen=hide_nonopen)
 
@@ -1343,7 +1346,7 @@ class PyPLGUI(tk.Frame):
                                        validity=False, satisfiability=False, linguistic=linguistic,
                                        classical=classical, propositional=propositional,
                                        modal=modal, vardomains=vardomains, frame=frame,
-                                       file=True, latex=latex, stepwise=stepwise,
+                                       silent=True, file=True, latex=latex, stepwise=stepwise,
                                        num_models=num_models, size_limit_factor=size_limit,
                                        underline_open=underline_open, hide_nonopen=hide_nonopen)
                 if tab2.open() or tab2.infinite():
