@@ -14,8 +14,9 @@ from itertools import product
 
 class Truthtable():
 
-    def __init__(self, e: Expr):
+    def __init__(self, e: Expr, latex=True):
         self.e = e
+        self.latex = latex
 
     def truthtable(self):
         pvs = sorted(list(self.e.propvars()))
@@ -93,7 +94,7 @@ class Truthtable():
         else:
             return "$" + ("\\boldsymbol{" if mainconn else "") + ("1" if b else "0") + ("}" if mainconn else "") + "$"
 
-    def show(self, latex=True):
+    def show(self,):
         # generate the tex file and open the compiled pdf
 
         # compute truth table
@@ -111,20 +112,20 @@ class Truthtable():
             comptime = None
 
         # heading
-        if not latex:
+        if not self.latex:
             heading = "Truth table for " + str(self.e) + ":\n\n"
         else:
             heading = "Truth table for $" + self.e.tex() + "$:\\\\ \\ \\\\ \n"
 
         # load preamble
-        if latex:
+        if self.latex:
             path_preamble = os.path.join(os.path.dirname(__file__), "preamble.tex")
             with open(path_preamble) as f:
                 preamble = f.read()
                 preamble += "\n\n\setlength\\tabcolsep{3pt}\n"
 
         # assemble string
-        if not latex:
+        if not self.latex:
             res = heading + tt + ("\n\n" + comptime if comptime else "") + "\n"
         else:
             res = preamble + \
@@ -136,7 +137,7 @@ class Truthtable():
 
         # write and open output
         write_output = __import__("gui").write_output
-        write_output(res, latex)
+        write_output(res, self.latex)
 
 if __name__ == "__main__":
     pass

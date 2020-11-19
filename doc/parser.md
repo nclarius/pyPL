@@ -3,38 +3,37 @@ Here is how to enter formulas, structures and input files.
 # Entering formulas
 
 ## Auxiliary symbols
+
 - All symbols except parentheses and commas must be separated by whitespace.  
  Example: `- (p ^ q)`; not: `-(p^q)`.
- 
 - All formulas use round brackets.  
   Example: `\exi x (P(x) ^ Q(x))`; not: `\exi x [P(x) ^ Q(x)]`.
-
 - Terms inside function expressions and atomic predications are enclosed by brackets and separated by commas.  
   Example: `P(a,b)`; not: `Pab`.
-  
 - Bracketing conventions:
 
+  - Binary connectives go with outer brackets, unary operators do not.
+     Example: `(p ∧ (q → r))`,  `(p → ¬q)`, `∃x(P(x) ∧ Q(x))`; not: `(p → (¬q))`, `(∃x(P(x) ∧ Q(x)))`.
   - Outer brackets may be omitted.  
-  Example: `p ^ q` = `(p ^ q)`.
-
+  Example: `p ∧ q` = `(p ∧ q)`.
   - Occurrences of the same operator are left-associative.  
-   Example: `p ^ q ^ r` = `(p ^ q) ^ r`.
-
-  - Operator precedence: `∃`,`∀`, `¬` < `∧` < `∨` < `→` < `↔` < `⊕`.  
-    Example:  `¬ p ∨ q ∧ r` = `(¬p ∨ (q ∧ r))`, `∃x P(x) ^ Q(x)` = `(∃x P(x)) ^ Q(x)`.
+   Example: `p ∧ q ∧ r` = `((p ∧ q) ∧ r)`.
+  - Operator precedence: `∃`,`∀`, `¬` > `∧` > `∨` > `→` > `↔` > `⊕`.  
+    Example:  `¬ p ∨ q ∧ r` = `((¬p) ∨ (q ∧ r))`, `∃x P(x) ∧ Q(x)` = `(∃x P(x)) ∧ Q(x)` (brackets around `¬` and `∃` only for clarity here).
 
 ## Term symbols
 
 ### Individual variables
+
 Lowercase letters `x` - `z`, optionally followed by a number, optionally separated by an underscore.  
 Examples: `x`, `y`, `z5`, `x_23`.
 
 ### Individual constants
-A sequence of letters, numbers and underscore, with the first symbol a lowercase letter; or    
-lowercase letters `a` - `e` and `i` - `o`, optionally followed by a number, optionally separated by an underscore.  
-Examples: `peter`, `a`, `m`, `c12`, `c_345`; not: `Mary`, `p`.
+Lowercase letters `a` - `e` and `i` - `o`, optionally followed by a number, optionally separated by an underscore; <br/>or: a sequence of letters, numbers and underscore, with the first symbol a lowercase letter.      
+Examples: `a`, `m`, `c12`, `peter`; not: `p` , `Mary`.
 
 ### Functions
+
 Lowercase letters `f` - `h`, optionally followed by a number, optionally separated by an underscore.  
 Examples: `f`, `g2`.
 
@@ -147,7 +146,7 @@ Examples:
 Non-modal propositional structure: 
 ```
 V = [p: True, q: False, r: True]
-```  
+```
 
 Non-modal predicational structure:
 ```
@@ -168,7 +167,7 @@ W = {w1, w2}
 R = {(w1, w1), (w1, w2)}
 V = [p: [w1: True, w2: False],
      q: [w1: False, w2: True]]
-```  
+```
 
 Modal predicational structure with constant domains:  
 
@@ -205,12 +204,11 @@ like modal propositional structure and modal varying predicational structure, ex
 - If expressions are to be evaluated against assignment functions and/or possible worlds in a structure, they are specified by prepending their names to the formula prefixed with `v:` and `w:` respectively and suffixed with ` `.  
   Examples: `v:v1 Love(m,x)`, `w:w2 \exi x Unicorn(x)`, `v:v1 w:w2 Unicorn(x)`.
 
-Examples: see the examplary files in `pyPL/input`.
-
+Examples: see the exemplary files in `pyPL/input`.
 
 # Issues
 
-- If the program is not responding or crashed, check the log file `pyPL/pyPL.log` for error messages. Please note that tableaus for largish (sets of) formulas may take a couple seconds to compute.
+- If the program hung itself up or crashed (especially after adding/removing formulas), usually simply restarting it resolves the issue. In case the program doesn’t seem to respond, please note that tableaus for largish (sets of) formulas may take some time to compute. If problems persist, you can check if there is useful information in the log file `pyPL/pyPL.log`. 
 - If the formula or structure you entered won't update, you probably made a typo. Unfortunately there are no error messages telling you what exactly went wrong; you will have to check back with this documentation to see where the problem might be.  
 - If no output file opens and a `.tex` file but no `.pdf` file was generated, compiling the `.tex` file via `pdflatex` probably went wrong. Try to compile the `.tex` file manually to see what the error is (perhaps a missing package). If LaTeX causes problems, select plain text instead of LaTeX PDF output in the settings. 
 - If no output file opens, the automatic file opening via `xdg-open` probably isn't working on your machine. You can find all your output files in `pyPL/output`.  

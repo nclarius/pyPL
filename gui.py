@@ -1295,7 +1295,7 @@ class PyPLGUI(tk.Frame):
         size_limit = self.inst.size_limit_factor
 
         if self.inst.action == "tc":
-            tt = truthtable.Truthtable(concl, True if self.inst.output == "tex" else False)
+            tt = truthtable.Truthtable(concl, latex)
             tt.show()
 
         elif self.inst.action == "mc":
