@@ -37,7 +37,10 @@ class Expr:
         """
         The length of the expression.
         """
-        pass
+        return 1 + sum(len(subexpr) for subexpr in vars(self) if isinstance(subexpr, Expr))
+    
+    def subexprs(self):
+        return [field for field in vars(self) if isinstance(field, Expr)]
 
     def propvars(self) -> set[str]:
         """
@@ -46,7 +49,7 @@ class Expr:
         @return: the set of propositional variables in the expression
         @rtype: set[str]
         """
-        pass
+        return {pv for subexpr in self.subexprs() for pv in subexpr.propvars()}
 
     def freevars(self) -> set[str]:
         """
@@ -55,7 +58,7 @@ class Expr:
         @return: the set of free variables in the expression
         @rtype: set[str]
         """
-        pass
+        return {fv for subexpr in self.subexprs() for fv in subexpr.freevars()}
 
     def boundvars(self) -> set[str]:
         """
@@ -64,7 +67,7 @@ class Expr:
         @return: the set of bound variables in the expression
         @rtype: set[str]
         """
-        pass
+        return {fv for subexpr in self.subexprs() for fv in subexpr.boundvars()}
 
     def nonlogs(self):
         """
@@ -73,6 +76,26 @@ class Expr:
         @return the set of non-logical symbols in the expression: (constants, functions, predicates)
         @rtype: tuple[set[str]]
         """
+        return tuple([{nl[i] for subexpr in self.subexprs() for nl in subexpr.nonlogs()[i]}
+                      for i in range(3)])
+
+    def redex(self):
+        """
+        Whether or not the expression is a redex.
+
+        @return True iff self is a redex, and False otherwise
+        @rtype: bool
+        """
+        return False
+
+    def redexes(self):
+        """
+        The set of redexes in the subterms of the expression.
+
+        @return the set of redexes in the subterms of self
+        @rtype list[Expr]
+        """
+        return [r for subexpr in self.subexprs() for r in subexpr.redexes()]
 
     def subst(self, u, t):
         """
@@ -85,8 +108,7 @@ class Expr:
         @return: the result of substituting all occurrences of the variable v for the term t in self
         @rtype Expr
         """
-        # todo doesnt work
-        pass
+        return type(self)(*[subexpr.subst(u, t) for subexpr in self.subexprs()])
 
     def denot(self, s, v: dict[str, str] = None, w: str = None):
         """
@@ -100,7 +122,7 @@ class Expr:
         @type w: str
         @return: the denotation of the expression relative to the structure s and assignment v
         """
-        pass
+        return None
 
     def denotV(self, s, w=None):
         """
@@ -139,6 +161,90 @@ class Expr:
         """
         return self.denot(s)
 
+    def alpha_conv(self, t=None):
+        """
+        The  elementary alpha conversion step on the expression itself, possibly w.r.t. a term.
+        """
+        if "u" in self.subexprs():
+            exprtype = type(self)
+            vartype = type(self.u)
+            varnames = ["x", "y", "z"] + ["x" + str(i) for i in range(100)]
+            u_ = [var for var in varnames if var not in self.phi.freevars() | (t.freevars() if t else set())][0]
+            return exprtype(self)(vartype(u_), self.phi.subst(self.u, u_))
+        else:
+            return self
+
+    def alpha_conv(self):
+        """
+        The alpha conversion step on the expression's subexpressions w.r.t. a term.
+        φ ≡α ψ
+        """
+        # todo wrong (don't perform several alpha conversions on different subexpressions at a time)
+        return type(self)(*[subexpr.alpha_conv() for subexpr in self.subexprs()])
+
+    def alpha_congr(self, other):
+        """
+        Whether the expression is beta-equivalent (beta-reduces to the same normal form) to the other.
+
+
+        @attr other: the other expression to check for beta equivalence
+        @type other: Expr
+        @return: True iff self is beta-equivalent to other
+        @rytpe: bool
+        """
+        if self == other:
+            return True
+        conversion = self.alpha_conv(other)
+        if conversion == other:
+            return True
+        if self.boundvars():  # todo keep track of already converted boundvars
+            leftmost_boundvar = list(self.boundvars())[0]
+            return conversion.alpha_conv(leftmost_boundvar).alpha_congr(other)
+        else:
+            return False
+
+    def beta_contr(self, redex=None):
+        """
+        The beta contraction step on the expression's subexpressions w.r.t. to a redex, or
+        The elementary beta contraction step on itself.
+        """
+        contracted = False
+        subexprs = []
+        for subexpr in self.subexprs():
+            if not contracted and subexpr == redex:
+                subexpr = subexpr.beta_contr()
+                contracted = True
+            subexprs.append(subexpr)
+        return type(self)(*subexprs)
+
+    def beta_reduce(self):
+        """
+        Beta-reduce this expression to normal form by leftmost reduction.
+        φ ▻β ψ
+
+        @return: the beta-normal form of the expression
+        @rtype: Expr
+        """
+        # todo printout
+        reduction = self
+        # todo inefficient to first collect redexes, then traverse again to perform reduction
+        while reduction.redxes():
+            leftmost_redex = reduction.redexes()[0]
+            reduction = reduction.beta_contr(leftmost_redex)
+            reduction = reduction.beta_reduce()
+        return reduction
+
+    def beta_equiv(self, other):
+        """
+        Whether the expression is beta-equivalent (beta-reduces to the same normal form) to the other.
+        φ =β ψ
+
+        @attr other: the other expression to check for beta equivalence
+        @type other: Expr
+        @return: True iff self is beta-equivalent to other
+        @rytpe: bool
+        """
+        return self.beta_reduce().alpha_congr(other.beta_reduce())
 
 class Term(Expr):
     """
@@ -214,7 +320,7 @@ class Var(Term):
 
     def denot(self, s, v=None, w=None):
         """
-        The denotation of a constant is that individual that the assignment function v assigns it.
+        The denotation of a variable is that individual that the assignment function v assigns it.
         """
         return v[self.u]
 
@@ -2265,6 +2371,171 @@ class Ext(Expr):
         return dict(self.phi.denot(s, v, w))[w]
 
 
+class LExpr(Expr):
+    """
+    Lambda terms.
+    """
+    pass
+
+class LVar(LExpr):
+    """
+    Lambda variable.
+    x, y, z, x1, x2, ...
+
+    @attr u: the variable name
+    @type u: str
+    """
+
+    def __init__(self, u: str):
+        self.u = u
+
+    def __str__(self):
+        return self.u
+
+    def tex(self):
+        return self.u
+
+    def __eq__(self, other):
+        return isinstance(other, LVar) and self.u == other.u
+
+    def subst(self, u, t):
+        if u.u == self.u:
+            return t
+        else:
+            return self
+
+    def denot(self, s, v=None, w=None):
+        """
+        The denotation of a variable is that individual that the assignment function v assigns it.
+        """
+        return v[self.u]
+
+
+class LConst(LExpr):
+    """
+    Lambda constant.
+    a, b, c, c1, c2, ...
+
+    @attr c: the constant name
+    @type c: str
+    """
+
+    def __init__(self, c: str):
+        self.c = c
+
+    def __str__(self):
+        return self.c
+
+    def tex(self):
+        return "\\mathit{" + self.c + "}"
+
+    def __eq__(self, other):
+        return isinstance(other, Const) and self.c == other.c
+
+    def subst(self, u, t):
+        return self
+
+    def denot(self, s, v=None, w=None):
+        """
+        The denotation of a constant is that individual that the interpretation function f assigns it.
+        """
+        i = s.i
+        if not w:
+            return i[self.c]
+        else:
+            return i[self.c][w]
+
+
+class LAppl(LExpr):
+    """
+    Lambda application.
+    (φψ)
+
+    @attr phi: the functor
+    @type phi: Expr
+    @attr psi: the argument
+    @type psi: Expr
+    """
+
+    def __init__(self, phi: Expr, psi: Expr):
+        self.phi = phi
+        self.psi = psi
+
+    def __str__(self):
+        return "(" + str(self.phi) + str(self.psi) + ")"
+
+    def tex(self):
+        return "(" + self.phi.tex() + self.psi.tex() + ")"
+
+    def __eq__(self, other):
+        return isinstance(other, LAppl) and self.phi == other.phi and self.psi == other.psi
+
+    def redex(self):
+        """
+        An expression is a redex iff it is an application whose functor is an abstraction.
+        """
+        return isinstance(self.phi, LAbstr)
+
+    def redexes(self):
+        return ([self] if self.redex() else []) + self.phi.redexes() + self.psi.redexes()
+
+    def beta_contr(self, redex=None):
+        return self.phi.m.subst(self.phi.u, self.psi)
+
+    def subst(self, u, t):
+        return LAppl(self.phi.subst(u, t), self.psi.subst(u, t))
+
+    def denot(self, s, v=None, w=None):
+        """
+        The denotation of a lambda application is its beta reduction.
+        """
+        pass  # todo
+
+class LAbstr(LExpr):
+    """
+    Lambda abstraction.
+    λu.φ
+
+    @attr u: the binding variable
+    @type u: LVar
+    @attr phi: the body
+    @type phi: Expr
+    """
+
+    def __init__(self, u: LVar, phi: Expr):
+        self.u = u
+        self.phi = phi
+
+    def __str__(self):
+        return "(" + "λ" + str(self.u) + "." + str(self.phi) + ")"
+
+    def tex(self):
+        return "(" + "\\lambda" + self.u.tex() + "." + self.phi.tex() + ")"
+
+    def __eq__(self, other):
+        return isinstance(other, LAbstr) and self.u == other.u and self.phi == other.phi
+
+    def freevars(self):
+        return self.phi.freevars() - {self.u}
+
+    def boundvars(self):
+        return self.phi.boundvars() | {self.u}
+
+    def subst(self, u, t):
+        if u == self.u:
+            return self
+        elif not (self.u in t.freevars() and u in self.phi.freevars()):
+            return LAbstr(self.u, self.phi.subst(u, t))
+        else:
+            self.alpha_conv(t).subst(u, t)
+
+    def denot(self, s, v=None, w=None):
+        """
+        The denotation of a lambda application is a function form its variable to the body.
+        """
+        pass  # todo
+
+
 class AllWorlds(Formula):
     """
     Special pseudo-connective indicating that a formula is true in all worlds of the model.
@@ -2292,7 +2563,7 @@ class AllWorlds(Formula):
     def propvars(self):
         return self.phi.propvars()
 
-    def freevars(self):#
+    def freevars(self):
         return self.phi.freevars()
 
     def boundvars(self):
