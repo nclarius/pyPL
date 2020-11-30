@@ -1543,14 +1543,14 @@ class Exists(Formula):
         depth += 1
 
         # iterate through the individuals in the domain
-        for d_ in sorted(d):
+        for a in sorted(d):
 
             # compute the u-variant v' of v
             v_ = v  # v' is just like v, except...
-            v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
+            v_[self.u.u] = a  # ... the value for the variable u is now the new individual a
 
             # check whether the current u-variant under consideration makes phi true
-            print((depth * 2 * " ") + "checking v" + (depth * "'") + ": " + str(self.u) + " ↦ " + str(d_) + " ...")
+            print((depth * 2 * " ") + "checking v" + (depth * "'") + ": " + str(self.u) + " ↦ " + str(a) + " ...")
             witness = self.phi.denot(s, v_, w)
 
             # if yes, we found a witness, the existential statement is true and we can stop checking (return)
@@ -1668,14 +1668,14 @@ class Forall(Formula):
             # long version
 
             # iterate through the individuals in the domain
-            for d_ in sorted(d):
+            for a in sorted(d):
 
                 # compute the u-variant v' of v
                 g_ = v  # v' is just like v, except...
-                g_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
+                g_[self.u.u] = a  # ... the value for the variable u is now the new individual a
 
                 # check whether the current u-variant under consideration makes phi true
-                print((depth * 2 * " ") + "checking v" + (depth * "'") + ": " + str(self.u) + "  ↦ " + str(d_) + " ...")
+                print((depth * 2 * " ") + "checking v" + (depth * "'") + ": " + str(self.u) + "  ↦ " + str(a) + " ...")
                 witness = self.phi.denot(s, g_, w)
 
                 # if yes, everything is fine until now, we do nothing and go check the next one (continue)
@@ -1707,15 +1707,14 @@ class Forall(Formula):
                 depth += 1
 
                 # iterate through the individuals in the domain of the future state
-                for d_ in d:
-
+                for a in d:
                     # compute the u-variant v' of v
                     v_ = v  # v' is just like v, except...
-                    v_[self.u.u] = d_  # ... the value for the variable u is now the new individual d
+                    v_[self.u.u] = a  # ... the value for the variable u is now the new individual d
 
-                    # check whether the current indiv. d under consideration makes phi true at k'
+                    # check whether the current indiv. a under consideration makes phi true at k'
                     print((depth * 2 * " ") + "checking v" + (depth * "'") + ": " + str(self.u) + " ↦ " + str(
-                            d_) + " ...")
+                            a) + " ...")
                     witness = self.phi.denot(s, v, w_)
 
                     # if yes, everything is fine until now, we do nothing and go check the next one (continue)
@@ -1726,7 +1725,7 @@ class Forall(Formula):
                     else:
                         print(((depth + 1) * 2 * " ") + "✗")
                         print(((depth + 1) * 2 * " ") + "counter witness: k' = " + str(w_) + ", " +
-                              "v" + (depth * "'") + ": " + str(self.u) + " ↦ " + str(d_))
+                              "v" + (depth * "'") + ": " + str(self.u) + " ↦ " + str(a))
                         return False
 
                 # if no counter witness has been found, the universal statement is true at k'

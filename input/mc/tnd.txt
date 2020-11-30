@@ -1,0 +1,5 @@
+ K = {k0, k1}
+ R = {(k0, k1)}
+ V = [p: [k0: False, k1: True]]
+
+p v - p

@@ -1,0 +1,3 @@
+\exi x (A(x) ^ C(x))
+\exi x (A(x) ^ B(x))
+\exi x (B(x) ^ C(x))

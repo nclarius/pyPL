@@ -1,0 +1,1 @@
+* \exi x P(x) -> \exi x * P(x) 

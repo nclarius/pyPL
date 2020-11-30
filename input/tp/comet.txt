@@ -1,0 +1,2 @@
+\exi x * C(x)
+* \exi x C(x)

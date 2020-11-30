@@ -1,0 +1,11 @@
+D = {Mary, Susan, Lea, John, Peter}
+I = [mary: Mary,
+     susan: Susan,
+     lea: Lea,
+     Woman: {(Mary), (Susan), (Lea)},
+     Man: {(John), (Peter)},
+     Happy: {(Susan), (Lea), (John), (Peter)},
+     Love: {(Mary, John), (Susan, John), (Susan, Peter), (Lea, Peter), (John, Peter), (Peter, Lea)}]
+
+\all x (Woman(x) -> \exi y (Man(y) ^ Love(x,y)))
+\all x (Man(x) -> \exi y (Woman(y) ^ Love(x,y)))

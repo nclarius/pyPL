@@ -1,0 +1,1 @@
+∃ x_1 ∃ x_2 ∃ x_3 ∃ x_4 (Singapore(x_1) ^ Nn(x_1,x_2) ^ Scientists(x_2) ^ Reveal(x_3) ^ Agent(x_3,x_2) ^ Theme(x_3,x_4) ^ Proposition(x_4) ^ ∃ x_5 ∃ x_6 ∃ x_7 ∃ x_8 (Sars(x_6) ^ Nn(x_6,x_5) ^ Virus(x_5) ^ Genetic(x_7) ^ Change(x_7) ^ Undergo(x_8) ^ Agent(x_8,x_5) ^ Patient(x_8,x_7) ^ Event(x_8) ^ Event(x_3)))

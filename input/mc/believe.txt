@@ -1,0 +1,15 @@
+ D = {Mary, JoeBiden, DonaldTrump}
+ W = {w0, w1}
+ R = {}
+ I = [mary:      [w0: Mary, w1: Mary],
+      biden:     [w0: JoeBiden, w1: JoeBiden],
+      trump:     [w0: DonaldTrump, w1: DonaldTrump],
+      president: [w0: JoeBiden, w1: DonaldTrump],
+      Democrat:   [w0: {(JoeBiden)}, w1: {(JoeBiden)}],
+      Republican: [w0: {(DonaldTrump)}, w1: {(DonaldTrump)}],
+      Believe:    [w0: {(Mary, {(w0, True), (w1, True)})}, w1: {(Mary, {(w0, True), (w1, True)})}]
+      ]
+
+w:w0 biden = president
+w:w0 Believe(mary, \int Democrat(biden))
+w:w0 Believe(mary, \int Democrat(president))
