@@ -3,7 +3,6 @@
 
 """
 Parse a formula given as string into an Expr object.
-CURRENTLY UNDER CONSTRUCTION.
 """
 
 import re
@@ -47,27 +46,31 @@ class FmlParser:
             "Noninf": r"(\|/=||\\nvDash|\\nmodels|\\lninf)",
             # term symbols
             "Var": r"(x|y|z)(_?\d+)?",
-            "Const": r"(([a-e]|[i-o])(_?\d+)?)",
+            "Const": r"(([a-z]\w+)|(([a-e]|[i-o])(_?\d+)?))",
             "Func": r"(f|g|h)(_?\d+)?",
-            "Pred": r"[A-Z]\w*",
             # atom symbols
             "Prop": r"[p-u](_?\d+)?",
             "Eq": r"(=|\\eq)",
+            "Pred": r"[A-Z]\w*",
             # connectives
             "Verum": r"(⊤|\\top|\\verum|\\ltrue)",
             "Falsum": r"(⊥|\\bot|\\falsum|\\lfalse)",
             "Neg": r"(¬|-|~|\\neg|\\lnot)",
             "Conj": r"(∧|\^|&|\\wedge|\\land)",
-            "Disj": r"(∨|v|\||\\vee|\\lnot)",
+            "Disj": r"(∨|v|\||\\vee|\\lor)",
             "Imp": r"(→|⇒|⊃|(-|=)+>|\\rightarrow|\\Rightarrow|\\to|\\limp)",
             "Biimp": r"(↔|⇔|≡|<(-|=)+>|\\leftrightarrow|\\Leftrightarrow|\\oto|\\lbiimp)",
             "Xor": r"(⊕|⊻|\\oplus|\\lxor)",
             # quantifiers
             "Exists": r"(∃|\\exists|\\exi|\\ex)",
             "Forall": r"(∀|\\forall|\\all|\\fa)",
+            "Most": r"\\most",
+            "More": r"\\more",
             # modal operators
             "Poss": r"(◇|\*|\\Diamond|\\poss)",
-            "Nec": r"(◻|#|\\Box||\\nec)"
+            "Nec": r"(◻|#|\\Box||\\nec)",
+            "Int": r"\\int",
+            "Ext": r"\\ext"
         }
         regex2token = {v: k for k, v in token2regex.items()}
 
@@ -97,7 +100,7 @@ class FmlParser:
         mode["classical"] = True if "!Int" not in [t[0] for t in tokens] else False
         mode["validity"] = True if "Noninf" not in [t[0] for t in tokens] else False
         mode["propositional"] = True if any([t[0] in ["Prop"] for t in tokens]) else False
-        mode["modal"] = True if any([t[0] in ["Poss", "Nec"] for t in tokens]) else False
+        mode["modal"] = True if any([t[0] in ["Poss", "Nec", "Int", "Ext"] for t in tokens]) else False
         mode["vardomains"] = False if "!VD" not in [t[0] for t in tokens] else False
 
         return tokens, mode
@@ -130,7 +133,7 @@ class FmlParser:
 
         # opening bracket: start new stack if begin of complex formula rather than term tuple
         if t in ["Lbrack"]:
-            if bot not in ["Atm", "FuncTerm"]:
+            if bot not in ["Atm", "FuncTerm", "Most", "More"]:
                 new_stack = []
                 stacks.append(new_stack)
                 self.stacks = stacks
@@ -187,7 +190,7 @@ class FmlParser:
             return
 
         # prefix operator: start new stack
-        if t in ["Verum", "Falsum", "Neg", "Exists", "Forall", "Poss", "Nec"]:
+        if t in ["Verum", "Falsum", "Neg", "Exists", "Forall", "Most", "More", "Poss", "Nec", "Int", "Ext"]:
             stack_ = [t]
             stacks.append(stack_)
 
@@ -199,8 +202,8 @@ class FmlParser:
     def update_stacks(self, final=False):
         # todo check well-formedness of expressions
         # operator precedence
-        prec = {"Eq": 1, "Nec": 1, "Poss": 1, "Exists": 1, "Forall": 1, "Neg": 1,
-                "Conj": 2, "Disj": 3, "Imp": 4, "Biimp": 5, "Xor": 6}
+        prec = {"Eq": 1, "Nec": 1, "Poss": 1, "Int": 1, "Ext": 1, "More": 1, "Most": 1, "Exists": 1, "Forall": 1,
+                "Neg": 1, "Conj": 2, "Disj": 3, "Imp": 4, "Biimp": 5, "Xor": 6}
 
         stacks = self.stacks
         expr = __import__("expr")
@@ -228,7 +231,7 @@ class FmlParser:
             mid = curr_stack[1] if len(curr_stack) > 1 else None
             top = curr_stack[-1]
 
-            # function or predicate expression: close if closure symbol is on top
+            # function, predicate or gen. quant. expression: close if closure symbol is on top
             if bot in ["Atm", "FuncTerm"] and top == "#":
                 o = curr_stack[1]
                 c = getattr(expr, bot)
@@ -236,9 +239,16 @@ class FmlParser:
                 prev_stack.append(e)
                 stacks = stacks[:-1]
                 continue
+            elif bot in ["Most", "More"] and top == "#":
+                o = curr_stack[1]
+                c = getattr(expr, bot)
+                e = c(o, *curr_stack[2:-1])
+                prev_stack.append(e)
+                stacks = stacks[:-1]
+                continue
 
             # unary operator: close if appropriate number of args is given
-            if bot in ["Neg", "Poss", "Nec"] and len(curr_stack) == 2:
+            if bot in ["Neg", "Poss", "Nec", "Int", "Ext"] and len(curr_stack) == 2:
                 c = getattr(expr, bot)
                 e = c(top)
                 prev_stack.append(e)
@@ -246,12 +256,13 @@ class FmlParser:
                 continue
 
             # binary operator: close if closure symbol is on top, else resolve ambiguity
+            # todo doesn't work correctly, e.g. "(p -> q v r) ^ s" = "p -> ((q v r) ^ s)" instead of "(p -> q v r) ^ s"
             if bot in ["Eq", "Conj", "Disj", "Imp", "Biimp", "Xor"]:
 
                 # operator ambiguity
                 # todo associativity not right with Eq
-                if mid and mid in ["Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall",
-                                   "Neg", "Poss", "Nec", "Eq"]:  # operator clash: resolve ambiguiy
+                if mid and mid in ["Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall", "Most", "More",
+                                   "Neg", "Poss", "Nec", "Int", "Ext", "Eq"]:  # operator clash: resolve ambiguiy
                     # first op has precedence over second op: take current stack as subformula. to second op
                     # ops have equal precedence: apply left-associativity
                     if prec[mid] < prec[bot] or prec[mid] == prec[bot]:
@@ -274,7 +285,7 @@ class FmlParser:
                     stacks = stacks[:-1]
                     continue
 
-            # quantifier: clsoe if appropriate number of args is given
+            # quantifier: close if appropriate number of args is given
             if bot in ["Exists", "Forall"] and len(curr_stack) == 3:
                 c = getattr(expr, bot)
                 e = c(mid, top)
@@ -289,109 +300,61 @@ class FmlParser:
 
 class StructParser:
     """
-    Parse a structure given as string into a Structure object.
+    Parse a structure specification given as string into a Structure object.
     """
     def __init__(self):
         pass
 
     def parse(self, inp):
-        constituents = {const.split(" = ")[0]: const.split(" = ")[1] for const in inp.split("\n")}
-        modal = True if "W" in constituents or "K" in constituents else False
-        propositional = True if "V" in constituents else False
-        intuitionistic = True if "K" in constituents else False
-        vardomains = True
-        if "V" in constituents:
-            if not modal:
-                spec = constituents["V"].split("; ")
-                v = {s.split(": ")[0]: s.split(": ")[1] for s in spec}
-            else:  # todo doesn't work (double colon and semicolon meaning)
-                spec = constituents["V"].split(",, ")
-                v = {s.split(":: ")[0]: {s_.split(": ")[0]: s_[1] for s_ in s.split(": ")[1]} for s in spec}
-        if "D" in constituents:
-            spec = constituents["D"][1:-1].split(", ")
-            vardomains = True if ": " in spec else False
-            if not modal or not vardomains:
-                d = set(constituents["D"][1:-1].split(", "))
-            else:
-                d = {sp.split(": ")[0]: sp.split(": ")[1] for sp in spec}
-        if "I" in constituents:
-            spec = constituents["I"].split("; ")
-            i = dict()
-            if not modal:
-                for s in spec:
-                    [symbol, interpr] = s.split(": ")
-                    if "{" not in interpr:
-                        i[symbol] = interpr
-                    elif ": " not in interpr:
-                        i[symbol] = set([tuple(el[1:-1].split(" - ")) for el in interpr[1:-1].split(", ")])
-                    else:
-                        i[symbol] = {el.split(": ")[0]: tuple(el.split(": ")[1].split(", "))
-                                     for el in interpr.split(", ")}
-            else:
-                spec_ = spec.split(", ")
-                for s_ in spec_:
-                    [world, interprfunc] = s_.split(": ")
-                    interprfunc = interprfunc.split(", ")
-                    for sym in interprfunc:
-                        [symbol, interpr] = sym.split(": ")
-                        if "{" not in interpr:
-                            i[world][symbol] = interpr
-                        elif ": " not in interpr:
-                            i[world][symbol] = set([tuple(el[1:-1].split(" - ")) for el in interpr[1:-1].split(", ")])
-                        else:
-                            i[world][symbol] = {el.split(": ")[0]: tuple(el.split(": ")[1].split(", "))
-                                                for el in interpr.split("; ")}
-        if "W" in constituents:
-            spec = constituents["W"][1:-1].split(", ")
-            w = set(spec)
-        if "K" in constituents:
-            spec = constituents["K"][1:-1].split(", ")
-            k = set(spec)
-        if "R" in constituents:
-            spec = constituents["K"][1:-1].split(", ")
-            r = set([tuple(el.split(", ")) for el in spec])
-        s = "S"
+        # remove redundant whitespace
+        inp = re.sub("\s+", " ", inp)
+        # stringify content[p-u](_?\d+)
+        inp = re.sub("([\w]+)", "'\\1'", inp)
+        # turn functions into dicts
+        inp = inp.replace("[", "{")
+        inp = inp.replace("]", "}")
+        # turn singleton tuples into tuples
+        inp = re.sub("\('(\w+)'\)", "('\\1',)", inp)
+        # turn empty sets into sets
+        inp = inp.replace("{}", "set()")
+        # turn intension sets into frozen sets so that they can be hashed
+        inp = re.sub("(\{\('w.*?\})", "frozenset(\\1)", inp)
+        # turn truth value strings into truth values
+        inp = inp.replace("'True'", "True").replace("'False'", "False")
+        # split lines into components
+        inp = inp.replace("\n", "")
+        inp = re.sub("('[A-Z]' = )", "\n\\1", inp)
+
+        s = {eval(comp.split(" = ")[0]): eval(comp.split(" = ")[1]) for comp in inp.split("\n") if comp.strip()}
+        s["S"] = "S"
+        modal = True if "W" in s or "K" in s else False
+        propositional = True if "D" not in s else False
+        intuitionistic = True if "K" in s else False
+        vardomains = True if "D" in s and isinstance(s["D"], dict) else False
+        if not propositional and "V" not in s:
+            s["V"] = {}
 
         structure = __import__("structure")
         if not intuitionistic:
             if not modal:
                 if propositional:
-                    return structure.PropStructure(s, v)
+                    return structure.PropStructure(s["S"], s["V"])
                 else:
-                    return structure.PredStructure(s, d, i)
+                    return structure.PredStructure(s["S"], s["D"], s["I"], s["V"])
             else:
                 if propositional:
-                    return structure.PropModalStructure(s, w, r, w)
+                    return structure.PropModalStructure(s["S"], s["W"], s["R"], s["V"])
                 else:
                     if not vardomains:
-                        return structure.ConstModalStructure(s, w, r, d, i)
+                        return structure.ConstModalStructure(s["S"], s["W"], s["R"], s["D"], s["I"], s["V"])
                     else:
-                        return structure.VarModalStructure(s, w, r, d, i)
+                        return structure.VarModalStructure(s["S"], s["W"], s["R"], s["D"], s["I"], s["V"])
         else:
             if propositional:
-                return structure.KripkePropStructure(s, k, r, v)
+                return structure.KripkePropStructure(s["S"], s["K"], s["R"], s["V"])
             else:
-                return structure.KripkePredStructure(s, k, r, d, i)
+                return structure.KripkePredStructure(s["S"], s["K"], s["R"], s["D"], s["I"], s["V"])
 
 if __name__ == "__main__":
-    parser = FmlParser()
-    # test = r"R(f(a,b),y)"
-    # test = "~ p v q |= p -> q"
-    print()
-    # test = r"~ p ^ q <-> ~(\nec p v ~ q v r)"
-    # print(test)
-    # res = parser.parse(test)
-    # print(res)
-    # print()
-    # test = r"\exi x \all y (P(x) ^ R(x,y)) -> \all y \exi x R(x,y)"
-    # print(test)
-    # res = parser.parse(test)
-    # print(res)
-    # test = r"\all x \all y \all z (x = y v x = z v y = z)"
-    # print(test)
-    # res = parser.parse(test)
-    # print(res)
-    # test = r"p v q v r"
-    # print(test)
-    # res = parser.parse(test)
-    # print(res
+    parse_f = FmlParser().parse
+    parse_s = StructParser.parse

@@ -1,21 +1,23 @@
-\documentclass[a4paper,landscape]{article}
+\documentclass{article}
 
 % layout
-\usepackage{fullpage}  % small margins
+\usepackage[a4paper, landscape, margin={2cm}]{geometry} % size, orientation, small margins
 \pagenumbering{gobble}  % no page numbers
 \setlength{\parindent}{0pt}  % no paragraph indentation
 
-% math formatting
-\usepackage{amssymb, amsmath, amstext}
-
-% tableau trees
-\usepackage[linguistics]{forest}
-\forestset{.style={for tree={anchor=north}}}
-\renewcommand{\arraystretch}{1.125}
+% math symbols
+\usepackage{amssymb, amsmath, amstext, wasysym}
 
 % structures
 \usepackage{array}
-\newcolumntype{L}{>{$}l<{$}}
+\newcolumntype{A}{>{$}l<{$}}
+
+% tableau trees
+\usepackage[linguistics]{forest}
+\renewcommand{\arraystretch}{1.125}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
 
 % custom commands
 \newcommand{\set}[1]{\{ #1 \}}
