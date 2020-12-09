@@ -6,7 +6,10 @@ Define the language and semantics of classical (standard and modal) (preposition
 """
 
 from structure import *
+
 structure = __import__("structure")
+
+from itertools import product
 
 verbose = False
 
@@ -36,11 +39,32 @@ class Expr:
     def __len__(self):
         """
         The length of the expression.
+
+        @return the length of the expression
+        @rtype int
         """
         return 1 + sum(len(subexpr) for subexpr in vars(self) if isinstance(subexpr, Expr))
-    
-    def subexprs(self):
+
+    def imm_subexprs(self):
+        """
+        The immediate subexpressions of the expression.
+
+        @return the immediate subexpressions of the expression
+        @rtype list[Expr]
+        """
         return [field for field in vars(self) if isinstance(field, Expr)]
+
+    def subexprs(self):
+        """
+        The recursive subexpressions of the expression.
+
+        @return the subexpressions of the expression
+        @rtype list[Expr]
+        """
+        res = [self] + self.imm_subexprs()
+        for subexpr in self.imm_subexprs():
+            res += subexpr.subexprs()
+        return res
 
     def propvars(self) -> set[str]:
         """
@@ -76,8 +100,7 @@ class Expr:
         @return the set of non-logical symbols in the expression: (constants, functions, predicates)
         @rtype: tuple[set[str]]
         """
-        return tuple([{nl[i] for subexpr in self.subexprs() for nl in subexpr.nonlogs()[i]}
-                      for i in range(3)])
+        pass
 
     def redex(self):
         """
@@ -102,9 +125,9 @@ class Expr:
         Substitute all occurrences of the variable u for the term t in self.
 
         @param u: the variable to be substituted
-        @type u: Var
+        @type u: Union[IVar, LVar]
         @param t: the term to substitute
-        @type t: Term
+        @type t: Union[Term, LVar]
         @return: the result of substituting all occurrences of the variable v for the term t in self
         @rtype Expr
         """
@@ -161,31 +184,27 @@ class Expr:
         """
         return self.denot(s)
 
-    def alpha_conv(self, t=None):
+    def alpha_conv(self, convex, u):
         """
-        The  elementary alpha conversion step on the expression itself, possibly w.r.t. a term.
-        """
-        if "u" in self.subexprs():
-            exprtype = type(self)
-            vartype = type(self.u)
-            varnames = ["x", "y", "z"] + ["x" + str(i) for i in range(100)]
-            u_ = [var for var in varnames if var not in self.phi.freevars() | (t.freevars() if t else set())][0]
-            return exprtype(self)(vartype(u_), self.phi.subst(self.u, u_))
-        else:
-            return self
-
-    def alpha_conv(self):
-        """
-        The alpha conversion step on the expression's subexpressions w.r.t. a term.
+        The alpha conversion step on the expression's subexpressions w.r.t. a bound term and a new bound variable name.
         φ ≡α ψ
         """
-        # todo wrong (don't perform several alpha conversions on different subexpressions at a time)
-        return type(self)(*[subexpr.alpha_conv() for subexpr in self.subexprs()])
+        # todo not recursive
+        converted = False
+        subexprs = []
+        for subexpr in self.imm_subexprs():
+            if not converted and subexpr == convex:
+                var_type = type(self.u)
+                expr_type = type(self)
+                subexpr = expr_type(var_type(u), *[subexpr.subst(self.u, u) for subexpr in self.subexprs()])
+                converted = True
+            subexprs.append(subexpr)
+        return type(self)(*subexprs)
 
     def alpha_congr(self, other):
         """
         Whether the expression is beta-equivalent (beta-reduces to the same normal form) to the other.
-
+        φ ≡α ψ
 
         @attr other: the other expression to check for beta equivalence
         @type other: Expr
@@ -194,20 +213,27 @@ class Expr:
         """
         if self == other:
             return True
-        conversion = self.alpha_conv(other)
-        if conversion == other:
-            return True
-        if self.boundvars():  # todo keep track of already converted boundvars
-            leftmost_boundvar = list(self.boundvars())[0]
-            return conversion.alpha_conv(leftmost_boundvar).alpha_congr(other)
-        else:
-            return False
+        bound_terms_self = [subexpr for subexpr in self.subexprs()
+                            if any([isinstance(subexpr, LVar) or isinstance(subexpr, Var)])]
+        bound_vars_other = [subexpr.u for subexpr in other.subexprs()
+                            if any([isinstance(subexpr, LVar) or isinstance(subexpr, Var)])]
+        print(bound_terms_self, bound_vars_other)
+        if len(bound_terms_self) == len(bound_vars_other):
+            conversions = product(bound_terms_self, bound_vars_other)
+            print(conversions)
+            for convex, u in conversions:
+                conv = self.alpha_conv(convex, u)
+                print(conv)
+                if conv == other:
+                    return True
+        return False
 
     def beta_contr(self, redex=None):
         """
-        The beta contraction step on the expression's subexpressions w.r.t. to a redex, or
-        The elementary beta contraction step on itself.
+        The beta contraction step on the expression's subexpressions w.r.t. to a redex.
+        φ ▻β ψ
         """
+        # todo not recursive
         contracted = False
         subexprs = []
         for subexpr in self.subexprs():
@@ -245,6 +271,7 @@ class Expr:
         @rytpe: bool
         """
         return self.beta_reduce().alpha_congr(other.beta_reduce())
+
 
 class Term(Expr):
     """
@@ -323,6 +350,7 @@ class Var(Term):
         The denotation of a variable is that individual that the assignment function v assigns it.
         """
         return v[self.u]
+
 
 indiv_vars = ["x", "y", "z"]  # the individual variables of the language
 
@@ -416,7 +444,7 @@ class Func(Expr):
     def subst(self, u, t):
         return self
 
-    def denot(self, s, v=None, w=None) -> dict[tuple[str],str]:
+    def denot(self, s, v=None, w=None) -> dict[tuple[str], str]:
         """
         The denotation of a function symbol is the function that the interpretation function f assigns it.
         """
@@ -426,7 +454,7 @@ class Func(Expr):
         else:
             return i[self.f][w]
 
-    def denotVW(self, s) -> dict[tuple[str],str]:
+    def denotVW(self, s) -> dict[tuple[str], str]:
         """
         @rtype: dict[tuple[str],str]
         """
@@ -1627,8 +1655,12 @@ class Exists(Formula):
     def subst(self, u, t):
         if u.u == self.u.u:
             return self
-        else:
+        elif not (self.u.u in t.freevars() and u.u in self.phi.freevars()):
             return Exists(self.u, self.phi.subst(u, t))
+        else:
+            varnames = ["x", "y", "z"] + ["x" + str(i) for i in range(100)]
+            u_ = [var for var in varnames if var not in self.phi.freevars() | t.freevars()][0]
+            return Exists(Var(u_), self.phi.subst(self.u, Var(u_)).subst(u, t))
 
     def denot(self, s, v=None, w=None):
         """
@@ -1747,8 +1779,12 @@ class Forall(Formula):
     def subst(self, u, t):
         if u.u == self.u.u:
             return self
-        else:
+        elif not (self.u.u in t.freevars() and u.u in self.phi.freevars()):
             return Forall(self.u, self.phi.subst(u, t))
+        else:
+            varnames = ["x", "y", "z"] + ["x" + str(i) for i in range(100)]
+            u_ = [var for var in varnames if var not in self.phi.freevars() | t.freevars()][0]
+            return Forall(Var(u_), self.phi.subst(self.u, Var(u_)).subst(u, t))
 
     def denot(self, s, v=None, w=None):
         """
@@ -1884,65 +1920,67 @@ class Forall(Formula):
 
 class Most(Formula):
     """
-    "most than" quantification.
-    most u(φ,ψ,χ)
+    "most" quantification.
+    most u(φ,ψ)
 
     @attr u: the binding variable
     @type u: Var
-    @attr phi: the first restriction to be compared
+    @attr phi: the restriction to be compared
     @type phi: Formula
-    @attr psi: the second restriction to be compared
-    @type psi: Formula
     @attr chi: the nucleus to be compared against
     @type chi: Formula
     """
 
-    def __init__(self, u: Var, phi: Formula, psi: Formula):
+    def __init__(self, u: Var, phi: Formula, chi: Formula):
         self.u = u
         self.phi = phi
-        self.psi = psi
+        self.chi = chi
 
     def __str__(self):
-        return "most " + str(self.u) + "(" + ",".join([str(self.phi), str(self.psi)]) + ")"
+        return "most " + str(self.u) + "(" + ",".join([str(self.phi), str(self.chi)]) + ")"
 
     def tex(self):
-        return "\\mathrm{most}\ " + self.u.tex() + "(" + ",".join([self.phi.tex(), self.psi.tex()]) + ")"
+        return "\\mathrm{most}\ " + self.u.tex() + "(" + ",".join([self.phi.tex(), self.chi.tex()]) + ")"
 
     def __eq__(self, other):
         return isinstance(other, Most) and self.u == other.u and \
-               self.phi == other.phi and self.psi == other.psi
+               self.phi == other.phi and self.chi == other.chi
 
     def __len__(self):
-        return 1 + len(self.phi) + len(self.psi)
+        return 1 + len(self.phi) + len(self.chi)
 
     def propvars(self):
         return set()
 
     def freevars(self):
-        return self.phi.freevars() | self.psi.freevars() - {self.u.u}
+        return self.phi.freevars() | self.chi.freevars() - {self.u.u}
 
     def boundvars(self):
-        return self.phi.boundvars() | self.psi.boundvars() | {self.u.u}
+        return self.phi.boundvars() | self.chi.boundvars() | {self.u.u}
 
     def nonlogs(self):
-        return tuple([self.phi.nonlogs()[i] | self.psi.nonlogs()[i] for i in range(3)])
+        return tuple([self.phi.nonlogs()[i] | self.chi.nonlogs()[i] for i in range(3)])
 
     def subst(self, u, t):
         if u.u == self.u.u:
             return self
+        elif not (self.u.u in t.freevars() and u.u in self.phi.freevars()):
+            return Most(self.u, self.phi.subst(u, t), self.chi.subst(u, t))
         else:
-            return Most(self.u, self.phi.subst(u, t), self.psi.subst(u, t))
+            varnames = ["x", "y", "z"] + ["x" + str(i) for i in range(100)]
+            u_ = [var for var in varnames if var not in self.phi.freevars() | t.freevars()][0]
+            return Most(Var(u_), self.phi.subst(self.u, Var(u_)).subst(u, t), self.chi.subst(u, Var(u_)).subst(u, t))
 
     def denot(self, s, v=None, w=None):
         """
-        The denotation of most u(phi, psi) is true iff
-        |phi ∩ psi| > |phi - psi|.
+        The denotation of most u(phi, chi) is true iff
+        |phi ∩ chi| > |phi - chi|.
         """
         return len({d for d in s.d if self.phi.denot(s, v | {self.u.u: d}, w)} &
-                   {d for d in s.d if self.psi.denot(s, v | {self.u.u: d}, w)}) \
+                   {d for d in s.d if self.chi.denot(s, v | {self.u.u: d}, w)}) \
                > \
                len({d for d in s.d if self.phi.denot(s, v | {self.u.u: d}, w)} -
-                   {d for d in s.d if self.psi.denot(s, v | {self.u.u: d}, w)})
+                   {d for d in s.d if self.chi.denot(s, v | {self.u.u: d}, w)})
 
 
 class More(Formula):
@@ -1970,7 +2008,8 @@ class More(Formula):
         return "more " + str(self.u) + "(" + ",".join([str(self.phi), str(self.psi), str(self.chi)]) + ")"
 
     def tex(self):
-        return "\\mathrm{more}\ " + self.u.tex() + "(" + ",".join([self.phi.tex(), self.psi.tex(), self.chi.tex()]) + ")"
+        return "\\mathrm{more}\ " + self.u.tex() + "(" + ",".join(
+                [self.phi.tex(), self.psi.tex(), self.chi.tex()]) + ")"
 
     def __eq__(self, other):
         return isinstance(other, More) and self.u == other.u and \
@@ -1994,8 +2033,13 @@ class More(Formula):
     def subst(self, u, t):
         if u.u == self.u.u:
             return self
-        else:
+        elif not (self.u.u in t.freevars() and u.u in self.phi.freevars()):
             return More(self.u, self.phi.subst(u, t), self.psi.subst(u, t), self.chi.subst(u, t))
+        else:
+            varnames = ["x", "y", "z"] + ["x" + str(i) for i in range(100)]
+            u_ = [var for var in varnames if var not in self.phi.freevars() | t.freevars()][0]
+            return More(Var(u_), self.phi.subst(self.u, Var(u_)).subst(u, t), self.psi.subst(u, Var(u_)).subst(u, t),
+                        self.chi.subst(u, Var(u_)).subst(u, t))
 
     def denot(self, s, v=None, w=None):
         """
@@ -2061,7 +2105,7 @@ class Poss(Formula):
         @type w: str
         @return: the denotation of Poss(phi)
         """
-        if   "intuitionistic" in s.mode():
+        if "intuitionistic" in s.mode():
             return  # not implemented
 
         # all possible worlds w' which are accessible from w
@@ -2188,7 +2232,7 @@ class Nec(Formula):
         @param v: the assignment function to evaluate the formula in
         @type v: dict[str,str]
         """
-        if   "intuitionistic" in s.mode():
+        if "intuitionistic" in s.mode():
             return  # not implemented
 
         # all possible worlds w' which are accessible from w
@@ -2317,6 +2361,7 @@ class Int(Expr):
         """
         return frozenset({w_: self.phi.denot(s, v, w_) for w_ in s.w}.items())
 
+
 class Ext(Expr):
     """
     The extension of an intensional expression.
@@ -2371,13 +2416,14 @@ class Ext(Expr):
         return dict(self.phi.denot(s, v, w))[w]
 
 
-class LExpr(Expr):
+class Lexpr(Expr):
     """
     Lambda terms.
     """
     pass
 
-class LVar(LExpr):
+
+class LVar(Lexpr):
     """
     Lambda variable.
     x, y, z, x1, x2, ...
@@ -2411,7 +2457,7 @@ class LVar(LExpr):
         return v[self.u]
 
 
-class LConst(LExpr):
+class LConst(Lexpr):
     """
     Lambda constant.
     a, b, c, c1, c2, ...
@@ -2446,7 +2492,7 @@ class LConst(LExpr):
             return i[self.c][w]
 
 
-class LAppl(LExpr):
+class Appl(Lexpr):
     """
     Lambda application.
     (φψ)
@@ -2468,13 +2514,13 @@ class LAppl(LExpr):
         return "(" + self.phi.tex() + self.psi.tex() + ")"
 
     def __eq__(self, other):
-        return isinstance(other, LAppl) and self.phi == other.phi and self.psi == other.psi
+        return isinstance(other, Appl) and self.phi == other.phi and self.psi == other.psi
 
     def redex(self):
         """
         An expression is a redex iff it is an application whose functor is an abstraction.
         """
-        return isinstance(self.phi, LAbstr)
+        return isinstance(self.phi, Abstr)
 
     def redexes(self):
         return ([self] if self.redex() else []) + self.phi.redexes() + self.psi.redexes()
@@ -2483,7 +2529,7 @@ class LAppl(LExpr):
         return self.phi.m.subst(self.phi.u, self.psi)
 
     def subst(self, u, t):
-        return LAppl(self.phi.subst(u, t), self.psi.subst(u, t))
+        return Appl(self.phi.subst(u, t), self.psi.subst(u, t))
 
     def denot(self, s, v=None, w=None):
         """
@@ -2491,7 +2537,8 @@ class LAppl(LExpr):
         """
         pass  # todo
 
-class LAbstr(LExpr):
+
+class Abstr(Lexpr):
     """
     Lambda abstraction.
     λu.φ
@@ -2513,7 +2560,7 @@ class LAbstr(LExpr):
         return "(" + "\\lambda" + self.u.tex() + "." + self.phi.tex() + ")"
 
     def __eq__(self, other):
-        return isinstance(other, LAbstr) and self.u == other.u and self.phi == other.phi
+        return isinstance(other, Abstr) and self.u == other.u and self.phi == other.phi
 
     def freevars(self):
         return self.phi.freevars() - {self.u}
@@ -2524,10 +2571,12 @@ class LAbstr(LExpr):
     def subst(self, u, t):
         if u == self.u:
             return self
-        elif not (self.u in t.freevars() and u in self.phi.freevars()):
-            return LAbstr(self.u, self.phi.subst(u, t))
+        elif not (self.u.u in t.freevars() and u.u in self.phi.freevars()):
+            return Abstr(self.u, self.phi.subst(u, t))
         else:
-            self.alpha_conv(t).subst(u, t)
+            varnames = ["x", "y", "z"] + ["x" + str(i) for i in range(100)]
+            u_ = [var for var in varnames if var not in self.phi.freevars() | t.freevars()][0]
+            return Abstr(LVar(u_), self.phi.subst(self.u, LVar(u_)).subst(u, t))
 
     def denot(self, s, v=None, w=None):
         """

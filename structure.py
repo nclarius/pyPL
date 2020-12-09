@@ -70,7 +70,7 @@ class PropStructure(Structure):
 
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
-        s, v = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{V}" + suffix
+        s, v = re.sub("S(\d*)", "\\mathcal{S}_{\\1}", self.s), "\\mathcal{V}" + suffix
         return "Structure $" + s + " = \\tpl{" + ", ".join([v]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AA}\n" + \
                v + " : & " + \
@@ -172,7 +172,7 @@ class PredStructure(Structure):
 
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
-        s, d, i = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{D}" + suffix, "\\mathcal{I}" + suffix
+        s, d, i = re.sub("S(\d*)", "\\mathcal{S}_{\\1}", self.s), "\\mathcal{D}" + suffix, "\\mathcal{I}" + suffix
         return "Structure $" + s + " = \\tpl{" + ", ".join([d, i]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAA}\n" + \
                d + " = & " \
@@ -264,7 +264,7 @@ class PropModalStructure(ModalStructure):
 
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
-        s, w, r, v = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{W}" + suffix, "\\mathcal{R}" + suffix, \
+        s, w, r, v = re.sub("S(\d*)", "\\mathcal{S}_{\\1}", self.s), "\\mathcal{W}" + suffix, "\\mathcal{R}" + suffix, \
                      "\\mathcal{V}" + suffix
         return "Structure $" + s + " = \\tpl{" + ", ".join([w, r, v]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAAA}\n" +\
@@ -361,7 +361,7 @@ class ConstModalStructure(ModalStructure):
 
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
-        s, w, r, d, i = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{W}" + suffix, "\\mathcal{R}" + suffix, \
+        s, w, r, d, i = re.sub("S(\d*)", "\\mathcal{S}_{\\1}", self.s), "\\mathcal{W}" + suffix, "\\mathcal{R}" + suffix, \
                         "\\mathcal{D}" + suffix, "\\mathcal{I}" + suffix
         return "Structure $" + s + " = \\tpl{" + ", ".join([w, r, d, i]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAAA}\n" +\
@@ -484,7 +484,7 @@ class VarModalStructure(ModalStructure):
 
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
-        s, w, r, d, i = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{W}" + suffix, "\\mathcal{R}" + suffix, \
+        s, w, r, d, i = re.sub("S(\d*)", "\\mathcal{S}_{\\1}", self.s), "\\mathcal{W}" + suffix, "\\mathcal{R}" + suffix, \
                         "\\mathcal{D}" + suffix, "\\mathcal{I}" + suffix
         return "Structure $" + s + " = \\tpl{" + ", ".join([w, r, d, i]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAAA}\n" +\
@@ -646,7 +646,7 @@ class KripkePropStructure(KripkeStructure):
 
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
-        s, k, r, v = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{K}" + suffix, "\\mathcal{R}" + suffix, \
+        s, k, r, v = re.sub("S(\d*)", "\\mathcal{S}_{\\1}", self.s), "\\mathcal{K}" + suffix, "\\mathcal{R}" + suffix, \
                         "\\mathcal{V}" + suffix
         return "Structure $" + s + " = \\tpl{" + ", ".join([k, r, v]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAA}\n" + \
@@ -814,7 +814,7 @@ class KripkePredStructure(KripkeStructure):
 
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
-        s, k, r, d, i = re.sub("S(\d*)", "S_{\\1}", self.s), "\\mathcal{K}" + suffix, "\\mathcal{R}" + suffix, \
+        s, k, r, d, i = re.sub("S(\d*)", "\\mathcal{S}_{\\1}", self.s), "\\mathcal{K}" + suffix, "\\mathcal{R}" + suffix, \
                         "\\mathcal{D}" + suffix, "\\mathcal{I}" + suffix
         return "Structure $" + s + " = \\tpl{" + ", ".join([k, r, d, i]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAAA}\n" +\

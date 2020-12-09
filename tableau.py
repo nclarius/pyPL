@@ -758,7 +758,10 @@ class Tableau(object):
         if len(fmls) == 2:
             bot = top.add_child((self, line := line + 1, world, fmls[1], rule, source, []))
 
-        return [bot]
+        if len(fmls) == 2 and bot:
+            return [top, bot]
+        else:
+            return [top]
 
     def rule_beta(self, target, source, rule, fmls, args):
         """

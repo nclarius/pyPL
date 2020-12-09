@@ -187,9 +187,11 @@ class PyPLGUI(tk.Frame):
         self.root.bind("<Control-Return>", lambda e: self.run())
 
         # info
-        lbl_info = tk.Label(frm_run,
-                            text="🛈 https://github.com/nclarius/pyPL", bg=white) \
-            .pack(pady=10)
+        url = "https://github.com/nclarius/pyPL"
+        lbl_info = tk.Button(frm_run, text="🛈 " + url, bg=white, borderwidth=0, highlightthickness=1)
+        import webbrowser
+        lbl_info.bind("<Button>", lambda e: webbrowser.open(url, autoraise=True))
+        lbl_info.pack(pady=10)
 
     def tab_0(self):  # 0. Start
         tab = self.tabs.nametowidget(self.tabs.tabs()[0])
@@ -327,6 +329,10 @@ class PyPLGUI(tk.Frame):
         # todo broaden on window resize
 
         tab = self.tabs.nametowidget(self.tabs.tabs()[1])
+
+        def doc():
+            path_doc = os.path.join(os.path.dirname(__file__), "doc", "parser.md")
+            check_call(["xdg-open", path_doc], stdout=DEVNULL, stderr=STDOUT)
 
         def load():
             while len(raws_fml) > 1:
@@ -739,6 +745,16 @@ class PyPLGUI(tk.Frame):
         btn_save.pack(in_=topmid, padx=15, side=tk.LEFT)
         Tooltip(btn_save, "save input to file")
         btn_save.bind("<Button>", lambda e: save())
+
+        # doc button
+        btn_doc = tk.Button(tab,
+                             bg=white,
+                             text="?",
+                             # bg=darkgray, fg=white,
+                             activebackground=lightgray, activeforeground=white)
+        btn_doc.pack(in_=topmid, padx=15, side=tk.LEFT)
+        Tooltip(btn_doc, "show documentation on entering input")
+        btn_doc.bind("<Button>", lambda e: doc())
 
         # input fields
         input_fmls = []

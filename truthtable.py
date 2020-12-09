@@ -57,7 +57,7 @@ class Truthtable():
                     # binary connective
                     return " " + self.truthrow(e.phi, v) + \
                            " " + self.truthvalue(e.denot(s, v), mainconn) + " " + \
-                           self.truthrow(e.psi, v) + "  "
+                           self.truthrow(e.chi, v) + "  "
                 else:
                     # unary connective
                     return self.truthvalue(e.denot(s, v), mainconn) + "" +\
@@ -75,7 +75,7 @@ class Truthtable():
                     # binary connective
                     return " & " + self.truthrow(e.phi, v) + \
                            " & " + self.truthvalue(e.denot(s, v), mainconn) + " & " + \
-                           self.truthrow(e.psi, v) + " & "
+                           self.truthrow(e.chi, v) + " & "
                 else:
                     # unary connective
                     return self.truthvalue(e.denot(s, v), mainconn) + " & " +\
