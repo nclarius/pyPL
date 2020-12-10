@@ -2643,7 +2643,7 @@ class AllWorlds(Formula):
         if mode["classical"] and not mode["modal"]:
             rules = self.phi.tableau_pos(mode)
         else:
-            rules = {"A": ("λ", [self.phi])}
+            rules = {"A": ("ι", [self.phi])}
         return rules
 
     def tableau_neg(self, mode):

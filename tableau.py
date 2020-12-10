@@ -82,7 +82,7 @@ class Tableau(object):
         # append initial nodes
         line = 1
         # sig = (1,) if modal or not classical else None
-        world = 1 if modal or not classical else None
+        world = 1 if (modal or not classical) and validity else None
         signed = True if not classical or modal else False  # todo reimplement with pos./neg. signed formulas
         rule = "A"
         source = None
@@ -90,8 +90,9 @@ class Tableau(object):
 
         # initial formulas
         negative = True if validity or not validity and not satisfiability else False
+        self.conclusion = conclusion if not ((modal or not classical) and not validity) else AllWorlds(conclusion)
         root_fml, premise_fmls, axiom_fmls = \
-            (conclusion, premises, axioms) if conclusion else (premises[0], premises[1:], axioms)
+            (self.conclusion, premises, axioms) if self.conclusion else (premises[0], premises[1:], axioms)
         root_fml = root_fml if not negative else Neg(root_fml)
         # if classical and (not modal or validity):  # default: no forcing sign
         #     root_fml = root_fml if not negative else Neg(root_fml)
@@ -99,7 +100,6 @@ class Tableau(object):
         #     root_fml = AllWorlds(root_fml) if not negative else NotAllWorlds(root_fml)
         #     premise_fmls = [AllWorlds(prem) for prem in premise_fmls]
         #     axiom_fmls = [AllWorlds(ax) for ax in axiom_fmls]
-        self.conclusion = conclusion
         self.root = Node(None, self, line, world, root_fml, rule, source, inst)
         self.premises = [self.root.leaves()[0].add_child((self, i + 2, world, premise_fml, rule, source, inst))
                          for i, premise_fml in enumerate(premise_fmls)]
@@ -291,7 +291,7 @@ class Tableau(object):
 
     rule_names = {"α": "alpha", "β": "beta",  # connective rules
                   "γ": "gamma", "δ": "delta", "η": "eta", "θ": "theta", "ε": "epsilon",  # quantifier rules
-                  "μ": "mu", "ν": "nu", "π": "pi", "κ": "kappa", "λ": "lambda",  # modal rules
+                  "μ": "mu", "ν": "nu", "π": "pi", "κ": "kappa", "λ": "lambda", "ι": "iota", # modal rules
                   "ξ": "xi", "χ": "chi", "ο": "omicron", "u": "ypsilon", "ω": "omega"  # intuitionistic rules
                   }
 
@@ -299,8 +299,6 @@ class Tableau(object):
         """
         Recursively expand all nodes in the tableau.
         """
-        # input()
-        # print(self.root.treestr())
         while applicable := self.applicable():
             # todo stop search when only contradictions found after all new instantiations
             # check whether to continue expansion
@@ -491,7 +489,7 @@ class Tableau(object):
                                 applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
 
                 # modal rules
-                elif rule_type in ["μ", "ν", "π", "κ", "λ"]:
+                elif rule_type in ["μ", "ν", "π", "κ", "λ", "ι"]:
                     irrelevant = False
 
                     if rule_type in ["κ"]:  # special treatement of targets for kappa rule
@@ -541,6 +539,8 @@ class Tableau(object):
 
                         # collect the worlds occurring in the branch
                         occurring_global = list(dict.fromkeys([node.world for node in branch if node.world]))
+                        if rule_type == "ι" and not occurring_global:
+                            occurring_global = [1]
 
                         # additional worlds to use
                         fresh = [i for i in range(1, 100) if i not in occurring_global]
@@ -551,6 +551,8 @@ class Tableau(object):
                                                          node.inst[2] == source.world]))
                         if not extensions and rule_name == "A":
                             extensions = fresh
+                        if rule_type == "ι":
+                            extensions = occurring_global
                         # # for model finding, add at least one world
                         # if not self.mode["validity"] and not extensions:
                         #     extensions = occurring[:1]
@@ -562,7 +564,7 @@ class Tableau(object):
                         # check if the rule requires a new world or accessibility to be instantiated
                         if rule_type in ["μ"]:
                             new = True
-                        elif rule_type in ["ν", "π"]:
+                        elif rule_type in ["ν", "π", "ι"]:
                             new = False
                         elif rule_type in ["κ"]:
                             new = len(used) >= len(extensions) or rule_name == "A"
@@ -593,12 +595,21 @@ class Tableau(object):
                         elif rule_type in ["λ"]:
                             # the rule can only be applied to nodes and signatures it has not already been applied with,
                             # and only if there are extensions occurring in the branch or needed for additional models
-                            # yet to be instantiated,
-                            # except when there are no signatures in the branch at all and the rule is an assumption
+                            # yet to be instantiated
                             if any([not any([node.inst[3] == w
                                              for node in branch if applied(node)])
                                     for w in extensions + fresh[:self.num_models - 1]]) or \
                                     rule_name == "A" and not occurring_global:
+                                applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
+
+                        elif rule_type in ["ι"]:
+                            # the rule can only be applied to nodes and signatures it has not already been applied with,
+                            # and only if there are extensions occurring in the branch or needed for additional models
+                            # yet to be instantiated,
+                            # except when there are no signatures in the branch at all and the rule is an assumption
+                            if any([not any([node.inst[3] == w
+                                             for node in branch if applied(node)])
+                                    for w in occurring_global]):
                                 applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
 
                 # intuitionistic rules
@@ -633,23 +644,26 @@ class Tableau(object):
         rank_new = {True: 1, False: 0}
         # define a preference order for rule types
         rule_order = {r: i for (i, r) in enumerate(
-                ["η", "λ", "α", "β", "δ", "γ", "θ", "ε", "π", "μ", "ν", "κ", "ξ", "χ", "ο", "u", "ω"])}
+                ["ι", "η", "λ", "α", "β", "δ", "γ", "θ", "ε", "π", "μ", "ν", "κ", "ξ", "χ", "ο", "u", "ω"])}
         branching = {  # rank by branching
+                "ι": 0,  # forcing rules
                 "α": 0, "β": 1,  # connective rules
                 "γ": 0, "δ": 0, "η": 0, "θ": 1, "ε": 1,  # quantifier rules
                 "μ": 0, "ν": 0, "π": 0, "κ": 1, "λ": 0,  # modal rules
                 "ξ": 1, "χ": 1, "ο": 0, "u": 0, "ω": 0  # intuitionistic rules
         }
         operator = {  # rank by operator type
-                "α": 0, "β": 0,  # connective rules
-                "γ": 1, "δ": 1, "η": 1, "θ": 1, "ε": 1,  # quantifier rules
-                "μ": 1, "ν": 1, "π": 1, "κ": 1, "λ": 1,  # modal rules
-                "ξ": 1, "χ": 1, "ο": 2, "u": 2, "ω": 2  # intuitionistic rules
+                "ι": 0,  # forcing rules
+                "α": 1, "β": 1,  # connective rules
+                "γ": 2, "δ": 2, "η": 2, "θ": 2, "ε": 2,  # quantifier rules
+                "μ": 2, "ν": 2, "π": 2, "κ": 2, "λ": 2,  # modal rules
+                "ξ": 2, "χ": 2, "ο": 3, "u": 3, "ω": 3  # intuitionistic rules
         }
         # enumerate the nodes level-order so nodes can be prioritized by position in the tree
         pos = {node: i for (i, node) in enumerate(self.root.nodes())}
         pos_rev = {node: i for (i, node) in enumerate(self.root.nodes(True)[::-1])}
         pos_by_type = {
+                "ι": pos,  # forcing rules,
                 "α": pos, "β": pos,  # connective rules
                 "γ": pos, "δ": pos, "η": pos_rev, "θ": pos_rev, "ε": pos_rev,  # quantifier rules
                 "μ": pos, "ν": pos, "π": pos, "κ": pos_rev, "λ": pos_rev,  # modal rules
@@ -1073,6 +1087,39 @@ class Tableau(object):
     def rule_lambda(self, target, source, rule, fmls, args):
         """
         λ
+        Branch unary with an existing signature.
+        """
+        universal, irrelevant, new, used, occurring, extensions, reductions = args
+        max_line = max([node.line for node in self.root.nodes() if node.line])
+        line = max_line
+
+        # choose the first signature that already occurs in this branch but has not already been used with this rule
+        # sig = None
+        # for i in range(1, 1000):
+        #     if (sig_ := tuple([s for s in source.sig]) + (i,)) in extensions and sig_ not in used:
+        #         sig = sig_
+        #         break
+        # inst = (source.sig, sig)
+        usable = extensions + [i for i in range(1, 100)][:self.num_models - 1]
+        world = usable[min([i for i in range(len(usable)) if usable[i] not in used])]
+        new = True if world not in extensions else False
+        inst = (universal, new, source.world, world)
+
+        # add (top) node
+        top = child = target.add_child((self, line := line + 1, world, fmls[0], rule, source, inst))
+
+        # add bottom node
+        if len(fmls) == 2 and top:
+            bot = top.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
+
+        if len(fmls) == 2 and top:
+            return [top, bot]
+        else:
+            return [top]
+
+    def rule_iota(self, target, source, rule, fmls, args):
+        """
+        ι
         Branch unary with an existing signature.
         """
         universal, irrelevant, new, used, occurring, extensions, reductions = args
@@ -1728,6 +1775,8 @@ class Node(object):
 
     def rules(self):
         mode = self.tableau.mode
+        print(type(self.fml))
+        print(self.fml.tableau_pos(mode))
         return self.fml.tableau_pos(mode) if self.fml and self.fml.tableau_pos(mode) else dict()
 
     def branch_closed(self):
@@ -1892,9 +1941,9 @@ if __name__ == "__main__":
     # fml = Nec(Falsum())
     # tab = Tableau(fml, propositional=True, modal=True, validity=False)
     # 
-    # fml = Conj(Poss(Prop("p")), Poss(Neg(Prop("p"))))
+    fml = Conj(Poss(Prop("p")), Poss(Neg(Prop("p"))))
     # tab = Tableau(fml, modal=True)
-    # tab = Tableau(fml, propositional=True, modal=True, validity=False)
+    tab = Tableau(fml, propositional=True, modal=True, validity=False)
 
     # fml = Disj(Nec(Prop("p")), Nec(Prop("q")))
     # fml1 = Nec(Disj(Prop("p"), Prop("q")))
