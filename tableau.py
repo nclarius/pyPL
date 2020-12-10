@@ -97,7 +97,7 @@ class Tableau(object):
         ws = [None] * (1 + len(premises) + len(axioms))
         for i, el in enumerate([conclusion] + premises + axioms):
             negated_concl = action in ["tp", "cmg"]
-            initial_world = (modal or not classical) and (action in ["tp", "cmg"] and i == 0) or self.mode["local"]
+            initial_world = (modal or not classical) and ((action in ["tp", "cmg"] and i == 0) or local)
             all_worlds = not initial_world
             if isinstance(el, tuple):  # v and w given
                 fmls[i], vs[i], ws[i] = el[0], el[1], el[2]
@@ -105,7 +105,7 @@ class Tableau(object):
             else:  # only fml given
                 fmls[i] = el
                 vs[i] = None
-                ws[i] = 1 if initial_world else 0 if (modal or not classical) else None
+                ws[i] = 1 if initial_world else (0 if (modal or not classical) else None)
             if i == 0 and negated_concl:  # negate conclusion assumption
                 fmls[i] = Neg(fmls[i])
             if (modal or not classical) and all_worlds:  # make fml true in all worlds
@@ -272,7 +272,7 @@ class Tableau(object):
         if self.models:
             mdls += ("Countermodels:" \
                          if self.mode["validity"] or not self.mode["validity"] and not self.mode["satisfiability"] \
-                         else "Models:") + ("\\\\\n" if self.latex else "\n")
+                         else "Models:") + ("\\\\\n" if self.latex else "\n\n")
             if self.latex:
                 mdls += "% alignment for structures\n"
                 mdls += "\\renewcommand{\\arraystretch}{1}  % decrease spacing between rows\n"
@@ -281,7 +281,7 @@ class Tableau(object):
             for model in sorted(self.models, key=lambda m:
             {n.line: i for (i, n) in enumerate(self.root.nodes(preorder=True))}[int(m.s[1:])]):
                 if not self.latex:
-                    mdls += str(model) + "\n\n"
+                    mdls += str(model) + "\n"
                 else:
                     mdls += model.tex() + "\\ \\\\\n\\ \\\\\n"
             res += mdls
@@ -2019,6 +2019,9 @@ if __name__ == "__main__":
     # # counter model: D(w1) = {a,b}, D(w2) = {a}, I(w1)(P) = {}, I(w2)(P) = {b}
     # tab1 = Tableau(fml2, modal=True, vardomains=True)
     # tab2 = Tableau(fml4, modal=True, vardomains=True)
+    # fml5 = Poss(Exists(Var("x"), Atm(Pred("U"), (Var("x"),))))
+    # fml6 = Neg(Exists(Var("x"), Poss(Atm(Pred("U"), (Var("x"),)))))
+    # tab5 = Tableau(premises=[fml5, fml6], modal=True, validity=False, vardomains=True)
 
     #################
     # quantifier commutativity

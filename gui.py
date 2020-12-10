@@ -682,13 +682,13 @@ class PyPLGUI(tk.Frame):
                     # ents_w[i].config(state="disabled" if self.inst.logic["modal"] == "nonmodal" else "normal")
 
         def set():
-            if self.inst.action not in ["mg", "mc"]:
+            if self.inst.action not in ["mc"]:
                 self.inst.conclusion = input_fmls[0] if input_fmls else None
                 self.inst.premises = input_fmls[1:] if len(input_fmls) > 1 else []
-            elif self.inst.action in ["mg"]:
-                self.inst.conclusion = tuple([input_fmls[0], raws_v[0].get(), raws_w[0].get()]) if input_fmls else None
-                self.inst.premises = [tuple([input_fmls[i], raws_v[i].get(), raws_w[i].get()])
-                                      for i in range(1, len(input_fmls))] if len(input_fmls) > 1 else []
+            # elif self.inst.action in ["mg"]:
+            #     self.inst.conclusion = tuple([input_fmls[0], raws_v[0].get(), raws_w[0].get()]) if input_fmls else None
+            #     self.inst.premises = [tuple([input_fmls[i], raws_v[i].get(), raws_w[i].get()])
+            #                           for i in range(1, len(input_fmls))] if len(input_fmls) > 1 else []
             elif self.inst.action == "mc":
                 self.inst.formulas = [tuple([input_fmls[i], raws_v[i].get(), raws_w[i].get()])
                                       for i in range(len(input_fmls))]
@@ -1322,7 +1322,6 @@ class PyPLGUI(tk.Frame):
         structure = self.inst.structure
 
         # settings
-
         classical = self.inst.logic["classint"] == "class"
         propositional = self.inst.logic["proppred"] == "prop"
         modal = self.inst.logic["modal"] == "modal"
