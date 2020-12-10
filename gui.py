@@ -189,8 +189,7 @@ class PyPLGUI(tk.Frame):
         # info
         url = "https://github.com/nclarius/pyPL"
         lbl_info = tk.Button(frm_run, text="🛈 " + url, bg=white, borderwidth=0, highlightthickness=1)
-        import webbrowser
-        lbl_info.bind("<Button>", lambda e: webbrowser.open(url, autoraise=True))
+        lbl_info.bind("<Button>", lambda e: check_call(["xdg-open", url], stdout=DEVNULL, stderr=STDOUT))
         lbl_info.pack(pady=10)
 
     def tab_0(self):  # 0. Start
@@ -476,7 +475,7 @@ class PyPLGUI(tk.Frame):
                     if j < i:
                         swap_dns[j].configure(state="normal")
             # v and w fields
-            if self.inst.action == "mc":
+            if self.inst.action in ["mg", "mc"]:
                 ent_v = tk.Entry(tab, textvariable=v, width=2, disabledbackground=darkwhite, font=("Consolas", 12)
                                  #state="disabled" if self.inst.logic["proppred"] == "prop" else "normal",
                                  )
@@ -495,7 +494,7 @@ class PyPLGUI(tk.Frame):
             ent = tk.Entry(tab,
                            textvariable=raw,
                            font=("Consolas", 12),
-                           width=50 if self.inst.action != "mc" else 45)
+                           width=50 if self.inst.action not in ["mg", "mc"] else 45)
             tt = {
                     True: {
                         "tt": "enter the conclusion to be proven or refuted",
@@ -679,9 +678,13 @@ class PyPLGUI(tk.Frame):
                     # ents_w[i].config(state="disabled" if self.inst.logic["modal"] == "nonmodal" else "normal")
 
         def set():
-            if self.inst.action != "mc":
+            if self.inst.action not in ["mg", "mc"]:
                 self.inst.conclusion = input_fmls[0] if input_fmls else None
                 self.inst.premises = input_fmls[1:] if len(input_fmls) > 1 else []
+            elif self.inst.action in ["mg"]:
+                self.inst.conclusion = tuple([input_fmls[0], raws_v[0].get(), raws_w[0].get()]) if input_fmls else None
+                self.inst.premises = [tuple([input_fmls[i], raws_v[i].get(), raws_w[i].get()])
+                                      for i in range(1, len(input_fmls))] if len(input_fmls) > 1 else []
             elif self.inst.action == "mc":
                 self.inst.formulas = [tuple([input_fmls[i], raws_v[i].get(), raws_w[i].get()])
                                       for i in range(len(input_fmls))]

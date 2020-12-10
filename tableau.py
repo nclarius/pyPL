@@ -82,30 +82,41 @@ class Tableau(object):
         # append initial nodes
         line = 1
         # sig = (1,) if modal or not classical else None
-        world = 1 if (modal or not classical) and validity else None
+        # world = 1 if (modal or not classical) and validity else None
         signed = True if not classical or modal else False  # todo reimplement with pos./neg. signed formulas
         rule = "A"
         source = None
         inst = tuple()
 
         # initial formulas
-        negative = True if validity or not validity and not satisfiability else False
-        self.conclusion = conclusion if not ((modal or not classical) and not validity) else AllWorlds(conclusion)
-        root_fml, premise_fmls, axiom_fmls = \
-            (self.conclusion, premises, axioms) if self.conclusion else (premises[0], premises[1:], axioms)
-        root_fml = root_fml if not negative else Neg(root_fml)
-        # if classical and (not modal or validity):  # default: no forcing sign
-        #     root_fml = root_fml if not negative else Neg(root_fml)
-        # else:  # ML MG and IL: forcing sign
-        #     root_fml = AllWorlds(root_fml) if not negative else NotAllWorlds(root_fml)
-        #     premise_fmls = [AllWorlds(prem) for prem in premise_fmls]
-        #     axiom_fmls = [AllWorlds(ax) for ax in axiom_fmls]
-        self.root = Node(None, self, line, world, root_fml, rule, source, inst)
-        self.premises = [self.root.leaves()[0].add_child((self, i + 2, world, premise_fml, rule, source, inst))
-                         for i, premise_fml in enumerate(premise_fmls)]
+        (conclusion, premises, axioms) = \
+            (conclusion, premises, axioms) if conclusion else (premises[0], premises[1:], axioms)
+        action = "tp" if validity else "mg" if satisfiability else "cmg"
+        fmls = [None] * (1 + len(premises) + len(axioms))
+        vs = [None] * (1 + len(premises) + len(axioms))
+        ws = [None] * (1 + len(premises) + len(axioms))
+        for i, el in enumerate([conclusion] + premises + axioms):
+            negated_concl = action in ["tp", "cmg"]
+            initial_world = (modal or not classical) and action in ["tp", "cmg"]
+            if isinstance(el, tuple):
+                fmls[i], vs[i], ws[i] = el[0], el[1], el[2]
+                ws[i] = int(ws[i][1:]) if "w" in ws[i] else int(ws[i])
+            else:
+                fmls[i] = el
+                vs[i] = None
+                ws[i] = 1 if initial_world else None
+            if i == 0 and negated_concl:
+                fmls[i] = Neg(fmls[i])
+            if (modal or not classical) and action in ["mg"] and not ws[i] and ws[i] != 0:
+                fmls[i] = AllWorlds(fmls[i])
+
+        self.root = Node(None, self, line, ws[0], fmls[0], rule, source, inst)
+        self.conclusion = conclusion if not isinstance(conclusion, tuple) else conclusion[0]
+        self.premises = [self.root.leaves()[0].add_child((self, i + 2, ws[i], fmls[i], rule, source, inst))
+                         for i in range(1, len(premises)+1)]
         max_line = max([node.line for node in self.root.nodes() if node.line])
-        self.axioms = [self.root.leaves()[0].add_child((self, i + max_line + 1, world, axiom_fml, "Ax", source, inst))
-                       for i, axiom_fml in enumerate(axiom_fmls)]
+        self.axioms = [self.root.leaves()[0].add_child((self, i + max_line + 1, ws[i], fmls[i], "Ax", source, inst))
+                       for i in range(1+len(premises), 1+len(premises)+len(axioms))]
 
         self.appl = []  # list of applicable rules
         self.models = []  # generated models
@@ -539,7 +550,7 @@ class Tableau(object):
 
                         # collect the worlds occurring in the branch
                         occurring_global = list(dict.fromkeys([node.world for node in branch if node.world]))
-                        if rule_type == "ι" and not occurring_global:
+                        if rule_type in ["λ", "ι"] and not occurring_global:
                             occurring_global = [1]
 
                         # additional worlds to use
@@ -549,8 +560,8 @@ class Tableau(object):
                         extensions = list(dict.fromkeys([node.inst[3] for node in branch
                                                          if node.inst and len(node.inst) > 3 and
                                                          node.inst[2] == source.world]))
-                        if not extensions and rule_name == "A":
-                            extensions = fresh
+                        if not extensions and rule_type in ["λ"]:
+                            extensions = occurring_global
                         if rule_type == "ι":
                             extensions = occurring_global
                         # # for model finding, add at least one world
@@ -598,8 +609,7 @@ class Tableau(object):
                             # yet to be instantiated
                             if any([not any([node.inst[3] == w
                                              for node in branch if applied(node)])
-                                    for w in extensions + fresh[:self.num_models - 1]]) or \
-                                    rule_name == "A" and not occurring_global:
+                                    for w in extensions + fresh[:self.num_models - 1]]):
                                 applicable.append((target, source, rule_name, rule_type, fmls, args, insts))
 
                         elif rule_type in ["ι"]:
@@ -1078,6 +1088,8 @@ class Tableau(object):
         # add bottom node
         if len(fmls) == 2 and top:
             bot = top.add_child((self, line := line + 1, world, fmls[1], rule, source, inst))
+
+        self.num_branches += 1 if len(target.children) > 2 else 0
 
         if len(fmls) == 2 and top:
             return [top, bot]
@@ -1775,8 +1787,6 @@ class Node(object):
 
     def rules(self):
         mode = self.tableau.mode
-        print(type(self.fml))
-        print(self.fml.tableau_pos(mode))
         return self.fml.tableau_pos(mode) if self.fml and self.fml.tableau_pos(mode) else dict()
 
     def branch_closed(self):

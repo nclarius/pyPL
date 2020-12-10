@@ -121,7 +121,6 @@ Examples:
 # Entering structures
 
 - A structure is specified by listing its components, with components separated by linebreaks (without commas), and the component name and its specification separated by ` = `.
-- Whitespace and linebreaks within component specificaions are ignored.
 
 Component names:
 
@@ -134,12 +133,15 @@ Component names:
 - `V`: set of designated assignment functions for predicate logics (optional)
 
 Component specifications:
-- Names (formal symbols and real-world objects) are entered as bare srings. Names can not contain whitespace.  
-  Example: `a`, `John`; not: `Santa Claus`.
+- Whitespace and linebreaks within component specifications are ignored.
+- Names (formal symbols and real-world objects) are entered as bare strings.  
+  Example: `a`, `John`, `0`.
 - Sets are enclosed by `{`, `}`, with the elements separated by `,`.
 - Tuples are enclosed by `(`, `)`, with the elements separated by `,`.
 - Functions are enclosed by `[`, `]`, with the elements separated by `,` and argument - value pairs separated by `:`.
 - Elements of interpretations of one-place predicates and one-place function domains have to be entered as singleton tuples enclosed in brackets `(a)` rather than as bare elements `a`.  
+- For classical modal structures, frame properties such as reflexivity can not be set generically and need to be specified by explicitly listing all respective pairs in the accessibility relation.  
+- For intuitionistic Kripke structures, the reflexive and transitive closure of the accessibility relation and the monotonic closure of the valuation resp. interpretation function are computed automatically and do not need to be explicitly specified in the structure definition; only the atomic accessibility pairs and the atoms that are new in each state need to be listed.
 
 Examples:
 
@@ -205,10 +207,3 @@ like modal propositional structure and modal varying predicational structure, ex
   Examples: `v:v1 Love(m,x)`, `w:w2 \exi x Unicorn(x)`, `v:v1 w:w2 Unicorn(x)`.
 
 Examples: see the exemplary files in `pyPL/input`.
-
-# Issues
-
-- If the program hung itself up or crashed (especially after adding/removing formulas), usually simply restarting it resolves the issue. In case the program doesn’t seem to respond, please note that tableaus for largish (sets of) formulas may take some time to compute. If problems persist, you can check if there is useful information in the log file `pyPL/pyPL.log`. 
-- If the formula or structure you entered won't update, you probably made a typo. Unfortunately there are no error messages telling you what exactly went wrong; you will have to check back with this documentation to see where the problem might be.  
-- If no output file opens and a `.tex` file but no `.pdf` file was generated, compiling the `.tex` file via `pdflatex` probably went wrong. Try to compile the `.tex` file manually to see what the error is (perhaps a missing package). If LaTeX causes problems, select plain text instead of LaTeX PDF output in the settings. 
-- If no output file opens, the automatic file opening via `xdg-open` probably isn't working on your machine. You can find all your output files in `pyPL/output`.  
