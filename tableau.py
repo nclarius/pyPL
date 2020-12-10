@@ -290,9 +290,18 @@ class Tableau(object):
         # size = len(self)
         if self.start and self.end:
             elapsed = self.end - self.start
+            if self.latex:
+                res += "\\ \\\\\n"
             res += "This computation took " + str(round(elapsed, 4)) + " seconds, " + \
                    str(self.num_branches) + " branch" + ("es" if self.num_branches > 1 else "") + \
                    " and " + str(len(self)) + " nodes.\n\n"
+
+        # github link
+        url = "https://github.com/nclarius/pyPL"
+        if self.latex:
+            res += "\\ \\\\\n" + "\\textcircled{i} " + url
+        else:
+            res += "🛈 " + url
 
         if self.latex:
             postamble = "\\end{document}\n"
@@ -1956,9 +1965,9 @@ if __name__ == "__main__":
     # fml = Nec(Falsum())
     # tab = Tableau(fml, propositional=True, modal=True, validity=False)
     # 
-    fml = Conj(Poss(Prop("p")), Poss(Neg(Prop("p"))))
+    # fml = Conj(Poss(Prop("p")), Poss(Neg(Prop("p"))))
     # tab = Tableau(fml, modal=True)
-    tab = Tableau(fml, propositional=True, modal=True, validity=False)
+    # tab = Tableau(fml, propositional=True, modal=True, validity=False)
 
     # fml = Disj(Nec(Prop("p")), Nec(Prop("q")))
     # fml1 = Nec(Disj(Prop("p"), Prop("q")))
