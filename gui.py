@@ -348,7 +348,7 @@ class PyPLGUI(tk.Frame):
             if file is None:  # asksaveasfile return `None` if dialog closed with "cancel".
                 return
             lines = [line.rstrip() for line in file if line]
-            if self.inst.action not in ["mc", "mg"]:
+            if self.inst.action not in ["mc"]:
                 for i, line in enumerate(lines):
                     if not line:
                         continue
@@ -479,7 +479,7 @@ class PyPLGUI(tk.Frame):
                     if j < i:
                         swap_dns[j].configure(state="normal")
             # v and w fields
-            if self.inst.action in ["mg", "mc"]:
+            if self.inst.action in ["mc"]:
                 ent_v = tk.Entry(tab, textvariable=v, width=2, disabledbackground=darkwhite, font=("Consolas", 12)
                                  #state="disabled" if self.inst.logic["proppred"] == "prop" else "normal",
                                  )
@@ -498,7 +498,7 @@ class PyPLGUI(tk.Frame):
             ent = tk.Entry(tab,
                            textvariable=raw,
                            font=("Consolas", 12),
-                           width=50 if self.inst.action not in ["mg", "mc"] else 45)
+                           width=50 if self.inst.action not in ["mc"] else 45)
             tt = {
                     True: {
                         "tt": "enter the conclusion to be proven or refuted",
@@ -992,7 +992,7 @@ class PyPLGUI(tk.Frame):
                 "classint": [("classical", "class"), ("intuitionistic", "int")],
                 "modal":    [("non-modal", "nonmodal"), ("modal", "modal")],
                 "constvar": [("constant domains", "const"), ("varying domains", "var")],
-                "locglob":  [("local validity", "local"), ("global validity", "global")],
+                "locglob":  [("local validity/satisfiability", "local"), ("global validity/satisfiability", "global")],
                 "frame":    [("frame K", "K")]
         }
         variables = {
@@ -1026,8 +1026,8 @@ class PyPLGUI(tk.Frame):
 
         Tooltip(self.rbs_logic["constvar"]["const"], "all worlds share the same domain of discourse")
         Tooltip(self.rbs_logic["constvar"]["var"], "each world has its own domain of discourse")
-        Tooltip(self.rbs_logic["locglob"]["local"], "check truth perservance per world")
-        Tooltip(self.rbs_logic["locglob"]["global"], "check truth preservance per structure")
+        Tooltip(self.rbs_logic["locglob"]["local"], "check truth perservance/satisfaction on world level")
+        Tooltip(self.rbs_logic["locglob"]["global"], "check truth preservance/satisfaction on structure level")
         Tooltip(self.rbs_logic["frame"]["K"], "no additional frame properties")
 
     def tab_4(self):  # 4. Settings

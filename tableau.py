@@ -97,18 +97,18 @@ class Tableau(object):
         ws = [None] * (1 + len(premises) + len(axioms))
         for i, el in enumerate([conclusion] + premises + axioms):
             negated_concl = action in ["tp", "cmg"]
-            initial_world = (modal or not classical) and action in ["tp", "cmg"]
+            initial_world = (modal or not classical) and (action in ["tp", "cmg"] and i == 0) or self.mode["local"]
+            all_worlds = not initial_world
             if isinstance(el, tuple):  # v and w given
                 fmls[i], vs[i], ws[i] = el[0], el[1], el[2]
                 ws[i] = int(ws[i][1:]) if "w" in ws[i] else int(ws[i]) if ws[i] else None
             else:  # only fml given
                 fmls[i] = el
                 vs[i] = None
-                ws[i] = 1 if initial_world else None
+                ws[i] = 1 if initial_world else 0 if (modal or not classical) else None
             if i == 0 and negated_concl:  # negate conclusion assumption
                 fmls[i] = Neg(fmls[i])
-            if ((modal or not classical) and action in ["mg"] and not ws[i] and ws[i] != 0) or \
-                    not self.mode["local"] and i > 0:  # make fml true in all worlds
+            if (modal or not classical) and all_worlds:  # make fml true in all worlds
                 fmls[i] = AllWorlds(fmls[i])
 
         self.root = Node(None, self, line, ws[0], fmls[0], rule, source, inst)
@@ -299,9 +299,9 @@ class Tableau(object):
         # github link
         url = "https://github.com/nclarius/pyPL"
         if self.latex:
-            res += "\\ \\\\\n" + "\\textcircled{i} " + url
+            res += "\\ \\\\\n" + "\\textcircled{\\scriptsize{i}} " + url
         else:
-            res += "🛈 " + url
+            res += "🛈 " + url + "\n"
 
         if self.latex:
             postamble = "\\end{document}\n"
@@ -1554,7 +1554,8 @@ class Node(object):
 
         # str_sig = "{:<{len}}".format(".".join([str(s) for s in self.sig]) if self.sig else "", len=len_sig) \
         #     if len_sig else ""
-        str_world = "{:<{len}}".format("w" + str(self.world) if self.world else "", len=len_world)
+        str_world = "{:<{len}}".format(("w" + str(self.world)) if self.world and self.world > 0 else \
+                ("w" if self.world is not None else ""), len=len_world)
         # str_sign = "{:<{len}}".format(("⊩" if self.sign == "+" else "⊮") if self.sign else "", len=len_sign)
 
         fml = str(self.fml)
@@ -1577,7 +1578,7 @@ class Node(object):
             str_rule = "{:>{len}}".format((str(self.rule) if self.rule else ""), len=len_rule)
             str_comma = ", " if self.rule and self.source else ""
             str_source = "{:>{len}}".format(str(self.source.line) if self.source else "", len=len_source)
-            if self.inst and len(self.inst) > 3:
+            if self.inst and len(self.inst) > 3 and self.rule != "A":
                 if isinstance(self.inst[-1], str):
                     str_inst = ", " + "[" + str(self.inst[2]) + "/" + str(self.inst[3]) + "]" \
                                + ("*" if self.inst[1] else "")
@@ -1597,6 +1598,8 @@ class Node(object):
         """
         open_branches = [leaf.branch for leaf in self.root().leaves() if isinstance(leaf.fml, Open)]
         str2tex = {
+                "A": "\\mathrm{A}",
+                "Ax": "\\mathrm{Ax}",
                 "¬": "\\neg",
                 "∧": "\\wedge",
                 "∨": "\\vee",
@@ -1614,7 +1617,8 @@ class Node(object):
         if self.tableau.underline_open and not self.tableau.hide_nonopen and not self.tableau.mode["validity"] and \
                 any([self in branch for branch in open_branches]):
             str_line = "\\underline{" + str_line + "}"
-        str_world = "$w" + "_" + "{" + str(self.world) + "}" + "$" if self.world else ""
+        str_world = ("$w" + "_" + "{" + str(self.world) + "}" + "$") if self.world and self.world > 0 else \
+                ("$w$" if self.world is not None else "")
         str_fml = "$" + self.fml.tex().replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }") + "$"
         # underline literals of open branches in MG
         if self.tableau.underline_open and not self.tableau.mode["validity"] and \
@@ -1624,8 +1628,8 @@ class Node(object):
         str_cite = ""
         if isinstance(self.fml, Open) or isinstance(self.fml, Infinite):
             str_cite = ""
-        elif self.rule in ["A", "Ax"]:
-            str_cite = "(" + self.rule + ")"
+        elif self.rule in ["A", "Ax"] and not self.source:
+            str_cite = "($" + str2tex[self.rule] + "$)"
         elif not self.rule:
             str_cite = "(" + str(self.source.line) + ")"
         else:
@@ -1634,7 +1638,7 @@ class Node(object):
                 .replace("\\neg\\! \\", "\\neg  \\") if self.rule else ""
             str_comma = "{,}\\ " if self.rule and self.source else ""
             str_source = str(self.source.line) if self.source else ""
-            if self.inst and len(self.inst) > 3:
+            if self.inst and len(self.inst) > 3 and self.rule != "A":
                 if isinstance(self.inst[-1], str):
                     str_inst = "{,}\\ " + "\\lbrack " + str(self.inst[2]) + "/" + str(self.inst[3]) + " \\rbrack" \
                                + (" *" if self.inst[1] else "")
