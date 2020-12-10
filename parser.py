@@ -68,7 +68,7 @@ class FmlParser:
             "More": r"\\more",
             # modal operators
             "Poss": r"(◇|\*|\\Diamond|\\poss)",
-            "Nec": r"(◻|#|\\Box||\\nec)",
+            "Nec": r"(□|#|\\Box||\\nec)",
             "Int": r"\\int",
             "Ext": r"\\ext"
         }

@@ -2184,7 +2184,7 @@ class Poss(Formula):
 class Nec(Formula):
     """
     Necessity.
-    ◻φ
+    □φ
 
     @attr phi: the formula to apply the modal operator to
     @type phi: Formula
@@ -2194,7 +2194,7 @@ class Nec(Formula):
         self.phi = phi
 
     def __str__(self):
-        return "☐" + str(self.phi)
+        return "□" + str(self.phi)
 
     def tex(self):
         return "\\Box " + " " + self.phi.tex()

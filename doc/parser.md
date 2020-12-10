@@ -100,7 +100,7 @@ Example: `\more x(Boy(x), Girl(x), Sleep(x))`.
 `◇`, `*`, `\Diamond`, `\poss`
 
 ### Necessity
-`◻`, `#`, `\Box`, `\nec`
+`□`, `#`, `\Box`, `\nec`
 
 ### Intension
 `\int`

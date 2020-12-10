@@ -30,7 +30,8 @@ class PyPLInst:
         self.premises = []
         self.formulas = []
         self.structure = None
-        self.logic = {"proppred": "pred", "classint": "class", "modal": "nonmodal", "constvar": "var", "frame": "K"}
+        self.logic = {"proppred": "pred", "classint": "class", "modal": "nonmodal", 
+                      "constvar": "var", "locglob": "local", "frame": "K"}
 
         self.output = "tex"
         self.generation_mode = "mathematical"
@@ -926,17 +927,22 @@ class PyPLGUI(tk.Frame):
 
         def update_availability():
             if self.inst.logic["modal"] == "modal":
-                self.rbs_logic["frame"]["K"].config(state="normal")
                 if self.inst.logic["proppred"] == "pred":
                     self.rbs_logic["constvar"]["const"].config(state="normal")
                     self.rbs_logic["constvar"]["var"].config(state="normal")
                 else:
                     self.rbs_logic["constvar"]["const"].config(state="disabled")
                     self.rbs_logic["constvar"]["var"].config(state="disabled")
+                self.rbs_logic["locglob"]["local"].config(state="normal")
+                self.rbs_logic["locglob"]["global"].config(state="normal")
+                self.rbs_logic["frame"]["K"].config(state="normal")
             else:
-                self.rbs_logic["frame"]["K"].config(state="disabled")
                 self.rbs_logic["constvar"]["const"].config(state="disabled")
                 self.rbs_logic["constvar"]["var"].config(state="disabled")
+                self.rbs_logic["locglob"]["local"].config(state="disabled")
+                self.rbs_logic["locglob"]["global"].config(state="disabled")
+                self.rbs_logic["locglob"]["global"].config(fg=black)
+                self.rbs_logic["frame"]["K"].config(state="disabled")
 
         def reset():
             for cat_ in self.rbs_logic:
@@ -961,7 +967,7 @@ class PyPLGUI(tk.Frame):
         # mid
         mid = tk.Frame(tab, bg=white)
         mid.pack()
-        mids = {i: tk.Frame(mid, bg=white) for i in range(5)}
+        mids = {i: tk.Frame(mid, bg=white) for i in range(9)}
         for i in mids:
             mids[i].pack(ipadx=0, ipady=5)
 
@@ -972,14 +978,21 @@ class PyPLGUI(tk.Frame):
                             # font=("OpenSans", "12", "bold"),
                             anchor=tk.NW, justify=tk.LEFT) \
             .pack(in_=top)
+        lbl_headmodal = tk.Label(tab,
+                            bg=white,
+                            text="For modal logic:",
+                            # font=("OpenSans", "12", "bold"),
+                            anchor=tk.NW, justify=tk.LEFT) \
+            .pack(in_=mids[4])
 
         # selection
-        categories = ["proppred", "classint", "modal", "constvar", "frame"]
+        categories = ["proppred", "classint", "modal", "constvar", "locglob", "frame"]
         labels = {
                 "proppred": [("propositional logic", "prop"), ("predicate logic", "pred")],
                 "classint": [("classical", "class"), ("intuitionistic", "int")],
                 "modal":    [("non-modal", "nonmodal"), ("modal", "modal")],
-                "constvar": [("with constant domains", "const"), ("with varying domains", "var")],
+                "constvar": [("constant domains", "const"), ("varying domains", "var")],
+                "locglob":  [("local validity", "local"), ("global validity", "global")],
                 "frame":    [("frame K", "K")]
         }
         variables = {
@@ -987,12 +1000,14 @@ class PyPLGUI(tk.Frame):
                 "classint": tk.StringVar(None, self.inst.logic["classint"]),
                 "modal":    tk.StringVar(None, self.inst.logic["modal"]),
                 "constvar": tk.StringVar(None, self.inst.logic["constvar"]),
+                "locglob":  tk.StringVar(None, self.inst.logic["locglob"]),
                 "frame":    tk.StringVar(None, self.inst.logic["frame"])
         }
         self.rbs_logic = {cat: dict() for cat in categories}
         for i, cat in enumerate(categories):
+            i += 2 if cat in ["constvar", "locglob", "frame"] else 0
             for j, (txt, val) in enumerate(labels[cat]):
-                enabled = False if cat in ["constvar", "frame"] else True
+                enabled = False if cat in ["constvar", "locglob", "frame"] else True
                 rb = tk.Radiobutton(tab,
                                     bg=white,
                                     fg=black if enabled else white,
@@ -1008,6 +1023,12 @@ class PyPLGUI(tk.Frame):
                     initial_select_rb((rb, cat))
                 rb.pack(in_=mids[i], side=(tk.LEFT if j == 0 else tk.RIGHT))  # todo slightly off-center
                 self.rbs_logic[cat][val] = rb
+
+        Tooltip(self.rbs_logic["constvar"]["const"], "all worlds share the same domain of discourse")
+        Tooltip(self.rbs_logic["constvar"]["var"], "each world has its own domain of discourse")
+        Tooltip(self.rbs_logic["locglob"]["local"], "check truth perservance per world")
+        Tooltip(self.rbs_logic["locglob"]["global"], "check truth preservance per structure")
+        Tooltip(self.rbs_logic["frame"]["K"], "no additional frame properties")
 
     def tab_4(self):  # 4. Settings
         # todo config file for default settings
@@ -1302,17 +1323,18 @@ class PyPLGUI(tk.Frame):
 
         # settings
 
-        classical = True if self.inst.logic["classint"] == "class" else False
-        propositional = True if self.inst.logic["proppred"] == "prop" else False
-        modal = True if self.inst.logic["modal"] == "modal" else False
-        vardomains = True if self.inst.logic["constvar"] == "var" else False
+        classical = self.inst.logic["classint"] == "class"
+        propositional = self.inst.logic["proppred"] == "prop"
+        modal = self.inst.logic["modal"] == "modal"
+        vardomains = self.inst.logic["constvar"] == "var"
+        local = self.inst.logic["locglob"] == "local"
         frame = self.inst.logic["frame"]
-        linguistic = True if self.inst.generation_mode == "linguistic" else False
+        linguistic = self.inst.generation_mode == "linguistic"
 
-        latex = True if self.inst.output == "tex" else False
-        stepwise = True if self.inst.stepwise else False
-        underline_open = True if self.inst.underline_open else False
-        hide_nonopen = True if self.inst.hide_nonopen else False
+        latex = self.inst.output == "tex"
+        stepwise = self.inst.stepwise
+        underline_open = self.inst.underline_open
+        hide_nonopen = self.inst.hide_nonopen
         num_models = self.inst.num_models
         size_limit = self.inst.size_limit_factor
 
@@ -1344,7 +1366,7 @@ class PyPLGUI(tk.Frame):
             tableau.Tableau(concl, premises=premises, axioms=axioms,
                             validity=validity, satisfiability=satisfiability, linguistic=linguistic,
                             classical=classical, propositional=propositional,
-                            modal=modal, vardomains=vardomains, frame=frame,
+                            modal=modal, vardomains=vardomains, local=local, frame=frame,
                             silent=True, file=True, latex=latex, stepwise=stepwise,
                             num_models=num_models, size_limit_factor=size_limit,
                             underline_open=underline_open, hide_nonopen=hide_nonopen).show()
@@ -1354,7 +1376,7 @@ class PyPLGUI(tk.Frame):
             tab1 = tableau.Tableau(concl, premises=premises, axioms=axioms,
                                    validity=True, satisfiability=False, linguistic=linguistic,
                                    classical=classical, propositional=propositional,
-                                   modal=modal, vardomains=vardomains, frame=frame,
+                                   modal=modal, vardomains=vardomains, local=local, frame=frame,
                                    silent=True, file=True, latex=latex, stepwise=stepwise,
                                    num_models=num_models, size_limit_factor=size_limit,
                                    underline_open=underline_open, hide_nonopen=hide_nonopen)
@@ -1366,7 +1388,7 @@ class PyPLGUI(tk.Frame):
                 tab2 = tableau.Tableau(concl, premises=premises, axioms=axioms,
                                        validity=False, satisfiability=False, linguistic=linguistic,
                                        classical=classical, propositional=propositional,
-                                       modal=modal, vardomains=vardomains, frame=frame,
+                                       modal=modal, vardomains=vardomains, local=local, frame=frame,
                                        silent=True, file=True, latex=latex, stepwise=stepwise,
                                        num_models=num_models, size_limit_factor=size_limit,
                                        underline_open=underline_open, hide_nonopen=hide_nonopen)

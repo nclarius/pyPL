@@ -62,7 +62,7 @@ class Tableau(object):
     def __init__(self,
                  conclusion=None, premises=[], axioms=[],
                  validity=True, satisfiability=True, linguistic=False,
-                 classical=True, propositional=False, modal=False, vardomains=False, frame="K",
+                 classical=True, propositional=False, modal=False, vardomains=False, frame="K", local=True,
                  num_models=1, size_limit_factor=2,
                  file=True, latex=True, stepwise=False, hide_nonopen=False, underline_open=True, silent=False):
 
@@ -72,7 +72,7 @@ class Tableau(object):
         self.mode = {
                 "validity":  validity, "satisfiability": satisfiability, "linguistic": linguistic,
                 "classical": classical, "propositional": propositional,
-                "modal":     modal, "vardomains": vardomains, "frame": frame
+                "modal":     modal, "vardomains": vardomains, "frame": frame, "local": local,
         }
         self.num_models, self.size_limit_factor, \
         self.silent, self.file, self.latex, self.stepwise, self.hide_nonopen, self.underline_open = \
@@ -98,21 +98,22 @@ class Tableau(object):
         for i, el in enumerate([conclusion] + premises + axioms):
             negated_concl = action in ["tp", "cmg"]
             initial_world = (modal or not classical) and action in ["tp", "cmg"]
-            if isinstance(el, tuple):
+            if isinstance(el, tuple):  # v and w given
                 fmls[i], vs[i], ws[i] = el[0], el[1], el[2]
                 ws[i] = int(ws[i][1:]) if "w" in ws[i] else int(ws[i]) if ws[i] else None
-            else:
+            else:  # only fml given
                 fmls[i] = el
                 vs[i] = None
                 ws[i] = 1 if initial_world else None
-            if i == 0 and negated_concl:
+            if i == 0 and negated_concl:  # negate conclusion assumption
                 fmls[i] = Neg(fmls[i])
-            if (modal or not classical) and action in ["mg"] and not ws[i] and ws[i] != 0:
+            if ((modal or not classical) and action in ["mg"] and not ws[i] and ws[i] != 0) or \
+                    not self.mode["local"] and i > 0:  # make fml true in all worlds
                 fmls[i] = AllWorlds(fmls[i])
 
         self.root = Node(None, self, line, ws[0], fmls[0], rule, source, inst)
         self.conclusion = conclusion if not isinstance(conclusion, tuple) else conclusion[0]
-        self.premises = [self.root.leaves()[0].add_child((self, i + 2, ws[i], fmls[i], rule, source, inst))
+        self.premises = [self.root.leaves()[0].add_child((self, i + 1, ws[i], fmls[i], rule, source, inst))
                          for i in range(1, len(premises)+1)]
         max_line = max([node.line for node in self.root.nodes() if node.line])
         self.axioms = [self.root.leaves()[0].add_child((self, i + max_line + 1, ws[i], fmls[i], "Ax", source, inst))
@@ -171,6 +172,8 @@ class Tableau(object):
                 "logic" + \
                 (" with " + ("varying " if self.mode["vardomains"] else "constant ") + "domains"
                  if self.mode["modal"] and not self.mode["propositional"] else "") + \
+                ((" and " if not self.mode["propositional"] else " with ") +
+                 ("local " if self.mode["local"] else "global ") + "validity" if self.mode["modal"] else "") +\
                 (" in a " + self.mode["frame"] + " frame"
                  if self.mode["modal"] else "") + \
                 "." + ("\\\\" if self.latex else "") + "\n\n"
@@ -1677,11 +1680,11 @@ class Node(object):
                 not any([self in branch for branch in open_branches]):
             return ""
         colspec = ("{R{4.5em}cL{4.5em}}" if self.tableau.mode["propositional"] else "{R{7.5em}cL{7.5em}}") \
-            if not self.tableau.mode["modal"] else "{R{5em}L{1.5em}cL{7.5em}}"
-        ssep = "-4em" if self.tableau.mode["propositional"] else "-7em" if not self.tableau.mode["modal"] else \
-            "-5em"
-        hoffset = "-4.5em" if self.tableau.mode["propositional"] else "-7.5em" if not self.tableau.mode["modal"] else \
-            "-5em"
+            if not self.tableau.mode["modal"] else "{R{5.4em}L{1.5em}cL{8em}}"
+        ssep = ("-4em" if self.tableau.mode["propositional"] else "-7em") if not self.tableau.mode["modal"] else \
+            "-4.5em"
+        hoffset = ("-4.5em" if self.tableau.mode["propositional"] else "-7.5em") if not self.tableau.mode["modal"] else \
+            "-4.5em"  # todo not entirely accurate
         res = ""
         if root:
             res += "\\hspace*{%s}\n" % hoffset
