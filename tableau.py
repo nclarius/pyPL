@@ -1569,7 +1569,7 @@ class Node(object):
                     str_inst = ", " + "[" + str(self.inst[2]) + "/" + str(self.inst[3]) + "]" \
                                + ("*" if self.inst[1] else "")
                 elif isinstance(self.inst[-1], int):
-                    str_inst = ", " + "⟨" + str(self.inst[2]) + "," + str(self.inst[3]) + "⟩" \
+                    str_inst = ", " + "⟨" + "w" + str(self.inst[2]) + "," + "w" + str(self.inst[3]) + "⟩" \
                                + ("*" if self.inst[1] else "")
             else:
                 str_inst = ""
@@ -1626,7 +1626,8 @@ class Node(object):
                     str_inst = "{,}\\ " + "\\lbrack " + str(self.inst[2]) + "/" + str(self.inst[3]) + " \\rbrack" \
                                + (" *" if self.inst[1] else "")
                 elif isinstance(self.inst[-1], int):
-                    str_inst = "{,}\\ " + "\\tpl{" + str(self.inst[2]) + "{,}" + str(self.inst[3]) + "}" \
+                    str_inst = "{,}\\ " + "\\tpl{" + \
+                               "w_" + "{" + str(self.inst[2]) + "}" + "{,}" + "w_" + "{" + str(self.inst[3]) + "}" + "}" \
                                + (" *" if self.inst[1] else "")
             else:
                 str_inst = ""

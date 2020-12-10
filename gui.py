@@ -347,7 +347,7 @@ class PyPLGUI(tk.Frame):
             if file is None:  # asksaveasfile return `None` if dialog closed with "cancel".
                 return
             lines = [line.rstrip() for line in file if line]
-            if self.inst.action != "mc":
+            if self.inst.action not in ["mc", "mg"]:
                 for i, line in enumerate(lines):
                     if not line:
                         continue
@@ -357,12 +357,15 @@ class PyPLGUI(tk.Frame):
                     ents_fml[i].insert(0, line)
                     parse(i)
             else:
-                blankline = lines.index("") if "" in lines else len(lines) if " = " in "".join(lines) else 0
-                structure = lines[0:blankline]
-                formulas = lines[blankline + 1:]
-                ent_struct.delete("1.0", tk.END)
-                ent_struct.insert(1.0, "\n".join(structure))
-                parse_struct("\n".join(structure))
+                if self.inst.action == "mc":
+                    blankline = lines.index("") if "" in lines else len(lines) if " = " in "".join(lines) else 0
+                    structure = lines[0:blankline]
+                    formulas = lines[blankline + 1:]
+                    ent_struct.delete("1.0", tk.END)
+                    ent_struct.insert(1.0, "\n".join(structure))
+                    parse_struct("\n".join(structure))
+                else:
+                    formulas = lines
                 for i, line in enumerate(formulas):
                     if not line:
                         continue
