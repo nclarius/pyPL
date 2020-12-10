@@ -100,7 +100,7 @@ class Tableau(object):
             initial_world = (modal or not classical) and action in ["tp", "cmg"]
             if isinstance(el, tuple):
                 fmls[i], vs[i], ws[i] = el[0], el[1], el[2]
-                ws[i] = int(ws[i][1:]) if "w" in ws[i] else int(ws[i])
+                ws[i] = int(ws[i][1:]) if "w" in ws[i] else int(ws[i]) if ws[i] else None
             else:
                 fmls[i] = el
                 vs[i] = None
