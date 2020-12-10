@@ -1352,7 +1352,6 @@ class PyPLGUI(tk.Frame):
                                    silent=True, file=True, latex=latex, stepwise=stepwise,
                                    num_models=num_models, size_limit_factor=size_limit,
                                    underline_open=underline_open, hide_nonopen=hide_nonopen)
-
             if tab1.closed():
                 # win_wait.destroy()
                 tab1.show()
