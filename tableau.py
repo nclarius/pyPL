@@ -173,7 +173,8 @@ class Tableau(object):
                 (" with " + ("varying " if self.mode["vardomains"] else "constant ") + "domains"
                  if self.mode["modal"] and not self.mode["propositional"] else "") + \
                 ((" and " if not self.mode["propositional"] else " with ") +
-                 ("local " if self.mode["local"] else "global ") + "validity" if self.mode["modal"] else "") +\
+                 ("local " if self.mode["local"] else "global ") + "validity"
+                 if self.mode["modal"] and self.mode["validity"] or not self.mode["satisfiability"] else "") +\
                 (" in a " + self.mode["frame"] + " frame"
                  if self.mode["modal"] else "") + \
                 "." + ("\\\\" if self.latex else "") + "\n\n"

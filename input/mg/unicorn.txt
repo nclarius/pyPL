@@ -1,0 +1,2 @@
+w:w1 * \exi x U(x)
+w:w1 - \exi x * U(x) 
