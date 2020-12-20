@@ -257,8 +257,8 @@ class PyPLGUI(tk.Frame):
                     "tp": "Generate a proof that the conclusion is true in all structures "
                           "[in which the premises are true].",
                     "cmg": "Generate a structure in which the conclusion is false [and the premises are true].",
-                    "mg":"Generate a structure in which the formula[s] is [/are] true.",
-                    "mc": "Check whether the formula is true in the structure.",
+                    "mg": "Generate a structure in which the sentence[s] is [/are] true.",
+                    "mc": "Check the denotation of the expression in the structure.",
                     "tc": "Compute the truth table for the formula."
             }
             lbl_sum.config(text="(" + summary[self.inst.action] + ")")
