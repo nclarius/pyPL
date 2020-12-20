@@ -34,6 +34,7 @@ How to 'clone github repository', 'install python' and 'execute .py script' is a
 ### Specify input and view output
 Documentation on how to enter formulas, structures and input files can be found in `pyPL/doc/parser.md`.  
 Generated output files are stored in `pyPL/output`.  
+Information on some of the buttons and options are shown as tooltips on mouse hover.
 
 ### Troubleshooting
 For troubleshooting information, see `pyPL/doc/troubleshooting.md`.  
