@@ -1271,7 +1271,7 @@ class PyPLGUI(tk.Frame):
         lbl_size_limit = tk.Label(tab,
                                   bg=white,
                                   text="Tableau tree size limit factor:")
-        Tooltip(lbl_size_limit, "Stop the search when the tree gets deeper or wider than "
+        Tooltip(lbl_size_limit, "stop the search when the tree gets deeper or wider than "
                                 "factor * length of assumptions")
         lbl_size_limit.pack(in_=mids[m], side=tk.LEFT, padx=15)
         btn_size_limit_dn = tk.Button(tab,

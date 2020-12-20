@@ -207,3 +207,7 @@ like modal propositional structure and modal varying predicational structure, ex
   Examples: `v:v1 Love(m,x)`, `w:w2 \exi x Unicorn(x)`, `v:v1 w:w2 Unicorn(x)`.
 
 Examples: see the exemplary files in `pyPL/input`.
+
+
+# Entering input in source code instead of GUI
+If you don't want to use the graphical interface, you can also enter input and commands in the source code. See the commented-out examples in `main.py`.
