@@ -39,10 +39,6 @@ Generated output files are stored in `pyPL/output`.
 For troubleshooting information, see `pyPL/doc/troubleshooting.md`.  
 If that doesn't help, please open a GitHub issue or e-mail me.  
 
-# Disclaimer
-- This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.  
-- Although the program has been extensively tested, I do not guarantee soundness. Use at your own risk.
-
 # Features
 
 ### Modes
@@ -61,25 +57,28 @@ If that doesn't help, please open a GitHub issue or e-mail me.
 - input of formulas and structures with ordinary keyboard characters, directly or from a file
 - output in plain text or LaTeX-generated PDF
 
-# Restrictions
+### Restrictions
  - model checking works only on structures with finite domains
  - model generation and theorem proving works only on formulas of relatively small size due to performance limitations
 
-# Known issues
+### Known issues
  - tableau algorithm relatively inefficient
  - GUI and parser can be glitchy (window not scrollable, buttons sometimes not behaving as expected, parser not always recognizing bracketing correctly)
  - global variables are bad
 
-# Wish list
+### Wish list
 - useful feedback on incorrectly entered input rather than no parser response
 - more efficient proof search and model generation
 - in model checking, print out detailed derivation rather than just final result of evaluation
 - broader coverage:
   - lambda calculus and e-t type theory
-  - more frames for modal logic; tense logic
-  - model generation and modal logic for intuitionistic logic
+  - more frames for modal logic; temporal logic; model generation and modal logic for intuitionistic logic
   - tableaus with free variables
   - other frameworks and calculi, e.g. DRT, ND
+
+### Disclaimer
+- This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.  
+- Although the program has been extensively tested, I do not guarantee soundness. Use at your own risk.
 
 
 # Have fun!
