@@ -37,7 +37,7 @@ Generated output files are stored in `pyPL/output`.
 
 ### Troublshooting
 For troubleshooting information, see `pyPL/doc/troubleshooting.md`.  
-If that doesn't help, please open a github issue or e-mail me.  
+If that doesn't help, please open a GitHub issue or e-mail me.  
 
 # Disclaimer
 - This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.  
@@ -84,4 +84,4 @@ If that doesn't help, please open a github issue or e-mail me.
 
 # Have fun!
 
-I am happy to learn about any comments, bugs or improvement suggestions.
+I am happy to receive comments, bugs reports and improvement suggestions via GitHub or e-mail to natalie.clarius@student.uni-tuebingen.de.
