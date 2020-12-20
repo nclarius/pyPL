@@ -41,6 +41,7 @@ class FmlParser:
             "Comma": r",",
             "Semic": r";",
             "Dsemic": r";;",
+            "Period": r"\.",
             # meta symbols
             "Inf": r"(\|=||\\vDash|\\models|\\linf)",
             "Noninf": r"(\|/=||\\nvDash|\\nmodels|\\lninf)",
@@ -70,7 +71,9 @@ class FmlParser:
             "Poss": r"(◇|\*|\\Diamond|\\poss)",
             "Nec": r"(□|#|\\Box||\\nec)",
             "Int": r"\\int",
-            "Ext": r"\\ext"
+            "Ext": r"\\ext",
+            # lambda operator
+            "Abstr": r"(λ|\\lambda)"
         }
         regex2token = {v: k for k, v in token2regex.items()}
 
@@ -131,7 +134,7 @@ class FmlParser:
             print()
             print(t, s)
 
-        # opening bracket: start new stack if begin of complex formula rather than term tuple
+        # opening bracket: start new stack if begin of complex formula rather than fixed-length tuple
         if t in ["Lbrack"]:
             if bot not in ["Atm", "FuncTerm", "Most", "More"]:
                 new_stack = []
@@ -190,7 +193,7 @@ class FmlParser:
             return
 
         # prefix operator: start new stack
-        if t in ["Verum", "Falsum", "Neg", "Exists", "Forall", "Most", "More", "Poss", "Nec", "Int", "Ext"]:
+        if t in ["Verum", "Falsum", "Neg", "Exists", "Forall", "Most", "More", "Poss", "Nec", "Int", "Ext", "Abstr"]:
             stack_ = [t]
             stacks.append(stack_)
 
@@ -201,8 +204,10 @@ class FmlParser:
 
     def update_stacks(self, final=False):
         # todo check well-formedness of expressions
+        # todo lambda application
         # operator precedence
-        prec = {"Eq": 1, "Nec": 1, "Poss": 1, "Int": 1, "Ext": 1, "More": 1, "Most": 1, "Exists": 1, "Forall": 1,
+        prec = {"Eq": 1, "Abstr": 1, "Nec": 1, "Poss": 1, "Int": 1, "Ext": 1,
+                "More": 1, "Most": 1, "Exists": 1, "Forall": 1,
                 "Neg": 1, "Conj": 2, "Disj": 3, "Imp": 4, "Biimp": 5, "Xor": 6}
 
         stacks = self.stacks
@@ -246,6 +251,14 @@ class FmlParser:
                 prev_stack.append(e)
                 stacks = stacks[:-1]
                 continue
+            # # lambda application: close if lower stack is lambda operator
+            # # todo doesn't work
+            # if isinstance(prev_stack[0], getattr(expr, "Abstr")):
+            #     c = getattr(expr, "Appl")
+            #     e = c(prev_stack[0], curr_stack[0])
+            #     prev_stack.append(e)
+            #     stacks = stacks[:-1]
+            #     continue
 
             # unary operator: close if appropriate number of args is given
             if bot in ["Neg", "Poss", "Nec", "Int", "Ext"] and len(curr_stack) == 2:
@@ -261,8 +274,9 @@ class FmlParser:
 
                 # operator ambiguity
                 # todo associativity not right with Eq
+                # operator clash: resolve ambigutiy
                 if mid and mid in ["Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall", "Most", "More",
-                                   "Neg", "Poss", "Nec", "Int", "Ext", "Eq"]:  # operator clash: resolve ambiguiy
+                                   "Neg", "Poss", "Nec", "Int", "Ext", "Abstr", "Eq"]:
                     # first op has precedence over second op: take current stack as subformula. to second op
                     # ops have equal precedence: apply left-associativity
                     if prec[mid] < prec[bot] or prec[mid] == prec[bot]:
@@ -285,8 +299,8 @@ class FmlParser:
                     stacks = stacks[:-1]
                     continue
 
-            # quantifier: close if appropriate number of args is given
-            if bot in ["Exists", "Forall"] and len(curr_stack) == 3:
+            # variable binding operator: close if appropriate number of args is given
+            if bot in ["Exists", "Forall", "Abstr"] and len(curr_stack) == 3:
                 c = getattr(expr, bot)
                 e = c(mid, top)
                 prev_stack.append(e)

@@ -125,7 +125,7 @@ class Denotation:
                         [self.format(key, latex) + ": " + self.format(value, latex) for key, value in obj]
                 ) + "]"
         else:
-            return obj
+            return str(obj)
 
 
 def compute_active():

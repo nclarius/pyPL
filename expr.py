@@ -2533,9 +2533,9 @@ class Appl(Lexpr):
 
     def denot(self, s, v=None, w=None):
         """
-        The denotation of a lambda application is its beta reduction.
+        The denotation of a lambda application the value of its functor applied to the value of its argument.
         """
-        pass  # todo
+        return self.phi.denot(s, v, w)[self.psi.denot(s, v, w)]
 
 
 class Abstr(Lexpr):
@@ -2557,7 +2557,7 @@ class Abstr(Lexpr):
         return "(" + "λ" + str(self.u) + "." + str(self.phi) + ")"
 
     def tex(self):
-        return "(" + "\\lambda" + self.u.tex() + "." + self.phi.tex() + ")"
+        return "(" + "\\lambda " + self.u.tex() + "." + self.phi.tex() + ")"
 
     def __eq__(self, other):
         return isinstance(other, Abstr) and self.u == other.u and self.phi == other.phi
@@ -2582,7 +2582,8 @@ class Abstr(Lexpr):
         """
         The denotation of a lambda application is a function form its variable to the body.
         """
-        pass  # todo
+        # todo only works for individual variables
+        return {d: self.phi.denot(s, v | {self.u: d}, w) for d in s.d}
 
 
 class AllWorlds(Formula):
