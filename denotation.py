@@ -52,20 +52,20 @@ class Denotation:
             print(fml, v, w)
             if "modal" not in s.mode() and "classical" in s.mode():  # classical non-modal logic
                 if not v:
-                    res += str(fml.denotV(s))
+                    res += self.format(fml.denotV(s), latex)
                 else:
-                    res += str(fml.denot(s, s.v[v]))
+                    res += self.format(fml.denot(s, s.v[v]), latex)
             else:  # classical modal logic or intuitionistic logic
                 if not v:
                     if not w:
-                        res += str(fml.denotVW(s))
+                        res += self.format(fml.denotVW(s), latex)
                     else:
-                        res += str(fml.denotV(s, w))
+                        res += self.format(fml.denotV(s, w), latex)
                 else:
                     if not w:
-                        res += str(fml.denotW(s, s.v[v]))
+                        res += self.format(fml.denotW(s, s.v[v]), latex)
                     else:
-                        res += str(fml.denot(s, s.v[v], w))
+                        res += self.format(fml.denot(s, s.v[v], w), latex)
             if not latex:
                 res += "\n\n"
             else:
@@ -73,12 +73,60 @@ class Denotation:
 
         # print postamble
         if latex:
-            res = res.replace("True", "\\text{True}").replace("False", "\\text{False}")
             res += "\n\n\\end{document}"
 
         # write and open output
         write_output = __import__("gui").write_output
         write_output(res, latex)
+
+    def format(self, obj, latex):
+        if isinstance(obj, str):
+            if obj[0] == "w" and obj[-1].isdigit():
+                if latex:
+                    return "w" + "_{" + obj[1:] + "}"
+                else:
+                    return obj
+            else:
+                if latex:
+                    return "\\textrm{" + obj + "}"
+                else:
+                    return obj
+        elif isinstance(obj, bool):
+            if latex:
+                return "\\textrm{" + str(obj) + "}"
+            else:
+                return obj
+        elif isinstance(obj, tuple):
+            if latex:
+                return "\\langle" + ", ".join([self.format(el, latex) for el in obj]) + "\\rangle"
+            else:
+                return "⟨" + ", ".join([self.format(el, latex) for el in obj]) + "⟩"
+        elif isinstance(obj, set):
+            if latex:
+                return "\\{" + ", ".join([self.format(el, latex) for el in obj]) + "\\}"
+            else:
+                return "{" + ", ".join([self.format(el, latex) for el in obj]) + "}"
+        elif isinstance(obj, dict):
+            if latex:
+                return "\\begin{matrix*}[l]\n" + "\\\\\n".join([self.format(key, latex) + " & \\mapsto & " +
+                                                                self.format(value, latex) for key, value in obj.items()]
+                ) + "\n\\end{matrix*}\n"
+            else:
+                return "[" + ", ".join(
+                        [self.format(key, latex) + ": " + self.format(value, latex) for key, value in obj.items()]
+                ) + "]"
+        elif isinstance(obj, frozenset):
+            if latex:
+                return "\\begin{matrix*}[l]\n" + "\\\\\n".join(
+                        [self.format(key, latex) + " & \\mapsto & " + self.format(value, latex) for key, value in obj]
+                ) + "\n\\end{matrix*}\n"
+            else:
+                return "[" + ", ".join(
+                        [self.format(key, latex) + ": " + self.format(value, latex) for key, value in obj]
+                ) + "]"
+        else:
+            return obj
+
 
 def compute_active():
     """

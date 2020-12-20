@@ -25,7 +25,7 @@ To run this tool locally on your machine:
 1. Install dependencies:
    - core software: `Python` (version >= 3.9) + Python packages: `os`, `re`
    - for graphical interface: Python `tkinter`
-   - for nicely formatted output: `LaTeX` with `pdflatex` + LaTeX packages: `geometry`, `array`, `forest`, `amssymb`, `amsmath`, `amstext`, `wasysym`
+   - for nicely formatted output: `LaTeX` with `pdflatex` + LaTeX packages: `geometry`, `array`, `forest`, `amssymb`, `amsmath`, `amstext`, `wasysym`, `mathtools`
 2. Clone this repository.
 3. Execute `pyPL/main.py`.
 
@@ -81,4 +81,4 @@ For troubleshooting information, see `pyPL/doc/troubleshooting.md`.
 
 # Have fun!
 
-I am happy to learn about any bugs or improvement suggestions.
+I am happy to learn about any comments, bugs or improvement suggestions.

@@ -160,7 +160,7 @@ class PredStructure(Structure):
         i + " : " + ", \n    ".join(
                 [str(key) + " ↦ " +
                  (str(val) if isinstance(val, str) else
-                  (", ".join(["(" + str(key2) + " ↦ " + str(val2) + "⟩"
+                  (", ".join(["⟨" + str(key2) + " ↦ " + str(val2) + "⟩"
                               for key2, val2 in val.items()])
                    if isinstance(val, dict) else
                    ("{" +
