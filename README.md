@@ -32,11 +32,12 @@ To run this tool locally on your machine:
 How to 'clone github repository', 'install python' and 'execute .py script' is all easily googleable for your respective operating system.
 
 ### Specify input and view output
-Documentation on how to enter formulas, structures and input files can be found in `pyPL/doc/parser.md`.  
-Generated output files are stored in `pyPL/output`.  
-Information on some of the buttons and options are shown as tooltips on mouse hover.
+Documentation on how to enter formulas, structures and input files can be found in [`pyPL/doc/parser.md`](https://github.com/nclarius/pyPL/blob/master/doc/parser.md).  
+Some sample input files are available in [`pyPL/input`](https://github.com/nclarius/pyPL/blob/master/input).
+Generated output files are stored in [`pyPL/output`](https://github.com/nclarius/pyPL/blob/master/output).  
 
 ### Troubleshooting
+Information on the functionality some of the buttons and options are shown as tooltips on mouse hover.
 For troubleshooting information, see `pyPL/doc/troubleshooting.md`.  
 If that doesn't help, please open a GitHub issue or e-mail me.  
 
