@@ -36,11 +36,11 @@ Generated output files are stored in [`pyPL/output`](https://github.com/nclarius
 
 ### Troubleshooting
 Information on the functionality some of the buttons and options are shown as tooltips on mouse hover.  
-For troubleshooting information, see `pyPL/doc/troubleshooting.md`.  
+For troubleshooting information, see [`pyPL/doc/troubleshooting.md`](https://github.com/nclarius/pyPL/blob/master/doc/troubleshooting.md).  
 If that doesn't help, please open a GitHub issue or e-mail me.  
 
 ### Theory
-Some background on the theory underlying the implementation can be found in `pyPL/doc/paper`.
+Some background on the theory underlying the implementation can be found in [`pyPL/doc/paper.pdf`](https://github.com/nclarius/pyPL/blob/master/doc/paper.md).
 
 # Features
 
