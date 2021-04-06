@@ -40,6 +40,9 @@ Information on some of the buttons and options are shown as tooltips on mouse ho
 For troubleshooting information, see `pyPL/doc/troubleshooting.md`.  
 If that doesn't help, please open a GitHub issue or e-mail me.  
 
+### Theory
+Some background on the theory underlying the implementation can be found in `pyPL/doc/paper`.
+
 # Features
 
 ### Modes
@@ -78,10 +81,9 @@ If that doesn't help, please open a GitHub issue or e-mail me.
   - other frameworks and calculi, e.g. DRT, ND
 
 ### Disclaimer
-- This implementation is intended for didactical purposes. It is not efficient or designed for real-life applications.  
+- This implementation is a proof-of-concept project. It is not efficient or designed for real-life applications.  
 - Although the program has been extensively tested, I do not guarantee soundness. Use at your own risk.
 
 
 # Have fun!
-
 I am happy to receive comments, bugs reports and improvement suggestions via GitHub or e-mail to natalie.clarius@student.uni-tuebingen.de.
