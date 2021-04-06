@@ -157,7 +157,7 @@ I = [m: Mary,
      j: John,
      f: [(Mary): Susan, (John): Peter],
      Woman: {(Mary), (Susan), (Paula)},
-     Man: {(John), (Peter)},
+     Man:   {(John), (Peter)},
      Happy: {(Mary), (Susan), (John), (Peter)},
      Love: {(Mary, John), (Susan, John), (Paula, Peter), (Peter, John)}]
 V = [v1: [x: Mary, y: Paula, z: Peter],
@@ -177,7 +177,7 @@ Modal predicational structure with constant domains:
 W = {w1, w2}
 R = {(w1, w1), (w1, w2)}
 D = {Mary, John}
-I = [m: [w1: Mary, w2: Mary],
+I = [m:    [w1: Mary, w2: Mary],
      Love: [w1: {(Mary, Peter)}, 
             w2: {(Mary, Peter), (Peter, Mary)}]]
 ```
@@ -189,7 +189,7 @@ W = {w1, w2}
 R = {(w1, w1), (w1, w2)}
 D = [w1: {Mary, John},
      w2: {Mary, Susan}]
-I = [m: [w1: Mary, w2: Mary],
+I = [m:    [w1: Mary, w2: Mary],
      Love: [w1: {(Mary, Peter)}, 
             w2: {(Mary, Susan), (Mary, Mary)}]]
 ```
