@@ -26,7 +26,7 @@ To run this software locally on your machine:
    - core functionality: [`Python`](https://www.python.org/downloads/) (version >= 3.9) + Python packages: `os`, `re`
    - for graphical interface: [`Tk`](https://tkdocs.com/tutorial/install.html)
    - for nicely formatted output: [`LaTeX`](https://www.latex-project.org/get/) with `pdflatex` + LaTeX packages: `geometry`, `array`, `forest`, `amssymb`, `amsmath`, `amstext`, `wasysym`, `mathtools`
-2. Download this repository.
+2. [Download](https://github.com/nclarius/pyPL/archive/refs/heads/master.zip) this repository.
 3. Execute `pyPL/main.py`.
 
 ### Specify input and view output
