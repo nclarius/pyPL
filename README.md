@@ -3,7 +3,7 @@
 A naive model generator, model checker and theorem prover   
 for some combinations of classical and intuitionistic, non-modal and modal, propositional and first-order logic.  
 
-This tool can compute  
+This software can compute  
 - the denotation (truth value) of a given logical expression in a given structure,  
 - an analytic tableau with associated minimal (counter) models for a given inference or set of sentences.
 
@@ -17,27 +17,25 @@ License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).
 # Usage notes
 
 ### Try it out
-You can try the model checking feature of this tool out [here](https://trinket.io/python3/757871dd18).  
+You can try the model checking feature out [here](https://trinket.io/python3/757871dd18).  
 If you want to dive in deeper, I recommend downloading pyPL to your own computer.
 
 ### Install and run
-To run this tool locally on your machine:
+To run this software locally on your machine:
 1. Install dependencies:
-   - core software: [`Python`](https://www.python.org/downloads/) (version >= 3.9) + Python packages: `os`, `re`
+   - core functionality: [`Python`](https://www.python.org/downloads/) (version >= 3.9) + Python packages: `os`, `re`
    - for graphical interface: [`Tk`](https://tkdocs.com/tutorial/install.html)
    - for nicely formatted output: [`LaTeX`](https://www.latex-project.org/get/) with `pdflatex` + LaTeX packages: `geometry`, `array`, `forest`, `amssymb`, `amsmath`, `amstext`, `wasysym`, `mathtools`
-2. Clone this repository.
+2. Download this repository.
 3. Execute `pyPL/main.py`.
-
-How to 'clone github repository', 'install python' and 'execute .py script' is all easily googleable for your respective operating system.
 
 ### Specify input and view output
 Documentation on how to enter formulas, structures and input files can be found in [`pyPL/doc/parser.md`](https://github.com/nclarius/pyPL/blob/master/doc/parser.md).  
-Some sample input files are available in [`pyPL/input`](https://github.com/nclarius/pyPL/blob/master/input).
+Some sample input files are available in [`pyPL/input`](https://github.com/nclarius/pyPL/blob/master/input).  
 Generated output files are stored in [`pyPL/output`](https://github.com/nclarius/pyPL/blob/master/output).  
 
 ### Troubleshooting
-Information on the functionality some of the buttons and options are shown as tooltips on mouse hover.
+Information on the functionality some of the buttons and options are shown as tooltips on mouse hover.  
 For troubleshooting information, see `pyPL/doc/troubleshooting.md`.  
 If that doesn't help, please open a GitHub issue or e-mail me.  
 
@@ -82,8 +80,8 @@ Some background on the theory underlying the implementation can be found in `pyP
   - other frameworks and calculi, e.g. DRT, ND
 
 ### Disclaimer
-- This implementation is a proof-of-concept project. It is not efficient or designed for real-life applications.  
-- Although the program has been extensively tested, I do not guarantee soundness. Use at your own risk.
+- This implementation is an experimental proof-of-concept. It is not efficient or designed for real-life applications.  
+- Although the software has been extensively tested, I do not guarantee soundness. Use at your own risk.
 
 
 # Have fun!
