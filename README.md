@@ -40,7 +40,7 @@ For troubleshooting information, see [`pyPL/doc/troubleshooting.md`](https://git
 If that doesn't help, please open a GitHub issue or e-mail me.  
 
 ### Theory
-Some background on the theory underlying the implementation can be found in [`pyPL/doc/paper.pdf`](https://github.com/nclarius/pyPL/blob/master/doc/paper.md).
+Some background on the theory underlying the implementation can be found in [`pyPL/doc/paper.pdf`](https://github.com/nclarius/pyPL/blob/master/doc/paper.pdf).
 
 # Features
 
