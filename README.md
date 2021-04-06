@@ -35,7 +35,7 @@ Some sample input files are available in [`pyPL/input`](https://github.com/nclar
 Generated output files are stored in [`pyPL/output`](https://github.com/nclarius/pyPL/blob/master/output).  
 
 ### Troubleshooting
-Information on the functionality some of the buttons and options are shown as tooltips on mouse hover.  
+Information on the functionality of some of the buttons and options are shown as tooltips on mouse hover.  
 For troubleshooting information, see [`pyPL/doc/troubleshooting.md`](https://github.com/nclarius/pyPL/blob/master/doc/troubleshooting.md).  
 If that doesn't help, please open a GitHub issue or e-mail me.  
 
