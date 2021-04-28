@@ -7,7 +7,7 @@ This software can compute
 - the denotation (truth value) of a given logical expression in a given structure,  
 - an analytic tableau with associated minimal (counter) models for a given inference or set of sentences.
 
-© Natalie Clarius <natalie.clarius@student.uni-tuebingen.de>  
+© Natalie Clarius <clarius@informatik.uni-tuebingen.de>  
 License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).   
 
 ![pyPL GUI -- start](doc/img/pyPL_1_MG.png)
