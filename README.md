@@ -46,7 +46,7 @@ Some background on the theory underlying the implementation can be found in [`py
 
 ### Modes
 - theorem proving: generate an analytic tableau to show that a formula or inference is valid/invalid
-- (counter) model generation: generate a structure in which a given (set of) formulas is true/false
+- (counter) model generation: generate a minimal structure in which a given (set of) formulas is true/false
 - model checking: evaluation of expressions relative to structures, variable assignments and possible worlds
 - truth table generation
 

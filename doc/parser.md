@@ -202,7 +202,7 @@ like modal propositional structure and modal varying predicational structure, ex
 
 # Entering file input
 - Input files are plain text files.
-- Each formulas is written on one line.
+- Each formula is written on one line.
 - The first formula in the list is interpreted as the conclusion and the others as the premises (if applicable).
 - If a structure and formulas are specified, they are separated by a blank line.  
 - If expressions are to be evaluated against assignment functions and/or possible worlds in a structure, they are specified by prepending their names to the formula prefixed with `v:` and `w:` respectively and suffixed with ` `.  
