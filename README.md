@@ -85,4 +85,4 @@ Some background on the theory underlying the implementation can be found in [`py
 
 
 # Have fun!
-I am happy to receive comments, bugs reports and improvement suggestions via GitHub issues or e-mail to clarius@informatik.uni-tuebingen.de.
+I am happy to receive comments, bug reports and improvement suggestions via GitHub issues or e-mail to clarius@informatik.uni-tuebingen.de.
