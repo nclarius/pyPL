@@ -30,9 +30,15 @@ class PyPLInst:
         self.premises = []
         self.formulas = []
         self.structure = None
-        self.logic = {"proppred": "pred", "classint": "class", "modal": "nonmodal", 
-                      "constvar": "var", "locglob": "local", "frame": "K"}
-
+        self.logic = {"proppred": "pred",
+                      "classint": "class",
+                      "modal": "nonmodal",
+                      "valued": "twovalued",
+                      "constvar": "var",
+                      "locglob": "local",
+                      "frame": "K",
+                      "threeval": "weak"
+                      }
         self.output = "tex"
         self.generation_mode = "mathematical"
         self.num_models = 1
@@ -341,7 +347,7 @@ class PyPLGUI(tk.Frame):
                 lbl_struct.delete("1.0", tk.END)
                 lbl_struct.configure(state="disabled")
                 self.inst.structure = None
-            initial_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "input")
+            initial_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "input")
             if not os.path.exists(initial_dir):
                 initial_dir = os.getcwd()
             file = tkinter.filedialog.askopenfile(initialdir=initial_dir)
@@ -650,7 +656,8 @@ class PyPLGUI(tk.Frame):
                     "classical":     ("classint", "class", "int"),
                     "propositional": ("proppred", "prop", "pred"),
                     "modal":         ("modal", "modal", "nonmodal"),
-                    "vardomains":    ("constvar", "var", "const")
+                    "vardomains":    ("constvar", "var", "const"),
+                    "threeval":      ("threeval", "weak", "strong")
             }
             for md, (cat, val1, val2) in mode_map.items():
                 if any([mode[md] for mode in modes if mode]):
@@ -675,6 +682,12 @@ class PyPLGUI(tk.Frame):
                 self.rbs_logic["frame"]["K"].config(state="disabled")
                 self.rbs_logic["constvar"]["const"].config(state="disabled")
                 self.rbs_logic["constvar"]["var"].config(state="disabled")
+            if any([mode["threeval"] for mode in modes if mode]):
+                self.rbs_logic["threeval"]["weak"].config(state="normal")
+                self.rbs_logic["threeval"]["strong"].config(state="normal")
+            else:
+                self.rbs_logic["threeval"]["weak"].config(state="disabled")
+                self.rbs_logic["threeval"]["strong"].config(state="disabled")
             if self.inst.action == "mc":
                 for i in range(len(input_fmls)):
                     pass
@@ -943,6 +956,12 @@ class PyPLGUI(tk.Frame):
                 self.rbs_logic["locglob"]["global"].config(state="disabled")
                 self.rbs_logic["locglob"]["global"].config(fg=black)
                 self.rbs_logic["frame"]["K"].config(state="disabled")
+            if self.inst.logic["valued"] == "threevalued":
+                self.rbs_logic["threeval"]["weak"].config(state="normal")
+                self.rbs_logic["threeval"]["strong"].config(state="normal")
+            else:
+                self.rbs_logic["threeval"]["weak"].config(state="disabled")
+                self.rbs_logic["threeval"]["strong"].config(state="disabled")
 
         def reset():
             for cat_ in self.rbs_logic:
@@ -967,7 +986,7 @@ class PyPLGUI(tk.Frame):
         # mid
         mid = tk.Frame(tab, bg=white)
         mid.pack()
-        mids = {i: tk.Frame(mid, bg=white) for i in range(9)}
+        mids = {i: tk.Frame(mid, bg=white) for i in range(13)}
         for i in mids:
             mids[i].pack(ipadx=0, ipady=5)
 
@@ -983,34 +1002,45 @@ class PyPLGUI(tk.Frame):
                             text="For modal logic:",
                             # font=("OpenSans", "12", "bold"),
                             anchor=tk.NW, justify=tk.LEFT) \
-            .pack(in_=mids[4])
+            .pack(in_=mids[5])
+        lbl_threeval = tk.Label(tab,
+                                bg=white,
+                                text="For three-valued logic:",
+                                # font=("OpenSans", "12", "bold"),
+                                anchor=tk.NW, justify=tk.LEFT) \
+            .pack(in_=mids[10])
 
         # selection
-        categories = ["proppred", "classint", "modal", "constvar", "locglob", "frame"]
+        categories = ["proppred", "classint", "modal", "valued", "constvar", "locglob", "frame", "threeval"]
         labels = {
                 "proppred": [("propositional logic", "prop"), ("predicate logic", "pred")],
                 "classint": [("classical", "class"), ("intuitionistic", "int")],
                 "modal":    [("non-modal", "nonmodal"), ("modal", "modal")],
+                "valued":   [("two-valued", "twovalued"), ("three-valued", "threevalued")],
                 "constvar": [("constant domains", "const"), ("varying domains", "var")],
                 "locglob":  [("local validity/satisfiability", "local"), ("global validity/satisfiability", "global")],
-                "frame":    [("frame K", "K")]
+                "frame":    [("frame K", "K")],
+                "threeval": [("weak Kleene", "weak"), ("strong Kleene", "strong")]
         }
         variables = {
                 "proppred": tk.StringVar(None, self.inst.logic["proppred"]),
                 "classint": tk.StringVar(None, self.inst.logic["classint"]),
                 "modal":    tk.StringVar(None, self.inst.logic["modal"]),
+                "valued":   tk.StringVar(None, self.inst.logic["valued"]),
                 "constvar": tk.StringVar(None, self.inst.logic["constvar"]),
                 "locglob":  tk.StringVar(None, self.inst.logic["locglob"]),
-                "frame":    tk.StringVar(None, self.inst.logic["frame"])
+                "frame":    tk.StringVar(None, self.inst.logic["frame"]),
+                "threeval": tk.StringVar(None, self.inst.logic["threeval"])
         }
         self.rbs_logic = {cat: dict() for cat in categories}
         for i, cat in enumerate(categories):
             i += 2 if cat in ["constvar", "locglob", "frame"] else 0
+            i += 4 if cat in ["threeval"] else 0
             for j, (txt, val) in enumerate(labels[cat]):
-                enabled = False if cat in ["constvar", "locglob", "frame"] else True
+                enabled = False if cat in ["constvar", "locglob", "frame", "threeval"] else True
                 rb = tk.Radiobutton(tab,
                                     bg=white,
-                                    fg=black if enabled else white,
+                                    fg=black,
                                     text=txt,
                                     variable=variables[cat],
                                     value=val,
@@ -1029,6 +1059,8 @@ class PyPLGUI(tk.Frame):
         Tooltip(self.rbs_logic["locglob"]["local"], "check truth perservance/satisfaction on world level")
         Tooltip(self.rbs_logic["locglob"]["global"], "check truth preservance/satisfaction on structure level")
         Tooltip(self.rbs_logic["frame"]["K"], "no additional frame properties")
+        Tooltip(self.rbs_logic["threeval"]["weak"], "weak Kleene three-valued logic")
+        Tooltip(self.rbs_logic["threeval"]["strong"], "strong Kleene three-valued logic")
 
     def tab_4(self):  # 4. Settings
         # todo config file for default settings
@@ -1398,15 +1430,15 @@ class PyPLGUI(tk.Frame):
 
 def write_output(res, latex=True):
     # generate and open output file
+    path_output = os.path.join(os.path.dirname(os.path.dirname(__file__)), "output")
+    if not os.path.exists(path_output):
+        os.mkdir(path_output)
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
+    os.chdir(path_output)
     if not latex:
         # generate and open txt file
-        path_output = os.path.join(os.path.dirname(__file__), "output")
-        if not os.path.exists(path_output):
-            os.mkdir(path_output)
-        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
         file_txt = "output_" + timestamp + ".txt"
         path_txt = os.path.join(path_output, file_txt)
-        os.chdir(path_output)
         with open(path_txt, "w", encoding="utf-8") as f:
             f.write(res)
         # open file
@@ -1415,15 +1447,10 @@ def write_output(res, latex=True):
     else:
         # generate and open latex and pdf file
         # prepare output files
-        path_output = os.path.join(os.path.dirname(__file__), "output")
-        if not os.path.exists(path_output):
-            os.mkdir(path_output)
-        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
         file_tex = "output_" + timestamp + ".tex"
         file_pdf = "output_" + timestamp + ".pdf"
         path_tex = os.path.join(path_output, file_tex)
         path_pdf = os.path.join(path_output, file_pdf)
-        os.chdir(path_output)
         # write LaTeX code
         with open(path_tex, "w") as texfile:
             texfile.write(res)

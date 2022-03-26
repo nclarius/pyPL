@@ -62,7 +62,8 @@ class Tableau(object):
     def __init__(self,
                  conclusion=None, premises=[], axioms=[],
                  validity=True, satisfiability=True, linguistic=False,
-                 classical=True, propositional=False, modal=False, vardomains=False, frame="K", local=True,
+                 classical=True, propositional=False, modal=False, vardomains=False, local=True, frame="K",
+                 threevalued=False, weakthreevalued=True,
                  num_models=1, size_limit_factor=2,
                  file=True, latex=True, stepwise=False, hide_nonopen=False, underline_open=True, silent=False):
 
@@ -72,7 +73,8 @@ class Tableau(object):
         self.mode = {
                 "validity":  validity, "satisfiability": satisfiability, "linguistic": linguistic,
                 "classical": classical, "propositional": propositional,
-                "modal":     modal, "vardomains": vardomains, "frame": frame, "local": local,
+                "modal":     modal, "vardomains": vardomains, "local": local, "frame": frame,
+                "threevalued": threevalued, "weakthreevalued": weakthreevalued
         }
         self.num_models, self.size_limit_factor, \
         self.silent, self.file, self.latex, self.stepwise, self.hide_nonopen, self.underline_open = \
@@ -167,6 +169,7 @@ class Tableau(object):
                  ("model" if self.mode["satisfiability"] else "countermodel") + " generation") + \
                 " for " + \
                 ("classical " if self.mode["classical"] else "intuitionistic ") + \
+                ("two-valued " if not self.mode["threevalued"] else (("weak Kleene " if self.mode["weakthreevalued"] else "strong Kleene") + "three-valued")) + \
                 ("modal " if self.mode["modal"] else "") + \
                 ("propositional " if self.mode["propositional"] else "predicate ") + \
                 "logic" + \
@@ -182,8 +185,8 @@ class Tableau(object):
         if not self.latex:
             axs = ["  " + str(node.fml) for node in self.axioms]
             prems = ["  " + str(self.root.fml)] if not self.conclusion else [] + \
-                                                                            ["  " + str(node.fml) for node in
-                                                                             self.premises]
+                        ["  " + str(node.fml) for node in
+                         self.premises]
             prems += [("  " if len(prems) > 0 else "") + str(self.conclusion)] \
                 if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else []
             concl = str(self.conclusion) if \
@@ -199,13 +202,13 @@ class Tableau(object):
             # axs = ["\\phantom{\\vDash\ }" + node.fml.tex() for node in self.axioms]
             axs = []
             prems = ["\\phantom{\\vDash\ }" + self.root.fml.tex()] if not self.conclusion else [] + \
-                                                                                               [
-                                                                                                       "\\phantom{" \
-                                                                                                       "\\vDash\ }" +
-                                                                                                       node.fml.tex()
-                                                                                                       for node in
-                                                                                                       self.premises
-                                                                                                       + self.axioms]
+               [
+                       "\\phantom{" \
+                       "\\vDash\ }" +
+                       node.fml.tex()
+                       for node in
+                       self.premises
+                       + self.axioms]
             prems += [("\\phantom{\\vDash\ }" if len(prems) > 0 else "") + self.conclusion.tex()] \
                 if self.conclusion and not self.mode["validity"] and self.mode["satisfiability"] else []
             concl = self.conclusion.tex() if \
@@ -296,12 +299,12 @@ class Tableau(object):
                    str(self.num_branches) + " branch" + ("es" if self.num_branches > 1 else "") + \
                    " and " + str(len(self)) + " nodes.\n\n"
 
-        # github link
-        url = "https://github.com/nclarius/pyPL"
-        if self.latex:
-            res += "\\ \\\\\n" + "\\textcircled{\\scriptsize{i}} " + url
-        else:
-            res += "🛈 " + url + "\n"
+        # # github link
+        # url = "https://github.com/nclarius/pyPL"
+        # if self.latex:
+        #     res += "\\ \\\\\n" + "\\textcircled{\\scriptsize{i}} " + url
+        # else:
+        #     res += "🛈 " + url + "\n"
 
         if self.latex:
             postamble = "\\end{document}\n"

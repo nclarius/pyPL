@@ -55,6 +55,7 @@ Some background on the theory underlying the implementation can be found in [`py
 - first-order logic with zero-place predicates, function symbols and term equality
 - intensional logic with operators □, ◇, ^, ⱽ; propositional, constant and varying domains; frame K
 - intuitionistic logic with Kripke semantics (only model checking)
+- three-valued log: not yet implemented
 
 ### Interface
 - input of formulas and structures with ordinary keyboard characters, directly or from a file
