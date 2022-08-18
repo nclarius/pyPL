@@ -1,0 +1,8 @@
+ K = {k0, k1, k2, k3}
+ R = {(k0, k1), (k0, k2), (k0, k3)}
+ V = [p: [k0: False, k1: True, k2: False, k3: False],
+      q: [k0: False, k1: False, k2: False, k3: True],
+      r: [k0: False, k1: False, k2: True, k3: False]]
+
+(~ p -> q) v (~ p -> r)
+~ p -> (q v r)

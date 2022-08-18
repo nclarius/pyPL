@@ -112,8 +112,7 @@ class Tooltip(object):
                        "help", "noActivates")
         except tk.TclError:
             pass
-        label = tk.Label(tw, text=self.text, justify=tk.LEFT,
-                      background=white, relief=tk.SOLID, borderwidth=1,
+        label = ttk.Label(tw, text=self.text, justify=tk.LEFT,
                       font=("OpenSans", "10", "normal"))
         label.pack(ipadx=1)
 
@@ -124,7 +123,7 @@ class Tooltip(object):
             tw.destroy()
 
 
-class PyPLGUI(tk.Frame):
+class PyPLGUI(ttk.Frame):
 
     def __init__(self):
         self.root = tk.Tk()
@@ -148,6 +147,14 @@ class PyPLGUI(tk.Frame):
                 "TNotebook":     {"configure": {"tabposition": "n", "borderwidth": 0}},
                 "TNotebook.Tab": {"configure": {"padding": [10, 6.25]}}})
         # todo visually distinguish action buttons, radio buttons and check buttons?
+        self.style.configure("Frame.TFrame", background=white)
+        self.style.configure("Label.TLabel", background=white)
+        self.style.configure("TabButton.TButton", activebackground=lightgray, activeforeground=white)
+        self.style.configure("URLButton.TButton", backgroundg=white, borderwidth=0, highlightthickness=1)
+        self.style.configure("ActionButton.TButton", background=darkgray, foreground=white, activebackground=lightgray, activeforeground=white)
+        self.style.configure("ToolButton.TButton", background=darkgray, foreground=white, activebackground=lightgray, activeforeground=white)
+        self.style.configure("RadioButton.TButton", background=darkgray, foreground=white, activebackground=lightgray, activeforeground=white)
+        self.style.configure("CheckButton.TButton", background=darkgray, foreground=white, activebackground=lightgray, activeforeground=white)
         self.root.configure(bg=white)
         self.root.option_add("*Font", "NotoSans 12")
 
@@ -177,16 +184,16 @@ class PyPLGUI(tk.Frame):
         self.tabs.pack(fill="both", expand=True)
         # self.tabs.grid(row=0, column=0)
 
-        frm_run = tk.Frame(self.root, bg=white, height=175)
+        frm_run = ttk.Frame(self.root, style="Frame.TFrame", height=175)
         frm_run.pack(pady=10)
 
         # run button
-        btn_run = tk.Button(frm_run,
+        btn_run = ttk.Button(frm_run,
                             text="Run!",
-                            activebackground=lightgray, activeforeground=white,
+                            style="ActionButton.TButton",
                             state="disabled",
-                            width=22, pady=10,
-                            bg=white)
+                            width=22)
+        btn_run.grid(ipady=10)
         btn_run.bind("<Button>", lambda e: self.run())
         btn_run.pack(in_=frm_run, pady=10)
         self.btn_run = btn_run
@@ -195,7 +202,7 @@ class PyPLGUI(tk.Frame):
 
         # info
         url = "https://github.com/nclarius/pyPL"
-        lbl_info = tk.Button(frm_run, text="🛈 " + url, bg=white, borderwidth=0, highlightthickness=1)
+        lbl_info = ttk.Button(frm_run, text="🛈 " + url, style="URLButton.TButton")
         lbl_info.bind("<Button>", lambda e: check_call(["xdg-open", url], stdout=DEVNULL, stderr=STDOUT))
         lbl_info.pack(pady=10)
 
@@ -204,51 +211,49 @@ class PyPLGUI(tk.Frame):
 
         # welcome message
         lbl_greeting = ttk.Label(tab,
-                                 bg=white,
                                  text="Welcome to pyPL.",
                                  font=("OpenSans", "12", "bold")) \
             .pack(pady=10)
 
-        # next tabs
-        btn_next = tk.Button(tab,
-                             text=">> 1. Pick your settings",
-                             bg=darkgray, fg=white,
-                             width=20, pady=10)
-        btn_next.bind("<Button>", lambda e: self.switch_to_tab(1))
-        # btn_next.pack(pady=5)
+        # # next tabs
+        # btn_next = ttk.Button(tab,
+        #                      text=">> 1. Pick your settings",
+        #                      style="TabButton",
+        #                      width=20, pady=10)
+        # btn_next.bind("<Button>", lambda e: self.switch_to_tab(1))
+        # # btn_next.pack(pady=5)
 
-        btn_step2 = tk.Button(tab,
+        btn_step2 = ttk.Button(tab,
                               text="1. Choose your task",
-                              activebackground=lightgray, activeforeground=white,
+                              style="TabButton",
                               width=20, pady=10)
         btn_step2.bind("<Button>", lambda e: self.switch_to_tab(1))
         btn_step2.pack(pady=5)
 
-        btn_step3 = tk.Button(tab,
+        btn_step3 = ttk.Button(tab,
                               text="2. Specify your input",
-                              activebackground=lightgray, activeforeground=white,
-
+                              style="TabButton",
                               width=20, pady=10)
         btn_step3.bind("<Button>", lambda e: self.switch_to_tab(2))
         btn_step3.pack(pady=5)
 
-        btn_step4 = tk.Button(tab,
+        btn_step4 = ttk.Button(tab,
                               text="3. Select your logic",
-                              activebackground=lightgray, activeforeground=white,
+                              style="TabButton",
                               width=20, pady=10)
         btn_step4.bind("<Button>", lambda e: self.switch_to_tab(3))
         btn_step4.pack(pady=5)
 
-        btn_step1 = tk.Button(tab,
+        btn_step1 = ttk.Button(tab,
                               text="4. Adjust your settings",
-                              activebackground=lightgray, activeforeground=white,
+                              style="TabButton",
                               width=20, pady=10)
         btn_step1.bind("<Button>", lambda e: self.switch_to_tab(4))
         btn_step1.pack(pady=5)
 
-        btn_step5 = tk.Button(tab,
+        btn_step5 = ttk.Button(tab,
                               text="5. Run",
-                              activebackground=lightgray, activeforeground=white,
+                              style="TabButton",
                               width=20, pady=10)
         btn_step5.bind("<Button>", lambda e: self.switch_to_tab(5))
         # btn_step5.pack(pady=5)
@@ -288,15 +293,15 @@ class PyPLGUI(tk.Frame):
 
         # frames
         # top
-        top = tk.Frame(tab, bg=white)
+        top = ttk.Frame(tab,style="Frame.TFrame")
         top.pack(side=tk.TOP, pady=25, anchor=tk.N)
         # mid
-        mid = tk.Frame(tab, bg=white)
+        mid = ttk.Frame(tab, style="Frame.TFrame")
         mid.pack()
 
         # heading
-        lbl_head = tk.Label(tab,
-                            bg=white,
+        lbl_head = ttk.Label(tab,
+                            style="Label.TLabel",
                             text="What would you like to do?",
                             # font=("OpenSans", "12", "bold"),
                             anchor=tk.NW, justify=tk.LEFT) \
@@ -325,7 +330,7 @@ class PyPLGUI(tk.Frame):
             radiobuttons.append(rb)
 
         # summary
-        lbl_sum = tk.Label(bg=white)
+        lbl_sum = ttk.Label(style="Label.TLabel")
         update_summary()
         lbl_sum.pack(in_=mid, ipady=15)
 
@@ -337,7 +342,7 @@ class PyPLGUI(tk.Frame):
         tab = self.tabs.nametowidget(self.tabs.tabs()[1])
 
         def doc():
-            path_doc = os.path.join(os.path.dirname(__file__), "doc", "parser.md")
+            path_doc = os.path.join(os.path.dirname(os.path.dirname(__file__)), "doc", "parser.md")
             check_call(["xdg-open", path_doc], stdout=DEVNULL, stderr=STDOUT)
 
         def load():
@@ -409,7 +414,7 @@ class PyPLGUI(tk.Frame):
                         res += "w:" + raws_w[i].get() + " "
                 res += raws_fml[i].get() + "\n"
             # ask for file
-            initial_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "input")
+            initial_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "input")
             if not os.path.exists(initial_dir):
                 initial_dir = os.getcwd()
             file = tk.filedialog.asksaveasfile(initialdir=initial_dir)
@@ -428,7 +433,7 @@ class PyPLGUI(tk.Frame):
             input_modes.append(None)
             i = len(raws_fml)-1
             # frames
-            new_mids = {j: tk.Frame(mid, bg=white) for j in range(len(mids), len(mids)+1)}
+            new_mids = {j: ttk.Frame(mid, style="Frame.TFrame") for j in range(len(mids), len(mids)+1)}
             mids.update(new_mids)
             for j in new_mids:
                 mids[j].pack(ipadx=5, ipady=5, padx=50)
@@ -708,7 +713,7 @@ class PyPLGUI(tk.Frame):
             # self.inst.structure = struct
             # update_summary()
             self.inst.completed.append(3)
-            self.btn_run.config(state="normal", bg=darkgray, fg=white)
+            self.btn_run.config(state="normal")
 
         for child in tab.winfo_children():
             child.destroy()
@@ -717,13 +722,13 @@ class PyPLGUI(tk.Frame):
         # canvas =ScrollableFrame(tab)
         # canvas.pack()
         # top
-        top = tk.Frame(tab, bg=white)
+        top = ttk.Frame(tab, style="Frame.TFrame")
         top.pack(side=tk.TOP, pady=25, anchor=tk.N)
         # top mid
-        topmid = tk.Frame(tab, bg=white)
+        topmid = ttk.Frame(tab, style="Frame.TFrame")
         topmid.pack()  # todo make more compact?
         # mid
-        mid = tk.Frame(tab, bg=white)
+        mid = ttk.Frame(tab, style="Frame.TFrame")
         mid.pack()
         mids = {}
 
@@ -737,9 +742,9 @@ class PyPLGUI(tk.Frame):
         btn_reset.bind("<Button>", lambda e: self.tab_2())
 
         # heading
-        lbl_head = tk.Label(tab,
-                            bg=white,
-                            text="What would you like to analyze?",
+        lbl_head = ttk.Label(tab,
+                             style="Label.TLabel",
+                             text="What would you like to analyze?",
                             # font=("OpenSans", "12", "bold"),
                             anchor=tk.NW, justify=tk.LEFT) \
             .pack(in_=top, side=tk.LEFT)
@@ -820,17 +825,17 @@ class PyPLGUI(tk.Frame):
             lbl_sum.config(text="(" + txt + ")")
 
         # summary
-        lbl_sum = tk.Label(bg=white)
+        lbl_sum = ttk.Label(style="Label.TLabel")
         # update_summary()
         # lbl_sum.pack(in_=mids[0])
 
         # captions
-        cap_exprs = tk.Label(tab, text="Expressions:", bg=white)
-        cap_fml = tk.Label(tab, text="Formula:", bg=white)
-        cap_fmls = tk.Label(tab, text="Formulas:", bg=white)
-        cap_concl = tk.Label(tab, text="Conclusion:", bg=white)
-        cap_prems = tk.Label(tab, text="Premises:", bg=white)
-        cap_struct = tk.Label(tab, text="Structure:", bg=white)
+        cap_exprs = ttk.Label(tab, text="Expressions:", style="Label.TLabel")
+        cap_fml = ttk.Label(tab, text="Formula:", style="Label.TLabel")
+        cap_fmls = ttk.Label(tab, text="Formulas:", style="Label.TLabel")
+        cap_concl = ttk.Label(tab, text="Conclusion:", style="Label.TLabel")
+        cap_prems = ttk.Label(tab, text="Premises:", style="Label.TLabel")
+        cap_struct = ttk.Label(tab, text="Structure:", style="Label.TLabel")
 
         # buttons
         btn_add_fml = tk.Button(tab,
@@ -843,7 +848,7 @@ class PyPLGUI(tk.Frame):
         btn_add_fml.bind("<Button>", lambda e: add_formula())
 
         if self.inst.action == "tc":
-            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+1)}
+            new_mids = {i: ttk.Frame(mid, style="Frame.TFrame") for i in range(len(mids)+1)}
             for i in new_mids:
                 new_mids[i].pack(ipadx=5, ipady=5, padx=50)
             mids.update(new_mids)
@@ -851,13 +856,13 @@ class PyPLGUI(tk.Frame):
             add_formula()
 
         elif self.inst.action == "mc":
-            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids), len(mids)+2)}
+            new_mids = {i: ttk.Frame(mid, style="Frame.TFrame") for i in range(len(mids), len(mids)+2)}
             for i in new_mids:
                 new_mids[i].pack(ipadx=5, ipady=5, padx=50)
             mids.update(new_mids)
             # todo add field for specification of g and w
             cap_struct.pack(in_=mids[0], padx=15, pady=15)
-            phantom_struct = tk.Label(text="", width=5)
+            phantom_struct = ttk.Label(text="", width=5)
             phantom_struct.pack(in_=mids[1], side=tk.LEFT)
             # raw_struct = tk.StringVar()
             # ent_struct = tk.Entry(tab,
@@ -882,11 +887,11 @@ class PyPLGUI(tk.Frame):
             lbl_struct.configure(inactiveselectbackground=lbl_struct.cget("selectbackground"))
             lbl_struct.configure(state="disabled")
             lbl_struct.pack(in_=mids[1], side=tk.LEFT, padx=15, expand=True)
-            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids), len(mids)+1)}
+            new_mids = {i: ttk.Frame(mid, style="Frame.TFrame") for i in range(len(mids), len(mids)+1)}
             for i in new_mids:
                 new_mids[i].pack(ipadx=5, ipady=5, padx=50)
             mids.update(new_mids)
-            mid2 = tk.Frame(mid, bg=white)
+            mid2 = ttk.Frame(mid, style="Frame.TFrame")
             mids[2] = mid2
             mids[2].pack(ipadx=5, ipady=5)
             cap_exprs.pack(in_=mids[2], side=tk.LEFT, padx=15, pady=15)
@@ -895,7 +900,7 @@ class PyPLGUI(tk.Frame):
             ent_struct.focus()
 
         elif self.inst.action == "mg":
-            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids), len(mids)+1)}
+            new_mids = {i: ttk.Frame(mid, style="Frame.TFrame") for i in range(len(mids), len(mids)+1)}
             for i in new_mids:
                 new_mids[i].pack(ipadx=5, ipady=5, padx=50)
             mids.update(new_mids)
@@ -907,13 +912,13 @@ class PyPLGUI(tk.Frame):
             add_formula()
             ents_fml[0].focus()
         else:
-            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+1)}
+            new_mids = {i: ttk.Frame(mid, style="Frame.TFrame") for i in range(len(mids)+1)}
             for i in new_mids:
                 new_mids[i].pack(ipadx=5, ipady=5, padx=50)
             mids.update(new_mids)
             cap_concl.pack(in_=mids[0], side=tk.LEFT, padx=15, pady=15)
             add_formula()
-            new_mids = {i: tk.Frame(mid, bg=white) for i in range(len(mids)+1)}
+            new_mids = {i: ttk.Frame(mid, style="Frame.TFrame") for i in range(len(mids)+1)}
             for i in new_mids:
                 new_mids[i].pack(ipadx=5, ipady=5, padx=50)
             mids.update(new_mids)
@@ -981,30 +986,30 @@ class PyPLGUI(tk.Frame):
 
         # frames
         # top
-        top = tk.Frame(tab, bg=white)
+        top = ttk.Frame(tab, style="Frame.TFrame")
         top.pack(side=tk.TOP, pady=25, anchor=tk.N)
         # mid
-        mid = tk.Frame(tab, bg=white)
+        mid = ttk.Frame(tab, style="Frame.TFrame")
         mid.pack()
-        mids = {i: tk.Frame(mid, bg=white) for i in range(13)}
+        mids = {i: ttk.Frame(mid, style="Frame.TFrame") for i in range(13)}
         for i in mids:
             mids[i].pack(ipadx=0, ipady=5)
 
         # heading
-        lbl_head = tk.Label(tab,
-                            bg=white,
+        lbl_head = ttk.Label(tab,
+                            style="Label.TLabel",
                             text="Which logic are you working in?",
                             # font=("OpenSans", "12", "bold"),
                             anchor=tk.NW, justify=tk.LEFT) \
             .pack(in_=top)
-        lbl_headmodal = tk.Label(tab,
-                            bg=white,
+        lbl_headmodal = ttk.Label(tab,
+                            style="Label.TLabel",
                             text="For modal logic:",
                             # font=("OpenSans", "12", "bold"),
                             anchor=tk.NW, justify=tk.LEFT) \
             .pack(in_=mids[5])
-        lbl_threeval = tk.Label(tab,
-                                bg=white,
+        lbl_threeval = ttk.Label(tab,
+                                style="Label.TLabel",
                                 text="For three-valued logic:",
                                 # font=("OpenSans", "12", "bold"),
                                 anchor=tk.NW, justify=tk.LEFT) \
@@ -1127,43 +1132,43 @@ class PyPLGUI(tk.Frame):
 
         # frames
         # top
-        top = tk.Frame(tab, bg=white)
+        top = ttk.Frame(tab, style="Frame.TFrame")
         top.pack(side=tk.TOP, pady=25, anchor=tk.N)
         # mid
-        mid = tk.Frame(tab, bg=white)
+        mid = ttk.Frame(tab, style="Frame.TFrame")
         mid.pack()
         mids = []
         for i in range(9):
             if i in [5]:
-                sep = tk.Frame(mid)
+                sep = ttk.Frame(mid, style="Frame.TFrame")
                 sep.pack(pady=10)
-            midi = tk.Frame(mid, bg=white)
+            midi = ttk.Frame(mid, style="Frame.TFrame")
             midi.pack()
             mids.append(midi)
         m = 0
 
         # heading
-        lbl_head = tk.Label(tab,
-                            bg=white,
+        lbl_head = ttk.Label(tab,
+                            style="Label.TLabel",
                             text="How would you like pyPL to work?",
                             # font=("OpenSans", "12", "bold"),
                             anchor=tk.NW, justify=tk.LEFT) \
             .pack(in_=top)
 
         # derivation output format
-        lbl_output = tk.Label(tab,
-                              bg=white,
+        lbl_output = ttk.Label(tab,
+                              style="Label.TLabel",
                               text="Derivation output format:")
         # lbl_output.pack(in_=mids[m])
         # m += 1
 
         # output format
-        lbl_output = tk.Label(tab,
-                              bg=white,
+        lbl_output = ttk.Label(tab,
+                              style="Label.TLabel",
                               text="Output format:")
         lbl_output.pack(in_=mids[m])
         m += 1
-        
+
         cbs = []
 
         enabled = True if self.inst.action != "mc" else False
@@ -1206,7 +1211,7 @@ class PyPLGUI(tk.Frame):
         m += 1
         cb.config(command=lambda arg=cb: select_cb(arg))
         cbs.append(cb)
-            
+
         underline = tk.BooleanVar(None, self.inst.underline_open)
         cb = tk.Checkbutton(tab,
                             bg=white,
@@ -1241,8 +1246,8 @@ class PyPLGUI(tk.Frame):
         # mathematical vs linguistic mode
         enabled = True if self.inst.action in ["tt", "mg", "cmg"] else False
         generation = tk.StringVar(None, self.inst.generation_mode)
-        lbl_output = tk.Label(tab,
-                              bg=white,
+        lbl_output = ttk.Label(tab,
+                              style="Label.TLabel",
                               text="Model generation mode:")
         lbl_output.pack(in_=mids[m])
         m += 1
@@ -1269,8 +1274,8 @@ class PyPLGUI(tk.Frame):
 
         # number of models to generate
         num_models = tk.StringVar(None, self.inst.num_models)
-        lbl_num_models = tk.Label(tab,
-                                  bg=white,
+        lbl_num_models = ttk.Label(tab,
+                                  style="Label.TLabel",
                                   text="Number of models to compute:")
         lbl_num_models.pack(in_=mids[m], side=tk.LEFT, padx=15)
         btn_num_models_dn = tk.Button(tab,
@@ -1300,8 +1305,8 @@ class PyPLGUI(tk.Frame):
         # size limit factor
         enabled = True if self.inst.action != "mc" else False
         size_limit = tk.StringVar(None, self.inst.size_limit_factor)
-        lbl_size_limit = tk.Label(tab,
-                                  bg=white,
+        lbl_size_limit = ttk.Label(tab,
+                                  style="Label.TLabel",
                                   text="Tableau tree size limit factor:")
         Tooltip(lbl_size_limit, "stop the search when the tree gets deeper or wider than "
                                 "factor * length of assumptions")
@@ -1374,6 +1379,7 @@ class PyPLGUI(tk.Frame):
             tt.show()
 
         elif self.inst.action == "mc":
+            print("starting denotation computation", [(fml, structure, v, w) for fml, v, w in formulas])
             denot = denotation.Denotation([(fml, structure, v, w) for fml, v, w in formulas])
             denot.show(latex)
 
@@ -1387,7 +1393,7 @@ class PyPLGUI(tk.Frame):
             # win_output.tk.call('wm', 'iconphoto', win_output._w, tk.PhotoImage(file=icon_path))
             # lbl_output = tk.Label(win_output, text=str(denot), font=font, bg=white)
             # lbl_output.pack(pady=32)
-            # # frame_output = tk.Frame(win_output)
+            # # frame_output = ttk.Frame(win_output)
             # # win_output.destroy()
 
         elif self.inst.action != "tt":
@@ -1452,12 +1458,18 @@ def write_output(res, latex=True):
         path_tex = os.path.join(path_output, file_tex)
         path_pdf = os.path.join(path_output, file_pdf)
         # write LaTeX code
+        print("writing texfile")
         with open(path_tex, "w") as texfile:
             texfile.write(res)
+        print("wrote textfile")
         # compile LaTeX to PDF
+        print("calling pdftex")
         check_call(["pdflatex", file_tex], stdout=DEVNULL, stderr=STDOUT)
+        print("called pdftex")
         # open file
+        print("opening file")
         check_call(["xdg-open", path_pdf], stdout=DEVNULL, stderr=STDOUT)
+        print("opened file")
         # cleanup
         for file in os.listdir(path_output):
             path_file = os.path.join(path_output, file)

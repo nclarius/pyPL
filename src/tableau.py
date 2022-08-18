@@ -1638,7 +1638,7 @@ class Node(object):
         else:
             str_rule = ("\\! ".join([str2tex[c] if c in str2tex else c for c in str(self.rule)]) \
                             if not str(self.rule).isnumeric() else str(self.rule)) \
-                .replace("\\neg\\! \\", "\\neg  \\") if self.rule else ""
+                .replace("\\neg\\! \\", "\\neg \\") if self.rule else ""
             str_comma = "{,}\\ " if self.rule and self.source else ""
             str_source = str(self.source.line) if self.source else ""
             if self.inst and len(self.inst) > 3 and self.rule != "A":
@@ -1697,7 +1697,7 @@ class Node(object):
                 not any([self in branch for branch in open_branches]):
             return ""
         colspec = ("{R{4.5em}cL{4.5em}}" if self.tableau.mode["propositional"] else "{R{7.5em}cL{7.5em}}") \
-            if not self.tableau.mode["modal"] else "{R{5.4em}L{1.5em}cL{8em}}"
+            if not (self.tableau.mode["modal"] or not self.tableau.mode["classical"]) else "{R{5.4em}L{1.6em}cL{12em}}"
         ssep = ("-4em" if self.tableau.mode["propositional"] else "-7em") if not self.tableau.mode["modal"] else \
             "-4.5em"
         hoffset = ("-4.5em" if self.tableau.mode["propositional"] else "-7.5em") if not self.tableau.mode["modal"] else \

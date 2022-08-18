@@ -269,13 +269,13 @@ class PropModalStructure(ModalStructure):
         return "Structure $" + s + " = \\tpl{" + ", ".join([w, r, v]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAAA}\n" +\
                w + " = & " + \
-                   "\\multicolumn{5}{A}{\\set{" + ", ".join([str(w) for w in sorted(self.w)]) + "}}\\\\\n" +\
+                   "\\multicolumn{5}{A}{\\set{" + ", ".join([re.sub("w(\d+)", "w_\\1", str(w)) for w in sorted(self.w)]) + "}}\\\\\n" +\
                r + " = &" + \
                    "\\multicolumn{5}{A}{\\set{" + ", ".join(
                         ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
                v + " : & " + \
                    "\\\\\n    & ".join([str(p) + " & \\mapsto &" +
-                        ", \\\\\n &&& ".join([str(w) + " & \\mapsto &" + self.text(tv)
+                        ", \\\\\n &&& ".join([re.sub("w(\d+)", "w_\\1", str(w))+ " & \\mapsto &" + self.text(tv)
                         for (w, tv) in sorted(self.v[p].items())])
                     for (p, vp) in sorted(self.v.items())]) + "\\\\\n" + \
                "\\end{tabular}" \
@@ -649,17 +649,17 @@ class KripkePropStructure(KripkeStructure):
         s, k, r, v = re.sub("S(\d*)", r"\\mathcal{S}_{\1}", self.s), "\\mathcal{K}" + suffix, "\\mathcal{R}" + suffix, \
                         "\\mathcal{V}" + suffix
         return "Structure $" + s + " = \\tpl{" + ", ".join([k, r, v]) + "}$ with \\\\\n" + \
-               "\\begin{tabular}{AAAA}\n" + \
+               "\\begin{tabular}{AAAAAA}\n" + \
                k + " = & " \
-                   "\\multicolumn{3}{A}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" + \
+                   "\\multicolumn{5}{A}{\\set{" + ", ".join([re.sub("k(\d+)", "k_\\1", str(k)) for k in sorted(self.k)]) + "}}\\\\\n" + \
                r + " = &" \
-                   "\\multicolumn{3}{A}{" \
+                   "\\multicolumn{5}{A}{" \
                    "\\set{" + ", ".join(
                         ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
                v + " : & " + \
                    "\\\\\n    & ".join(
                        [str(p) + " & \\mapsto &" +
-                        ", \\\\\n &&& ".join([str(k) + " & \\mapsto &" + self.text(tv)
+                        ", \\\\\n &&& ".join([re.sub("k(\d+)", "k_\\1", str(k)) + " & \\mapsto &" + " " + self.text(tv)
                             for (k, tv) in sorted(self.v[p].items())])
                         for (p, vp) in sorted(self.v.items())]) + "\\\\\n" + \
                "\\end{tabular}" \
@@ -819,18 +819,18 @@ class KripkePredStructure(KripkeStructure):
         return "Structure $" + s + " = \\tpl{" + ", ".join([k, r, d, i]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAAA}\n" +\
                k + " = & " \
-                   "\\multicolumn{5}{A}{\\set{" + ", ".join([str(k) for k in sorted(self.k)]) + "}}\\\\\n" + \
+                   "\\multicolumn{5}{A}{\\set{" + ", ".join([re.sub("k(\d+)", "k_\\1", str(k)) for k in sorted(self.k)]) + "}}\\\\\n" + \
                r + " = &" + \
                    "\\multicolumn{5}{A}{\\set{" + ", ".join(
                         ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
                d + " : & " + \
-                   "\\\\\n    & ".join([str(k) + " & \\multicolumn{4}{A}{\\mapsto " + \
+                   "\\\\\n    & ".join([re.sub("k(\d+)", "k_\\1", str(k)) + " & \\multicolumn{4}{A}{\\mapsto " + \
                         "\\set{" + ", ".join([self.text(d) for d in sorted(self.d[k])]) + "}}" for k in sorted(self.k)]) + \
                    "\\\\\n" + \
                i + " : & " + \
                    "\\\\\n    & ".join(["\\mathit{" + str(p) + "} & \\mapsto &" + \
                         "\\\\\n &&& ".join(
-                            [str(k) + "& \\mapsto &" +
+                            [re.sub("k(\d+)", "k_\\1", str(k)) + "& \\mapsto &" +
                              (self.text(ipk) if isinstance(ipk, str) else
                               (", \\\\\n && ".join(
                                       ["\\tpl{" + ", ".join([self.text(t) for t in (ipkKey)]) + "}" +

@@ -125,9 +125,9 @@ class Expr:
         Substitute all occurrences of the variable u for the term t in self.
 
         @param u: the variable to be substituted
-        @type u: Union[IVar, LVar]
+        @type u: Union[IIVar, LIVar]
         @param t: the term to substitute
-        @type t: Union[Term, LVar]
+        @type t: Union[Term, LIVar]
         @return: the result of substituting all occurrences of the variable v for the term t in self
         @rtype Expr
         """
@@ -182,6 +182,7 @@ class Expr:
         @return: the denotation of self in s
         @rtype: bool
         """
+        print("denotVW:", self.denot(s))
         return self.denot(s)
 
     def alpha_conv(self, convex, u):
@@ -214,9 +215,9 @@ class Expr:
         if self == other:
             return True
         bound_terms_self = [subexpr for subexpr in self.subexprs()
-                            if any([isinstance(subexpr, LVar) or isinstance(subexpr, Var)])]
+                            if any([isinstance(subexpr, LIVar) or isinstance(subexpr, Var)])]
         bound_vars_other = [subexpr.u for subexpr in other.subexprs()
-                            if any([isinstance(subexpr, LVar) or isinstance(subexpr, Var)])]
+                            if any([isinstance(subexpr, LIVar) or isinstance(subexpr, Var)])]
         print(bound_terms_self, bound_vars_other)
         if len(bound_terms_self) == len(bound_vars_other):
             conversions = product(bound_terms_self, bound_vars_other)
@@ -2423,7 +2424,7 @@ class Lexpr(Expr):
     pass
 
 
-class LVar(Lexpr):
+class LIVar(Lexpr):
     """
     Lambda variable.
     x, y, z, x1, x2, ...
@@ -2442,7 +2443,7 @@ class LVar(Lexpr):
         return self.u
 
     def __eq__(self, other):
-        return isinstance(other, LVar) and self.u == other.u
+        return isinstance(other, LIVar) and self.u == other.u
 
     def subst(self, u, t):
         if u.u == self.u:
@@ -2544,12 +2545,12 @@ class Abstr(Lexpr):
     λu.φ
 
     @attr u: the binding variable
-    @type u: LVar
+    @type u: LIVar
     @attr phi: the body
     @type phi: Expr
     """
 
-    def __init__(self, u: LVar, phi: Expr):
+    def __init__(self, u: LIVar, phi: Expr):
         self.u = u
         self.phi = phi
 
@@ -2576,7 +2577,7 @@ class Abstr(Lexpr):
         else:
             varnames = ["x", "y", "z"] + ["x" + str(i) for i in range(100)]
             u_ = [var for var in varnames if var not in self.phi.freevars() | t.freevars()][0]
-            return Abstr(LVar(u_), self.phi.subst(self.u, LVar(u_)).subst(u, t))
+            return Abstr(LIVar(u_), self.phi.subst(self.u, LIVar(u_)).subst(u, t))
 
     def denot(self, s, v=None, w=None):
         """
