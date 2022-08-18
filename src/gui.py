@@ -1458,18 +1458,12 @@ def write_output(res, latex=True):
         path_tex = os.path.join(path_output, file_tex)
         path_pdf = os.path.join(path_output, file_pdf)
         # write LaTeX code
-        print("writing texfile")
         with open(path_tex, "w") as texfile:
             texfile.write(res)
-        print("wrote textfile")
         # compile LaTeX to PDF
-        print("calling pdftex")
         check_call(["pdflatex", file_tex], stdout=DEVNULL, stderr=STDOUT)
-        print("called pdftex")
         # open file
-        print("opening file")
         check_call(["xdg-open", path_pdf], stdout=DEVNULL, stderr=STDOUT)
-        print("opened file")
         # cleanup
         for file in os.listdir(path_output):
             path_file = os.path.join(path_output, file)

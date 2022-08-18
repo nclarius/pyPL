@@ -726,18 +726,6 @@ class Formula(Expr):
     def tableau_pos(self, mode):
         """
         Tableau rules for the unnegated formula.
-
-        @return: A list of triples of
-                 - the rule name
-                 - the type of rule (α/β/γ/δ/μ/nu)
-                 - the arguments of the rule: the formulas to extend and, if applicable, parameter/signature information
-        @rtype list[tuple[str,str,Any]]
-        """
-
-    def tableau_neg(self, mode):
-        """
-        Tableau rules for the negated formula.
-
         @return: A list of triples of
                  - the rule name
                  - the type of rule (α/β/γ/δ/μ/nu)
@@ -746,35 +734,50 @@ class Formula(Expr):
         """
         pass
 
-    def tableau_contradiction_pos(self, other):
+    def tableau_neg(self, mode):
         """
-        The cases where the unnegated formula leads to a contradiction in the branch.
+        Tableau rules for the negated formula.
+        @return: A list of triples of
+                 - the rule name
+                 - the type of rule (α/β/γ/δ/μ/nu)
+                 - the arguments of the rule: the formulas to extend and, if applicable, parameter/signature information
+        @rtype list[tuple[str,str,Any]]
+        """
+        pass
 
-         φ        ¬φ
-         ⋮    or    ⋮
-        ¬φ         φ
+    def tableau_contradiction_pos(self, other, sign):
+        """
+        The cases where the positive formula leads to a contradiction in the branch.
+
+        - φ
+          ⋮
+        + φ
 
         @param other: the other formula
         @type other: Formula
+        @param sign: the sign of the other formula
+        @type sign: bool
         @return True iff self contradicts other
         @rtype bool
         """
-        return Neg(self) == other or self == Neg(other)
+        return self == other and not sign
 
-    def tableau_contradiction_neg(self, other):
+    def tableau_contradiction_neg(self, other, sign):
         """
-        The cases where the negated formula leads to a contradiction in the branch.
+        The cases where the negative formula leads to a contradiction in the branch.
 
-         φ        ¬φ
-         ⋮    or    ⋮
-        ¬φ         φ
+        + φ
+          ⋮
+        - φ
 
         @param other: the other formula
         @type other: Formula
-        @return True iff self is logically equivalent to other
+        @param sign: the sign of the other formula
+        @type sign: bool
+        @return True iff self contradicts other
         @rtype bool
         """
-        return self == other
+        return self == other and sign
 
 
 class Prop(Formula):
@@ -833,15 +836,15 @@ class Prop(Formula):
     def tableau_pos(self, mode):
         """
         IL:
-          σ p
+          σ + p
            |
-        σ.n p
+        σ.n + p
         where σ.n is old
         """
         if mode["classical"]:
             return dict()
         else:
-            return {"p": ("ν", [self],)}
+            return {"++p": ("ν", [(True, self)],)}
 
     def tableau_neg(self, mode):
         return dict()
@@ -920,7 +923,7 @@ class Atm(Formula):
         if mode["classical"]:
             return dict()
         else:
-            return {"P": ("μ", [self])}
+            return {"++P": ("μ", [(True, self)])}
 
     def tableau_neg(self, mode):
         return dict()
@@ -982,17 +985,17 @@ class Eq(Formula):
     def tableau_neg(self, mode):
         return dict()
 
-    def tableau_contradiction_pos(self, other):
+    def tableau_contradiction_pos(self, other, _):
         """
         t1 = t2
         """
-        return str(self.t1) != str(self.t2)
+        return str(self.t1) != str(self.t2)  # todo IL
 
-    def tableau_contradiction_neg(self, other):
+    def tableau_contradiction_neg(self, other, _):
         """
         t ≠ t
         """
-        return str(self.t1) == str(self.t2)
+        return str(self.t1) == str(self.t2)  # todo IL
 
 
 class Verum(Formula):
@@ -1043,13 +1046,13 @@ class Verum(Formula):
     def tableau_neg(self, mode):
         return dict()
 
-    def tableau_contradiction_pos(self, other):
+    def tableau_contradiction_pos(self, other, sign):
         """
         An unnegated verum is never contradictory.
         """
         return False
 
-    def tableau_contradiction_neg(self, other):
+    def tableau_contradiction_neg(self, other, sign):
         """
         A negated verum is always contradictory.
         """
@@ -1104,13 +1107,13 @@ class Falsum(Formula):
     def tableau_neg(self, mode):
         return dict()
 
-    def tableau_contradiction_pos(self, node):
+    def tableau_contradiction_pos(self, other, sign):
         """
         An unnegated falsum is always contradictory.
         """
         return True
 
-    def tableau_contradiction_neg(self, node):
+    def tableau_contradiction_neg(self, other, sign):
         """
         A negated falsum is never contradictory.
         """
@@ -1176,15 +1179,14 @@ class Neg(Formula):
 
     def tableau_pos(self, mode):
         """
-        CL + IL:    IL:
+        CL:    IL:
         ¬φ           σ ¬φ
          ⋮             |
                     σ.n ¬φ
                     where σ.n is old
         """
         # If the negation does not occur under another neg., apply the negative tableau rule on the negative formula.
-        rules = self.phi.tableau_neg(mode)
-        return rules
+        return {"+¬": ("α", [(False, self.phi)])}
 
     def tableau_neg(self, mode):
         """
@@ -1196,12 +1198,9 @@ class Neg(Formula):
         """
         if mode["classical"]:
             # If the negation is itself negated, apply the double negation elimination rule on the double neg. formula.
-            return {"¬¬": ("α", [self.phi])}
+            return {"-¬": ("α", [(True, self.phi)])}
         else:
-            return {"¬¬": ("μ", [self.phi])}
-
-    def tableau_contradiction_pos(self, other):
-        return self.phi.tableau_contradiction_neg(other)
+            return {"-¬": ("μ", [(True, self.phi)])}
 
 
 class Conj(Formula):
@@ -1261,8 +1260,8 @@ class Conj(Formula):
           |
           ψ
         """
-        return {"∧": ("α", [self.phi,
-                            self.psi])}
+        return {"+∧": ("α", [(True, self.phi),
+                             (True, self.psi)])}
 
     def tableau_neg(self, mode):
         """
@@ -1270,7 +1269,7 @@ class Conj(Formula):
           /  \
         ¬φ   ¬ψ
         """
-        return {"¬∧": ("β", [Neg(self.phi), Neg(self.psi)])}
+        return {"-∧": ("β", [(False, self.phi), (False, self.psi)])}
 
 
 class Disj(Formula):
@@ -1329,7 +1328,7 @@ class Disj(Formula):
          /  \
         φ   ψ
         """
-        return {"∨": ("β", [self.phi, self.psi])}
+        return {"+∨": ("β", [(True, self.phi), (True, self.psi)])}
 
     def tableau_neg(self, mode):
         """
@@ -1339,8 +1338,8 @@ class Disj(Formula):
            |
           ¬ψ
         """
-        return {"¬∨": ("α", [Neg(self.phi),
-                             Neg(self.psi)])}
+        return {"-∨": ("α", [(False, self.phi),
+                             (False, self.psi)])}
 
 
 class Imp(Formula):
@@ -1408,9 +1407,9 @@ class Imp(Formula):
                  where σ.n is old
         """
         if mode["classical"]:
-            return {"→": ("β", [Neg(self.phi), self.psi])}
+            return {"+→": ("β", [(False, self.phi), (True, self.psi)])}
         else:
-            return {"→": ("χ", [Neg(self.phi), self.psi])}
+            return {"+→": ("χ", [(False, self.phi), (True, self.psi)])}
 
     def tableau_neg(self, mode):
         """
@@ -1423,11 +1422,11 @@ class Imp(Formula):
                  where σ.n is new
         """
         if mode["classical"]:
-            return {"¬→": ("α", [self.phi,
-                                 Neg(self.psi)])}
+            return {"-→": ("α", [(True, self.phi),
+                                 (False, self.psi)])}
         else:
-            return {"¬→": ("μ", [self.phi,
-                                 Neg(self.psi)])}
+            return {"-→": ("μ", [(True, self.phi),
+                                 (False, self.psi)])}
 
 
 class Biimp(Formula):
@@ -1498,11 +1497,11 @@ class Biimp(Formula):
                    where σ.n is old
         """
         if mode["classical"]:
-            return {"↔": ("β", [self.phi, Neg(self.phi),
-                                self.psi, Neg(self.psi)])}
+            return {"+↔": ("β", [(True, self.phi), (False, self.phi),
+                                (True, self.psi), (False, self.psi)])}
         else:
-            return {"↔": ("χ", [self.phi, Neg(self.phi),
-                                self.psi, Neg(self.psi)])}
+            return {"+↔": ("χ", [(True, self.phi), (False, self.phi),
+                                (True, self.psi), (False, self.psi)])}
 
     def tableau_neg(self, mode):
         """
@@ -1515,11 +1514,11 @@ class Biimp(Formula):
                     where σ.n is new
         """
         if mode["classical"]:
-            return {"¬↔": ("β", [self.phi, Neg(self.phi),
-                                 Neg(self.psi), self.psi])}
+            return {"-↔": ("β", [(True, self.phi), (False, self.phi),
+                                 (False, self.psi), (True, self.psi)])}
         else:
-            return {"¬↔": ("ξ", [self.phi, Neg(self.phi),
-                                 Neg(self.psi), self.psi])}
+            return {"-↔": ("ξ", [(True, self.phi), (False, self.phi),
+                                 (False, self.psi), (True, self.psi)])}
 
 
 class Xor(Formula):
@@ -1590,11 +1589,11 @@ class Xor(Formula):
                    where σ.n is old
         """
         if mode["classical"]:
-            return {"⊕": ("β", [self.phi, Neg(self.phi),
-                                Neg(self.psi), self.psi])}
+            return {"+⊕": ("β", [(True, self.phi), (False, self.phi),
+                                (False, self.psi), (True, self.psi)])}
         else:
-            return {"⊕": ("χ", [self.phi, Neg(self.phi),
-                                Neg(self.psi), self.psi])}
+            return {"+⊕": ("χ", [(True, self.phi), (False, self.phi),
+                                (False, self.psi), (True, self.psi)])}
 
     def tableau_neg(self, mode):
         """
@@ -1607,11 +1606,11 @@ class Xor(Formula):
                    where σ.n is old
         """
         if mode["classical"]:
-            return {"⊕": ("β", [self.phi, Neg(self.phi),
-                                self.psi, Neg(self.psi)])}
+            return {"+⊕": ("β", [(True, self.phi), (False, self.phi),
+                                (True, self.psi), (False, self.psi)])}
         else:
-            return {"⊕s": ("χ", [self.phi, Neg(self.phi),
-                                 self.psi, Neg(self.psi)])}
+            return {"+⊕s": ("χ", [(True, self.phi), (False, self.phi),
+                                 (True, self.psi), (False, self.psi)])}
 
 
 class Exists(Formula):
@@ -1709,33 +1708,33 @@ class Exists(Formula):
 
     def tableau_pos(self, mode):
         """
-         ∃vφ
-          |
-        φ[v/c]
+        +  ∃vφ
+            |
+        + φ[v/c]
         where c is new
         """
         if mode["validity"]:
-            return {"∃": ("δ", [self.phi, self.u])}
+            return {"+∃": ("δ", [(True, self.phi, self.u)])}
         else:
             if mode["linguistic"]:
-                return {"∃": ("ε", [self.phi, self.u])}
+                return {"+∃": ("ε", [(True, self.phi, self.u)])}
             else:
-                return {"∃": ("θ", [self.phi, self.u])}
+                return {"+∃": ("θ", [(True, self.phi, self.u)])}
 
     def tableau_neg(self, mode):
         """
-         ¬∃vφ
-           |
-        ¬φ[v/c]
+        -  ∃vφ
+            |
+        - φ[v/c]
         where c is arbitrary
         """
         if mode["validity"]:
-            return {"¬∃": ("γ", [Neg(self.phi), self.u])}
+            return {"-∃": ("γ", [(False, self.phi, self.u)])}
         else:
             if mode["classical"]:
-                return {"¬∃": ("η", [Neg(self.phi), self.u])}
+                return {"-∃": ("η", [(False, self.phi, self.u)])}
             else:
-                return {"¬∃": ("omega", [Neg(self.phi), self.u])}
+                return {"-∃": ("omega", [(False, self.phi, self.u)])}
 
 
 class Forall(Formula):
@@ -1880,43 +1879,43 @@ class Forall(Formula):
 
     def tableau_pos(self, mode):
         """
-        CL:*      IL:**
-         ∀vφ         σ ∀vφ
-          |            |
-        φ[v/c]    σ.n φ[v/c]
+        CL:*         IL:**
+        +  ∀vφ       σ   +  ∀vφ
+            |                |
+        + φ[v/c]     σ.n + φ[v/c]
         * where c is arbitrary
         ** where c is arbitrary and σ.n is old
         """
         if mode["validity"]:
             if mode["classical"]:
-                return {"∀": ("γ", [self.phi, self.u])}
+                return {"+∀": ("γ", [(True, self.phi, self.u)])}
             else:
-                return {"∀": ("ο", [self.phi, self.u])}
+                return {"+∀": ("ο", [(True, self.phi, self.u)])}
         else:
             if mode["classical"]:
-                return {"∀": ("η", [self.phi, self.u])}
+                return {"+∀": ("η", [(True, self.phi, self.u)])}
             else:
-                return {"∀": ("ω", [self.phi, self.u])}
+                return {"+∀": ("ω", [(True, self.phi, self.u)])}
 
     def tableau_neg(self, mode):
         """
         CL:*       IL:**
-        ¬∀vφ          σ ¬∀vφ
-          |             |
-        ¬φ[x/c]    σ.n ¬φ[x/c]
+        -  ∀vφ      σ   - ∀vφ
+            |              |
+        - φ[x/c]    σ.n - φ[x/c]
         * where c is new
         ** where c is new and σ.n is new
         """
         if mode["validity"]:
             if mode["classical"]:
-                return {"¬∀": ("δ", [Neg(self.phi), self.u])}
+                return {"-∀": ("δ", [(False, self.phi, self.u)])}
             else:
-                return {"¬∀": ("υ", [Neg(self.phi), self.u])}
+                return {"-∀": ("υ", [(False, self.phi, self.u)])}
         else:
             if mode["linguistic"]:
-                return {"¬∀": ("ε", [Neg(self.phi), self.u])}
+                return {"-∀": ("ε", [(False, self.phi, self.u)])}
             else:
-                return {"¬∀": ("θ", [Neg(self.phi), self.u])}
+                return {"-∀": ("θ", [(False, self.phi, self.u)])}
 
 
 class Most(Formula):
@@ -2146,39 +2145,39 @@ class Poss(Formula):
     def tableau_pos(self, mode):
         """
         Rule K:
-         σ ◇φ
-          |
-        σ.n φ
+        σ   + ◇φ
+              |
+        σ.n + φ
         where σ.n is new
         """
         if mode["validity"]:
-            rules = {"◇": ("μ", [self.phi])}
+            rules = {"+◇": ("μ", [(True, self.phi)])}
         else:
-            rules = {"◇": ("κ", [self.phi])}
+            rules = {"+◇": ("κ", [(True, self.phi)])}
         return rules
 
     def tableau_neg(self, mode):
         """
         Rule K:   Rule D:   Rule T:   Rule B:   Rule 4:   Rule 4r:
-         σ ¬◇φ    σ ¬◇φ     σ ¬◇φ     σ.n ¬◇φ    σ ¬◇φ    σ.n ¬◇φ
+         σ + ◇φ    σ + ◇φ     σ + ◇φ     σ.n + ◇φ    σ + ◇φ    σ.n + ◇φ
            |         |         |         |         |          |
-        σ.n ¬φ    σ ¬◻φ     σ  ¬φ      σ ¬φ     σ.n ¬◇φ    σ ¬◇φ
+        σ.n + φ    σ + ◻φ     σ  + φ      σ + φ     σ.n + ◇φ    σ + ◇φ
         where σ and σ.n are old
         """
         if mode["validity"]:
-            rules = {"¬◇": ("ν", [Neg(self.phi)])}
+            rules = {"-◇": ("ν", [(False, self.phi)])}
         else:
-            rules = {"¬◇": ("λ", [Neg(self.phi)])}
+            rules = {"-◇": ("λ", [(False, self.phi)])}
         if mode["frame"] in ["D"]:
-            rules["¬D"] = ("α", [Neg(Nec(self.phi))])
+            rules["-D"] = ("α", [(False, Nec(self.phi))])
         if mode["frame"] in ["T", "B", "S4", "S5"]:
-            rules["¬T"] = ("α", [Neg(self.phi)])
+            rules["-T"] = ("α", [(False, self.phi)])
         if mode["frame"] in ["B"]:
-            rules["¬B"] = ("π", [Neg(self.phi)])
+            rules["-B"] = ("π", [(False, self.phi)])
         if mode["frame"] in ["K4", "S4", "S5"]:
-            rules["¬4"] = ("ν", [Neg(Poss(self.phi))])
+            rules["-4"] = ("ν", [(False, Poss(self.phi))])
         if mode["frame"] in ["S5"]:
-            rules["¬4r"] = ("π", [Neg(Poss(self.phi))])
+            rules["-4r"] = ("π", [(False, Poss(self.phi))])
         return rules
 
 
@@ -2273,39 +2272,39 @@ class Nec(Formula):
     def tableau_pos(self, mode):
         """
         Rule K:   Rule D:   Rule T:   Rule B:   Rule 4:   Rule 4r:
-        σ ◻φ      σ ◻φ      σ ◻φ      σ.n ◻φ     σ ◻φ     σ.n ◻φ
+        σ + ◻φ      σ + ◻φ      σ + ◻φ      σ.n + ◻φ     σ + ◻φ     σ.n + ◻φ
           |         |         |          |         |        |
-        σ.n φ     σ ◇φ       σ φ       σ ¬φ     σ.n ◻φ     σ ◻φ
+        σ.n + φ     σ + ◇φ       σ + φ       σ - φ     σ.n + ◻φ     σ + ◻φ
         where σ.n is old
         """
         if mode["validity"]:
-            rules = {"◻": ("ν", [self.phi])}
+            rules = {"+◻": ("ν", [(True, self.phi)])}
         else:
-            rules = {"◻": ("λ", [self.phi])}
+            rules = {"+◻": ("λ", [(True, self.phi)])}
         if mode["frame"] in ["D"]:
-            rules["D"] = ("α", [Poss(self.phi)])
+            rules["+D"] = ("α", [(True, Poss(self.phi))])
         if mode["frame"] in ["T", "B", "S4", "S5"]:
-            rules["T"] = ("α", [self.phi])
+            rules["+T"] = ("α", [(True, self.phi)])
         if mode["frame"] in ["B"]:
-            rules["B"] = ("π", [self.phi])
+            rules["+B"] = ("π", [(True, self.phi)])
         if mode["frame"] in ["K4", "S4", "S5"]:
-            rules["4"] = ("ν", [self])
+            rules["+4"] = ("ν", [(True, self)])
         if mode["frame"] in ["S5"]:
-            rules["4r"] = ("π", [Nec(self.phi)])
+            rules["+4r"] = ("π", [(True, Nec(self.phi))])
         return rules
 
     def tableau_neg(self, mode):
         """
         Rule K:
-         σ ¬◻φ
+         σ - ◻φ
            |
-        σ.n ¬φ
+        σ.n - φ
         where σ.n is new
         """
         if mode["validity"]:
-            rules = {"¬◻": ("μ", [Neg(self.phi)])}
+            rules = {"-◻": ("μ", [(False, self.phi)])}
         else:
-            rules = {"¬◻": ("κ", [Neg(self.phi)])}
+            rules = {"-◻": ("κ", [(False, self.phi)])}
         return rules
 
 
@@ -2645,7 +2644,7 @@ class AllWorlds(Formula):
         if mode["classical"] and not mode["modal"]:
             rules = self.phi.tableau_pos(mode)
         else:
-            rules = {"A": ("ι", [self.phi])}
+            rules = {"+A": ("ι", [(True, self.phi)])}
         return rules
 
     def tableau_neg(self, mode):
@@ -2710,7 +2709,7 @@ class NotAllWorlds(Formula):
         if mode["classical"] and not mode["modal"]:
             rules = self.phi.tableau_neg(mode)
         else:
-            rules = {"A": ("κ", [Neg(self.phi)])}
+            rules = {"+A": ("κ", [(False, self.phi)])}
         return rules
 
     def tableau_neg(self, mode):
