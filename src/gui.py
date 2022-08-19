@@ -42,7 +42,7 @@ class PyPLInst:
         self.output = "tex"
         self.generation_mode = "mathematical"
         self.num_models = 1
-        self.size_limit_factor = 2
+        self.size_limit_factor = 4
         self.underline_open = True
         self.hide_nonopen = False
         self.stepwise = False

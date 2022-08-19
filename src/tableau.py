@@ -52,7 +52,7 @@ from subprocess import DEVNULL, STDOUT, check_call
 # todo tableaux for IL
 # todo formulas with free variables?
 
-debug = True
+debug = False
 
 
 def least(lst, cond):
@@ -805,11 +805,19 @@ class Tableau(object):
                         # todo not correctly reusing already introduced
                         #  accessible worlds
 
-                        if rule_type in ["μ", "κ"]:
+                        if rule_type in ["μ"]:
                             # the rules can be applied with any new signature
-                            # extension
-                            applicable.append((target, source, rule_name,
+                            # extension,
+                            # and for satisfiability only if it has not already been used
+                            if self.mode["validity"] or not used:
+                                applicable.append((target, source, rule_name,
                                                rule_type, fmls, args, insts))
+
+                        if rule_type in ["κ"]:
+                            # the rules can be applied with any new signature
+                            # extension,
+                            applicable.append((target, source, rule_name,
+                                           rule_type, fmls, args, insts))
 
                         elif rule_type in ["ν"]:
                             # the rule can only be applied if there are sig.
@@ -860,7 +868,85 @@ class Tableau(object):
 
                 # intuitionistic rules
                 elif rule_type in ["ξ", "χ", "ο", "u", "ω"]:
-                    pass  # todo implement applicability for intuitionistic rules
+
+                    irrelevant = False
+
+                    for target in targets:
+
+                        # collect the nodes on this target branch
+                        branch = [node for node in target.branch if
+                                  not isinstance(node.fml, Pseudo)]
+
+                        # collect the worlds this rule has been instantiated
+                        # with in the branch/on this level
+                        used = list(dict.fromkeys(
+                                [node.inst[3] for node in branch if
+                                 applied(node)]))
+
+                        # collect the worlds occurring in the branch
+                        occurring_global = list(dict.fromkeys(
+                                [node.world for node in branch if node.world]))
+
+                        # additional worlds to use
+                        fresh = [i for i in range(1, 100) if
+                                 i not in occurring_global]
+
+                        # collect the signatures occurring in the target's branch
+                        # that are accessible from the source world
+                        # including the reflexive and transitive closure
+                        def find_extensions(w):
+                            return [w] + list(
+                            dict.fromkeys([node.inst[3] for node in branch
+                                           if
+                                           node.inst and len(node.inst) > 3 and
+                                           node.inst[2] == w]))
+                        found_extensions = []
+                        extensions = find_extensions(source.world)
+                        for w in extensions:
+                            if not found_extensions:
+                                extensions += find_extensions(w)
+                                found_extensions.append(w)
+
+                        # collect the signatures occurring in the target's
+                        # branch that the source world is accessible from
+                        reductions = list(
+                            dict.fromkeys([node.inst[2] for node in branch
+                                           if node.inst and len(node.inst) > 3
+                                           and node.inst[3] == source.world]))
+
+                        # count instantiations
+                        insts = len(used)
+
+                        if rule_type in ["ξ"]:
+                            # the rules can only be applied with new extensions
+                            new = True
+
+                        elif rule_type in ["χ"]:
+                            # the rule can only be applied with existing extensions
+                            new = False
+
+                        # compose the arguments
+                        args = universal, irrelevant, new, used, \
+                               occurring_global, extensions, reductions
+
+                        if rule_type in ["ξ"]:
+                            # the rules can only be applied with new extensions,
+                            # and for satisfiability only if it has not already been used
+                            if self.mode["validity"] or not used:
+                                applicable.append((target, source, rule_name,
+                                               rule_type, fmls, args, insts))
+
+                        elif rule_type in ["χ"]:
+                            # the rule can only be applied with existing extensions,
+                            # and for satisfiability only if it has not already been used
+                            # with this world
+                            if [w for w in extensions if w not in used]:
+                                applicable.append((target, source, rule_name,
+                                                   rule_type, fmls, args, insts))
+
+                        elif rule_type in ["ο", "u", "ω"]:
+                            pass  # todo applicability for intuitionistic quantifier rules
+
 
         # if the only rules applicable to an unfinished branch are
         # δ, θ, ε or κ rules that have already been applied on this branch,
@@ -951,11 +1037,11 @@ class Tableau(object):
                 rank_univ_irrel[(i[5][0], i[5][1])],
                 # 2. whether the formula comes from a relevant axiom (prefer
                 # yes)
+                branching[i[3]],
+                # 4. whether the rules branches (prefer non-branching)
                 rank_new[i[5][2]],
                 # 3. whether to introduce a new constant or world (prefer not
                 # to)
-                branching[i[3]],
-                # 4. whether the rules branches (prefer non-branching)
                 operator[i[3]],
                 # 5. what type of operator the rule belongs to (connective >
                 # quant., modal > int.)
@@ -1389,7 +1475,8 @@ class Tableau(object):
         #         sig = sig_
         #         break
         # inst = (source.sig, sig)
-        world = min([i for i in occurring if i not in used])
+        world = min([i for i in extensions if i not in used])
+        # todo correct to use extensions rather than occurring?
         new = True if world not in extensions else False
         inst = (universal, new, source.world, world)
 
@@ -1608,7 +1695,7 @@ class Tableau(object):
         #         sig = sig_
         #         break
         # inst = (source.sig, sig)
-        world = min([i for i in occurring if i not in used])
+        world = min([i for i in extensions if i not in used])
         new = False
         inst = (universal, new, source.world, world)
 
@@ -1728,10 +1815,13 @@ class Tableau(object):
                 if not self.mode[
                     "modal"]:  # classical non-modal propositional logic
                     # atoms = all unnegated propositional variables
-                    atoms = [node.fml.p for node in branch if node.fml.atom()]
+                    atoms = [node.fml.p for node in branch
+                             if node.fml.atom()
+                             and node.sig]
                     # todo add literals for other prop. log.s
                     natoms = [node.fml.phi.p for node in branch if
-                              node.fml.literal() and not node.fml.atom()]
+                              node.fml.literal() and not node.fml.atom()
+                              and node.sign]
                     # valuation = make all positive propositional variables
                     # true and all others false
                     v = {p: (True if p in atoms else False) for p in
@@ -1754,7 +1844,8 @@ class Tableau(object):
                     # atoms = all unnegated propositional variables
                     atoms = {
                             w: [node.fml.p for node in branch if
-                                node.fml.atom() and node.world == w]
+                                node.fml.atom() and node.world == w
+                                and node.sign]
                             for w in worlds}
                     # valuation = make all positive propositional variables
                     # true and all others false
@@ -1784,7 +1875,8 @@ class Tableau(object):
                     # atoms = all unnegated atomic predications
                     atoms = [(node.fml.pred, node.fml.terms) for node in branch
                              if
-                             node.fml.atom() and not isinstance(node.fml, Eq)]
+                             node.fml.atom() and not isinstance(node.fml, Eq)
+                             and node.sign]
                     # domain = all const.s occurring in formulas
                     d = set(list(
                         chain(*[[remove_sig(t) for t in node.fml.nonlogs()[0]]
@@ -1813,7 +1905,8 @@ class Tableau(object):
                                  branch
                                  if node.fml.atom() and not isinstance(node.fml,
                                                                        Eq)
-                                 and node.world == w]
+                                 and node.world == w
+                                 and nodde.sign]
                              for w in worlds}
                     i = {p: {"w" + str(w): {
                             tuple([remove_sig(str(t)) for t in a[1]]) for a in
@@ -1864,7 +1957,7 @@ class Tableau(object):
                                      node.inst and len(
                                          node.inst) > 3 and isinstance(
                                              node.inst[2], int)]))
-            r = {("w" + str(tpl[0]), "w" + str(tpl[1])) for tpl in r_}
+            r = {("k" + str(tpl[0]), "k" + str(tpl[1])) for tpl in r_}
 
             if self.mode["propositional"]:  # intuitionstic propositional logic
                 # # atoms = all unnegated propositional variables
@@ -1880,11 +1973,12 @@ class Tableau(object):
                 atoms = {k: [node.fml.p for node in branch
                              if node.fml.atom() and not isinstance(node.fml,
                                                                    Eq) and
-                             node.world == k]
+                             node.world == k
+                             and node.sign]
                          for k in states}
                 # valuation = make all positive propositional variables true
                 # and all others false
-                v = {p: {k: (True if p in atoms[k] else False)
+                v = {p: {"k" + str(k): (True if p in atoms[k] else False)
                          for k in states}
                      for p in self.root.fml.propvars()}
                 model = structure.KripkePropStructure(s, k, r, v)
@@ -1918,7 +2012,8 @@ class Tableau(object):
                 #      for sig in sigs}
                 # atoms = all unnegated atomic predications
                 atoms = {k: [(node.fml.pred, node.fml.terms) for node in branch
-                             if isinstance(node.fml, Atm) and node.world == k]
+                             if isinstance(node.fml, Atm) and node.world == k
+                             and node.sign]
                          for k in states}
                 d = {"k" + str(k): set(chain(
                     *[[remove_sig(t) for t in node.fml.nonlogs()[0]] for node in
@@ -2006,15 +2101,15 @@ class Node(object):
         str_world = "{:<{len}}".format(
             (label_w + str(self.world)) if self.world is not None else "", len=len_world)
         str_sign = "{:<{len}}".format(
-            ("⊩" if self.sign else "⊮") if self.sign is not None else "",
+            ("+" if self.sign else "-") if self.sign is not None else "",
             len=len_sign)
 
         fml = str(self.fml)
-        # underline literals of open branches in MG
+        # underline atoms of open branches in MG
         if self.tableau.underline_open and not self.tableau.file and \
                 not self.tableau.mode["validity"] and \
                 any([self in branch for branch in
-                     open_branches]) and self.fml.literal():
+                     open_branches]) and self.fml.atom():
             fml = (len(fml) * " ") + \
                   "\033[4m" + fml + "\033[0m" + \
                   (
@@ -2071,7 +2166,7 @@ class Node(object):
                 "◇":  "\\Diamond",
                 "◻":  "\\Box",
                 "+":  "\\Vdash",
-                "-":  "\\not \Vdash"
+                "-":  "\\nVdash"
         }
 
         str_line = str(self.line) + "." if self.line else ""
@@ -2084,17 +2179,17 @@ class Node(object):
         label_w = "w" if self.tableau.mode["classical"] else "k"
         str_world = ("$" + label_w + "_" + "{" + str(
             self.world) + "}" + "$") if self.world is not None else ""
-        str_sign = ("$\\Vdash$" if self.sign else "$\\not \Vdash$" if self.sign is not None else "")
+        str_sign = ("$\\Vdash$" if self.sign else "$\\nVdash$" if self.sign is not None else "")
         str_fml = "$" + self.fml.tex().replace(",", "{,}\\ \\!").replace("=",
                                                                          "{\\ "
                                                                          "=\\ "
                                                                          "}")\
                   + "$"
-        # underline literals of open branches in MG
+        # underline atoms of open branches in MG
         if self.tableau.underline_open and not self.tableau.mode["validity"] \
                 and \
                 any([self in branch for branch in
-                     open_branches]) and self.fml.literal():
+                     open_branches]) and self.fml.atom():
             # str_fml = "\\fbox{\\vphantom{Pp}" + str_fml + "}"
             str_fml = "\\underline{" + str_fml + "}"
         str_cite = ""

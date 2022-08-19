@@ -638,7 +638,7 @@ class KripkePropStructure(KripkeStructure):
         return "Structure " + s + " = ⟨" + ",".join([k, r, v]) + "⟩ with \n" + \
                 k + " = {" + ", ".join([str(k) for k in sorted(self.k)]) + "}\n" +\
                 r + " = {" + ", ".join(
-                    ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" +\
+                    ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r) if r[0] != r[1]]) + "}\n" +\
                 v + " : " + "\n    ".join(
                     [str(p) + " ↦ \n" + ", \n".join(["        " + str(k) + " ↦ " + str(tv)
                         for (k, tv) in sorted(self.v[p].items())])
@@ -655,7 +655,7 @@ class KripkePropStructure(KripkeStructure):
                r + " = &" \
                    "\\multicolumn{5}{A}{" \
                    "\\set{" + ", ".join(
-                        ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
+                        ["\\tpl{" + re.sub("k(\d+)", "k_\\1", str(r[0]) )+ ", " + re.sub("k(\d+)", "k_\\1", str(r[1])) + "}" for r in sorted(self.r) if r[0] != r[1]]) + "}}\\\\\n" + \
                v + " : & " + \
                    "\\\\\n    & ".join(
                        [str(p) + " & \\mapsto &" +
@@ -794,7 +794,7 @@ class KripkePredStructure(KripkeStructure):
         return "Structure " + s + " = ⟨" + ",".join([k, r, d, i]) + "⟩ with \n" + \
                 k + " = {" + ", ".join([str(k) for k in sorted(self.k)]) + "}\n" +\
                 r + " = {" + ", ".join(
-                    ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r)]) + "}\n" +\
+                    ["⟨" + str(r[0]) + "," + str(r[1]) + "⟩" for r in sorted(self.r) if r[0] != r[1]]) + "}\n" +\
                 d + " : " + ("\n    ".join(
                     [str(k) + " ↦ " + \
                         "{" + ", ".join([str(d) for d in sorted(self.d[k])]) + "}"
@@ -822,7 +822,7 @@ class KripkePredStructure(KripkeStructure):
                    "\\multicolumn{5}{A}{\\set{" + ", ".join([re.sub("k(\d+)", "k_\\1", str(k)) for k in sorted(self.k)]) + "}}\\\\\n" + \
                r + " = &" + \
                    "\\multicolumn{5}{A}{\\set{" + ", ".join(
-                        ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
+                        ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r) if r[0] != r[1]]) + "}}\\\\\n" + \
                d + " : & " + \
                    "\\\\\n    & ".join([re.sub("k(\d+)", "k_\\1", str(k)) + " & \\multicolumn{4}{A}{\\mapsto " + \
                         "\\set{" + ", ".join([self.text(d) for d in sorted(self.d[k])]) + "}}" for k in sorted(self.k)]) + \

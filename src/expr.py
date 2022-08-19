@@ -844,7 +844,7 @@ class Prop(Formula):
         if mode["classical"]:
             return dict()
         else:
-            return {"++p": ("ν", [(True, self)],)}
+            return {"+p": ("ν", [(True, self)],)}
 
     def tableau_neg(self, mode):
         return dict()
@@ -923,7 +923,7 @@ class Atm(Formula):
         if mode["classical"]:
             return dict()
         else:
-            return {"++P": ("μ", [(True, self)])}
+            return {"+P": ("μ", [(True, self)])}
 
     def tableau_neg(self, mode):
         return dict()
@@ -1186,7 +1186,10 @@ class Neg(Formula):
                     where σ.n is old
         """
         # If the negation does not occur under another neg., apply the negative tableau rule on the negative formula.
-        return {"+¬": ("α", [(False, self.phi)])}
+        if mode["classical"]:
+            return {"+¬": ("α", [(False, self.phi)])}
+        else:
+            return {"+¬": ("ν", [(False, self.phi)])}
 
     def tableau_neg(self, mode):
         """
@@ -1201,7 +1204,6 @@ class Neg(Formula):
             return {"-¬": ("α", [(True, self.phi)])}
         else:
             return {"-¬": ("μ", [(True, self.phi)])}
-
 
 class Conj(Formula):
     """
