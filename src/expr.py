@@ -844,7 +844,7 @@ class Prop(Formula):
         if mode["classical"]:
             return dict()
         else:
-            return {"++p": ("ν", [(True, self)],)}
+            return {"+p": ("ν", [(True, self)],)}
 
     def tableau_neg(self, mode):
         return dict()
@@ -915,15 +915,15 @@ class Atm(Formula):
     def tableau_pos(self, mode):
         """
         IL:
-         σ P(...)
-             |
-        σ.n P(...)
+          σ + P(...)
+              |
+        σ.n + P(...)
         where σ.n is old
         """
         if mode["classical"]:
             return dict()
         else:
-            return {"++P": ("μ", [(True, self)])}
+            return {"+P": ("μ", [(True, self)])}
 
     def tableau_neg(self, mode):
         return dict()
@@ -1179,29 +1179,29 @@ class Neg(Formula):
 
     def tableau_pos(self, mode):
         """
-        CL:    IL:
-        ¬φ           σ ¬φ
-         ⋮             |
-                    σ.n ¬φ
-                    where σ.n is old
+        CL:     IL:
+        + ¬φ    σ + ¬φ
+                  σ.n
+         |         |
+        - φ    σ.n - φ
         """
-        # If the negation does not occur under another neg., apply the negative tableau rule on the negative formula.
-        return {"+¬": ("α", [(False, self.phi)])}
+        if mode["classical"]:
+            return {"+¬": ("α", [(False, self.phi)])}
+        else:
+            return {"+¬": ("ν", [(False, self.phi)])}
 
     def tableau_neg(self, mode):
         """
         CL:    IL:
-        ¬¬φ    σ ¬¬φ
-         |       |
-         φ     σ.n φ
+        - ¬φ    σ - ¬φ
+          |        |
+        + φ     σ.n + φ
                where σ.n is new
         """
         if mode["classical"]:
-            # If the negation is itself negated, apply the double negation elimination rule on the double neg. formula.
             return {"-¬": ("α", [(True, self.phi)])}
         else:
             return {"-¬": ("μ", [(True, self.phi)])}
-
 
 class Conj(Formula):
     """
@@ -1255,19 +1255,19 @@ class Conj(Formula):
 
     def tableau_pos(self, mode):
         """
-        (φ∧ψ)
-          φ
-          |
-          ψ
+        + (φ∧ψ)
+            |
+        +   φ
+        +   ψ
         """
         return {"+∧": ("α", [(True, self.phi),
                              (True, self.psi)])}
 
     def tableau_neg(self, mode):
         """
-         ¬(φ∧ψ)
-          /  \
-        ¬φ   ¬ψ
+          - (φ∧ψ)
+            /  \
+         - φ  - ψ
         """
         return {"-∧": ("β", [(False, self.phi), (False, self.psi)])}
 
@@ -1324,19 +1324,18 @@ class Disj(Formula):
 
     def tableau_pos(self, mode):
         """
-        (φ∨ψ)
-         /  \
-        φ   ψ
+         + (φ∨ψ)
+           /  \
+        + φ  + ψ
         """
         return {"+∨": ("β", [(True, self.phi), (True, self.psi)])}
 
     def tableau_neg(self, mode):
         """
-        ¬(φ∨ψ)
-           |
-          ¬φ
-           |
-          ¬ψ
+        - (φ∨ψ)
+            |
+        -   φ
+        -   ψ
         """
         return {"-∨": ("α", [(False, self.phi),
                              (False, self.psi)])}
@@ -1401,10 +1400,10 @@ class Imp(Formula):
     def tableau_pos(self, mode):
         """
         CL:      IL:
-        (φ→ψ)        σ (φ→ψ)
-         /  \         /   \
-        ¬φ  ψ    σ.n ¬φ  σ.n ψ
-                 where σ.n is old
+          + (φ→ψ)            σ + (φ→ψ)
+           /  \                 σ.n
+        - φ  + ψ             /      \
+                      σ.n - φ  σ.n + ψ
         """
         if mode["classical"]:
             return {"+→": ("β", [(False, self.phi), (True, self.psi)])}
@@ -1414,12 +1413,11 @@ class Imp(Formula):
     def tableau_neg(self, mode):
         """
         CL:      IL:
-        ¬(φ→ψ)   σ ¬(φ→ψ)
-           |        |
-           φ     σ.n φ
-           |        |
-          ¬ψ     σ.n ¬ψ
-                 where σ.n is new
+        - (φ→ψ)   σ - (φ→ψ)
+            |        |
+           + φ      σ.n
+           - ψ    σ.n + φ
+                  σ.n - ψ
         """
         if mode["classical"]:
             return {"-→": ("α", [(True, self.phi),
@@ -1489,12 +1487,11 @@ class Biimp(Formula):
     def tableau_pos(self, mode):
         """
         CL:        IL:
-         (φ↔ψ)         σ (φ→ψ)
-         /  \          /     \
-        φ   ¬φ     σ.n φ   σ.n ¬φ
-        |    |       |        |
-        ψ   ¬ψ     σ.n ψ   σ.n ¬ψ
-                   where σ.n is old
+         + (φ↔ψ)         σ + (φ→ψ)
+           /  \            σ.n
+        + φ  - φ        /       \
+        + ψ  - ψ   σ.n + φ   σ.n - φ
+                   σ.n + ψ   σ.n - ψ
         """
         if mode["classical"]:
             return {"+↔": ("β", [(True, self.phi), (False, self.phi),
@@ -1505,13 +1502,12 @@ class Biimp(Formula):
 
     def tableau_neg(self, mode):
         """
-        CL:         IL:
-         ¬(φ↔ψ)         σ ¬(φ↔ψ)
-          /  \            /   \
-         φ   ¬φ      σ.n φ    σ.n ¬φ
-         |    |         |        |
-        ¬ψ    ψ      σ.n ¬ψ   σ.n ψ
-                    where σ.n is new
+        CL:          IL:
+         - (φ↔ψ)         σ - (φ↔ψ)
+           /  \           /   \
+        + φ  - φ             σ.n
+         |    |      σ.n + φ   σ.n - φ
+        - ψ  + ψ     σ.n - ψ   σ.n ψ
         """
         if mode["classical"]:
             return {"-↔": ("β", [(True, self.phi), (False, self.phi),
@@ -1581,36 +1577,34 @@ class Xor(Formula):
     def tableau_pos(self, mode):
         """
         CL:        IL:
-         (φ⊕ψ)         σ (φ⊕ψ)
-         /  \          /     \
-        φ   ¬φ     σ.n φ   σ.n ¬φ
-        |    |       |        |
-        ¬ψ   ψ     σ.n ¬ψ   σ.n ψ
-                   where σ.n is old
+        + (φ⊕ψ)          σ  +(φ⊕ψ)
+           /  \            /   \
+        + φ  - φ            σ.n
+         |    |      σ.n + φ   σ.n - φ
+        - ψ  + ψ     σ.n - ψ   σ.n ψ
         """
         if mode["classical"]:
             return {"+⊕": ("β", [(True, self.phi), (False, self.phi),
-                                (False, self.psi), (True, self.psi)])}
+                                 (False, self.psi), (True, self.psi)])}
         else:
             return {"+⊕": ("χ", [(True, self.phi), (False, self.phi),
-                                (False, self.psi), (True, self.psi)])}
+                                 (False, self.psi), (True, self.psi)])}
 
     def tableau_neg(self, mode):
         """
         CL:        IL:
-         (φ⊕ψ)         σ (φ⊕ψ)
-         /  \          /     \
-        φ   ¬φ     σ.n φ   σ.n ¬φ
-        |    |       |        |
-        ψ   ¬ψ     σ.n ψ   σ.n ¬ψ
-                   where σ.n is old
+         - (φ⊕ψ)        σ - (φ⊕ψ)
+           /  \            σ.n
+        + φ  - φ        /       \
+        + ψ  - ψ   σ.n + φ   σ.n - φ
+                   σ.n + ψ   σ.n - ψ
         """
         if mode["classical"]:
             return {"+⊕": ("β", [(True, self.phi), (False, self.phi),
-                                (True, self.psi), (False, self.psi)])}
+                                 (True, self.psi), (False, self.psi)])}
         else:
             return {"+⊕s": ("χ", [(True, self.phi), (False, self.phi),
-                                 (True, self.psi), (False, self.psi)])}
+                                  (True, self.psi), (False, self.psi)])}
 
 
 class Exists(Formula):
