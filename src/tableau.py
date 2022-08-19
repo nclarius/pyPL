@@ -1906,7 +1906,7 @@ class Tableau(object):
                                  if node.fml.atom() and not isinstance(node.fml,
                                                                        Eq)
                                  and node.world == w
-                                 and nodde.sign]
+                                 and node.sign]
                              for w in worlds}
                     i = {p: {"w" + str(w): {
                             tuple([remove_sig(str(t)) for t in a[1]]) for a in
@@ -2098,24 +2098,25 @@ class Node(object):
         # if self.sig else "", len=len_sig) \
         #     if len_sig else ""
         label_w = "w" if self.tableau.mode["classical"] else "k"
-        str_world = "{:<{len}}".format(
-            (label_w + str(self.world)) if self.world is not None else "", len=len_world)
-        str_sign = "{:<{len}}".format(
-            ("+" if self.sign else "-") if self.sign is not None else "",
-            len=len_sign)
+        str_world = (label_w + str(self.world)) if self.world is not None else ""
+        str_sign = ("+" if self.sign else "-") if self.sign is not None else ""
+        str_fml = str(self.fml)
 
-        fml = str(self.fml)
         # underline atoms of open branches in MG
         if self.tableau.underline_open and not self.tableau.file and \
                 not self.tableau.mode["validity"] and \
                 any([self in branch for branch in
                      open_branches]) and self.fml.atom():
-            fml = (len(fml) * " ") + \
-                  "\033[4m" + fml + "\033[0m" + \
-                  (
-                              len(fml) * " ")  # todo not properly center
-            # aligned; to little padding
-        str_fml = "{:^{len}}".format(fml, len=len_fml)
+            # todo not properly center aligned; to little padding
+            str_world = (len(str_world) * " ") + "\033[4m" + str_world + "\033[0m" + \
+                  (len(str_world) * " ")
+            str_sign = (len(str_sign) * " ") + "\033[4m" + str_sign + "\033[0m" + \
+                  (len(str_sign) * " ")
+            str_fml = (len(str_fml) * " ") + "\033[4m" + str_fml + "\033[0m" + \
+                  (len(str_fml) * " ")
+        str_world = "{:<{len}}".format(str_world, len=len_world)
+        str_sign = "{:<{len}}".format(str_sign, len=len_sign)
+        str_fml = "{:^{len}}".format(str_fml, len=len_fml)
 
         if isinstance(self.fml, Open) or isinstance(self.fml, Infinite):
             str_cite = ""
@@ -2170,11 +2171,11 @@ class Node(object):
         }
 
         str_line = str(self.line) + "." if self.line else ""
-        # underline lines of open branches in MG
-        if self.tableau.underline_open and not self.tableau.hide_nonopen and \
-                not \
-        self.tableau.mode["validity"] and \
-                any([self in branch for branch in open_branches]):
+        # underline lines/atoms of open branches in MG
+        if self.tableau.underline_open and \
+                    not self.tableau.hide_nonopen and \
+                    not self.tableau.mode["validity"] and \
+                    any([self in branch for branch in open_branches]):
             str_line = "\\underline{" + str_line + "}"
         label_w = "w" if self.tableau.mode["classical"] else "k"
         str_world = ("$" + label_w + "_" + "{" + str(
@@ -2185,12 +2186,12 @@ class Node(object):
                                                                          "=\\ "
                                                                          "}")\
                   + "$"
-        # underline atoms of open branches in MG
-        if self.tableau.underline_open and not self.tableau.mode["validity"] \
-                and \
-                any([self in branch for branch in
-                     open_branches]) and self.fml.atom():
-            # str_fml = "\\fbox{\\vphantom{Pp}" + str_fml + "}"
+        if self.tableau.underline_open and \
+                    not self.tableau.mode["validity"] and \
+                    any([self in branch for branch in open_branches]) and \
+                    self.fml.atom():
+            str_world = "\\underline{" + str_world + "}"
+            str_sign = "\\underline{" + str_sign + "}"
             str_fml = "\\underline{" + str_fml + "}"
         str_cite = ""
         if isinstance(self.fml, Open) or isinstance(self.fml, Infinite):
@@ -2275,7 +2276,7 @@ class Node(object):
         colspec = ("{R{4.5em}L{1em}cL{4.5em}}" if self.tableau.mode[
             "propositional"] else "{R{7.5em}L{1em}cL{7.5em}}") \
             if not (self.tableau.mode["modal"] or not self.tableau.mode[
-            "classical"]) else "{R{5.4em}L{2em}L{1.6em}cL{12em}}"
+            "classical"]) else "{R{5.4em}L{1.6em}L{1em}cL{12em}}"
         ssep = ("-4em" if self.tableau.mode["propositional"] else "-7em") if \
             not \
         self.tableau.mode["modal"] else \

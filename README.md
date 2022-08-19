@@ -10,9 +10,9 @@ This software can compute
 © Natalie Clarius <clarius@informatik.uni-tuebingen.de>  
 License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).   
 
-![pyPL GUI -- start](doc/img/pyPL_1_MG.png)
-![pyPL GUI -- input](doc/img/pyPL_2_MG.png)
-![pyPL GUI -- output](doc/img/pyPL_5_MG.png)
+![pyPL GUI -- start](doc/img/pyPL_1.png)
+![pyPL GUI -- input](doc/img/pyPL_2.png)
+![pyPL GUI -- output](doc/img/pyPL_3.png)
 
 # Usage notes
 
