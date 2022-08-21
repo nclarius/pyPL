@@ -575,9 +575,9 @@ class Pred(Expr):
         else:
             return i[self.p][w]
 
-    def denotVW(self, s) -> set[tuple[[str]]]:
+    def denotVW(self, s) -> set[tuple[str]]:
         """
-        @rtype: set[tuple[[str]]]
+        @rtype: set[tuple[str]]
         """
         return self.denot(s)
 
@@ -1728,7 +1728,7 @@ class Exists(Formula):
             if mode["classical"]:
                 return {"-∃": ("η", [(False, self.phi, self.u)])}
             else:
-                return {"-∃": ("omega", [(False, self.phi, self.u)])}
+                return {"-∃": ("ω", [(False, self.phi, self.u)])}
 
 
 class Forall(Formula):
