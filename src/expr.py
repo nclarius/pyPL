@@ -214,13 +214,13 @@ class Expr:
         """
         if self == other:
             return True
-        bound_terms_self = [subexpr for subexpr in self.subexprs()
+        bounaterms_self = [subexpr for subexpr in self.subexprs()
                             if any([isinstance(subexpr, LIVar) or isinstance(subexpr, Var)])]
-        bound_vars_other = [subexpr.u for subexpr in other.subexprs()
+        bounavars_other = [subexpr.u for subexpr in other.subexprs()
                             if any([isinstance(subexpr, LIVar) or isinstance(subexpr, Var)])]
-        print(bound_terms_self, bound_vars_other)
-        if len(bound_terms_self) == len(bound_vars_other):
-            conversions = product(bound_terms_self, bound_vars_other)
+        print(bounaterms_self, bounavars_other)
+        if len(bounaterms_self) == len(bounavars_other):
+            conversions = product(bounaterms_self, bounavars_other)
             print(conversions)
             for convex, u in conversions:
                 conv = self.alpha_conv(convex, u)
@@ -1671,7 +1671,7 @@ class Exists(Formula):
 
         # short version
         if not verbose:
-            return any([self.phi.denot(s, v | {self.u.u: d_}, w) for d_ in d])
+            return any([self.phi.denot(s, v | {self.u.u: a}, w) for a in d])
 
         # long version
         global depth
@@ -1804,7 +1804,7 @@ class Forall(Formula):
 
             # short version
             if not verbose:
-                return all([self.phi.denot(s, v | {self.u.u: d_}, w) for d_ in d])
+                return all([self.phi.denot(s, v | {self.u.u: a}, w) for a in d])
 
             # long version
 
@@ -1838,7 +1838,7 @@ class Forall(Formula):
 
             # short version
             if not verbose:
-                return all([all([self.phi.denot(s, v | {self.u.u: d_}, w_) for d_ in s.d[w_]]) for w_ in s.future(w)])
+                return all([all([self.phi.denot(s, v | {self.u.u: a}, w_) for a in s.d[w_]]) for w_ in s.future(w)])
 
             # long version
 
