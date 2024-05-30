@@ -1666,6 +1666,8 @@ class Exists(Formula):
         d = s.d
         if "vardomains" in s.mode() or "intuitionstic" in s.mode():
             d = s.d[w]
+        if v is None:
+            v = {}
 
         # short version
         if not verbose:
@@ -1795,6 +1797,8 @@ class Forall(Formula):
         d = s.d
         if "vardomains" in s.mode():
             d = s.d[w]
+        if v is None:
+            v = {}
 
         if "classical" in s.mode():  # CL
 
@@ -1971,6 +1975,8 @@ class Most(Formula):
         The denotation of most u(phi, chi) is true iff
         |phi ∩ chi| > |phi - chi|.
         """
+        if v is None:
+            v = {}
         return len({d for d in s.d if self.phi.denot(s, v | {self.u.u: d}, w)} &
                    {d for d in s.d if self.chi.denot(s, v | {self.u.u: d}, w)}) \
                > \
@@ -2041,6 +2047,8 @@ class More(Formula):
         The denotation of morethan u(phi, psi, chi) is true iff
         |phi ∩ chi| > |psi ∩ chi|
         """
+        if v is None:
+            v = {}
         return len({d for d in s.d if self.phi.denot(s, v | {self.u.u: d}, w)} &
                    {d for d in s.d if self.chi.denot(s, v | {self.u.u: d}, w)}) \
                > \
