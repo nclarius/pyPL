@@ -11,7 +11,7 @@ structure = __import__("structure")
 
 from itertools import product
 
-verbose = False
+verbose = True
 
 
 class Expr:
@@ -587,6 +587,20 @@ depth = 0  # keep track of the level of nesting
 
 # todo depth has to be reset manually after each call of `denot`
 
+# So we can call denot on a structure without a specific assignment function and possible world to evaluate it relative to a ll
+class FormulaMeta(type):
+    def __new__(cls, name, bases, attrs):
+        instance = type.__new__(cls, name, bases, attrs)
+        super_instance = super(instance, instance)
+        print("creating", name, instance, super_instance)
+        if hasattr(super_instance, 'denot') and hasattr(instance, 'denot'):
+            super_denot = getattr(super_instance, 'denot')
+            sub_denot = getattr(instance, 'denot')
+            def meta_denot(self):
+                super_denot(self)
+                sub_denot(self)
+            setattr(instance, 'denot', meta_denot)
+        return instance
 
 class Formula(Expr):
     """
@@ -596,6 +610,7 @@ class Formula(Expr):
     @method denotV: the truth value of a formula relative to a structure s (without reference to a particular
     assignment)
     """
+    __metaclass__ = FormulaMeta
 
     def atom(self):
         return isinstance(self, Verum) or isinstance(self, Falsum) or \
@@ -614,7 +629,31 @@ class Formula(Expr):
         """
         @rtype: bool
         """
-        pass
+        if isinstance(s, structure.PropStructure):
+            return self.denot(s, v, w)
+        elif isinstance(s, structure.PredStructure):
+            if v:
+                return self.denot(s, v, w)
+            else:
+                print("no assignment function provided.")
+                return self.denotV(s, w)
+        elif isinstance(s, structure.PropModalStructure) or isinstance(s, structure.KripkePropStructure):
+            if w:
+                return self.denot(s, v, w)
+            else:
+                return self.denotW(s, w)
+        elif isinstance(s,  structure.ConstModalStructure) or isinstance(s, structure.VarModalStructure) or isinstance(s, structure.KripkePredStructure):
+            if v:
+                if w:
+                    return self.denot(s, v, w)
+                else:
+                    return self.denotW(s, w)
+            else:
+                if w:
+                    return self.denotV(s, w)
+                else:
+                    return self.denotVW(s)
+
 
     def denotV(self, s, w: str = "") -> bool:
         """

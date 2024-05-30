@@ -191,7 +191,13 @@ def compute_active():
                 print("⟦" + str(e) + "⟧^S1 =")
                 print(e.denotV(s1))
                 depth = 0
-
+            if nr == 3:
+                print()
+                print("⟦" + str(e) + "⟧^S1 =")
+                print(e.denot(s1))
+                print("⟦" + str(e) + "⟧^S1,v1 =")
+                print(e.denot(s1, v1))
+                depth = 0
 
 
     if 2 in active:
