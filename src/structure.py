@@ -89,11 +89,11 @@ class PredStructure(Structure):
       - D = domain of discourse
       - I = interpretation function assigning a denotation to each non-logical symbol
 
-    - The domain D is a set of individuals, specified as strinvs:
+    - The domain D is a set of individuals, specified as strings:
        D = {'a', 'b', 'c', ...}
 
     - The interpretation function F is a dictionary with
-      - non-logical symbols (specified as strinvs) as keys and
+      - non-logical symbols (specified as strings) as keys and
       - members/subsets/functions of D as values
 
        {'c': 'a', 'P': {('a', ), ('b', )}, 'f': {('c1',): 'a', ('c2',): 'b'}}
@@ -101,7 +101,7 @@ class PredStructure(Structure):
         - The denotation of individual constants is a member (string) of D:
            'c': 'a'
 
-        - The denotation of predicates is a set of tuples of members (strinvs) of D:
+        - The denotation of predicates is a set of tuples of members (strings) of D:
            'P': {('a', ), ('b', )}
            'R': {('a', 'b'), ('b', 'c')}
 
@@ -123,8 +123,8 @@ class PredStructure(Structure):
            'h': {('c1', 'c2'): 'a'}
 
     - An assignment function g is a dictionary with
-      - variables (specified as strinvs) as keys and
-      - members of D (specified as strinvs) as values
+      - variables (specified as strings) as keys and
+      - members of D (specified as strings) as values
        {'x': 'a', 'y': 'b', 'z': 'c'}
 
     ---------
@@ -219,7 +219,7 @@ class PropModalStructure(ModalStructure):
       - R = accessibility relation, a binary relation on W
       - V = valuation function
 
-    - The set of possible worlds W is a set of possible worlds, specified as strinvs:
+    - The set of possible worlds W is a set of possible worlds, specified as strings:
        W = {'w1', 'w2', ...}
 
     - The accessibility relation W is a set of tuples of possible worlds:
@@ -293,13 +293,13 @@ class ConstModalStructure(ModalStructure):
       - I = interpretation function assigning to each member of w and each non-logical symbol a denotation
     and a set of assignment functions vs.
 
-    - The set of possible worlds W is a set of possible worlds, specified as strinvs:
+    - The set of possible worlds W is a set of possible worlds, specified as strings:
        W = {'w1', 'w2', ...}
 
     - The accessibility relation W is a set of tuples of possible worlds:
       R = {('w1', 'w2'), ('w2', 'w2'), ...}
 
-    - The domain D is a set of individuals, specified as strinvs:
+    - The domain D is a set of individuals, specified as strings:
       D = {'a', 'b', 'c', ...}
 
     - The interpretation function F is a dictionary with
@@ -409,14 +409,14 @@ class VarModalStructure(ModalStructure):
       - I = interpretation function assigning to each member of W and each non-logical symbol a denotation
     and a set of assignment functions vs.
 
-    - The set of possible worlds W is a set of possible worlds, specified as strinvs:
+    - The set of possible worlds W is a set of possible worlds, specified as strings:
        W = {'w1', 'w2', ...}
 
     - The accessibility relation W is a set of tuples of possible worlds:
       R = {('w1', 'w2'), ('w2', 'w2'), ...}
 
     - The domain D is a a dictionary with
-      - possible worlds (specified as strinvs) as keys and
+      - possible worlds (specified as strings) as keys and
       - domains (see D) as values
       D = {'w1': {'a', 'b', 'c'}, 'w2': {'b'}, ...}
 
@@ -568,7 +568,7 @@ class KripkePropStructure(KripkeStructure):
       - I = valuation function assigning to each member of K and each propositional variabl a truth value
     and a set of assignment functions vs assigning to each state k to each variable an element from the domain of k.
 
-    - The set of states K is a set of states, specified as strinvs, where the root state has to be specified as 'k0':
+    - The set of states K is a set of states, specified as strings, where the root state has to be specified as 'k0':
        K = {'k0', 'k1', 'k2' ...}
 
     - The accessibility relation R is a partial order on K,
@@ -677,7 +677,7 @@ class KripkePredStructure(KripkeStructure):
       - I = interpretation function assigning to each member of K and each non-logical symbol a denotation
     and a set of assignment functions vs assigning to each state k to each variable an element from the domain of k.
 
-    - The set of states K is a set of states, specified as strinvs, where the root state has to be specified as 'k0':
+    - The set of states K is a set of states, specified as strings, where the root state has to be specified as 'k0':
        K = {'k0', 'k1', 'k2' ...}
 
     - The accessibility relation R is a partial order on K,
@@ -686,9 +686,9 @@ class KripkePredStructure(KripkeStructure):
        R = {('k0', 'k1'), ('k0', 'k2'), ...}
 
     - The domain D is a a dictionary with
-      - states (specified as strinvs) as keys and
+      - states (specified as strings) as keys and
       - domains as values
-        - The domain D_k is a set of individuals, specified as strinvs:
+        - The domain D_k is a set of individuals, specified as strings:
            {'a', 'b', 'c', ...}
        D = {'k0': {'a'}, 'k1': {'a', 'b'}, 'k2': {'a', 'c'}, ...}
 
@@ -697,7 +697,7 @@ class KripkePredStructure(KripkeStructure):
       - and an interpretation of the non-logical symbols as values
 
         - The interpretation function I_k is a dictionary with
-          - non-logical symbols (specified as strinvs) as keys and
+          - non-logical symbols (specified as strings) as keys and
           - members/subsets/functions of D as values
 
            {'c': 'a', 'P': {('a', ), ('b', )}, 'f': {('c1',): 'a', ('c2',): 'b'}}
@@ -705,7 +705,7 @@ class KripkePredStructure(KripkeStructure):
             - The denotation of individual constants is a member (string) of D:
                'c': 'a'
 
-            - The denotation of predicates is a set of tuples of members (strinvs) of D:
+            - The denotation of predicates is a set of tuples of members (strings) of D:
                'P': {('a', ), ('b', )}
                'R': {('a', 'b'), ('b', 'c')}
 
