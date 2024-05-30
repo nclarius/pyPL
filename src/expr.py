@@ -597,9 +597,6 @@ class Formula(Expr):
     assignment)
     """
 
-    # todo efficiency: assignment functions have to be specified on all variables of the language;
-    #  the domain is not restricted expression-wise to those variables that actually occur in the expression
-
     def atom(self):
         return isinstance(self, Verum) or isinstance(self, Falsum) or \
                isinstance(self, Prop) or isinstance(self, Eq) or isinstance(self, Atm)
@@ -621,7 +618,7 @@ class Formula(Expr):
 
     def denotV(self, s, w: str = None) -> bool:
         """
-        A formula is true in a structure S iff it is true in S under all assignments v.
+        A formula is true in a structure S iff it is true in S under all assignments v of variables occurring free in the formula.
 
         @rtype: bool
         """
@@ -629,20 +626,13 @@ class Formula(Expr):
             return self.denot(s, None, w)
 
         global depth
-        # for efficiency, restrict the domain of the assignment functions o the vars that actually occur in the formula
-        var_occs = self.freevars() | self.boundvars()
-        vs__ = s.vs
-        if "vardomains" in s.mode():
-            vs__ = s.vs[w]
-        vs_ = [{u: v[u] for u in v if u in var_occs} for v in vs__]
-        vs = [dict(tpl) for tpl in {tuple(v.items()) for v in vs_}]  # filter out now duplicate assignment functions
 
-        if not self.freevars():  # if the formula is closed,
-            # spare yourself the quantification over all assignment functions and pick an arbitrary assignment
-            # (here: the first)
-            return self.denot(s, vs[0], w)
+        # all variable assignment functions for the free variables of the formula
+        vs = [{v: a
+               for (v, a) in zip(self.freevars(), distr)}  # for each pair of variable and element from D
+              for distr in list(product(list(s.d), repeat=len(self.freevars())))]  # for each possible |vars| long combination of elements from D
 
-        for v in vs:  # otherwise, check the denotation for all assignment functions
+        for v in vs:  # check the denotation for all assignment functions
             depth += 1
             if verbose:
                 print((depth * " ") + "checking v := " + str(v) + " ...")
@@ -666,10 +656,6 @@ class Formula(Expr):
         @rtype: bool
         """
         global depth
-        # for efficiency, restrict the domain of the assignment functions to the vars that actually occur in the formula
-        var_occs = self.freevars() | self.boundvars()
-        gs_ = [{u: v[u] for u in v if u in var_occs} for v in s.vs]
-        s.vg_ = [dict(tpl) for tpl in {tuple(v.items()) for v in gs_}]  # filter out duplicate assignment functions
 
         for w in s.w:
             depth += 1

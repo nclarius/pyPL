@@ -83,7 +83,7 @@ indiv_vars = ["x", "y", "z"]
 
 class PredStructure(Structure):
     """
-    A structure of predicate logic with domain, interpretation function and a set of assignment functions.
+    A structure of predicate logic with domain and interpretation function.
 
     A Structure M is a pair <D, I> with
       - D = domain of discourse
@@ -122,7 +122,7 @@ class PredStructure(Structure):
            'f': {('c1',): 'a', ('c2',): 'b'}
            'h': {('c1', 'c2'): 'a'}
 
-    - An assignment function g is a dictionary with
+    - An assignment function v is a dictionary with
       - variables (specified as strings) as keys and
       - members of D (specified as strings) as values
        {'x': 'a', 'y': 'b', 'z': 'c'}
@@ -135,22 +135,12 @@ class PredStructure(Structure):
     @type d: set[str]
     @attr i: the interpretation function assigning denotations to the non-logical symbols
     @type i: dict[str,Any]
-    @type v: some assignment functions associated with the structure
-    @type v: dict[str,dict[str,str]]]
-    @type vs: all assignment functions associated with the structure
-    @type vs: list[dict[str,str]]]
     """
 
-    def __init__(self, s, d, i, v={}):
-        # todo set of assignments for other structures
+    def __init__(self, s, d, i):
         self.s = s
         self.d = d
         self.i = i
-        self.v = v
-        # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D)
-        dprod = list(product(list(d), repeat=len(indiv_vars)))
-        # all variable assignment functions
-        self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
     def __str__(self):  # todo sort interpretation by type and arity of symbol
         suffix = self.s.removeprefix("S") if self.s[-1].isdigit() else ""
@@ -166,9 +156,7 @@ class PredStructure(Structure):
                    ("{" +
                     ", ".join(["⟨" + ", ".join([str(t) for t in e]) + "⟩" for e in sorted(val)]) +
                     "}")))
-                 for (key, val) in sorted(self.i.items(), key=sort_i)]) + "\n" + \
-               "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v[g].items())])
-                          for g in self.v])
+                 for (key, val) in sorted(self.i.items(), key=sort_i)])
 
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
@@ -189,9 +177,6 @@ class PredStructure(Structure):
                            ", ".join(["\\tpl{" + ", ".join([self.text(t) for t in e]) + "}" for e in sorted(val)]) +
                            "}")))
                         for (key, val) in sorted(self.i.items(), key=sort_i)]) + "\\\\\n" + \
-               "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + self.text(val)
-                                                      for key, val in sorted(self.v[g].items())])
-                              for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \
                 .replace("\\set{}", "\\emptyset{}")
 
@@ -291,7 +276,6 @@ class ConstModalStructure(ModalStructure):
       - R = accessibility relation, a binary relation on W
       - D = domain of discourse
       - I = interpretation function assigning to each member of w and each non-logical symbol a denotation
-    and a set of assignment functions vs.
 
     - The set of possible worlds W is a set of possible worlds, specified as strings:
        W = {'w1', 'w2', ...}
@@ -309,6 +293,11 @@ class ConstModalStructure(ModalStructure):
         - and interpretation (see f) as values.
       I = {'c': {'w1': 'a', 'w2':  'a'}, 'P': {'w1: {('a',)}, 'w2': {('a', ), ('b', )}}}
 
+    - An assignment function v is a dictionary with
+      - variables (specified as strings) as keys and
+      - members of D (specified as strings) as values
+       {'x': 'a', 'y': 'b', 'z': 'c'}
+
     @attr s: the name of the structure (such as "M1")
     @type s: str @attr w: the set of possible worlds
     @type w: set[str]
@@ -318,24 +307,15 @@ class ConstModalStructure(ModalStructure):
     @type d: set[str]
     @attr i: the interpretation function
     @type i: dict[str,dict[str,Any]]
-    @type v: some assignment functions associated with the structure
-    @type v: dict[str,dict[str,str]]]
-    @type vs: all assignment functions associated with the structure
-    @type vs: list[dict[str,str]]]
     """
 
     # todo doesnt work yet (assignment function)
-    def __init__(self, s, w, r, d, i, v={}):
+    def __init__(self, s, w, r, d, i):
         self.s = s
         self.w = w
         self.r = r
         self.d = d
         self.i = i
-        self.v = v
-        # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D)
-        dprod = list(product(list(d), repeat=len(indiv_vars)))
-        # all variable assignment functions
-        self.vs = [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprod]
 
     def __str__(self):
         suffix = self.s.removeprefix("S") if self.s[-1].isdigit() else ""
@@ -354,10 +334,7 @@ class ConstModalStructure(ModalStructure):
                             ("{" + ", ".join(["⟨" + ", ".join([str(t).replace("frozenset", "")
                                 for t in e]) + "⟩" for e in sorted(ipw)]) + "}")))
                         for (w, ipw) in sorted(self.i[p].items())]) + \
-                    "\n    " for (p, ip) in sorted(self.i.items(), key=sort_i_w)]).replace("\n    \n", "\n") + \
-               "\n" + \
-               "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val) for key, val in sorted(self.v[g].items())])
-                    for g in self.v])
+                    "\n    " for (p, ip) in sorted(self.i.items(), key=sort_i_w)]).replace("\n    \n", "\n")
 
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
@@ -392,8 +369,6 @@ class ConstModalStructure(ModalStructure):
                                  "}")))
                             for (w, ipw) in sorted(self.i[p].items())])
                         for (p, ip) in sorted(self.i.items(), key=sort_i_w)]) + "\\\\\n" + \
-               "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + self.text(val)
-                    for key, val in sorted(self.v[g].items())]) for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \
                .replace("\\set{}", "\\emptyset{}")
 
@@ -425,6 +400,13 @@ class VarModalStructure(ModalStructure):
       - and interpretation of the non-logical symbols (see f) as values.
       I = {'c': {'w1': 'a', 'w2':  'a'}, 'P': {'w1: {('a',)}, 'w2': {('a', ), ('b', )}}}
 
+    - An assignment function v is a dictionary with
+      - possible worlds (specified as strings) as keys and
+      - a dictionary with
+        - variables (specified as strings) as keys and
+        - members of D at the world (specified as strings) as values
+        as values.
+       {'w1': {'x': 'a', 'y': 'b', 'z': 'c'}, 'w2': {'x': 'b', 'y': 'c', 'z': 'a'}, ...}
 
     @attr s: the name of the structure (such as "M1")
     @type s: str
@@ -436,23 +418,14 @@ class VarModalStructure(ModalStructure):
     @type d: dict[str,set[str]]
     @attr i: the interpretation function
     @type i: dict[str,dict[str,Any]]
-    @type v: some assignment functions associated with the structure
-    @type v: dict[str,dict[str,str]]]
-    @type vs: all assignment functions associated with the structure
-    @type vs: list[dict[str,str]]]
     """
 
-    def __init__(self, s, w, r, d, i, v={}):
+    def __init__(self, s, w, r, d, i):
         self.s = s
         self.w = w
         self.r = r
         self.d = d
         self.i = i
-        self.v = v
-        # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D) per world
-        dprods = {w: list(product(list(self.d[w]), repeat=len(indiv_vars))) for w in self.w}
-        # all variable assignment functions per world
-        self.vs = {w: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[w]] for w in self.w}
 
     def __str__(self):
         suffix = self.s.removeprefix("S") if self.s[-1].isdigit() else ""
@@ -565,8 +538,7 @@ class KripkePropStructure(KripkeStructure):
     A KripkePredStructure is a triple <K,R,V> with
       - K = set of states
       - R = the accessibility relation, a binary relation on K
-      - I = valuation function assigning to each member of K and each propositional variabl a truth value
-    and a set of assignment functions vs assigning to each state k to each variable an element from the domain of k.
+      - V = valuation function assigning to each member of K and each propositional variable a truth value
 
     - The set of states K is a set of states, specified as strings, where the root state has to be specified as 'k0':
        K = {'k0', 'k1', 'k2' ...}
@@ -728,6 +700,14 @@ class KripkePredStructure(KripkeStructure):
 
          I = {'c': {'k0': 'a', 'k1':  'a'}, 'P': {'k0: {('a',)}, 'k1': {('a', ), ('b', )}}}
 
+    - An assignment function v is a dictionary with
+      - states (specified as strings) as keys and
+      - a dictionary with
+        - variables (specified as strings) as keys and
+        - members of the domain at the state (specified as strings) as values
+        as values.
+       {'k0': {'x': 'a', 'y': 'b', 'z': 'c'}, 'k1': {'x': 'b', 'y': 'c', 'z': 'a'}, ...}
+
     @attr s: the name of the structure
     @type s: str
     @attr k: the set of states
@@ -738,23 +718,14 @@ class KripkePredStructure(KripkeStructure):
     @type d: dict[str,set[str]]
     @attr i: the interpretation function
     @type i: dict[str,dict[str,Any]]
-    @type v: some assignment functions associated with the structure
-    @type v: dict[str,dict[str,str]]]
-    @type vs: all assignment functions associated with the structure
-    @type vs: list[dict[str,str]]]
     """
 
-    def __init__(self, s, k, r, d, i, v={}):
+    def __init__(self, s, k, r, d, i):
         self.s = s
         self.k = k
         self.r = r
         self.d = d
         self.i = i
-        self.v = v
-        # card. product D^|vars| (= all ways of forming sets of |vars| long combinations of elements from D) per state
-        dprods = {k: list(product(list(self.d[k]), repeat=len(indiv_vars))) for k in self.k} if d else {}
-        # all variable assignment functions
-        self.vs = {k: [{v: a for (v, a) in zip(indiv_vars, distr)} for distr in dprods[k]] for k in self.k} if d else {}
 
         # compute the relfexive and transitive closure of R
         closure = set(self.r)
@@ -808,9 +779,7 @@ class KripkePredStructure(KripkeStructure):
                                  if isinstance(ipk, dict) else
                             ("{" + ", ".join(["⟨" + ", ".join([str(t) for t in e]) + "⟩" for e in sorted(ipk)]) + "}")))
                                               for (k, ipk) in sorted(self.i[p].items())]) +  "\n    "
-                    for (p, ip) in sorted(self.i.items(), key=sort_i_w)]).replace("\n    \n", "\n") + "\n" + \
-                "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val)
-                    for key, val in sorted(self.v[g].items())]) for g in self.v])
+                    for (p, ip) in sorted(self.i.items(), key=sort_i_w)]).replace("\n    \n", "\n")
 
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
@@ -845,8 +814,5 @@ class KripkePredStructure(KripkeStructure):
                                 "}")))
                              for (k, ipk) in sorted(self.i[p].items())])
                         for (p, ip) in sorted(self.i.items(), key=sort_i_w)]) + "\\\\\n" + \
-               "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + self.text(val)
-                                                      for key, val in sorted(self.v[g].items())])
-                              for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \
                 .replace("\\set{}", "\\emptyset{}")
