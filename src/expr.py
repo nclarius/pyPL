@@ -133,7 +133,7 @@ class Expr:
         """
         return type(self)(*[subexpr.subst(u, t) for subexpr in self.subexprs()])
 
-    def denot(self, s, v: dict[str, str] = None, w: str = None):
+    def denot(self, s, v: dict[str, str] = {}, w: str = ""):
         """
         The denotation of the expression relative to a structure s and assignment v.
 
@@ -147,7 +147,7 @@ class Expr:
         """
         return None
 
-    def denotV(self, s, w=None):
+    def denotV(self, s, w = ""):
         """
         The denotation of the expression relative to a structure S (abstracted over assignments).
 
@@ -158,9 +158,9 @@ class Expr:
         @return: the denotation of self in s
         @rtype: Any
         """
-        return self.denot(s, None, w)
+        return self.denot(s, {}, w)
 
-    def denotW(self, s, v=None):
+    def denotW(self, s, v = {}):
         """
         The denotation of the expression relative to a structure S and assignment v (abstracted over possible worlds).
 
@@ -171,7 +171,7 @@ class Expr:
         @return: the denotation of self in s under v
         @rtype: Any
         """
-        return self.denot(s, v, None)
+        return self.denot(s, v, "")
 
     def denotVW(self, s):
         """
@@ -286,7 +286,7 @@ class Term(Expr):
         """
         pass
 
-    def denot(self, s, v=None, w=None) -> str:
+    def denot(self, s, v = {}, w = "") -> str:
         """
         @rtype: str
         """
@@ -346,7 +346,7 @@ class Var(Term):
         else:
             return self
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of a variable is that individual that the assignment function v assigns it.
         """
@@ -395,7 +395,7 @@ class Const(Term):
     def subst(self, u, t):
         return self
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of a constant is that individual that the interpretation function f assigns it.
         """
@@ -445,7 +445,7 @@ class Func(Expr):
     def subst(self, u, t):
         return self
 
-    def denot(self, s, v=None, w=None) -> dict[tuple[str], str]:
+    def denot(self, s, v = {}, w = "") -> dict[tuple[str], str]:
         """
         The denotation of a function symbol is the function that the interpretation function f assigns it.
         """
@@ -513,7 +513,7 @@ class FuncTerm(Term):
     def subst(self, u, t):
         return FuncTerm(self.f, tuple([term.subst(u, t) for term in self.terms]))
 
-    def denot(self, s, v=None, w=None) -> str:
+    def denot(self, s, v = {}, w = "") -> str:
         """
         The denotation of a function symbol applied to an appropriate number of terms is that individual that the
         interpretation function f assigns to the application.
@@ -564,7 +564,7 @@ class Pred(Expr):
     def subst(self, u, t):
         return self
 
-    def denot(self, s, v=None, w=None) -> set[tuple[str]]:
+    def denot(self, s, v = {}, w = "") -> set[tuple[str]]:
         """
         The denotation of a predicate is the set of ordered tuples of individuals that the interpretation function f
         assigns it.
@@ -610,13 +610,13 @@ class Formula(Expr):
         """
         pass
 
-    def denot(self, s, v=None, w=None) -> bool:
+    def denot(self, s, v = {}, w = "") -> bool:
         """
         @rtype: bool
         """
         pass
 
-    def denotV(self, s, w: str = None) -> bool:
+    def denotV(self, s, w: str = "") -> bool:
         """
         A formula is true in a structure S iff it is true in S under all assignments v of variables occurring free in the formula.
 
@@ -649,7 +649,7 @@ class Formula(Expr):
                 return False
         return True
 
-    def denotW(self, s, v: dict[str, str]) -> bool:
+    def denotW(self, s, v: dict[str, str] = {}) -> bool:
         """
         A formula is true in a structure S iff it is true in S and v in all possible worlds w.
 
@@ -805,7 +805,7 @@ class Prop(Formula):
     def subst(self, u, t):
         return self
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of a propositional variable is the truth value the valuation function V assigns it.
         """
@@ -887,7 +887,7 @@ class Atm(Formula):
     def subst(self, u, t):
         return Atm(self.pred, tuple([term.subst(u, t) for term in self.terms]))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of an atomic predication P(t1, ..., tn) is true iff the tuple of the denotation of the terms is
         an element of the interpretation of the predicate.
@@ -959,7 +959,7 @@ class Eq(Formula):
     def subst(self, u, t):
         return Eq(self.t1.subst(u, t), self.t2.subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of a term equality t1 = t2 is true iff t1 and t2 denote the same individual.
         """
@@ -1021,7 +1021,7 @@ class Verum(Formula):
     def subst(self, u, t):
         return self
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of the verum is always true.
         """
@@ -1082,7 +1082,7 @@ class Falsum(Formula):
     def subst(self, u, t):
         return self
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of the falsum is always false.
         """
@@ -1152,7 +1152,7 @@ class Neg(Formula):
     def subst(self, u, t):
         return Neg(self.phi.subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         In CL, the denotation of a negated formula Neg(phi) is true iff phi is false.
 
@@ -1234,7 +1234,7 @@ class Conj(Formula):
     def subst(self, u, t):
         return Conj(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of a conjoined formula Con(phi,psi) is true iff phi is true and psi is true.
         """
@@ -1303,7 +1303,7 @@ class Disj(Formula):
     def subst(self, u, t):
         return Disj(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of a conjoined formula Disj(phi,psi) is true iff phi is true or psi is true.
         """
@@ -1372,7 +1372,7 @@ class Imp(Formula):
     def subst(self, u, t):
         return Imp(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         In CL, the denotation of an implicational formula Imp(phi,psi) is true iff phi is false or psi is true.
 
@@ -1458,7 +1458,7 @@ class Biimp(Formula):
     def subst(self, u, t):
         return Biimp(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         In CL, the denotation of an biimplicational formula Biimp(phi,psi) is true iff
         phi and psi have the same truth value.
@@ -1548,7 +1548,7 @@ class Xor(Formula):
     def subst(self, u, t):
         return Biimp(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         In CL, the denotation of an biimplicational formula Biimp(phi,psi) is true iff
         phi and psi have the same truth value.
@@ -1643,7 +1643,7 @@ class Exists(Formula):
             u_ = [var for var in varnames if var not in self.phi.freevars() | t.freevars()][0]
             return Exists(Var(u_), self.phi.subst(self.u, Var(u_)).subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of an existentially quantified formula Exists(u, phi) is true
         iff phi is true under at least one u-variant of v.
@@ -1652,8 +1652,6 @@ class Exists(Formula):
         d = s.d
         if "vardomains" in s.mode() or "intuitionstic" in s.mode():
             d = s.d[w]
-        if v is None:
-            v = {}
 
         # short version
         if not verbose:
@@ -1769,7 +1767,7 @@ class Forall(Formula):
             u_ = [var for var in varnames if var not in self.phi.freevars() | t.freevars()][0]
             return Forall(Var(u_), self.phi.subst(self.u, Var(u_)).subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         In CL, the denotation of universally quantified formula Forall(u, phi) is true iff
         phi is true under all u-variants of v.
@@ -1783,8 +1781,6 @@ class Forall(Formula):
         d = s.d
         if "vardomains" in s.mode():
             d = s.d[w]
-        if v is None:
-            v = {}
 
         if "classical" in s.mode():  # CL
 
@@ -1956,13 +1952,11 @@ class Most(Formula):
             u_ = [var for var in varnames if var not in self.phi.freevars() | t.freevars()][0]
             return Most(Var(u_), self.phi.subst(self.u, Var(u_)).subst(u, t), self.chi.subst(u, Var(u_)).subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of most u(phi, chi) is true iff
         |phi ∩ chi| > |phi - chi|.
         """
-        if v is None:
-            v = {}
         return len({d for d in s.d if self.phi.denot(s, v | {self.u.u: d}, w)} &
                    {d for d in s.d if self.chi.denot(s, v | {self.u.u: d}, w)}) \
                > \
@@ -2028,13 +2022,11 @@ class More(Formula):
             return More(Var(u_), self.phi.subst(self.u, Var(u_)).subst(u, t), self.psi.subst(u, Var(u_)).subst(u, t),
                         self.chi.subst(u, Var(u_)).subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of morethan u(phi, psi, chi) is true iff
         |phi ∩ chi| > |psi ∩ chi|
         """
-        if v is None:
-            v = {}
         return len({d for d in s.d if self.phi.denot(s, v | {self.u.u: d}, w)} &
                    {d for d in s.d if self.chi.denot(s, v | {self.u.u: d}, w)}) \
                > \
@@ -2336,7 +2328,7 @@ class Int(Expr):
     def subst(self, u, t):
         return Int(self.phi.subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of the intension of an expression is
         the function from possible worlds to the extension of the expression in that world.
@@ -2390,7 +2382,7 @@ class Ext(Expr):
     def subst(self, u, t):
         return Int(self.phi.subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of the extension of an intensional expression is
         the intension function applied to the possible world.
@@ -2439,7 +2431,7 @@ class LIVar(Lexpr):
         else:
             return self
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of a variable is that individual that the assignment function v assigns it.
         """
@@ -2470,7 +2462,7 @@ class LConst(Lexpr):
     def subst(self, u, t):
         return self
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of a constant is that individual that the interpretation function f assigns it.
         """
@@ -2520,7 +2512,7 @@ class Appl(Lexpr):
     def subst(self, u, t):
         return Appl(self.phi.subst(u, t), self.psi.subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of a lambda application the value of its functor applied to the value of its argument.
         """
@@ -2567,7 +2559,7 @@ class Abstr(Lexpr):
             u_ = [var for var in varnames if var not in self.phi.freevars() | t.freevars()][0]
             return Abstr(LIVar(u_), self.phi.subst(self.u, LIVar(u_)).subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         The denotation of a lambda application is a function form its variable to the body.
         """
@@ -2616,7 +2608,7 @@ class AllWorlds(Formula):
     def subst(self, u, t):
         return Neg(self.phi.subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         A formula is true in the model if it is true in all worlds of the model.
         """
@@ -2681,7 +2673,7 @@ class NotAllWorlds(Formula):
     def subst(self, u, t):
         return Neg(self.phi.subst(u, t))
 
-    def denot(self, s, v=None, w=None):
+    def denot(self, s, v = {}, w = ""):
         """
         A formula is not true in the model if it is not true in all worlds of the model.
         """
