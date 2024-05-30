@@ -989,6 +989,7 @@ class Eq(Formula):
         """
         t1 = t2
         """
+        # todo wrong
         return str(self.t1) != str(self.t2)  # todo IL
 
     def tableau_contradiction_neg(self, other, _):
