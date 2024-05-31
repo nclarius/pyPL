@@ -87,10 +87,10 @@ Some background on the theory underlying the implementation can be found in [`py
 
 # Small Print
 
-© 2021-2023 Natalie Clarius \<natalie_clarius@yahoo.de\> [nclarius.github.io](https://nclarius.github.io/)
+© 2021-2024 Natalie Clarius \<natalie_clarius@yahoo.de\> [nclarius.github.io](https://nclarius.github.io/)
 
 This work is licensed under the GNU General Public License v3.0.  
 This program comes with absolutely no warranty.  
 This is free software, and you are welcome to redistribute and/or modify it under certain conditions.  
 
-I am glad to receive comments, bug reports and improvement suggestions via GitHub issues or e-mail to clarius@informatik.uni-tuebingen.de.
+I am glad to receive comments, bug reports and improvement suggestions via GitHub issues or e-mail to natalie.clarius@student.uni-tuebingen.de.
