@@ -139,7 +139,7 @@ def compute_active():
     # todo update to use class
 
     global depth, active
-    active = [1]  # set here which denotations to include in the output (see def.s in fnc. 'compute_active')
+    active = [8]  # set here which denotations to include in the output (see def.s in fnc. 'compute_active')
     verbose = True  # set this to True if you'd like intermediate steps to be printed out, and False otherwise
 
     if 1 in active:
@@ -499,6 +499,7 @@ def compute_active():
             print("⟦" + str(e) + "⟧^S8' =")
             print(e.denot(s1b))
             depth = 0
+        print(Conj(Prop("p"), Prop("q")).cond(s1a))
 
     if 9 in active:
         #############################

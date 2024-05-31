@@ -804,6 +804,12 @@ class Prop(Formula):
 
     def subst(self, u, t):
         return self
+    
+    def cond(self, s, v = {}, w = ""):
+        """
+        The denotation of a conjoined formula Con(phi,psi) is true iff phi is true and psi is true.
+        """
+        yield "v(" + str(self.p) + ") = 1"
 
     def denot(self, s, v = {}, w = ""):
         """
@@ -1233,6 +1239,12 @@ class Conj(Formula):
 
     def subst(self, u, t):
         return Conj(self.phi.subst(u, t), self.psi.subst(u, t))
+    
+    def cond(self, s, v = {}, w = ""):
+        """
+        The denotation of a conjoined formula Con(phi,psi) is true iff phi is true and psi is true.
+        """
+        yield str(self.phi.cond(s, v, w)) + " and " + str(self.psi.cond(s, v, w))
 
     def denot(self, s, v = {}, w = ""):
         """
