@@ -70,7 +70,7 @@ class Tableau(object):
                  classical=True, propositional=False, modal=False,
                  vardomains=False, local=True, frame="K",
                  threevalued=False, weakthreevalued=True,
-                 num_models=1, size_limit_factor=2,
+                 num_models=1, size_limit_factor=2, sequent_style=False,
                  file=True, latex=True, stepwise=False, hide_nonopen=False,
                  underline_open=True, silent=False,
                  gui=None):
@@ -86,18 +86,26 @@ class Tableau(object):
                 "frame":       frame,
                 "threevalued": threevalued, "weakthreevalued": weakthreevalued
         }
-        self.num_models, self.size_limit_factor, \
-        self.silent, self.file, self.latex, self.stepwise, self.hide_nonopen,\
-        self.underline_open = \
-            num_models, size_limit_factor, silent, file, latex, stepwise, \
+        self.num_models, self.size_limit_factor, self.sequent_style, \
+        self.silent, self.file, self.latex, self.stepwise, \
+        self.hide_nonopen, self.underline_open = \
+            num_models, size_limit_factor, silent, file, latex, stepwise, sequent_style, \
             hide_nonopen, underline_open
         self.num_branches = 1
+
+        self.appl = []  # list of applicable rules
+        self.models = []  # generated models
+        self.steps = []  # stepwise representation
+        if self.stepwise:
+            # todo treat contradiction check as separate step
+            self.steps.append(
+                self.root.treestr() if not self.latex else self.root.treetex())
 
         # append initial nodes
         line = 1
         # sig = (1,) if modal or not classical else None
         # world = 1 if (modal or not classical) and validity else None
-        signed = True if not classical or modal else False  # todo
+        signed = not classical or modal or sequent_style  # todo
         # reimplement with pos./neg. signed formulas
         rule = "A"
         source = None
@@ -142,14 +150,6 @@ class Tableau(object):
                        for i in range(1 + len(premises),
                                       1 + len(premises) + len(axioms))]
 
-        self.appl = []  # list of applicable rules
-        self.models = []  # generated models
-        self.steps = []  # stepwise representation
-        if self.stepwise:
-            # todo treat contradiction check as separate step
-            self.steps.append(
-                self.root.treestr() if not self.latex else self.root.treetex())
-        
         self.gui = gui
         if not self.gui:
             self.gui = __import__("gui").PyPLGUI(True)
@@ -196,6 +196,7 @@ class Tableau(object):
         # print usage info
         info = "\n"
         info += "You are using " + \
+                ("analytic tableau " if not self.sequent_style else "sequent calculus ") + \
                 ("proof search" if self.mode["validity"] else
                  ("model" if self.mode[
                      "satisfiability"] else "countermodel") + " generation") + \
@@ -2043,7 +2044,7 @@ class Node(object):
     """
 
     def __init__(self, parent, tableau: Tableau, line: int, world: int,
-                 sign: bool, fml: Formula, rule: str, source, inst: tuple):
+                 sign: bool, fml: Formula, rule: str, source, inst: tuple, context: list = []):
         self.tableau = tableau
         self.line = line
         # self.sig = sig
@@ -2053,6 +2054,7 @@ class Node(object):
         self.source = source
         self.rule = rule
         self.inst = inst
+        self.context = []
         self.branch = (parent.branch if parent else []) + [self]
         self.children = []
 
@@ -2176,6 +2178,34 @@ class Node(object):
                 "-":  "\\nVdash"
         }
 
+        if self.tableau.sequent_style:
+            if isinstance(self.fml, Pseudo):
+                return "$\ $"
+            fmls_l = [node.fml for node in 
+                list(dict.fromkeys(self.context + [self])) if node.sign]
+                # todo still containd suplicates
+            fmls_r = [node.fml for node in 
+                list(dict.fromkeys([self] + self.context)) if not node.sign]
+            fml = "$" + \
+                "{,} ".join([fml.tex().\
+                    replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }") 
+                    for fml in fmls_l]) + \
+                " \\vdash " + \
+                "{,}".join([fml.tex()\
+                    .replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }") 
+                    for fml in fmls_r]) + \
+                "$"
+            str_rule = ("\\! ".join(
+                    [str2tex[c] if c in str2tex else c for c in str(
+                            self.rule)]) \
+                            if not str(self.rule).isnumeric() else str(
+                self.rule)) \
+                .replace("\\neg\\! \\", "\\neg \\")\
+                .replace("\\Vdash", "\\Leftarrow")\
+                .replace("\\nVdash", "\\Rightarrow")\
+                if self.rule else ""
+            return fml
+
         str_line = str(self.line) + "." if self.line else ""
         # underline lines/atoms of open branches in MG
         if self.tableau.underline_open and \
@@ -2183,15 +2213,14 @@ class Node(object):
                     not self.tableau.mode["validity"] and \
                     any([self in branch for branch in open_branches]):
             str_line = "\\underline{" + str_line + "}"
+        
         label_w = "w" if self.tableau.mode["classical"] else "k"
         str_world = ("$" + label_w + "_" + "{" + str(
             self.world) + "}" + "$") if self.world is not None else ""
-        str_sign = ("$\\Vdash$" if self.sign else "$\\nVdash$" if self.sign is not None else "")
-        str_fml = "$" + self.fml.tex().replace(",", "{,}\\ \\!").replace("=",
-                                                                         "{\\ "
-                                                                         "=\\ "
-                                                                         "}")\
-                  + "$"
+        str_sign = "$\\Vdash$" if self.sign else "$\\nVdash$" \
+            if self.sign is not None and not self.tableau.sequent_style else ""
+        str_fml = "$" + self.fml.tex()\
+            .replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }") + "$"
         if self.tableau.underline_open and \
                     not self.tableau.mode["validity"] and \
                     any([self in branch for branch in open_branches]) and \
@@ -2220,17 +2249,17 @@ class Node(object):
                     str_inst = "{,}\\ " + "\\lbrack " + str(
                             self.inst[2]) + "/" + str(
                             self.inst[3]) + " \\rbrack" \
-                               + (" *" if self.inst[1] else "")
+                            + (" *" if self.inst[1] else "")
                 elif isinstance(self.inst[-1], int):
                     str_inst = "{,}\\ " + "\\tpl{" + \
-                               label_w + "_" + "{" + str(
+                            label_w + "_" + "{" + str(
                             self.inst[2]) + "}" + "{,}" + label_w + "_" + "{" + str(
                             self.inst[3]) + "}" + "}" \
-                               + (" *" if self.inst[1] else "")
+                            + (" *" if self.inst[1] else "")
             else:
                 str_inst = ""
             str_cite = "($" + str_rule + str_comma + str_source + str_inst + \
-                       "$)"
+                    "$)"
         return " & ".join([str_line, str_world, str_sign, str_fml, str_cite]) \
             if not self.tableau.mode["classical"] or self.tableau.mode[
             "modal"] \
@@ -2294,28 +2323,38 @@ class Node(object):
             "-4.5em"  # todo not entirely accurate
         res = ""
         if root:
-            res += "\\hspace*{%s}\n" % hoffset
+            if not self.tableau.sequent_style:
+                res += "\\hspace*{%s}\n" % hoffset
             res += "\\begin{forest}\n"
-            res += "for tree={anchor=north, l sep=2em, s sep=%s}\n" % ssep
+            res += "for tree={"
+            if not self.tableau.sequent_style:
+                res += "anchor=north, l sep=2em, s sep=" + ssep
+            else:
+                res += "anchor=south, grow=90, l sep=0"
+            res += "}\n"
             indent += "    "
             res += indent + "[\n"
-        if first:
+        if first and not self.tableau.sequent_style:
             res += indent + "\\begin{tabular}" + colspec + "\n"
         res += indent + self.tex()
         if self.children:
-            if len(self.children) == 1:  # no branching
+            if len(self.children) == 1 and not self.tableau.sequent_style:  # no branching
                 res += "\\\\\n"
                 res += self.children[0].treetex(indent, first=False, root=False)
             else:  # branching
                 res += "\n"
-                res += indent + "\\end{tabular}\n"
+                if self.tableau.sequent_style:
+                      # reverse so branches gets displayed in the right order
+                      # in the upside down tree
+                    self.children = self.children[::-1]
+                else:
+                    res += "\n" + indent + "\\end{tabular}\n"
                 for child in self.children:
-                    if child.fml is not None and child.fml.tex() and not \
-                            isinstance(
-                            child.fml, Empty) and \
-                            not (self.tableau.hide_nonopen and not
-                            self.tableau.mode["validity"] and not
-                                 any([child in branch for branch in
+                    if child.fml is not None and child.fml.tex() and \
+                            not isinstance(child.fml, Empty) and \
+                            not (self.tableau.hide_nonopen and 
+                                not self.tableau.mode["validity"] and 
+                                not any([child in branch for branch in
                                       open_branches])):
                         indent += "    "
                         res += indent + "[\n"
@@ -2324,7 +2363,8 @@ class Node(object):
                         indent = indent[:-4]
         else:  # leaf
             res += "\n"
-            res += indent + "\\end{tabular}\n"
+            if not self.tableau.sequent_style:
+                res += indent + "\\end{tabular}\n"
         if root:
             res += indent + "]\n"
             indent = indent[:-4]
@@ -2397,6 +2437,21 @@ class Node(object):
 
         # add the child
         child = Node(self, *spec)
+        if self.tableau.sequent_style:
+            child.context += list(dict.fromkeys(
+                # formulas still expandable on the node attached to, 
+                # passing siblings of the same rule applications,
+                # excluding the source itself
+                [entry[1] for entry in self.tableau.appl if 
+                    entry[0] in [node.branch[-2] for node in child.branch 
+                        if node.source == child.source and 
+                        len(node.branch) >= 2] and
+                    not entry[1] == child.source] + \
+                # literals
+                [node for node in self.branch if node.fml.atom()] + \
+                # sibling nodes of alpha rules collapsed into the same node
+                [node for node in self.branch if node.source == child.source]
+                ))
         self.children.append(child)
 
         if not isinstance(child.fml, Pseudo):
@@ -2414,7 +2469,7 @@ class Node(object):
         else:
             return self.fml.tableau_neg(mode) if self.fml and self.fml.tableau_neg(
             mode) else dict()
-
+    
     def branch_closed(self):
         """
         Check for a contradiction with this node and i.a. add a respective
@@ -2525,7 +2580,7 @@ class Node(object):
 if __name__ == "__main__":
     pass
 
-    parse_f = FmlParser().parse
+    # parse_f = FmlParser().parse
 
     #############
     # basic examples
@@ -2769,6 +2824,17 @@ if __name__ == "__main__":
     # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
+
+    ###############
+    # sequent calculus
+    ###############
+    fml = Prop("s")
+    fml1 = Disj(Prop("p"), Prop("q"))
+    fml2 = Imp(Prop("q"), Conj(Prop("r"), Prop("s")))
+    fml3 = Neg(Prop("p"))
+    tab = Tableau(fml, premises=[fml1, fml2, fml3], sequent_style=True)
+    # tab.show()
+
 
     ####################
     # parser
