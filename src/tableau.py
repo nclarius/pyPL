@@ -90,7 +90,7 @@ class Tableau(object):
         self.silent, self.file, self.latex, self.stepwise, \
         self.hide_nonopen, self.underline_open = \
             num_models, size_limit_factor, silent, file, latex, stepwise, sequent_style, \
-            hide_nonopen, underline_open
+            hide_nonopen, underline_open  # todo support sequent style in gui
         self.num_branches = 1
 
         self.appl = []  # list of applicable rules
@@ -138,17 +138,22 @@ class Tableau(object):
                 # in all worlds
                 fmls[i] = AllWorlds(fmls[i])
 
-        self.root = Node(None, self, line, ws[0], not negated_concl, fmls[0], rule, source, inst)
+        self.root = Node(None, self, line, ws[0], not negated_concl, fmls[0], rule, source, inst, len(premises + axioms) > 0)
         self.conclusion = conclusion if not isinstance(conclusion, tuple) else \
         conclusion[0]
         self.premises = [self.root.leaves()[0].add_child(
-                (self, i + 1, ws[i], True, fmls[i], rule, source, inst))
+                (self, i + 1, ws[i], True, fmls[i], rule, source, inst, 
+                i < len(premises), []))
                          for i in range(1, len(premises) + 1)]
         max_line = max([node.line for node in self.root.nodes() if node.line])
         self.axioms = [self.root.leaves()[0].add_child(
-                (self, i + max_line + 1, ws[i], fmls[i], "Ax", source, inst))
+                (self, i + max_line + 1, ws[i], fmls[i], "Ax", source, inst, 
+                True, []))
                        for i in range(1 + len(premises),
                                       1 + len(premises) + len(axioms))]
+
+        for node in [self.root] + self.premises + self.axioms:
+            node.context = [self.root] + self.premises + self.axioms
 
         self.gui = gui
         if not self.gui:
@@ -241,8 +246,9 @@ class Tableau(object):
                 self.conclusion and (self.mode["validity"] or not self.mode[
                     "satisfiability"]) else ""
             lhs = axs + prems + ([concl] if concl else [])
-            inf = ("⊨" if self.mode["validity"] else "⊭")
-            info += "Tableau for \n" + \
+            inf = ("⊢" if self.mode["validity"] else "⊬")
+            info += ("Tableau" if not self.sequent_style else "Sequent") + \
+                    "tree for \n" + \
                     ", \n".join(axs) + (
                         " + \n" if axs and prems else "\n" if axs else "") + \
                     ", \n".join(prems) + (
@@ -250,22 +256,22 @@ class Tableau(object):
                     inf + \
                     (" " if concl else "") + concl + ":" + "\n\n"
         else:
-            # axs = ["\\phantom{\\vDash\ }" + node.fml.tex() for node in
+            # axs = ["\\phantom{\\vdash\ }" + node.fml.tex() for node in
             # self.axioms]
             axs = []
             prems = [
-                    "\\phantom{\\vDash\ }" + self.root.fml.tex()] if not \
+                    "\\phantom{\\vdash\\ }" + self.root.fml.tex()] if not \
                 self.conclusion else [] + \
                                                                                               [
                                                                                                       "\\phantom{" \
-                                                                                                      "\\vDash\ }" +
+                                                                                                      "\\vdash\\ }" +
                                                                                                       node.fml.tex()
                                                                                                       for
                                                                                                       node
                                                                                                       in
                                                                                                       self.premises
                                                                                                       + self.axioms]
-            prems += [("\\phantom{\\vDash\ }" if len(
+            prems += [("\\phantom{\\vdash\\ }" if len(
                 prems) > 0 else "") + self.conclusion.tex()] \
                 if self.conclusion and not self.mode["validity"] and self.mode[
                 "satisfiability"] else []
@@ -273,8 +279,9 @@ class Tableau(object):
                 self.conclusion and (self.mode["validity"] or not self.mode[
                     "satisfiability"]) else ""
             lhs = axs + prems + ([concl] if concl else [])
-            inf = ("\\vDash" if self.mode["validity"] else "\\nvDash")
-            info += "Tableau for $\\\\\n" + \
+            inf = ("\\vdash" if self.mode["validity"] else "\\nvdash")
+            info += ("Tableau" if not self.sequent_style else "Sequent") + \
+                    " tree for $\\\\\n" + \
                     ", \\\\\n".join(axs) + (
                         " + \\\\\n" if axs and prems else "\\\\\n" if axs
                         else "") + \
@@ -298,13 +305,14 @@ class Tableau(object):
         if not self.latex:
             res += self.root.treestr()
         else:
-            res += self.root.treetex() + "\ \\\\\n\ \\\\\n\ \\\\\n"
+            res += self.root.treetex() + "\\ \\\\\n\\ \\\\\n\\ \\\\\n"
 
         # print result
         result = ""
         if self.closed():
-            result += "The tableau is closed:" + (
-                "\\\\" if self.latex else "") + "\n"
+            if not self.sequent_style:
+                result += "The tableau is closed:" + (
+                    "\\\\" if self.latex else "") + "\n"
             if self.mode["validity"]:
                 result += "The " + (
                     "inference" if self.premises else "sentence") + " is valid."
@@ -427,6 +435,9 @@ class Tableau(object):
         while applicable := self.applicable():
             # todo stop search when only contradictions found after all new
             #  instantiations
+
+            # todo bad order of application for sequent calculus?
+
             # check whether to continue expansion
             len_assumptions = sum(
                     [len(str(node.fml)) for node in self.root.nodes()
@@ -1157,12 +1168,14 @@ class Tableau(object):
 
         # append (top) node
         top = child = target.add_child(
-                (self, line := line + 1, world, *fmls[0], rule, source, args))
+                (self, line := line + 1, world, *fmls[0], rule, source, args, 
+                len(fmls) > 1, target.context))
 
         # append bottom node
         if len(fmls) == 2:
             bot = top.add_child(
-                    (self, line := line + 1, world, *fmls[1], rule, source, []))
+                    (self, line := line + 1, world, *fmls[1], rule, source, [],
+                    False, top.context + [top]))
 
         if len(fmls) == 2 and bot:
             return [top, bot]
@@ -2043,7 +2056,8 @@ class Node(object):
     """
 
     def __init__(self, parent, tableau: Tableau, line: int, world: int,
-                 sign: bool, fml: Formula, rule: str, source, inst: tuple, context: list = []):
+                 sign: bool, fml: Formula, rule: str, source, inst: tuple, 
+                 contextual: bool = False, context: list = []):
         self.tableau = tableau
         self.line = line
         # self.sig = sig
@@ -2053,7 +2067,11 @@ class Node(object):
         self.source = source
         self.rule = rule
         self.inst = inst
-        self.context = []
+        self.contextual = contextual  # for sequent calculus: 
+            # whether the formula is represented in the left or right context  
+            # of another node and does not need to be printed
+        self.context = []  # for sequent calculus: 
+            # left and right context (formulas to still be expanded)
         self.branch = (parent.branch if parent else []) + [self]
         self.children = []
 
@@ -2069,6 +2087,8 @@ class Node(object):
         """
         open_branches = [leaf.branch for leaf in self.root().leaves() if
                          isinstance(leaf.fml, Open)]
+        
+        # todo plain text printout for sequent calculus
 
         # compute lengths of columns  # todo inefficient to recalculate for
         #  every node
@@ -2179,30 +2199,20 @@ class Node(object):
 
         if self.tableau.sequent_style:
             if isinstance(self.fml, Pseudo):
-                return "$\ $"
-            fmls_l = [node.fml for node in 
-                list(dict.fromkeys(self.context + [self])) if node.sign]
-                # todo still containd suplicates
-            fmls_r = [node.fml for node in 
-                list(dict.fromkeys([self] + self.context)) if not node.sign]
+                return "$\\ $"
+            ctxt_l = list(dict.fromkeys(
+                [node for node in self.context + [self] if node.sign]))
+            ctxt_r = list(dict.fromkeys(
+                [node for node in self.context + [self] if not node.sign]))
             fml = "$" + \
-                "{,} ".join([fml.tex().\
+                "{,} ".join([node.fml.tex().\
                     replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }") 
-                    for fml in fmls_l]) + \
+                    for node in ctxt_l]) + \
                 " \\vdash " + \
-                "{,}".join([fml.tex()\
+                "{,}".join([node.fml.tex()\
                     .replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }") 
-                    for fml in fmls_r]) + \
+                    for node in ctxt_r]) + \
                 "$"
-            str_rule = ("\\! ".join(
-                    [str2tex[c] if c in str2tex else c for c in str(
-                            self.rule)]) \
-                            if not str(self.rule).isnumeric() else str(
-                self.rule)) \
-                .replace("\\neg\\! \\", "\\neg \\")\
-                .replace("\\Vdash", "\\Leftarrow")\
-                .replace("\\nVdash", "\\Rightarrow")\
-                if self.rule else ""
             return fml
 
         str_line = str(self.line) + "." if self.line else ""
@@ -2301,6 +2311,62 @@ class Node(object):
         return res
 
     def treetex(self, indent="", first=True, root=True) -> str:
+
+        if self.tableau.sequent_style:
+            res = ""
+            if root:
+                res += "\\ \\\\"
+
+            str2tex = {
+                    "A":  "\\mathrm{A}",
+                    "Ax": "\\mathrm{Ax}",
+                    "¬":  "\\neg",
+                    "∧":  "\\wedge",
+                    "∨":  "\\vee",
+                    "→":  "\\rightarrow",
+                    "↔":  "\\leftrightarrow",
+                    "⊕":  "\\oplus",
+                    "∃":  "\\exists",
+                    "∀":  "\\forall",
+                    "◇":  "\\Diamond",
+                    "◻":  "\\Box",
+                    "+":  "\\mathrm{L}",
+                    "-":  "\\mathrm{R}"
+            }
+            str_rule = self.children[0].rule if self.children else ""
+            if str_rule.startswith("+"):
+                str_rule = "\\Leftarrow" + str2tex[self.children[0].rule[1:]]
+            elif str_rule.startswith("-"):
+                str_rule = "\\Rightarrow" + str2tex[self.children[0].rule[1:]]
+            else:
+                str_rule = str2tex[str_rule] if str_rule in str2tex else ""
+
+            if self.contextual:
+                # context alrady represented in another node: skip
+                res += self.children[0].treetex(indent + "    ", first=True, root=False)
+            elif len(self.children) == 0:
+                res += indent + "\\AxiomC{" + self.tex() + "}\n"
+            elif len(self.children) == 1:
+                if isinstance(self.children[0].fml, Closed):  # axiom
+                    res += "\\AxiomC{}\n"
+                    res += indent + "\\RightLabel{($\\Leftrightarrow$)}\n"
+                    res += indent + "\\UnaryInfC{" + self.tex() + "}\n"
+                elif isinstance(self.children[0].fml, Pseudo):  # open assumption
+                    res += indent + "\\AxiomC{" + self.tex() + "}\n"
+                else:
+                    res += self.children[0].treetex(indent + "    ", first=True, root=False)
+                    res += indent + "\\RightLabel{($" + str_rule + \
+                        "$)}\n"
+                    res += indent + "\\UnaryInfC{" + self.tex() + "}\n"
+            elif len(self.children) == 2:
+                res += self.children[0].treetex(indent + "    ", first=True, root=False)
+                res += self.children[1].treetex(indent + "    ", first=True, root=False)
+                res += indent + "\\RightLabel{($" + str_rule + "$)}\n"
+                res += indent + "\\BinaryInfC{" + self.tex() + "}\n"
+            if root:
+                res += "\\DisplayProof\n\n"
+            return res
+
         open_branches = [leaf.branch for leaf in self.root().leaves() if
                          isinstance(leaf.fml, Open)]
         # hide non-open branches
@@ -2322,32 +2388,22 @@ class Node(object):
             "-4.5em"  # todo not entirely accurate
         res = ""
         if root:
-            if not self.tableau.sequent_style:
-                res += "\\hspace*{%s}\n" % hoffset
+            res += "\\hspace*{%s}\n" % hoffset
             res += "\\begin{forest}\n"
             res += "for tree={"
-            if not self.tableau.sequent_style:
-                res += "anchor=north, l sep=2em, s sep=" + ssep
-            else:
-                res += "anchor=south, grow=90, l sep=0"
+            res += "anchor=north, l sep=2em, s sep=" + ssep
             res += "}\n"
             indent += "    "
             res += indent + "[\n"
-        if first and not self.tableau.sequent_style:
+        if first:
             res += indent + "\\begin{tabular}" + colspec + "\n"
         res += indent + self.tex()
         if self.children:
-            if len(self.children) == 1 and not self.tableau.sequent_style:  # no branching
+            if len(self.children) == 1:  # no branching
                 res += "\\\\\n"
                 res += self.children[0].treetex(indent, first=False, root=False)
             else:  # branching
-                res += "\n"
-                if self.tableau.sequent_style:
-                      # reverse so branches gets displayed in the right order
-                      # in the upside down tree
-                    self.children = self.children[::-1]
-                else:
-                    res += "\n" + indent + "\\end{tabular}\n"
+                res += "\n" + indent + "\\end{tabular}\n"
                 for child in self.children:
                     if child.fml is not None and child.fml.tex() and \
                             not isinstance(child.fml, Empty) and \
@@ -2361,9 +2417,7 @@ class Node(object):
                         res += indent + "]\n"
                         indent = indent[:-4]
         else:  # leaf
-            res += "\n"
-            if not self.tableau.sequent_style:
-                res += indent + "\\end{tabular}\n"
+            res += indent + "\\end{tabular}\n"
         if root:
             res += indent + "]\n"
             indent = indent[:-4]
@@ -2423,7 +2477,6 @@ class Node(object):
         """
         Add a child to the current node.
         """
-        # todo sometimes adds None nodes (?)
         # don't add children to branches that are empty, already closed,
         # open or declared infinite
         if isinstance(self.fml, Pseudo) or \
@@ -2436,13 +2489,12 @@ class Node(object):
 
         # add the child
         child = Node(self, *spec)
-        if self.tableau.sequent_style:
-            # if child.source:
-                # child.source.rule = child.rule
-                # child.rule = None
-            child.context = list(dict.fromkeys(
-                [node[1] for node in self.tableau.appl if node[0] == self] + \
-                [node for node in self.branch if node.fml.literal()]))
+        if self.tableau.sequent_style and not (child.rule == "A" or child.rule == "Ax"):
+            child.context += list(dict.fromkeys(
+                [entry[1] for entry in self.tableau.appl if entry[0] == self] + \
+                [node for node in self.branch if node.fml.atom()] + \
+                [node for node in self.branch if node.source == child.source]
+                ))
         self.children.append(child)
 
         if not isinstance(child.fml, Pseudo):
@@ -2819,12 +2871,14 @@ if __name__ == "__main__":
     ###############
     # sequent calculus
     ###############
+    prms = []
     fml = Prop("s")
-    fml1 = Disj(Prop("p"), Prop("q"))
-    fml2 = Imp(Prop("q"), Conj(Prop("r"), Prop("s")))
-    fml3 = Neg(Prop("p"))
-    tab = Tableau(fml, premises=[fml1, fml2, fml3], sequent_style=True)
-    # tab.show()
+    prms.append(Disj(Prop("p"), Prop("q")))
+    prms.append(Imp(Prop("q"), Conj(Prop("r"), Prop("s"))))
+    prms.append(Neg(Prop("p")))
+    # fml = Imp(Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r"))), Imp(Conj(Prop("p"), Prop("q")), Prop("r")))
+    # fml = Disj(Prop("p"), Neg(Prop("p")))
+    tab = Tableau(fml, premises=prms, sequent_style=True)
 
 
     ####################
