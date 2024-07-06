@@ -151,7 +151,9 @@ class Tableau(object):
                 self.root.treestr() if not self.latex else self.root.treetex())
         
         self.gui = gui
-
+        if not self.gui:
+            self.gui = __import__("gui").PyPLGUI(True)
+        
         # run the tableau
         print("Computing...")
         try:

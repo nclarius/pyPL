@@ -125,7 +125,10 @@ class Tooltip(object):
 
 class PyPLGUI(ttk.Frame):
 
-    def __init__(self):
+    def __init__(self, silent=False):
+        if silent:
+            return
+        
         self.root = tk.Tk()
 
         # general settings
@@ -202,7 +205,7 @@ class PyPLGUI(ttk.Frame):
 
         # status
         self.status = tk.StringVar()
-        self.status.set("Waiting for input")
+        self.set_status("Waiting for input")
         lbl_status = ttk.Label(frm_run, 
                                 textvariable=self.status,
                                 style="Label.TLabel",
@@ -723,7 +726,7 @@ class PyPLGUI(ttk.Frame):
             # update_summary()
             self.inst.completed.append(3)
             self.btn_run.config(state="normal")
-            self.status.set("Ready to run")
+            self.set_status("Ready to run")
 
         for child in tab.winfo_children():
             child.destroy()
@@ -1384,7 +1387,7 @@ class PyPLGUI(ttk.Frame):
         num_models = self.inst.num_models
         size_limit = self.inst.size_limit_factor
 
-        self.status.set("Computing...")
+        self.set_status("Computing...")
         self.update()
 
         if self.inst.action == "tc":
@@ -1457,17 +1460,13 @@ class PyPLGUI(ttk.Frame):
         os.chdir(path_output)
         if not latex:
             # generate and open txt file
-            print("Preparing output file...")
-            self.status.set("Preparing output file...")
-            self.update()
+            self.set_status("Preparing output file...")
             file_txt = "output_" + timestamp + ".txt"
             path_txt = os.path.join(path_output, file_txt)
             with open(path_txt, "w", encoding="utf-8") as f:
                 f.write(res)
             # open file
-            print("Opening output file...")
-            self.status.set("Opening output file...")
-            self.update()
+            self.set_status("Opening output file...")
             p_xdgopen = run(["xdg-open", path_txt], capture_output=True)
             if p_xdgopen.returncode != 0:
                 print("Error opening output file")
@@ -1478,9 +1477,7 @@ class PyPLGUI(ttk.Frame):
         else:
             # generate and open latex and pdf file
             # prepare output files
-            print("Preparing output file...")
-            self.status.set("Preparing output file...")
-            self.update()
+            self.set_status("Preparing output file...")
             file_tex = "output_" + timestamp + ".tex"
             file_pdf = "output_" + timestamp + ".pdf"
             path_tex = os.path.join(path_output, file_tex)
@@ -1489,9 +1486,7 @@ class PyPLGUI(ttk.Frame):
             with open(path_tex, "w") as texfile:
                 texfile.write(res)
             # compile LaTeX to PDF
-            print("Compiling output file...")
-            self.status.set("Compiling output file...")
-            self.update()
+            self.set_status("Compiling output file...")
             p_pdflatex = run(["pdflatex", file_tex, 
                 "-halt-on-error", "-interaction=errorstopmode"], 
                 stdout=DEVNULL, stderr=STDOUT)  # todo stop on error doesn't work
@@ -1501,9 +1496,7 @@ class PyPLGUI(ttk.Frame):
                 self.update()
                 return
             # open file
-            print("Opening output file...")
-            self.status.set("Opening output file...")
-            self.update()
+            self.set_status("Opening output file...")
             p_xdgopen = run(["xdg-open", path_pdf], capture_output=True)
             if p_xdgopen.returncode != 0: 
                 print("Error opening output file")
@@ -1516,9 +1509,13 @@ class PyPLGUI(ttk.Frame):
                 if os.path.exists(path_file) and file.endswith(".log") or file.endswith(".aux") or file.endswith(".gz"):
                     os.remove(path_file)
             os.chdir(os.path.dirname(__file__))
-        print("Done")
-        self.status.set("Ready to run")
-        self.update()
+        self.set_status("Ready to run" if hasattr(self, "status") else "Done")
+    
+    def set_status(self, txt):
+        print(txt)
+        if hasattr(self, "status"):
+            self.set_status(txt)
+            self.update()
 
 def main():
     # redirect output to log file
