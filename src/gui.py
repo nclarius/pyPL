@@ -6,7 +6,7 @@ Graphical interface.
 """
 
 import os
-from subprocess import DEVNULL, STDOUT, check_call
+from subprocess import DEVNULL, STDOUT, PIPE, check_call, run
 from datetime import datetime
 
 import tkinter as tk
@@ -201,11 +201,13 @@ class PyPLGUI(ttk.Frame):
         self.root.bind("<Control-Return>", lambda e: self.run())
 
         # status
-        self.lbl_status = ttk.Label(frm_run, 
-                                text="Waiting for input",
+        self.status = tk.StringVar()  # todo updating doesn't work
+        self.status.set("Waiting for input")
+        lbl_status = ttk.Label(frm_run, 
+                                textvariable=self.status,
                                 style="Label.TLabel",
                                 font=("OpenSans", "10"))
-        self.lbl_status.pack()
+        lbl_status.pack()
 
         # info
         url = "https://github.com/nclarius/pyPL"
@@ -721,7 +723,7 @@ class PyPLGUI(ttk.Frame):
             # update_summary()
             self.inst.completed.append(3)
             self.btn_run.config(state="normal")
-            self.update_status("Ready to run")
+            self.status.set("Ready to run")
 
         for child in tab.winfo_children():
             child.destroy()
@@ -1382,14 +1384,14 @@ class PyPLGUI(ttk.Frame):
         num_models = self.inst.num_models
         size_limit = self.inst.size_limit_factor
 
-        self.update_status("Running...")
+        self.status.set("Computing...")
+        self.update()
 
         if self.inst.action == "tc":
             tt = truthtable.Truthtable(concl, latex)
             tt.show()
 
         elif self.inst.action == "mc":
-            print("starting denotation computation", [(fml, structure, v, w) for fml, v, w in formulas])
             denot = denotation.Denotation([(fml, structure, v, w) for fml, v, w in formulas])
             denot.show(latex)
 
@@ -1416,7 +1418,8 @@ class PyPLGUI(ttk.Frame):
                             modal=modal, vardomains=vardomains, local=local, frame=frame,
                             silent=True, file=True, latex=latex, stepwise=stepwise,
                             num_models=num_models, size_limit_factor=size_limit,
-                            underline_open=underline_open, hide_nonopen=hide_nonopen).show()
+                            underline_open=underline_open, hide_nonopen=hide_nonopen,
+                            gui=self).show()
 
         else:
             # test if theorem
@@ -1426,7 +1429,8 @@ class PyPLGUI(ttk.Frame):
                                    modal=modal, vardomains=vardomains, local=local, frame=frame,
                                    silent=True, file=True, latex=latex, stepwise=stepwise,
                                    num_models=num_models, size_limit_factor=size_limit,
-                                   underline_open=underline_open, hide_nonopen=hide_nonopen)
+                                   underline_open=underline_open, hide_nonopen=hide_nonopen,
+                            gui=self)
             if tab1.closed():
                 # win_wait.destroy()
                 tab1.show()
@@ -1438,50 +1442,83 @@ class PyPLGUI(ttk.Frame):
                                        modal=modal, vardomains=vardomains, local=local, frame=frame,
                                        silent=True, file=True, latex=latex, stepwise=stepwise,
                                        num_models=num_models, size_limit_factor=size_limit,
-                                       underline_open=underline_open, hide_nonopen=hide_nonopen)
+                                       underline_open=underline_open, hide_nonopen=hide_nonopen,
+                            gui=self)
                 if tab2.open() or tab2.infinite():
                     # win_wait.destroy()
                     tab2.show()
     
-    def update_status(self, text):
-        self.lbl_status.config(text=text)
-
-def write_output(res, latex=True):
-    # generate and open output file
-    path_output = os.path.join(os.path.dirname(os.path.dirname(__file__)), "output")
-    if not os.path.exists(path_output):
-        os.mkdir(path_output)
-    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
-    os.chdir(path_output)
-    if not latex:
-        # generate and open txt file
-        file_txt = "output_" + timestamp + ".txt"
-        path_txt = os.path.join(path_output, file_txt)
-        with open(path_txt, "w", encoding="utf-8") as f:
-            f.write(res)
-        # open file
-        check_call(["xdg-open", path_txt], stdout=DEVNULL, stderr=STDOUT)
-        os.chdir(os.path.dirname(__file__))
-    else:
-        # generate and open latex and pdf file
-        # prepare output files
-        file_tex = "output_" + timestamp + ".tex"
-        file_pdf = "output_" + timestamp + ".pdf"
-        path_tex = os.path.join(path_output, file_tex)
-        path_pdf = os.path.join(path_output, file_pdf)
-        # write LaTeX code
-        with open(path_tex, "w") as texfile:
-            texfile.write(res)
-        # compile LaTeX to PDF
-        check_call(["pdflatex", file_tex], stdout=DEVNULL, stderr=STDOUT)
-        # open file
-        check_call(["xdg-open", path_pdf], stdout=DEVNULL, stderr=STDOUT)
-        # cleanup
-        for file in os.listdir(path_output):
-            path_file = os.path.join(path_output, file)
-            if os.path.exists(path_file) and file.endswith(".log") or file.endswith(".aux") or file.endswith(".gz"):
-                os.remove(path_file)
-        os.chdir(os.path.dirname(__file__))
+    def write_output(self, res, latex=True):
+        # generate and open output file
+        path_output = os.path.join(os.path.dirname(os.path.dirname(__file__)), "output")
+        if not os.path.exists(path_output):
+            os.mkdir(path_output)
+        timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M_%S%f')
+        os.chdir(path_output)
+        if not latex:
+            # generate and open txt file
+            print("Preparing output file...")
+            self.status.set("Preparing output file...")
+            self.update()
+            file_txt = "output_" + timestamp + ".txt"
+            path_txt = os.path.join(path_output, file_txt)
+            with open(path_txt, "w", encoding="utf-8") as f:
+                f.write(res)
+            # open file
+            print("Opening output file...")
+            self.status.set("Opening output file...")
+            self.update()
+            p_xdgopen = run(["xdg-open", path_txt], capture_output=True)
+            if p_xdgopen.returncode != 0:
+                print("Error opening output file")
+                self.set_status("Error opening output file")
+                self.update()
+                return
+            os.chdir(os.path.dirname(__file__))
+        else:
+            # generate and open latex and pdf file
+            # prepare output files
+            print("Preparing output file...")
+            self.status.set("Preparing output file...")
+            self.update()
+            file_tex = "output_" + timestamp + ".tex"
+            file_pdf = "output_" + timestamp + ".pdf"
+            path_tex = os.path.join(path_output, file_tex)
+            path_pdf = os.path.join(path_output, file_pdf)
+            # write LaTeX code
+            with open(path_tex, "w") as texfile:
+                texfile.write(res)
+            # compile LaTeX to PDF
+            print("Compiling output file...")
+            self.status.set("Compiling output file...")
+            self.update()
+            p_pdflatex = run(["pdflatex", file_tex, 
+                "-halt-on-error", "-interaction=errorstopmode"], 
+                stdout=DEVNULL, stderr=STDOUT)  # todo stop on error doesn't work
+            if p_pdflatex.returncode != 0 or not os.path.exists(path_pdf):
+                print("Error compiling LaTeX to PDF")
+                self.set_status("Error compiling LaTeX to PDF")
+                self.update()
+                return
+            # open file
+            print("Opening output file...")
+            self.status.set("Opening output file...")
+            self.update()
+            p_xdgopen = run(["xdg-open", path_pdf], capture_output=True)
+            if p_xdgopen.returncode != 0: 
+                print("Error opening output file")
+                self.set_status("Error opening output file")
+                self.update()
+                return
+            # cleanup
+            for file in os.listdir(path_output):
+                path_file = os.path.join(path_output, file)
+                if os.path.exists(path_file) and file.endswith(".log") or file.endswith(".aux") or file.endswith(".gz"):
+                    os.remove(path_file)
+            os.chdir(os.path.dirname(__file__))
+        print("Done")
+        self.status.set("Ready to run")
+        self.update()
 
 def main():
     # redirect output to log file

@@ -72,7 +72,8 @@ class Tableau(object):
                  threevalued=False, weakthreevalued=True,
                  num_models=1, size_limit_factor=2,
                  file=True, latex=True, stepwise=False, hide_nonopen=False,
-                 underline_open=True, silent=False):
+                 underline_open=True, silent=False,
+                 gui=None):
 
         # settings
         # todo nicer specification of settings?
@@ -148,8 +149,11 @@ class Tableau(object):
             # todo treat contradiction check as separate step
             self.steps.append(
                 self.root.treestr() if not self.latex else self.root.treetex())
+        
+        self.gui = gui
 
         # run the tableau
+        print("Computing...")
         try:
             from timeit import default_timer as timer
             self.start = timer()
@@ -397,8 +401,7 @@ class Tableau(object):
             sep = 80 * "-"
             res += sep
 
-        write_output = __import__("gui").write_output
-        write_output(res, self.latex)
+        self.gui.write_output(res, self.latex)
 
     rule_names = {"α": "alpha", "β": "beta",  # connective rules
                   "γ": "gamma", "δ": "delta", "η": "eta", "θ": "theta",
