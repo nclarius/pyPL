@@ -200,6 +200,13 @@ class PyPLGUI(ttk.Frame):
         # keyboard shortcut
         self.root.bind("<Control-Return>", lambda e: self.run())
 
+        # status
+        self.lbl_status = ttk.Label(frm_run, 
+                                text="Waiting for input",
+                                style="Label.TLabel",
+                                font=("OpenSans", "10"))
+        self.lbl_status.pack()
+
         # info
         url = "https://github.com/nclarius/pyPL"
         lbl_info = ttk.Button(frm_run, text="🛈 " + url, style="URLButton.TButton")
@@ -714,6 +721,7 @@ class PyPLGUI(ttk.Frame):
             # update_summary()
             self.inst.completed.append(3)
             self.btn_run.config(state="normal")
+            self.update_status("Ready to run")
 
         for child in tab.winfo_children():
             child.destroy()
@@ -1374,6 +1382,8 @@ class PyPLGUI(ttk.Frame):
         num_models = self.inst.num_models
         size_limit = self.inst.size_limit_factor
 
+        self.update_status("Running...")
+
         if self.inst.action == "tc":
             tt = truthtable.Truthtable(concl, latex)
             tt.show()
@@ -1432,7 +1442,9 @@ class PyPLGUI(ttk.Frame):
                 if tab2.open() or tab2.infinite():
                     # win_wait.destroy()
                     tab2.show()
-
+    
+    def update_status(self, text):
+        self.lbl_status.config(text=text)
 
 def write_output(res, latex=True):
     # generate and open output file
