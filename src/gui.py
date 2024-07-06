@@ -77,7 +77,7 @@ class ScrollableFrame(ttk.Frame):
                 )
         )
 
-        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw", width=1000, height=500)
+        canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw", width=1333, height=800)
 
         canvas.configure(yscrollcommand=scrollbar.set)
 
@@ -132,7 +132,7 @@ class PyPLGUI(ttk.Frame):
         self.root.title("pyPL")
         icon_path = os.path.join(os.path.dirname(__file__), "icon.png")
         self.root.tk.call('wm', 'iconphoto', self.root._w, tk.PhotoImage(file=icon_path))
-        self.root.geometry("1333x750")
+        self.root.geometry("1333x800")
 
         # style
         self.style = ttk.Style()
