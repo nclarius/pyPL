@@ -40,6 +40,7 @@ class PyPLInst:
                       "threeval": "weak"
                       }
         self.output = "tex"
+        self.deduction_system = "tableau"
         self.generation_mode = "mathematical"
         self.num_models = 1
         self.size_limit_factor = 4
@@ -299,6 +300,7 @@ class PyPLGUI(ttk.Frame):
         def set():
             self.inst.action = action.get()
             update_summary()
+            update_availability()
             self.tab_2()
             # self.tab_4()
             self.inst.completed.append(1)
@@ -345,6 +347,10 @@ class PyPLGUI(ttk.Frame):
         lbl_sum = ttk.Label(style="Label.TLabel")
         update_summary()
         lbl_sum.pack(in_=mid, ipady=15)
+
+        def update_availability():
+            for rb in self.rbs_deduction:
+                rb.config(state=("normal" if self.inst.action in ["tp"] else "disabled"))
 
     def tab_2(self):  # 2. Input
         # todo make scrollable
@@ -1132,6 +1138,7 @@ class PyPLGUI(ttk.Frame):
             self.inst.stepwise = stepwise.get()
             self.inst.underline_open = underline.get()
             self.inst.hide_nonopen = hide.get()
+            self.inst.deduction_system = deduction.get()
             self.inst.generation_mode = generation.get()
             if num_models.get():
                 self.inst.num_models = int(num_models.get())
@@ -1151,8 +1158,8 @@ class PyPLGUI(ttk.Frame):
         mid = ttk.Frame(tab, style="Frame.TFrame")
         mid.pack()
         mids = []
-        for i in range(9):
-            if i in [5]:
+        for i in range(11):
+            if i in [5, 7]:
                 sep = ttk.Frame(mid, style="Frame.TFrame")
                 sep.pack(pady=10)
             midi = ttk.Frame(mid, style="Frame.TFrame")
@@ -1167,13 +1174,6 @@ class PyPLGUI(ttk.Frame):
                             # font=("OpenSans", "12", "bold"),
                             anchor=tk.NW, justify=tk.LEFT) \
             .pack(in_=top)
-
-        # derivation output format
-        lbl_output = ttk.Label(tab,
-                              style="Label.TLabel",
-                              text="Derivation output format:")
-        # lbl_output.pack(in_=mids[m])
-        # m += 1
 
         # output format
         lbl_output = ttk.Label(tab,
@@ -1256,6 +1256,37 @@ class PyPLGUI(ttk.Frame):
         cbs.append(cb)
         m += 1
 
+        # deduction system
+        lbl_deductions = ttk.Label(tab,
+                              style="Label.TLabel",
+                              text="Deduction system:")
+        lbl_deductions.pack(in_=mids[m])
+        m += 1
+
+        enabled = True if self.inst.action in ["tp"] else False
+        deduction = tk.StringVar(None, self.inst.deduction_system)
+        deductions = [("analytic tableaus", "tableau"), ("sequent calculus", "sequent")]
+        self.rbs_deduction = []
+        rbs2 = []
+        for i, (txt, val) in enumerate(deductions):
+            rb = tk.Radiobutton(tab,
+                                bg=white,
+                                text=txt,
+                                variable=deduction,
+                                value=val,
+                                state="normal" if enabled else "disabled",
+                                selectcolor=darkgray, activebackground=lightgray, activeforeground=white,
+                                indicatoron=0,
+                                width=25, pady=7.5)
+            rb.pack(in_=mids[m], side=(tk.LEFT if i == 0 else tk.RIGHT), pady=5)
+            rbs2.append(rb)
+            rb.config(command=lambda arg=rb: select_rb(arg, rbs2))
+            if val == self.inst.deduction_system:
+                initial_select_rb(rb)
+            self.rbs_deduction.append(rb)
+        m += 1
+        # todo update availability of output format and logic for sequent calc
+
         # mathematical vs linguistic mode
         enabled = True if self.inst.action in ["tt", "mg", "cmg"] else False
         generation = tk.StringVar(None, self.inst.generation_mode)
@@ -1266,7 +1297,7 @@ class PyPLGUI(ttk.Frame):
         m += 1
         generations = [("minimal domain", "mathematical"), ("non-minimal domain", "linguistic")]
         rbs = []
-        rbs2 = []
+        rbs3 = []
         for i, (txt, val) in enumerate(generations):
             rb = tk.Radiobutton(tab,
                                 bg=white,
@@ -1278,8 +1309,8 @@ class PyPLGUI(ttk.Frame):
                                 indicatoron=0,
                                 width=25, pady=7.5)
             rb.pack(in_=mids[m], side=(tk.LEFT if i == 0 else tk.RIGHT), pady=5)
-            rbs2.append(rb)
-            rb.config(command=lambda arg=rb: select_rb(arg, rbs2))
+            rbs3.append(rb)
+            rb.config(command=lambda arg=rb: select_rb(arg, rbs3))
             if val == self.inst.generation_mode:
                 initial_select_rb(rb)
             rbs.append(rb)
@@ -1378,6 +1409,7 @@ class PyPLGUI(ttk.Frame):
         vardomains = self.inst.logic["constvar"] == "var"
         local = self.inst.logic["locglob"] == "local"
         frame = self.inst.logic["frame"]
+        sequent = self.inst.deduction_system == "sequent"
         linguistic = self.inst.generation_mode == "linguistic"
 
         latex = self.inst.output == "tex"
@@ -1421,6 +1453,7 @@ class PyPLGUI(ttk.Frame):
                             modal=modal, vardomains=vardomains, local=local, frame=frame,
                             silent=True, file=True, latex=latex, stepwise=stepwise,
                             num_models=num_models, size_limit_factor=size_limit,
+                            sequent_style=sequent,
                             underline_open=underline_open, hide_nonopen=hide_nonopen,
                             gui=self).show()
 

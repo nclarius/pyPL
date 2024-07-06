@@ -81,6 +81,7 @@ class Tableau(object):
         self.mode = {
                 "validity":    validity, "satisfiability": satisfiability,
                 "linguistic":  linguistic,
+                "sequent":     sequent_style,
                 "classical":   classical, "propositional": propositional,
                 "modal":       modal, "vardomains": vardomains, "local": local,
                 "frame":       frame,
@@ -89,8 +90,8 @@ class Tableau(object):
         self.num_models, self.size_limit_factor, self.sequent_style, \
         self.silent, self.file, self.latex, self.stepwise, \
         self.hide_nonopen, self.underline_open = \
-            num_models, size_limit_factor, silent, file, latex, stepwise, sequent_style, \
-            hide_nonopen, underline_open  # todo support sequent style in gui
+            num_models, size_limit_factor, sequent_style, silent, file, latex, \
+            stepwise, hide_nonopen, underline_open  # todo support sequent style in gui
         self.num_branches = 1
 
         self.appl = []  # list of applicable rules
@@ -2881,14 +2882,14 @@ if __name__ == "__main__":
     ###############
     # sequent calculus
     ###############
-    prms = []
-    fml = Prop("s")
-    prms.append(Disj(Prop("p"), Prop("q")))
-    prms.append(Imp(Prop("q"), Conj(Prop("r"), Prop("s"))))
-    prms.append(Neg(Prop("p")))
+    # prms = []
+    # fml = Prop("s")
+    # prms.append(Disj(Prop("p"), Prop("q")))
+    # prms.append(Imp(Prop("q"), Conj(Prop("r"), Prop("s"))))
+    # prms.append(Neg(Prop("p")))
     # fml = Imp(Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r"))), Imp(Conj(Prop("p"), Prop("q")), Prop("r")))
     # fml = Disj(Prop("p"), Neg(Prop("p")))
-    tab = Tableau(fml, premises=prms, sequent_style=True)
+    # tab = Tableau(fml, premises=prms, sequent_style=True)
 
 
     ####################
