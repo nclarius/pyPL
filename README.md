@@ -1,11 +1,11 @@
 # pyPL
 
 A naive model generator, model checker and theorem prover   
-for some combinations of classical and intuitionistic, non-modal and modal, propositional and first-order logic.  
+for some combinations of classical and intuitionistic, non-modal and modal, propositional and first-order logic, analytic tableau and sequent calculus.  
 
 This software can compute  
 - the denotation (truth value) of a given logical expression in a given structure,  
-- an analytic tableau with associated minimal (counter) models for a given inference or set of sentences.
+- an deduction tree with associated minimal (counter) models for a given inference or set of sentences.
 
 © Natalie Clarius <clarius@informatik.uni-tuebingen.de>  
 License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).   
@@ -45,7 +45,7 @@ Some background on the theory underlying the implementation can be found in [`py
 # Features
 
 ### Modes
-- theorem proving: generate an analytic tableau to show that a formula or inference is valid/invalid
+- theorem proving: generate an analytic tableau or sequent tree to show that a formula or inference is valid/invalid
 - (counter) model generation: generate a minimal structure in which a given (set of) formulas is true/false
 - model checking: evaluation of expressions relative to structures, variable assignments and possible worlds
 - truth table generation
@@ -56,6 +56,10 @@ Some background on the theory underlying the implementation can be found in [`py
 - intensional logic with operators □, ◇, ^, ⱽ; propositional, constant and varying domains; frame K
 - intuitionistic logic with Kripke semantics (only model checking)
 - three-valued logic (not yet implemented)
+
+## Deduction systems
+- analytic tableau
+- sequent calculus (classical propositional logic only)
 
 ### Interface
 - input of formulas and structures with ordinary keyboard characters, directly or from a file

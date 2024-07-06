@@ -81,6 +81,7 @@ class Tableau(object):
         self.mode = {
                 "validity":    validity, "satisfiability": satisfiability,
                 "linguistic":  linguistic,
+                "sequent":     sequent_style,
                 "classical":   classical, "propositional": propositional,
                 "modal":       modal, "vardomains": vardomains, "local": local,
                 "frame":       frame,
@@ -89,8 +90,8 @@ class Tableau(object):
         self.num_models, self.size_limit_factor, self.sequent_style, \
         self.silent, self.file, self.latex, self.stepwise, \
         self.hide_nonopen, self.underline_open = \
-            num_models, size_limit_factor, silent, file, latex, stepwise, sequent_style, \
-            hide_nonopen, underline_open  # todo support sequent style in gui
+            num_models, size_limit_factor, sequent_style, silent, file, latex, \
+            stepwise, hide_nonopen, underline_open  # todo support sequent style in gui
         self.num_branches = 1
 
         self.appl = []  # list of applicable rules
