@@ -1027,13 +1027,14 @@ class Tableau(object):
                 i[6],
                 # 1. number of times the rule has already been applied on
                 # this branch (prefer least used)
+                rule_order[i[3]],
+                # 2. rule type rank (prefer earlier in order)
                 pos[i[1]],
-                # 2. position of the source node in the tree (prefer leftmost
+                # 3. position of the source node in the tree (prefer leftmost
                 # highest)
-                pos[i[0]],
-                # 3. position of the target node in the tree (prefer leftmost
+                pos[i[0]]
+                # 4. position of the target node in the tree (prefer leftmost
                 # highest)
-                rule_order[i[3]]  # 4. rule type rank (prefer earlier in order)
         )
         sort_v2 = lambda i: (  # for satisfiability tableaus:
                 i[6],
