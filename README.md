@@ -59,7 +59,7 @@ Some background on the theory underlying the implementation can be found in [`py
 
 ### Deduction systems
 - analytic tableau
-- sequent calculus (classical propositional logic only)
+- sequent calculus (classical logic only)
 
 ### Interface
 - input of formulas and structures with ordinary keyboard characters, directly or from a file
