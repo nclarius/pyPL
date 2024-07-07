@@ -2337,9 +2337,9 @@ class Node(object):
             }
             str_rule = self.children[0].rule if self.children else ""
             if str_rule.startswith("+"):
-                str_rule = "\\Leftarrow" + str2tex[self.children[0].rule[1:]]
+                str_rule = str2tex[self.children[0].rule[1:]] + "\\vdash"
             elif str_rule.startswith("-"):
-                str_rule = "\\Rightarrow" + str2tex[self.children[0].rule[1:]]
+                str_rule = "\\vdash" + str2tex[self.children[0].rule[1:]]
             else:
                 str_rule = str2tex[str_rule] if str_rule in str2tex else ""
 
@@ -2351,7 +2351,7 @@ class Node(object):
             elif len(self.children) == 1:
                 if isinstance(self.children[0].fml, Closed):  # axiom
                     res += "\\AxiomC{}\n"
-                    res += indent + "\\RightLabel{($\\Leftrightarrow$)}\n"
+                    res += indent + "\\RightLabel{($\\vdash$)}\n"
                     res += indent + "\\UnaryInfC{" + self.tex() + "}\n"
                 elif isinstance(self.children[0].fml, Pseudo):  # open assumption
                     res += indent + "\\AxiomC{" + self.tex() + "}\n"
