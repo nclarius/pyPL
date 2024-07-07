@@ -1044,6 +1044,12 @@ class Verum(Formula):
         A negated verum is always contradictory.
         """
         return True
+    
+    def constr_pos(self):
+        return Unit()
+    
+    def constr_neg(self):
+        return Empty()
 
 
 class Falsum(Formula):
@@ -1105,6 +1111,12 @@ class Falsum(Formula):
         A negated falsum is never contradictory.
         """
         return False
+    
+    def constr_pos(self):
+        return Empty()
+    
+    def constr_neg(self):
+        return Unit()
 
 
 class Neg(Formula):
@@ -1258,6 +1270,12 @@ class Conj(Formula):
         """
         return {"-∧": ("β", [(False, self.phi), (False, self.psi)])}
 
+    def constr_pos(self):
+        return [Fst(self.phi), Snd(self.psi)]
+    
+    def constr_neg(self):
+        return Pair(self.phi, self.psi)
+
 
 class Disj(Formula):
     """
@@ -1326,6 +1344,12 @@ class Disj(Formula):
         """
         return {"-∨": ("α", [(False, self.phi),
                              (False, self.psi)])}
+    
+    def constr_pos(self):
+        return Case(self, self.phi, self.psi)
+    
+    def constr_neg(self):
+        return [Inl(self.phi), Inr(self.psi)]
 
 
 class Imp(Formula):
