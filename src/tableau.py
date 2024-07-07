@@ -54,7 +54,6 @@ from subprocess import DEVNULL, STDOUT, check_call
 
 debug = False
 
-
 def least(lst, cond):
     return min([x for x in lst if cond(x)])
 
@@ -472,6 +471,7 @@ class Tableau(object):
             if debug:
                 pass
                 print("applicable:")
+                print("(prio, target, source, name, type, arguments, apps)")
                 print("\n".join([", ".join([
                         str(i), str(itm[0].line), str(itm[1].line), itm[2],
                         str(itm[3]), str(itm[5]), str(itm[6])])
@@ -1003,7 +1003,7 @@ class Tableau(object):
         rank_new = {True: 1, False: 0}
         # define a preference order for rule types
         rule_order = {r: i for (i, r) in enumerate(
-                ["ι", "η", "λ", "α", "β", "δ", "γ", "θ", "ε", "π", "μ", "ν",
+                ["ι", "η", "λ", "α", "β", "γ", "δ", "θ", "ε", "π", "μ", "ν",
                  "κ", "ξ", "χ", "ο", "u", "ω"])}
         branching = {  # rank by branching
                 "ι": 0,  # forcing rules
