@@ -58,7 +58,7 @@ Some background on the theory underlying the implementation can be found in [`py
 - three-valued logic (not yet implemented)
 
 ### Deduction systems
-- analytic tableau
+- analytic tableaux
 - sequent calculus (classical logic only)
 
 ### Interface
