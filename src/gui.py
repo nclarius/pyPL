@@ -1514,7 +1514,7 @@ class PyPLGUI(ttk.Frame):
     def set_status(self, txt):
         print(txt)
         if hasattr(self, "status"):
-            self.set_status(txt)
+            self.status.set(txt)
             self.update()
 
 def main():
