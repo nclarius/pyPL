@@ -8,6 +8,7 @@ Define the language and semantics of classical (standard and modal) (preposition
 from structure import *
 
 structure = __import__("structure")
+construction = __import__("construction")
 
 from itertools import product
 
@@ -826,6 +827,9 @@ class Prop(Formula):
            |
         σ.n + p
         where σ.n is old
+
+        -----------
+        x: φ ⊢ x: φ
         """
         if mode["classical"]:
             return dict()
@@ -833,7 +837,17 @@ class Prop(Formula):
             return {"+p": ("ν", [(True, self)],)}
 
     def tableau_neg(self, mode):
+        """
+        -----------
+        x: φ ⊢ x: φ
+        """
         return dict()
+    
+    def constr_l(self):
+        return CVar(self.p)
+    
+    def constr_r(self):
+        return CVar(self.p)
 
 
 class Atm(Formula):
@@ -1031,6 +1045,10 @@ class Verum(Formula):
         return dict()
 
     def tableau_neg(self, mode):
+        """
+        ---------
+        ⊢ : ⊤
+        """
         return dict()
 
     def tableau_contradiction_pos(self, other, sign):
@@ -1044,12 +1062,6 @@ class Verum(Formula):
         A negated verum is always contradictory.
         """
         return True
-    
-    def constr_pos(self):
-        return Unit()
-    
-    def constr_neg(self):
-        return Empty()
 
 
 class Falsum(Formula):
@@ -1095,6 +1107,10 @@ class Falsum(Formula):
         return False
 
     def tableau_pos(self, mode):
+        """
+        -----------
+         : ⊥ ⊢ 
+        """
         return dict()
 
     def tableau_neg(self, mode):
@@ -1111,12 +1127,6 @@ class Falsum(Formula):
         A negated falsum is never contradictory.
         """
         return False
-    
-    def constr_pos(self):
-        return Empty()
-    
-    def constr_neg(self):
-        return Unit()
 
 
 class Neg(Formula):
@@ -1183,9 +1193,14 @@ class Neg(Formula):
                   σ.n
          |         |
         - φ    σ.n - φ
+
+         ⊢ x: φ
+        --------
+        x : ¬φ ⊢
         """
         if mode["classical"]:
-            return {"+¬": ("α", [(False, self.phi)])}
+            return {"+¬": ("α", [(False, self.phi, x := Constr())],
+                                x)}
         else:
             return {"+¬": ("ν", [(False, self.phi)])}
 
@@ -1196,9 +1211,14 @@ class Neg(Formula):
           |        |
         + φ     σ.n + φ
                where σ.n is new
+        
+         x: φ ⊢ 
+        --------
+        ⊢ x : ¬φ
         """
         if mode["classical"]:
-            return {"-¬": ("α", [(True, self.phi)])}
+            return {"-¬": ("α", [(True, self.phi, x := Constr())],
+                            x)}
         else:
             return {"-¬": ("μ", [(True, self.phi)])}
 
@@ -1258,23 +1278,28 @@ class Conj(Formula):
             |
         +   φ
         +   ψ
+
+        π₁x: φ, π₂x: ψ ⊢
+        ----------------
+           x : φ∧ψ ⊢
         """
-        return {"+∧": ("α", [(True, self.phi),
-                             (True, self.psi)])}
+        # todo typing rule correct?
+        return {"+∧": ("α", [(True, self.phi, Fst(x)),
+                             (True, self.psi, Snd(x))],
+                             x := Pair(Constr(), Constr()))}
 
     def tableau_neg(self, mode):
         """
           - (φ∧ψ)
             /  \
          - φ  - ψ
-        """
-        return {"-∧": ("β", [(False, self.phi), (False, self.psi)])}
 
-    def constr_pos(self):
-        return [Fst(self.phi), Snd(self.psi)]
-    
-    def constr_neg(self):
-        return Pair(self.phi, self.psi)
+        ⊢ x: φ    ⊢ y: ψ
+        ----------------
+         ⊢ ⟨x,y⟩ : φ∧ψ  
+        """
+        return {"-∧": ("β", [(False, self.phi, x := Constr()), (False, self.psi, y := Constr())],
+                            Pair(x, y))}
 
 
 class Disj(Formula):
@@ -1332,8 +1357,14 @@ class Disj(Formula):
          + (φ∨ψ)
            /  \
         + φ  + ψ
+
+         x : φ ⊢ χ    y : ψ ⊢ χ
+        ------------------------
+        z : φ∨ψ ⊢ case z x y : χ
         """
-        return {"+∨": ("β", [(True, self.phi), (True, self.psi)])}
+        # todo typing rule correct?
+        return {"+∨": ("β", [(True, self.phi, x := Constr()), (True, self.psi, y := Constr())],
+                            Case(z := Constr(), x, y))}
 
     def tableau_neg(self, mode):
         """
@@ -1341,15 +1372,15 @@ class Disj(Formula):
             |
         -   φ
         -   ψ
+
+              ⊢  x: φ, y: ψ
+        ---------------------------
+        ⊢ inl x : φ∨ψ , inr y : φ∨ψ
         """
-        return {"-∨": ("α", [(False, self.phi),
-                             (False, self.psi)])}
-    
-    def constr_pos(self):
-        return Case(self, self.phi, self.psi)
-    
-    def constr_neg(self):
-        return [Inl(self.phi), Inr(self.psi)]
+        # todo typing rule correct?
+        return {"-∨": ("α", [(False, self.phi, x := Constr()),
+                             (False, self.psi, y := Constr())],
+                             Inl(x), Inr(y))}
 
 
 class Imp(Formula):
@@ -1415,9 +1446,15 @@ class Imp(Formula):
            /  \                 σ.n
         - φ  + ψ             /      \
                       σ.n - φ  σ.n + ψ
+
+        ⊢ y : φ    xy : ψ ⊢
+        -------------------
+             x : φ→ψ ⊢
         """
+        # todo typing rule correct?
         if mode["classical"]:
-            return {"+→": ("β", [(False, self.phi), (True, self.psi)])}
+            return {"+→": ("β", [(False, self.phi, y := Constr()), (True, self.psi, y := Appl(x, Constr()))],
+                                y.f)}
         else:
             return {"+→": ("χ", [(False, self.phi), (True, self.psi)])}
 
@@ -1429,10 +1466,15 @@ class Imp(Formula):
            + φ      σ.n
            - ψ    σ.n + φ
                   σ.n - ψ
+        
+        x: φ ⊢ y : ψ
+        ------------
+        ⊢ λx.y : φ→ψ
         """
         if mode["classical"]:
-            return {"-→": ("α", [(True, self.phi),
-                                 (False, self.psi)])}
+            return {"-→": ("α", [(True, self.phi,  x := Constr()),
+                                 (False, self.psi, y := Constr())],
+                                 Lam(x, y))}
         else:
             return {"-→": ("μ", [(True, self.phi),
                                  (False, self.psi)])}

@@ -17,7 +17,7 @@ class Constr:
         @rtype str
         """
 
-class CVar(Constr):
+class Assmpt(Constr):
     def __init__(self, var: str):
         self.var = var
 
@@ -28,37 +28,11 @@ class CVar(Constr):
         return self.var
 
     def __eq__(self, other):
-        return isinstance(other, IVar) and self.u == other.u
+        return isinstance(other, Assmpt) and self.u == other.u
 
     def __len__(self):
         return 1
 
-
-class Unit(Constr):
-    def __str__(self):
-        return 'unit'
-
-    def tex(self) -> str:
-        return f'\\text{{unit}}'
-
-    def __eq__(self, other):
-        return isinstance(other, Unit)
-
-    def __len__(self):
-        return 1
-
-class Empty(Constr):
-    def __str__(self):
-        return 'empty'
-
-    def tex(self) -> str:
-        return f'\\empty'
-
-    def __eq__(self, other):
-        return isinstance(other, Empty)
-
-    def __len__(self):
-        return 1
 
 class Pair(Constr):
     def __init__(self, x: Constr, y: Constr):
@@ -159,7 +133,7 @@ class Inr(Constr):
         return 1 + len(self.x)
 
 class Abstr(Constr):
-    def __init__(self, var: CVar, body: Constr):
+    def __init__(self, var: Assmpt, body: Constr):
         self.var = var
         self.body = body
 
