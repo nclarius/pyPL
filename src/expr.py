@@ -6,9 +6,9 @@ Define the language and semantics of classical (standard and modal) (preposition
 """
 
 from structure import *
+from construction import *
 
 structure = __import__("structure")
-construction = __import__("construction")
 
 from itertools import product
 
@@ -216,9 +216,9 @@ class Expr:
         if self == other:
             return True
         bounaterms_self = [subexpr for subexpr in self.subexprs()
-                            if any([isinstance(subexpr, LIVar) or isinstance(subexpr, Var)])]
+                            if any([isinstance(subexpr, LVar) or isinstance(subexpr, Var)])]
         bounavars_other = [subexpr.u for subexpr in other.subexprs()
-                            if any([isinstance(subexpr, LIVar) or isinstance(subexpr, Var)])]
+                            if any([isinstance(subexpr, LVar) or isinstance(subexpr, Var)])]
         print(bounaterms_self, bounavars_other)
         if len(bounaterms_self) == len(bounavars_other):
             conversions = product(bounaterms_self, bounavars_other)
@@ -732,7 +732,7 @@ class Formula(Expr):
         """
         pass
 
-    def tableau_contradiction_pos(self, other, sign):
+    def tableau_close_pos(self, other, sign):
         """
         The cases where the positive formula leads to a contradiction in the branch.
 
@@ -749,7 +749,7 @@ class Formula(Expr):
         """
         return self == other and not sign
 
-    def tableau_contradiction_neg(self, other, sign):
+    def tableau_close_neg(self, other, sign):
         """
         The cases where the negative formula leads to a contradiction in the branch.
 
@@ -985,14 +985,14 @@ class Eq(Formula):
     def tableau_neg(self, mode):
         return dict()
 
-    def tableau_contradiction_pos(self, other, _):
+    def tableau_close_pos(self, other, _):
         """
         t1 = t2
         """
         # todo wrong
         return str(self.t1) != str(self.t2)  # todo IL
 
-    def tableau_contradiction_neg(self, other, _):
+    def tableau_close_neg(self, other, _):
         """
         t ≠ t
         """
@@ -1051,13 +1051,13 @@ class Verum(Formula):
         """
         return dict()
 
-    def tableau_contradiction_pos(self, other, sign):
+    def tableau_close_pos(self, other, sign):
         """
         An unnegated verum is never contradictory.
         """
         return False
 
-    def tableau_contradiction_neg(self, other, sign):
+    def tableau_close_neg(self, other, sign):
         """
         A negated verum is always contradictory.
         """
@@ -1116,13 +1116,13 @@ class Falsum(Formula):
     def tableau_neg(self, mode):
         return dict()
 
-    def tableau_contradiction_pos(self, other, sign):
+    def tableau_close_pos(self, other, sign):
         """
         An unnegated falsum is always contradictory.
         """
         return True
 
-    def tableau_contradiction_neg(self, other, sign):
+    def tableau_close_neg(self, other, sign):
         """
         A negated falsum is never contradictory.
         """
@@ -1222,6 +1222,7 @@ class Neg(Formula):
         else:
             return {"-¬": ("μ", [(True, self.phi)])}
 
+
 class Conj(Formula):
     """
     Conjunction.
@@ -1284,9 +1285,9 @@ class Conj(Formula):
            x : φ∧ψ ⊢
         """
         # todo typing rule correct?
-        return {"+∧": ("α", [(True, self.phi, Fst(x)),
-                             (True, self.psi, Snd(x))],
-                             x := Pair(Constr(), Constr()))}
+        return {"+∧": ("α", [(True, self.phi, Constr(Fst, x)),
+                             (True, self.psi, Constr(Snd, x))],
+                             x := Constr())}
 
     def tableau_neg(self, mode):
         """
@@ -1298,8 +1299,9 @@ class Conj(Formula):
         ----------------
          ⊢ ⟨x,y⟩ : φ∧ψ  
         """
-        return {"-∧": ("β", [(False, self.phi, x := Constr()), (False, self.psi, y := Constr())],
-                            Pair(x, y))}
+        return {"-∧": ("β", [(False, self.phi, x := Constr()),
+                             (False, self.psi, y := Constr())],
+                            Constr(Pair, x, y))}
 
 
 class Disj(Formula):
@@ -1363,8 +1365,9 @@ class Disj(Formula):
         z : φ∨ψ ⊢ case z x y : χ
         """
         # todo typing rule correct?
-        return {"+∨": ("β", [(True, self.phi, x := Constr()), (True, self.psi, y := Constr())],
-                            Case(z := Constr(), x, y))}
+        return {"+∨": ("β", [(True, self.phi, x := Constr()),
+                             (True, self.psi, y := Constr())],
+                            Constr(Either, x, y))}
 
     def tableau_neg(self, mode):
         """
@@ -1380,7 +1383,7 @@ class Disj(Formula):
         # todo typing rule correct?
         return {"-∨": ("α", [(False, self.phi, x := Constr()),
                              (False, self.psi, y := Constr())],
-                             Inl(x), Inr(y))}
+                             Constr(Inl, x), Constr(Inr, y))}
 
 
 class Imp(Formula):
@@ -1453,8 +1456,9 @@ class Imp(Formula):
         """
         # todo typing rule correct?
         if mode["classical"]:
-            return {"+→": ("β", [(False, self.phi, y := Constr()), (True, self.psi, y := Appl(x, Constr()))],
-                                y.f)}
+            return {"+→": ("β", [(False, self.phi, y := Constr()),
+                                 (True, self.psi, xy := Constr(Appl, Constr(), y))],
+                                xy.phi)}
         else:
             return {"+→": ("χ", [(False, self.phi), (True, self.psi)])}
 
@@ -1474,7 +1478,7 @@ class Imp(Formula):
         if mode["classical"]:
             return {"-→": ("α", [(True, self.phi,  x := Constr()),
                                  (False, self.psi, y := Constr())],
-                                 Lam(x, y))}
+                                Constr(Abstr, x, y))}
         else:
             return {"-→": ("μ", [(True, self.phi),
                                  (False, self.psi)])}
@@ -2463,14 +2467,14 @@ class Ext(Expr):
         return dict(self.phi.denot(s, v, w))[w]
 
 
-class Lexpr(Expr):
+class LExpr(Expr):
     """
     Lambda terms.
     """
     pass
 
 
-class LIVar(Lexpr):
+class LVar(LExpr):
     """
     Lambda variable.
     x, y, z, x1, x2, ...
@@ -2489,7 +2493,7 @@ class LIVar(Lexpr):
         return self.u
 
     def __eq__(self, other):
-        return isinstance(other, LIVar) and self.u == other.u
+        return isinstance(other, LVar) and self.u == other.u
 
     def subst(self, u, t):
         if u.u == self.u:
@@ -2504,7 +2508,7 @@ class LIVar(Lexpr):
         return v[self.u]
 
 
-class LConst(Lexpr):
+class LConst(LExpr):
     """
     Lambda constant.
     a, b, c, c1, c2, ...
@@ -2539,7 +2543,7 @@ class LConst(Lexpr):
             return i[self.c][w]
 
 
-class Appl(Lexpr):
+class LAppl(LExpr):
     """
     Lambda application.
     (φψ)
@@ -2561,13 +2565,13 @@ class Appl(Lexpr):
         return "(" + self.phi.tex() + self.psi.tex() + ")"
 
     def __eq__(self, other):
-        return isinstance(other, Appl) and self.phi == other.phi and self.psi == other.psi
+        return isinstance(other, LAppl) and self.phi == other.phi and self.psi == other.psi
 
     def redex(self):
         """
         An expression is a redex iff it is an application whose functor is an abstraction.
         """
-        return isinstance(self.phi, Abstr)
+        return isinstance(self.phi, LAbstr)
 
     def redexes(self):
         return ([self] if self.redex() else []) + self.phi.redexes() + self.psi.redexes()
@@ -2576,7 +2580,7 @@ class Appl(Lexpr):
         return self.phi.m.subst(self.phi.u, self.psi)
 
     def subst(self, u, t):
-        return Appl(self.phi.subst(u, t), self.psi.subst(u, t))
+        return LAppl(self.phi.subst(u, t), self.psi.subst(u, t))
 
     def denot(self, s, v = {}, w = ""):
         """
@@ -2585,7 +2589,7 @@ class Appl(Lexpr):
         return self.phi.denot(s, v, w)[self.psi.denot(s, v, w)]
 
 
-class Abstr(Lexpr):
+class LAbstr(LExpr):
     """
     Lambda abstraction.
     λu.φ
@@ -2596,7 +2600,7 @@ class Abstr(Lexpr):
     @type phi: Expr
     """
 
-    def __init__(self, u: LIVar, phi: Expr):
+    def __init__(self, u: LVar, phi: Expr):
         self.u = u
         self.phi = phi
 
@@ -2607,7 +2611,7 @@ class Abstr(Lexpr):
         return "(" + "\\lambda " + self.u.tex() + "." + self.phi.tex() + ")"
 
     def __eq__(self, other):
-        return isinstance(other, Abstr) and self.u == other.u and self.phi == other.phi
+        return isinstance(other, LAbstr) and self.u == other.u and self.phi == other.phi
 
     def freevars(self):
         return self.phi.freevars() - {self.u}
@@ -2619,11 +2623,11 @@ class Abstr(Lexpr):
         if u == self.u:
             return self
         elif not (self.u.u in t.freevars() and u.u in self.phi.freevars()):
-            return Abstr(self.u, self.phi.subst(u, t))
+            return LAbstr(self.u, self.phi.subst(u, t))
         else:
             varnames = ["x", "y", "z"] + ["x" + str(i) for i in range(100)]
             u_ = [var for var in varnames if var not in self.phi.freevars() | t.freevars()][0]
-            return Abstr(LIVar(u_), self.phi.subst(self.u, LIVar(u_)).subst(u, t))
+            return LAbstr(LVar(u_), self.phi.subst(self.u, LVar(u_)).subst(u, t))
 
     def denot(self, s, v = {}, w = ""):
         """
