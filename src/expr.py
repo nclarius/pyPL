@@ -842,12 +842,6 @@ class Prop(Formula):
         x: φ ⊢ x: φ
         """
         return dict()
-    
-    def constr_l(self):
-        return CVar(self.p)
-    
-    def constr_r(self):
-        return CVar(self.p)
 
 
 class Atm(Formula):
@@ -1476,7 +1470,7 @@ class Imp(Formula):
         ⊢ λx.y : φ→ψ
         """
         if mode["classical"]:
-            return {"-→": ("α", [(True, self.phi,  x := Constr()),
+            return {"-→": ("α", [(True, self.phi,  x := Constr(Assmpt)),
                                  (False, self.psi, y := Constr())],
                                 Constr(Abstr, x, y))}
         else:

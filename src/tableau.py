@@ -38,6 +38,7 @@ Tableau proofs and model extraction.
 
 
 from expr import *
+from construction import *
 from parser import FmlParser
 
 import itertools
@@ -154,7 +155,7 @@ class Tableau(object):
 
         for node in [self.root] + self.premises + self.axioms:
             node.context = [self.root] + self.premises + self.axioms
-
+        
         self.gui = gui
         if not self.gui:
             self.gui = __import__("gui").PyPLGUI(True)
@@ -477,7 +478,7 @@ class Tableau(object):
                         str(itm[3]), str(itm[5]), str(itm[6])])
                         for i, itm in enumerate(applicable)]))
             # get first applicable rule from prioritized list
-            (target, source, rule_name, rule_type, fmls, args, insts) = \
+            (target, source, rule_name, rule_type, fmls, args, insts, constr) = \
             applicable[0]
             rule_type_func = getattr(self,
                                      "rule_" + Tableau.rule_names[rule_type])
@@ -487,7 +488,7 @@ class Tableau(object):
                 print("expanding:")
                 print(str(source), " with ", rule_name, " on ", str(target))
             # apply the rule
-            new_children = rule_type_func(target, source, rule_name, fmls, args)
+            new_children = rule_type_func(target, source, rule_name, fmls, constr, args)
 
             # # check properties of new children
             # for child in new_children:
@@ -522,7 +523,7 @@ class Tableau(object):
         for source in [node for node in self.root.nodes() if
                        not isinstance(node.fml, Pseudo)]:
             for rule_name, rule in source.rules().items():
-                rule_type, fmls = rule
+                rule_type, fmls, constr = rule
 
                 def applied(
                         node):  # nodes in the branch that this rule has
@@ -569,7 +570,8 @@ class Tableau(object):
                             args = universal, irrelevant, new
                             insts = 0
                             applicable.append((target, source, rule_name,
-                                               rule_type, fmls, args, insts))
+                                               rule_type, fmls, args, insts,
+                                               constr))
 
                 # quantifier rules
                 elif rule_type in ["γ", "δ", "η", "θ", "ε"]:
@@ -1159,7 +1161,7 @@ class Tableau(object):
     #         elif rule_type in ["ξ", "χ", "ο", "u", "ω"]:
     #             pass  # not yet implemented
 
-    def rule_alpha(self, target, source, rule, fmls, args):
+    def rule_alpha(self, target, source, rule, fmls, constr, args):
         """
         α
         Branch unary.
@@ -1170,21 +1172,23 @@ class Tableau(object):
 
         # append (top) node
         top = child = target.add_child(
-                (self, line := line + 1, world, *fmls[0], rule, source, args, 
-                len(fmls) > 1, target.context))
+                (self, line := line + 1, world, fmls[0][0], fmls[0][1], 
+                rule, source, args, fmls[0][2], len(fmls) > 1, target.context))
 
         # append bottom node
         if len(fmls) == 2:
             bot = top.add_child(
-                    (self, line := line + 1, world, *fmls[1], rule, source, [],
-                    False, top.context + [top]))
+                    (self, line := line + 1, world, fmls[1][0], fmls[1][1], 
+                    rule, source, [], fmls[1][2], False, top.context + [top]))
+        
+        target.constr = constr
 
         if len(fmls) == 2 and bot:
             return [top, bot]
         else:
             return [top]
 
-    def rule_beta(self, target, source, rule, fmls, args):
+    def rule_beta(self, target, source, rule, fmls, constr, args):
         """
         β
         Branch binary.
@@ -1195,23 +1199,35 @@ class Tableau(object):
 
         # append (top) left node
         topleft = child = target.add_child((self, line := line + 1, world,
-                                            *fmls[0], rule, source, list(args)))
+                                            fmls[0][0], fmls[0][1],
+                                            rule, source, list(args),
+                                            fmls[0][2]))
 
         # append bottom left node
         if len(fmls) == 4 and topleft:
             botleft = topleft.add_child((
-                                        self, line := line + 1, world, *fmls[2],
-                                        rule, source, list(args)))
+                                        self, line := line + 1, world, 
+                                        fmls[2][0],fmls[2][1],
+                                        rule, source, list(args),
+                                        fmls[2][2]))
 
         # append (top) right node
         topright = child = target.add_child((self, line := line + 1, world,
-                                             *fmls[1], rule, source,
-                                             list(args)))
+                                             fmls[1][0], fmls[1][1],
+                                             rule, source, list(args),
+                                             fmls[1][2]))
 
         # append bottom right node
         if len(fmls) == 4 and topright:
             botright = topright.add_child((self, line := line + 1, world,
-                                           *fmls[3], rule, source, list(args)))
+                                           fmls[3][0], fmls[3][1],
+                                           rule, source, list(args),
+                                           fmls[3][2]))
+        
+        target.constr = constr
+        print(rule, target.fml, target.constr)
+        print(topleft.fml, top.constr)
+        print(botleft.fml, bot.constr)
 
         self.num_branches += 1
 
@@ -2059,6 +2075,7 @@ class Node(object):
 
     def __init__(self, parent, tableau: Tableau, line: int, world: int,
                  sign: bool, fml: Formula, rule: str, source, inst: tuple, 
+                 constr: Constr = Constr(),
                  contextual: bool = False, context: list = []):
         self.tableau = tableau
         self.line = line
@@ -2069,6 +2086,7 @@ class Node(object):
         self.source = source
         self.rule = rule
         self.inst = inst
+        self.constr = constr
         self.contextual = contextual  # for sequent calculus: 
             # whether the formula is represented in the left or right context  
             # of another node and does not need to be printed
@@ -2202,19 +2220,34 @@ class Node(object):
         if self.tableau.sequent_style:
             if isinstance(self.fml, Pseudo):
                 return "$\\ $"
-            ctxt_l = list(dict.fromkeys(
-                [node for node in self.context + [self] if node.sign]))
-            ctxt_r = list(dict.fromkeys(
-                [node for node in self.context + [self] if not node.sign]))
-            fml = "$" + \
-                "{,} ".join([node.fml.tex().\
-                    replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }") 
-                    for node in ctxt_l]) + \
-                " \\vdash " + \
-                "{,}".join([node.fml.tex()\
-                    .replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }") 
-                    for node in ctxt_r]) + \
-                "$"
+            
+            # collect formulas to left and right of turnstile
+            ctxt_l, ctxt_r = [], []
+            for node in sorted(self.context + [self], 
+                key=lambda node: node.source.line if node.source else 0):
+                print("node", node.fml, node.constr, [str(attr) + ":" + str(getattr(node.constr, attr)) for attr in dir(node.constr) if getattr(node.constr, attr) is not None and not attr.startswith("__")])
+
+                # create construction object from type and available fields
+                node.constr.inst = node.constr.type(*
+                    [getattr(node.constr, attr) for attr in dir(node.constr) 
+                        if getattr(node.constr, attr) is not None  
+                        and attr not in ["inst", "type"] 
+                        and not attr.startswith("__")])
+                print(str(node.constr.inst))
+
+                # texify construction and formula
+                str_constr = node.constr.inst.tex().\
+                    replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }")
+                str_fml = node.fml.tex().\
+                    replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }")
+                str_node = str_constr + ":\\ " + str_fml
+                
+                if node.sign and str_node not in ctxt_l:
+                    ctxt_l.append(str_node)
+                elif not node.sign and str_node not in ctxt_r:
+                    ctxt_r.append(str_node)
+
+            fml = "$" + "{,}".join(ctxt_l) + " \\vdash " + "{,}".join(ctxt_r) + "$"
             return fml
 
         str_line = str(self.line) + "." if self.line else ""
@@ -2492,7 +2525,9 @@ class Node(object):
         # add the child
         child = Node(self, *spec)
         if self.tableau.sequent_style:
-            child.context += list(dict.fromkeys(
+
+            # set left and right formulas of sequent
+            child.context += sorted(
                 # formulas still expandable on the node attached to, 
                 # passing siblings of the same rule applications,
                 # excluding the source itself
@@ -2505,7 +2540,23 @@ class Node(object):
                 [node for node in self.branch if node.fml.atom()] + \
                 # sibling nodes of alpha rules collapsed into the same node
                 [node for node in self.branch if node.source == child.source]
-                ))
+                , key=lambda node: node.source.line)
+            
+            # set variable name
+            if child.constr.type == Assmpt:
+                varnames = ["x", "y", "z", "u", "v", "w"] + \
+                    ["x" + str(i) for i in range(100)]
+                child.constr.var = [v for v in varnames if not any(
+                    [hasattr(node.constr, "var") and node.constr.var == v 
+                        for node in self.nodes()])][0]
+            
+            # identify constructions
+            for node in self.branch:
+                if node.fml == child.fml and node.constr.type == Assmpt:
+                    print("copying info")
+                    child.constr.type = node.constr.type
+                    child.constr.var = node.constr.var
+            print("adding", child.sign, child.fml, [str(attr) + ":" + str(getattr(child.constr, attr)) for attr in dir(child.constr) if not attr.startswith("__")])
         self.children.append(child)
 
         if not isinstance(child.fml, Pseudo):
@@ -2537,9 +2588,9 @@ class Node(object):
             return
         for node in self.branch[::-1]:
             if self.fml and self.world == node.world and (
-                    (self.sign and self.fml.tableau_contradiction_pos(node.fml,
+                    (self.sign and self.fml.tableau_close_pos(node.fml,
                                                                       node.sign)) or
-                    (not self.sign and self.fml.tableau_contradiction_neg(
+                    (not self.sign and self.fml.tableau_close_neg(
                             node.fml, node.sign))
             ):
                 rule = str(node.line) if node != self else ""
@@ -2882,14 +2933,15 @@ if __name__ == "__main__":
     ###############
     # sequent calculus
     ###############
-    # prms = []
+    prms = []
     # fml = Prop("s")
     # prms.append(Disj(Prop("p"), Prop("q")))
     # prms.append(Imp(Prop("q"), Conj(Prop("r"), Prop("s"))))
     # prms.append(Neg(Prop("p")))
     # fml = Imp(Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r"))), Imp(Conj(Prop("p"), Prop("q")), Prop("r")))
     # fml = Disj(Prop("p"), Neg(Prop("p")))
-    # tab = Tableau(fml, premises=prms, sequent_style=True)
+    fml = Imp(Imp(Prop("p"), Prop("q")), Imp(Prop("p"), Prop("q")))
+    tab = Tableau(fml, premises=prms, sequent_style=True)
 
 
     ####################
