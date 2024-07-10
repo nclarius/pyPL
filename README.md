@@ -5,7 +5,7 @@ for some combinations of classical and intuitionistic, non-modal and modal, prop
 
 This software can compute  
 - the denotation (truth value) of a given logical expression in a given structure,  
-- an deduction tree with associated minimal (counter) models for a given inference or set of sentences.
+- a tableau or sequent deduction tree with associated minimal (counter) models for a given inference or set of sentences.
 
 © Natalie Clarius <clarius@informatik.uni-tuebingen.de>  
 License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).   
