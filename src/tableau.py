@@ -147,7 +147,7 @@ class Tableau(object):
                          for i in range(1, len(premises) + 1)]
         max_line = max([node.line for node in self.root.nodes() if node.line])
         self.axioms = [self.root.leaves()[0].add_child(
-                (self, i + max_line + 1, ws[i], fmls[i], "Ax", source, inst, 
+                (self, i + max_line + 1, ws[i], True, fmls[i], "Ax", source, inst, 
                 True, []))
                        for i in range(1 + len(premises),
                                       1 + len(premises) + len(axioms))]
@@ -1854,7 +1854,7 @@ class Tableau(object):
                     # atoms = all unnegated propositional variables
                     atoms = [node.fml.p for node in branch
                              if node.fml.atom()
-                             and node.sig]
+                             and node.sign]
                     # todo add literals for other prop. log.s
                     natoms = [node.fml.phi.p for node in branch if
                               node.fml.literal() and not node.fml.atom()
@@ -2866,24 +2866,24 @@ if __name__ == "__main__":
     # fml = Exists(Var("x"), Exists(Var("y"), Atm(Pred("love"), (Var("x"), Var("y")))))
     # tab = Tableau(fml, validity=False)
     # tab = Tableau(fml, validity=False, linguistic=True)
-    #
+    # 
     # fml = Exists(Var("x"), Exists(Var("y"),
     #                               Conj(Neg(Eq(Var("x"), (Var("y")))), Atm(Pred("love"), (Var("x"), Var("y"))))))
     # tab = Tableau(fml, validity=False)
-    #
+    # 
     # fml = Exists(Var("x"), Conj(Atm(Pred("Rabbit"), (Var("x"),)),
     #                             Exists(Var("y"), Conj(Atm(Pred("Carrot"), (Var("y"),)),
     #                                                   Atm(Pred("Eat"), (Var("x"), Var("y")))))))
     # ax1 = Forall(Var("x"), Conj(Imp(Atm(Pred("Rabbit"), (Var("x"),)), Neg(Atm(Pred("Carrot"), (Var("x"),)))),
     #                            Imp(Atm(Pred("Carrot"), (Var("x"),)), Neg(Atm(Pred("Rabbit"), (Var("x"),))))))
     # tab = Tableau(fml, axioms=[ax1], validity=False)
-    #
+    # 
     # fml = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)),
     #                            Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
     #                                                  Atm(Pred("read"), (Var("x"), Var("y")))))))
     # fml1 = Exists(Var("x"), Atm(Pred("student"), (Var("x"),)))
     # tab = Tableau(fml, premises=[fml1], validity=False)
-    #
+    # 
     # ax1 = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)), Atm(Pred("human"), (Var("x"),))))
     # ax2 = Forall(Var("x"), Imp(Atm(Pred("book"), (Var("x"),)), Atm(Pred("object"), (Var("x"),))))
     # ax3 = Forall(Var("x"), Imp(Atm(Pred("human"), (Var("x"),)), Neg(Atm(Pred("object"), (Var("x"),)))))
@@ -2893,8 +2893,8 @@ if __name__ == "__main__":
     # fml = Forall(Var("x"), Imp(Atm(Pred("student"), (Var("x"),)),
     #                            Exists(Var("y"), Conj(Atm(Pred("book"), (Var("y"),)),
     #                                                  Atm(Pred("read"), (Var("x"), Var("y")))))))
-    # tab = Tableau(fml, premises=[prem1, prem2], axioms=[ax1, ax2, ax3, ax4], validity=False)
-    #
+    # tab = Tableau(fml, premises=[prem1, prem2], axioms=[ax1, ax2, ax3, ax4], validity=False, size_limit_factor=4)
+    # 
     # fml1 = Forall(Var("x"), Exists(Var("y"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # fml2 = Exists(Var("y"), Forall(Var("x"), Atm(Pred("know"), (Var("x"), Var("y")))))
     # tab = Tableau(fml2, premises=[fml1], validity=False, satisfiability=False)
