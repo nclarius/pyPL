@@ -10,8 +10,37 @@ class Constr(object):
         self.type = constrtype
         self.phi = phi
         self.psi = psi
+        self.var = None
         self.inst = None
+    
+    def mirror(self, other):
+        for attr in dir(other):
+            if getattr(other, attr) is not None and not attr.startswith("__") and not attr in ["inst", "mirror"]:
+                setattr(self, attr, getattr(other, attr))
+    
+    def getType(self):
+        return self.type
+    
+    def getPhi(self):
+        return self.phi
+    
+    def getPsi(self):
+        return self.psi
 
+    def getVar(self):
+        return self.var
+    
+    def setType(self, constrtype):
+        self.type = constrtype
+    
+    def setPhi(self, phi):
+        self.phi = phi
+    
+    def setPsi(self, psi):
+        self.psi = psi
+    
+    def setVar(self, var):
+        self.var = var
 
 class Assmpt(Constr):
     def __init__(self, var: str):

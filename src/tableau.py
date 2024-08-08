@@ -139,17 +139,17 @@ class Tableau(object):
                 # in all worlds
                 fmls[i] = AllWorlds(fmls[i])
 
-        self.root = Node(None, self, line, ws[0], not negated_concl, fmls[0], rule, source, inst, len(premises + axioms) > 0)
+        self.root = Node(None, self, line, ws[0], not negated_concl, fmls[0], rule, source, inst, Constr(), len(premises + axioms) > 0)
         self.conclusion = conclusion if not isinstance(conclusion, tuple) else \
         conclusion[0]
         self.premises = [self.root.leaves()[0].add_child(
                 (self, i + 1, ws[i], True, fmls[i], rule, source, inst, 
-                i < len(premises), []))
+                Constr(), i < len(premises), []))
                          for i in range(1, len(premises) + 1)]
         max_line = max([node.line for node in self.root.nodes() if node.line])
         self.axioms = [self.root.leaves()[0].add_child(
                 (self, i + max_line + 1, ws[i], fmls[i], "Ax", source, inst, 
-                True, []))
+                Constr(), True, []))
                        for i in range(1 + len(premises),
                                       1 + len(premises) + len(axioms))]
 
@@ -1174,6 +1174,7 @@ class Tableau(object):
         top = child = target.add_child(
                 (self, line := line + 1, world, fmls[0][0], fmls[0][1], 
                 rule, source, args, fmls[0][2], len(fmls) > 1, target.context))
+        top.constr.setType(Assmpt)
 
         # append bottom node
         if len(fmls) == 2:
@@ -1181,7 +1182,9 @@ class Tableau(object):
                     (self, line := line + 1, world, fmls[1][0], fmls[1][1], 
                     rule, source, [], fmls[1][2], False, top.context + [top]))
         
-        target.constr = constr
+        target.constr.setType(Abstr)
+        target.constr.setPhi(top.constr)
+        target.constr.setPsi(bot.constr)
 
         if len(fmls) == 2 and bot:
             return [top, bot]
@@ -1193,6 +1196,7 @@ class Tableau(object):
         β
         Branch binary.
         """
+        print("rule beta", target.fml, fmls[0], fmls[1])
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
@@ -1216,6 +1220,9 @@ class Tableau(object):
                                              fmls[1][0], fmls[1][1],
                                              rule, source, list(args),
                                              fmls[1][2]))
+        topright.constr.setType(Appl)
+        topright.constr.setPhi(topleft.constr)
+        topright.constr.setPsi(target)
 
         # append bottom right node
         if len(fmls) == 4 and topright:
@@ -1224,10 +1231,6 @@ class Tableau(object):
                                            rule, source, list(args),
                                            fmls[3][2]))
         
-        target.constr = constr
-        print(rule, target.fml, target.constr)
-        print(topleft.fml, top.constr)
-        print(botleft.fml, bot.constr)
 
         self.num_branches += 1
 
@@ -2075,8 +2078,7 @@ class Node(object):
 
     def __init__(self, parent, tableau: Tableau, line: int, world: int,
                  sign: bool, fml: Formula, rule: str, source, inst: tuple, 
-                 constr: Constr = Constr(),
-                 contextual: bool = False, context: list = []):
+                 constr: Constr(), contextual: bool = False, context: list = []):
         self.tableau = tableau
         self.line = line
         # self.sig = sig
@@ -2086,7 +2088,8 @@ class Node(object):
         self.source = source
         self.rule = rule
         self.inst = inst
-        self.constr = constr
+        self.constr = Constr()
+        self.constr.mirror(constr)
         self.contextual = contextual  # for sequent calculus: 
             # whether the formula is represented in the left or right context  
             # of another node and does not need to be printed
@@ -2225,29 +2228,36 @@ class Node(object):
             ctxt_l, ctxt_r = [], []
             for node in sorted(self.context + [self], 
                 key=lambda node: node.source.line if node.source else 0):
-                print("node", node.fml, node.constr, [str(attr) + ":" + str(getattr(node.constr, attr)) for attr in dir(node.constr) if getattr(node.constr, attr) is not None and not attr.startswith("__")])
 
                 # create construction object from type and available fields
-                node.constr.inst = node.constr.type(*
-                    [getattr(node.constr, attr) for attr in dir(node.constr) 
-                        if getattr(node.constr, attr) is not None  
-                        and attr not in ["inst", "type"] 
-                        and not attr.startswith("__")])
-                print(str(node.constr.inst))
+                if node.constr.getType() != Assmpt:
+                    print(node.fml, node.constr.getType())
+                    node.constr.inst = node.constr.getType()(node.constr.getPhi(), node.constr.getPsi())
+                else:
+                    node.constr.inst = node.constr.getType()(node.constr.getVar())
+                # node.constr.inst = node.constr.type(*
+                #     [getattr(node.constr, attr) for attr in (
+                #         ["var"] if node.constr.type == Assmpt else ["phi", "psi"]
+                #     )]
+                    # [getattr(node.constr, attr) for attr in dir(node.constr) 
+                    #     if getattr(node.constr, attr) is not None  
+                    #     and attr not in ["inst", "type", "mirror"]
+                    #     and not attr.startswith("__")])
+                # )
+                print(str(node.constr.inst) + ": " + str(node.fml))
 
                 # texify construction and formula
-                str_constr = node.constr.inst.tex().\
-                    replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }")
-                str_fml = node.fml.tex().\
-                    replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }")
-                str_node = str_constr + ":\\ " + str_fml
+                str_constr = node.constr.inst.tex()
+                str_fml = node.fml.tex()
+                str_node = str_constr + ":" + str_fml
                 
                 if node.sign and str_node not in ctxt_l:
                     ctxt_l.append(str_node)
                 elif not node.sign and str_node not in ctxt_r:
                     ctxt_r.append(str_node)
 
-            fml = "$" + "{,}".join(ctxt_l) + " \\vdash " + "{,}".join(ctxt_r) + "$"
+            fml = "$" + ",".join(ctxt_l) + " \\vdash " + ",".join(ctxt_r) + "$".\
+                    replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }")
             return fml
 
         str_line = str(self.line) + "." if self.line else ""
@@ -2546,17 +2556,17 @@ class Node(object):
             if child.constr.type == Assmpt:
                 varnames = ["x", "y", "z", "u", "v", "w"] + \
                     ["x" + str(i) for i in range(100)]
-                child.constr.var = [v for v in varnames if not any(
-                    [hasattr(node.constr, "var") and node.constr.var == v 
-                        for node in self.nodes()])][0]
+                child.constr.setVar([v for v in varnames if not any(
+                    [hasattr(node.constr, "var") and node.constr.getVar() == v 
+                        for node in self.root().nodes()])][0])
             
             # identify constructions
             for node in self.branch:
-                if node.fml == child.fml and node.constr.type == Assmpt:
-                    print("copying info")
-                    child.constr.type = node.constr.type
-                    child.constr.var = node.constr.var
-            print("adding", child.sign, child.fml, [str(attr) + ":" + str(getattr(child.constr, attr)) for attr in dir(child.constr) if not attr.startswith("__")])
+                if node.fml == child.fml \
+                    and node.constr.type == Assmpt and hasattr(node.constr, "var"):
+                    child.constr.setType(node.constr.getType())
+                    child.constr.setVar(node.constr.getVar())
+                    break
         self.children.append(child)
 
         if not isinstance(child.fml, Pseudo):
@@ -2597,7 +2607,7 @@ class Node(object):
                 source = self
                 self.add_child((
                                self.tableau, None, None, None, Closed(), rule, source,
-                               None))
+                               Constr(), None))
                 return True
         return False
 
@@ -2933,15 +2943,17 @@ if __name__ == "__main__":
     ###############
     # sequent calculus
     ###############
-    prms = []
+    # prms = []
     # fml = Prop("s")
     # prms.append(Disj(Prop("p"), Prop("q")))
     # prms.append(Imp(Prop("q"), Conj(Prop("r"), Prop("s"))))
     # prms.append(Neg(Prop("p")))
     # fml = Imp(Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r"))), Imp(Conj(Prop("p"), Prop("q")), Prop("r")))
     # fml = Disj(Prop("p"), Neg(Prop("p")))
-    fml = Imp(Imp(Prop("p"), Prop("q")), Imp(Prop("p"), Prop("q")))
-    tab = Tableau(fml, premises=prms, sequent_style=True)
+    # fml = Imp(Imp(Prop("p"), Prop("q")), Imp(Prop("p"), Prop("q")))
+    # fml = Imp(Prop("p"), Imp(Prop("q"), Prop("p")))
+    # fml = Imp(Imp(Prop("p"), Imp(Prop("q"), Prop("r"))), Imp(Imp(Prop("p"), Prop("q")), Imp(Prop("p"), Prop("r"))))
+    # tab = Tableau(fml, premises=prms, sequent_style=True)
 
 
     ####################
