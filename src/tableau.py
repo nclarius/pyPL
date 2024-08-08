@@ -2367,7 +2367,7 @@ class Node(object):
             elif len(self.children) == 1:
                 if isinstance(self.children[0].fml, Closed):  # axiom
                     res += "\\AxiomC{}\n"
-                    res += indent + "\\RightLabel{($\\vdash$)}\n"
+                    res += indent + "\\RightLabel{($\\_\\vdash\\_$)}\n"
                     res += indent + "\\UnaryInfC{" + self.tex() + "}\n"
                 elif isinstance(self.children[0].fml, Pseudo):  # open assumption
                     res += indent + "\\AxiomC{" + self.tex() + "}\n"
@@ -2713,7 +2713,7 @@ if __name__ == "__main__":
     #             (Var("y"),)), Eq(Var("x"), Var("y"))))))
     # tab = Tableau(fml)
 
-    # logic for computer scientists SS80, sheet 07 ex. 02
+    # # logic for computer scientists SS80, sheet 07 ex. 02
     # fml1 = Exists(Var("x"), Forall(Var("y"), Conj(Atm(Pred("P"), (Var("x"),)),
     #                                               Atm(Pred("R"), (Var("x"),
     #                                               Var("y"))))))
@@ -2902,14 +2902,14 @@ if __name__ == "__main__":
     ###############
     # sequent calculus
     ###############
-    # prms = []
-    # fml = Prop("s")
-    # prms.append(Disj(Prop("p"), Prop("q")))
-    # prms.append(Imp(Prop("q"), Conj(Prop("r"), Prop("s"))))
-    # prms.append(Neg(Prop("p")))
-    # fml = Imp(Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r"))), Imp(Conj(Prop("p"), Prop("q")), Prop("r")))
-    # fml = Disj(Prop("p"), Neg(Prop("p")))
-    # tab = Tableau(fml, premises=prms, sequent_style=True)
+    prms = []
+    fml = Prop("s")
+    prms.append(Disj(Prop("p"), Prop("q")))
+    prms.append(Imp(Prop("q"), Conj(Prop("r"), Prop("s"))))
+    prms.append(Neg(Prop("p")))
+    fml = Imp(Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r"))), Imp(Conj(Prop("p"), Prop("q")), Prop("r")))
+    fml = Disj(Prop("p"), Neg(Prop("p")))
+    tab = Tableau(fml, premises=prms, sequent_style=True)
 
 
     ####################
