@@ -565,8 +565,9 @@ class Tableau(object):
                                                                 for node in
                                                                 branch]))
                             new = False
+                            unneeded = False
                             # compose arguments
-                            args = universal, irrelevant, new
+                            args = universal, irrelevant, unneeded, new
                             insts = 0
                             applicable.append((target, source, rule_name,
                                                rule_type, fmls, args, insts))
@@ -661,18 +662,22 @@ class Tableau(object):
                             occurring_local = occurring_global
 
                         # check if the rule requires a new constant to be
-                        # instantiated
+                        # instantiated,
+                        # and whether this is not required by the rule type
                         if rule_type in ["γ", "θ"]:
                             new = len(used) >= len(occurring_local)
+                            unneeded = new
                         elif rule_type in ["δ", "ε"]:
                             new = True
+                            unneeded = False
                         elif rule_type in ["η"]:
                             new = len(occurring_local) == 0
+                            unneeded = False
 
                         # count instantiations
                         insts = len(used)
                         # compose the arguments
-                        args = universal, irrelevant, new, indexed, used, \
+                        args = universal, irrelevant, unneeded, new, indexed, used, \
                                occurring_local, occurring_global
 
                         if rule_type in ["γ", "δ", "θ", "ε"]:
@@ -701,6 +706,7 @@ class Tableau(object):
                 # modal rules
                 elif rule_type in ["μ", "ν", "π", "κ", "λ", "ι"]:
                     irrelevant = False
+                    unneeded = False # todo check for unnnecessary new world introductions
 
                     if rule_type in [
                             "κ"]:  # special treatement of targets for kappa
@@ -817,7 +823,7 @@ class Tableau(object):
                         # count instantiations
                         insts = len(used)
                         # compose the arguments
-                        args = universal, irrelevant, new, used, \
+                        args = universal, irrelevant, unneeded, new, used, \
                                occurring_global, extensions, reductions
 
                         # todo not correctly reusing already introduced
@@ -888,6 +894,7 @@ class Tableau(object):
                 elif rule_type in ["ξ", "χ", "ο", "u", "ω"]:
 
                     irrelevant = False
+                    unneeded = False # todo check for unnnecessary new state introductions
 
                     for target in targets:
 
@@ -944,7 +951,7 @@ class Tableau(object):
                             new = False
 
                         # compose the arguments
-                        args = universal, irrelevant, new, used, \
+                        args = universal, irrelevant, unneeded, new, used, \
                                occurring_global, extensions, reductions
 
                         if rule_type in ["ξ"]:
@@ -1001,6 +1008,7 @@ class Tableau(object):
         # decide which boolean values are good and bad
         rank_univ_irrel = {(True, True): 0, (False, False): 1, (True, False): 2}
         rank_new = {True: 1, False: 0}
+        rank_unneeded = {True: 1, False: 0}
         # define a preference order for rule types
         rule_order = {r: i for (i, r) in enumerate(
                 ["ι", "η", "λ", "α", "β", "γ", "δ", "θ", "ε", "π", "μ", "ν",
@@ -1040,13 +1048,18 @@ class Tableau(object):
                 i[6],
                 # 1. number of times the rule has already been applied on
                 # this branch (prefer least used)
+                rank_unneeded[i[5][2]],
+                # 2. whether the application would unnecessarily introduce a
+                # new constant or world (prefer not to)
                 rule_order[i[3]],
-                # 2. rule type rank (prefer earlier in order)
+                # 3. formula complexity (prefer getting to atoms faster)
+                len(i[1].fml),
+                # 4. rule type rank (prefer earlier in order)
                 pos[i[1]],
-                # 3. position of the source node in the tree (prefer leftmost
+                # 5. position of the source node in the tree (prefer leftmost
                 # highest)
                 pos[i[0]]
-                # 4. position of the target node in the tree (prefer leftmost
+                # 6. position of the target node in the tree (prefer leftmost
                 # highest)
         )
         sort_v2 = lambda i: (  # for satisfiability tableaus:
@@ -1058,7 +1071,10 @@ class Tableau(object):
                 # yes)
                 branching[i[3]],
                 # 4. whether the rules branches (prefer non-branching)
-                rank_new[i[5][2]],
+                rank_unneeded[i[5][2]],
+                # 3. whether the application would unnecessarily introduce a
+                # new constant or world (prefer not to)
+                rank_new[i[5][3]],
                 # 3. whether to introduce a new constant or world (prefer not
                 # to)
                 operator[i[3]],
@@ -1170,13 +1186,13 @@ class Tableau(object):
 
         # append (top) node
         top = child = target.add_child(
-                (self, line := line + 1, world, *fmls[0], rule, source, args, 
+                (self, line := line + 1, world, *fmls[0], rule, source, None, 
                 len(fmls) > 1, target.context))
 
         # append bottom node
         if len(fmls) == 2:
             bot = top.add_child(
-                    (self, line := line + 1, world, *fmls[1], rule, source, [],
+                    (self, line := line + 1, world, *fmls[1], rule, source, None,
                     False, top.context + [top]))
 
         if len(fmls) == 2 and bot:
@@ -1195,23 +1211,23 @@ class Tableau(object):
 
         # append (top) left node
         topleft = child = target.add_child((self, line := line + 1, world,
-                                            *fmls[0], rule, source, list(args)))
+                                            *fmls[0], rule, source, None))
 
         # append bottom left node
         if len(fmls) == 4 and topleft:
             botleft = topleft.add_child((
                                         self, line := line + 1, world, *fmls[2],
-                                        rule, source, list(args)))
+                                        rule, source, None))
 
         # append (top) right node
         topright = child = target.add_child((self, line := line + 1, world,
                                              *fmls[1], rule, source,
-                                             list(args)))
+                                             None))
 
         # append bottom right node
         if len(fmls) == 4 and topright:
             botright = topright.add_child((self, line := line + 1, world,
-                                           *fmls[3], rule, source, list(args)))
+                                           *fmls[3], rule, source, None))
 
         self.num_branches += 1
 
@@ -1226,7 +1242,7 @@ class Tableau(object):
         Branch unary with an arbitrary constant.
         """
         sign, phi, var = fmls[0]
-        universal, irrelevant, new, indexed, used, occurring_local, \
+        universal, irrelevant, unneeded, new, indexed, used, occurring_local, \
         occurring_global = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
@@ -1271,7 +1287,7 @@ class Tableau(object):
         Branch unary with a new constant.
         """
         sign, phi, var = fmls[0]
-        universal, irrelevant, new, indexed, used, occurring_local, \
+        universal, irrelevant, unneeded, new, indexed, used, occurring_local, \
         occurring_global = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
@@ -1311,7 +1327,7 @@ class Tableau(object):
         Branch n-ary with an existing constant.
         """
         sign, phi, var = fmls[0]
-        universal, irrelevant, new, indexed, used, occurring_local, \
+        universal, irrelevant, unneeded, new, indexed, used, occurring_local, \
         occurring_global = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
@@ -1352,7 +1368,7 @@ class Tableau(object):
         Branch n-ay with an arbitrary constant.
         """
         sign, phi, var = fmls[0]
-        universal, irrelevant, new, indexed, used, occurring_local, \
+        universal, irrelevant, unneeded, new, indexed, used, occurring_local, \
         occurring_global = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
@@ -1400,7 +1416,7 @@ class Tableau(object):
         Branch n-ay with a new constant.
         """
         sign, phi, var = fmls[0]
-        universal, irrelevant, new, indexed, used, occurring_local, \
+        universal, irrellevant, unneeded, new, indexed, used, occurring_local, \
         occurring_global = args
         line = max([node.line for node in self.root.nodes() if node.line])
         # sig = tuple([s for s in source.sig]) if source.sig else None
@@ -1447,7 +1463,7 @@ class Tableau(object):
         μ
         Branch unary with a new signature.
         """
-        universal, irrelevant, new, used, occurring, extensions, reductions =\
+        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
             args
         line = max([node.line for node in self.root.nodes() if node.line])
 
@@ -1482,7 +1498,7 @@ class Tableau(object):
         ν
         Branch unary with an existing signature.
         """
-        universal, irrelevant, new, used, occurring, extensions, reductions =\
+        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
             args
         max_line = max([node.line for node in self.root.nodes() if node.line])
         line = max_line
@@ -1520,7 +1536,7 @@ class Tableau(object):
         κ
         Branch n-ay with an arbitrary signature.
         """
-        universal, irrelevant, new, used, occurring, extensions, reductions =\
+        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
             args
         line = max([node.line for node in self.root.nodes() if node.line])
 
@@ -1563,7 +1579,7 @@ class Tableau(object):
         λ
         Branch unary with an existing signature.
         """
-        universal, irrelevant, new, used, occurring, extensions, reductions =\
+        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
             args
         max_line = max([node.line for node in self.root.nodes() if node.line])
         line = max_line
@@ -1602,7 +1618,7 @@ class Tableau(object):
         ι
         Branch unary with an existing signature.
         """
-        universal, irrelevant, new, used, occurring, extensions, reductions =\
+        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
             args
         max_line = max([node.line for node in self.root.nodes() if node.line])
         line = max_line
@@ -1641,7 +1657,7 @@ class Tableau(object):
         π
         Branch unary with a previous signature.
         """
-        universal, irrelevant, new, used, occurring, extensions, reductions =\
+        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
             args
         max_line = max([node.line for node in self.root.nodes() if node.line])
         line = max_line
@@ -1672,7 +1688,7 @@ class Tableau(object):
         ξ
         Branch binary with a new signature.
         """
-        universal, irrelevant, new, used, occurring, extensions, reductions =\
+        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
             args
         line = max([node.line for node in self.root.nodes() if node.line])
 
@@ -1702,7 +1718,7 @@ class Tableau(object):
         χ
         Branch binary with an existing signature.
         """
-        universal, irrelevant, new, used, occurring, extensions, reductions =\
+        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
             args
         max_line = max([node.line for node in self.root.nodes() if node.line])
         line = max_line
@@ -2680,6 +2696,10 @@ if __name__ == "__main__":
     # Var("y")))))
     # tab = Tableau(fml2, premises=[fml1])
     # tab = Tableau(fml1, premises=[fml2])
+    # 
+    # fml = Exists(Var("x"), Forall(Var("y"), Neg(Atm(Pred("P"), (Var("x"), Var("y"))))))
+    # fml1 = Neg(Forall(Var("x"), Exists(Var("y"), Atm(Pred("P"), (Var("x"), Var("y"))))))
+    # tab = Tableau(fml, premises=[fml1])
 
     # uniqueness quantifier
     # fml = Biimp(Exists(Var("x"), Conj(Atm(Pred("P"), (Var("x"),)),
