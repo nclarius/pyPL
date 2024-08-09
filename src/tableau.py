@@ -2902,14 +2902,14 @@ if __name__ == "__main__":
     ###############
     # sequent calculus
     ###############
-    prms = []
-    fml = Prop("s")
-    prms.append(Disj(Prop("p"), Prop("q")))
-    prms.append(Imp(Prop("q"), Conj(Prop("r"), Prop("s"))))
-    prms.append(Neg(Prop("p")))
-    fml = Imp(Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r"))), Imp(Conj(Prop("p"), Prop("q")), Prop("r")))
-    fml = Disj(Prop("p"), Neg(Prop("p")))
-    tab = Tableau(fml, premises=prms, sequent_style=True)
+    # prms = []
+    # fml = Prop("s")
+    # prms.append(Disj(Prop("p"), Prop("q")))
+    # prms.append(Imp(Prop("q"), Conj(Prop("r"), Prop("s"))))
+    # prms.append(Neg(Prop("p")))
+    # fml = Imp(Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r"))), Imp(Conj(Prop("p"), Prop("q")), Prop("r")))
+    # fml = Disj(Prop("p"), Neg(Prop("p")))
+    # tab = Tableau(fml, premises=prms, sequent_style=True)
 
 
     ####################
