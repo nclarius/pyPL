@@ -2834,6 +2834,7 @@ if __name__ == "__main__":
     #
     # ax1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)), Neg(Atm(Pred("lid"), (Var("x"),)))))
     # ax2 = Forall(Var("x"), Imp(Atm(Pred("lid"), (Var("x"),)), Neg(Atm(Pred("tupperbox"), (Var("x"),)))))
+    # ax3 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)), Forall(Var("y"), Imp(Atm(Pred("lid"), (Var("y"),)), Neg(Eq(Var("x"), Var("y")))))))
     # fml1 = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
     #                               Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
     #                                                    Atm(Pred("fit"), (Var("x"), Var("y")))))))
@@ -2841,11 +2842,16 @@ if __name__ == "__main__":
     #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
     #                                                   Atm(Pred("fit"), (Var("x"), Var("y")))))))
     # fml3 = Exists(Var("x"), Atm(Pred("tupperbox"), (Var("x"),)))
+    # fml4 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+    #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+    #                                                   Conj(Atm(Pred("fit"), (Var("x"), Var("y"))),
+    #                                                        Neg(Eq(Var("x"), Var("y"))))))))
     # tab = Tableau(fml2, premises=[fml1])
     # tab = Tableau(fml1, premises=[fml2])
     # tab = Tableau(fml1, premises=[fml2, fml3], validity=False, satisfiability=False)
     # tab = Tableau(fml1, premises=[fml2, fml3], axioms=[ax1], validity=False, satisfiability=False)
     # tab = Tableau(fml1, premises=[fml2, fml3], axioms=[ax1, ax2], validity=False, satisfiability=False)
+    # tab = Tableau(fml1, premises=[fml3, fml4], axioms=[ax1, ax2], validity=False, satisfiability=False, size_limit_factor=4)
 
     #####################
     # function symbols and equality
