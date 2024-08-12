@@ -319,7 +319,7 @@ class Tableau(object):
             else:
                 if self.mode["satisfiability"]:
                     result += "The " + (
-                        "set of sentences" if self.premises else "sentence") \
+                        "theory" if self.premises else "sentence") \
                               + " is unsatisfiable."
                 else:
                     result += "The " + (
@@ -335,7 +335,7 @@ class Tableau(object):
             else:
                 if self.mode["satisfiability"]:
                     result += "The " + (
-                        "set of sentences" if self.premises else "sentence") \
+                        "theory" if self.premises else "sentence") \
                               + " is satisfiable."
                 else:
                     result += "The " + (
@@ -353,7 +353,7 @@ class Tableau(object):
                 if self.mode["satisfiability"]:
                     result += "The " + \
                               (
-                                  "set of sentences" if self.premises else
+                                  "theory" if self.premises else
                                   "sentence") + \
                               " may or may not be satisfiable."
                 else:
