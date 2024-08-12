@@ -451,9 +451,7 @@ class VarModalStructure(ModalStructure):
                                    [str(t) for t in e]) + "⟩" for e in sorted(ipw)]) +
                             "}")))
                         for (w, ipw) in sorted(self.i[p].items())]) + "\n    " \
-                    for (p, ip) in sorted(self.i.items(), key=sort_i_w)]).replace("\n    \n",  "\n") + "\n" + \
-                "\n".join([g + " : " + ", ".join([str(key) + " ↦ " + str(val)
-                    for key, val in sorted(self.v[g].items())]) for g in self.v])
+                    for (p, ip) in sorted(self.i.items(), key=sort_i_w)]).replace("\n    \n",  "\n") + "\n"
 
     def tex(self):
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
@@ -490,9 +488,6 @@ class VarModalStructure(ModalStructure):
                                 "}")))
                              for (w, ipw) in sorted(self.i[p].items())])
                         for (p, ip) in sorted(self.i.items(), key=sort_i_w)]) + "\\\\\n" + \
-               "\\\\\n".join([g + " : &" + ", ".join([str(key) + " & \\mapsto " + self.text(val)
-                                                      for key, val in sorted(self.v[g].items())])
-                              for g in self.v]) + "\\\\\n" + \
                "\\end{tabular}" \
                 .replace("\\set{}", "\\emptyset{}")
 
