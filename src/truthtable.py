@@ -14,8 +14,9 @@ from itertools import product
 
 class Truthtable():
 
-    def __init__(self, e: Expr, latex=True, silent=False, gui=None):
+    def __init__(self, e: Expr, premises=[], latex=True, silent=False, gui=None):
         self.e = e
+        self.prems = premises
         self.latex = latex
         self.silent = silent
         self.gui = gui
@@ -26,7 +27,7 @@ class Truthtable():
             self.show()
 
     def truthtable(self):
-        pvs = sorted(list(self.e.propvars()))
+        pvs = sorted(list(self.e.propvars().union(*[p.propvars() for p in self.prems])))
         vprod = list(product([True, False], repeat=len(pvs)))
         valuations = [{p: v for (p, v) in zip(pvs, valuation)} for valuation in vprod]
         syms = [c for c in self.e.tex().split(" ")]
@@ -34,10 +35,18 @@ class Truthtable():
 
         if not self.latex:
             tt = ""
-            tt += ((len(str(len(valuations))) + 2) * " ") + " ".join(pvs) + " | " + str(self.e).replace("¬", "¬ ") + "\n"
-            tt += ((len(str(len(valuations))) + 2) * "-") + (2 * len(pvs)) * "-" + "|-" + self.truthrowsep(e, True) + "\n"
+            tt += ((len(str(len(valuations))) + 2) * " ") + " ".join(pvs) + " | "
+            tt += " | ".join([str(p).replace("¬", "¬ ") for p in self.prems])
+            tt += " | " + str(Inf()) + " | "
+            tt += str(self.e).replace("¬", "¬ ") + "\n"
+            tt += ((len(str(len(valuations))) + 2) * "-") + (2 * len(pvs)) * "-" + "|-"
+            tt += "-|-".join([self.truthrowsep(p, True) for p in self.prems])
+            tt += "-|" + self.truthrowsep(Inf(), True) + "|-"
+            tt += self.truthrowsep(fml, True) + "\n"
             tt += "\n".join(["V" + str(i+1) + " "+ \
                              " ".join([self.truthvalue(b) for b in val.values()]) + " | " + \
+                            " | ".join([self.truthrow(p, val, True) for p in self.prems]) + \
+                            " | " + self.truthrow(Inf(), val, True) + " | " + \
                              self.truthrow(self.e, val, True)
                              for i, val in enumerate(valuations)])
         else:
@@ -57,6 +66,8 @@ class Truthtable():
     
     def truthrowsep(self, e, mainconn=False):
         if not self.latex:
+            if isinstance(e, Inf):
+                return "-" + ("=" if mainconn else "-") + "-"
             if hasattr(e, "phi"):
                 if hasattr(e, "psi"):
                     # binary connective
@@ -76,6 +87,8 @@ class Truthtable():
     def truthrow(self, e, v, mainconn=False):
         s = PropStructure("S", v)
         if not self.latex:
+            if isinstance(e, Inf):
+                return self.truthvalue(e.denot(s, v, "", self.e, self.prems), mainconn, True)
             if hasattr(e, "phi"):
                 if hasattr(e, "psi"):
                     # binary connective
@@ -112,9 +125,12 @@ class Truthtable():
                     # prop. var.
                     return self.truthvalue(e.denot(s, v), mainconn)
     
-    def truthvalue(self, b, mainconn=False):
+    def truthvalue(self, b, mainconn=False, inf=False):
         if not self.latex:
-            return "1" if b else "0"  # todo mark main connective
+            if not inf:
+                return "1" if b else "0"
+            else:
+                return "✓" if b else "✘"
         else:
             return "$" + ("\\boldsymbol{" if mainconn else "") + ("1" if b else "0") + ("}" if mainconn else "") + "$"
 
@@ -137,7 +153,10 @@ class Truthtable():
 
         # heading
         if not self.latex:
-            heading = "Truth table for " + str(self.e) + ":\n\n"
+            heading = "Truth table for "
+            heading += ", ".join([str(p) for p in self.prems])
+            heading += " " + str(Inf() if self.e else Neg(Inf())) + " "
+            heading += str(self.e) + ":\n\n"
         else:
             heading = "Truth table for $" + self.e.tex() + "$:\\\\ \\ \\\\ \n"
 
@@ -166,6 +185,11 @@ if __name__ == "__main__":
     pass
     parse_f = __import__("parser").FmlParser().parse
 
-    e = parse_f("((p & q) | ~ r)")
-    tt = Truthtable(e, latex=False)
+    fml = parse_f("((p & q) | ~ r)")
+    tt = Truthtable(fml, latex=False, silent=True)
+
+    fml1 = Imp(Prop("p"), Prop("q"))
+    fml2 = Neg(Prop("p"))
+    fml = Neg(Prop("q"))
+    tt = Truthtable(fml, premises=[fml1, fml2], latex=False)
 

@@ -1122,11 +1122,15 @@ class Neg(Formula):
     def __str__(self):
         if isinstance(self.phi, Eq):  # todo double negated equality ("- t1 \= t2")
             return "(" + str(self.phi.t1) + "≠" + str(self.phi.t2) + ")"
+        if isinstance(self.phi, Inf):
+            return "⊬"
         return "¬" + str(self.phi)
 
     def tex(self):
         if isinstance(self.phi, Eq):
             return "(" + self.phi.t1.tex() + " \\neq " + self.phi.t2.tex() + ")"
+        elif isinstance(self.phi, Inf):
+            return "\\nvdash"
         return "\\neg " + self.phi.tex()
 
     def __eq__(self, other):
@@ -2717,6 +2721,25 @@ class Empty(Pseudo):
     def tex(self):
         return "\\varepsilon"
 
+
+class Inf(Pseudo):
+    """
+    Special pseudo-formula indicating inference.
+    """
+    def __init__(self):
+        pass
+
+    def __str__(self):
+        return "⊢"
+    
+    def tex(self):
+        return "\\vdash"
+    
+    def denot(self, s, v={}, w="", conclusion=None, premises=[]):
+        if conclusion:  # validity
+            return conclusion.denot(s, v, w) or not all([p.denot(s, v, w) for p in premises])
+        else:  # satisfiability
+            return all([p.denot(s, v, w) for p in premises])
 
 class Closed(Pseudo):
     """
