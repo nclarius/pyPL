@@ -58,7 +58,6 @@ class Truthtable():
     def truthrow(self, e, v, mainconn=False):
         s = PropStructure("S", v)
         if not self.latex:
-            # todo columns not properly aligned (extra space inserted when component is compound expression)
             if hasattr(e, "phi"):
                 if hasattr(e, "psi"):
                     # binary connective
