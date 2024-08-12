@@ -2814,6 +2814,19 @@ if __name__ == "__main__":
     # tab5 = Tableau(premises=[fml5, fml6], modal=True, validity=False, vardomains=True)
 
     #################
+    # intuitinistic logic
+    #################
+    # fml = Disj(Prop("p"), Neg(Prop("p")))
+    # tab = Tableau(fml, propositional=True, classical=False)
+    # tab = Tableau(fml, propositional=True, classical=False, validity=False)
+
+    # fml = Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))
+    # fml1 = Neg(Forall(Var("x"), Neg(Atm(Pred("P"), (Var("x"),)))))
+    # tab = Tableau(fml, premises=[fml1], classical=False)
+    # tab = Tableau(fml, premises=[fml1], classical=False, validity=True, satisfiability=True)
+    # todo no counter model found
+
+    #################
     # quantifier commutativity
     #################
     #
