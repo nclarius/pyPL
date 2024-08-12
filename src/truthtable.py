@@ -35,7 +35,7 @@ class Truthtable():
         if not self.latex:
             tt = ""
             tt += ((len(str(len(valuations))) + 2) * " ") + " ".join(pvs) + " | " + str(self.e) + "\n"
-            tt += (len(tt)-1) * "-" + "\n"
+            tt += ((len(str(len(valuations))) + 2) * "-") + (2 * len(pvs)) * "-" + "|-" + self.truthrowsep(e, True) + "\n"
             tt += "\n".join(["V" + str(i+1) + " "+ \
                              " ".join([self.truthvalue(b) for b in val.values()]) + " | " + \
                              self.truthrow(self.e, val, True)
@@ -54,6 +54,24 @@ class Truthtable():
                                  for i, val in enumerate(valuations)])
             tt += "\\\\\n" + "\\end{tabular}"
         return tt
+    
+    def truthrowsep(self, e, mainconn=False):
+        if not self.latex:
+            if hasattr(e, "phi"):
+                if hasattr(e, "psi"):
+                    # binary connective
+                    return "-" + self.truthrowsep(e.phi) + "-" + ("=" if mainconn else "-") + "-" + self.truthrowsep(e.psi) + "-"
+                else:
+                    # unary connective
+                    return "=" if mainconn else "-" + "-" + self.truthrowsep(e.phi)
+            else:
+                if not hasattr(e, "p"):
+                    # nullary connective
+                    return "=" if mainconn else "-"
+                else:
+                    # prop. var.
+                    return "=" if mainconn else "-"
+
     
     def truthrow(self, e, v, mainconn=False):
         s = PropStructure("S", v)
@@ -128,7 +146,7 @@ class Truthtable():
             path_preamble = os.path.join(os.path.dirname(__file__), "preamble.tex")
             with open(path_preamble) as f:
                 preamble = f.read()
-                preamble += "\n\n\setlength\\tabcolsep{3pt}\n"
+                preamble += "\n\n\\setlength\\tabcolsep{3pt}\n"
 
         # assemble string
         if not self.latex:
@@ -147,3 +165,4 @@ class Truthtable():
 if __name__ == "__main__":
     pass
     parse_f = __import__("parser").FmlParser().parse
+
