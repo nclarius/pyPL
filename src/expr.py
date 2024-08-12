@@ -1120,16 +1120,20 @@ class Neg(Formula):
         self.phi = phi
 
     def __str__(self):
-        if isinstance(self.phi, Eq):  # todo double negated equality ("- t1 \= t2")
+        if isinstance(self.phi, Eq): 
             return "(" + str(self.phi.t1) + "≠" + str(self.phi.t2) + ")"
-        if isinstance(self.phi, Inf):
+        elif isinstance(self.phi, Neg) and isinstance(self.phi,phi, Eq):
+            return "¬¬" + str(self.phi.phi)
+        if isinstance(self.phi, Inf): # double negated equality
             return "⊬"
         return "¬" + str(self.phi)
 
     def tex(self):
         if isinstance(self.phi, Eq):
             return "(" + self.phi.t1.tex() + " \\neq " + self.phi.t2.tex() + ")"
-        elif isinstance(self.phi, Inf):
+        elif isinstance(self.phi, Neg) and isinstance(self.phi,phi, Eq):
+            return "\\neg \\neg" + self.phi.phi.tex()
+        if isinstance(self.phi, Inf):
             return "\\nvdash"
         return "\\neg " + self.phi.tex()
 
