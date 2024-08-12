@@ -34,7 +34,7 @@ class Truthtable():
 
         if not self.latex:
             tt = ""
-            tt += ((len(str(len(valuations))) + 2) * " ") + " ".join(pvs) + " | " + str(self.e) + "\n"
+            tt += ((len(str(len(valuations))) + 2) * " ") + " ".join(pvs) + " | " + str(self.e).replace("¬", "¬ ") + "\n"
             tt += ((len(str(len(valuations))) + 2) * "-") + (2 * len(pvs)) * "-" + "|-" + self.truthrowsep(e, True) + "\n"
             tt += "\n".join(["V" + str(i+1) + " "+ \
                              " ".join([self.truthvalue(b) for b in val.values()]) + " | " + \
@@ -63,7 +63,7 @@ class Truthtable():
                     return "-" + self.truthrowsep(e.phi) + "-" + ("=" if mainconn else "-") + "-" + self.truthrowsep(e.psi) + "-"
                 else:
                     # unary connective
-                    return "=" if mainconn else "-" + "-" + self.truthrowsep(e.phi)
+                    return ("=" if mainconn else "-") + "-" + self.truthrowsep(e.phi)
             else:
                 if not hasattr(e, "p"):
                     # nullary connective
@@ -84,7 +84,7 @@ class Truthtable():
                            self.truthrow(e.psi, v) + " "
                 else:
                     # unary connective
-                    return self.truthvalue(e.denot(s, v), mainconn) + "" +\
+                    return self.truthvalue(e.denot(s, v), mainconn) + " " +\
                            self.truthrow(e.phi, v)
             else:
                 if not hasattr(e, "p"):
