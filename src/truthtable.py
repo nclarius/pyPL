@@ -166,3 +166,6 @@ if __name__ == "__main__":
     pass
     parse_f = __import__("parser").FmlParser().parse
 
+    e = parse_f("((p & q) | ~ r)")
+    tt = Truthtable(e, latex=False)
+
