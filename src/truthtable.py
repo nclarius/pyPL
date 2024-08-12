@@ -14,9 +14,16 @@ from itertools import product
 
 class Truthtable():
 
-    def __init__(self, e: Expr, latex=True):
+    def __init__(self, e: Expr, latex=True, silent=False, gui=None):
         self.e = e
         self.latex = latex
+        self.silent = silent
+        self.gui = gui
+        if not self.gui:
+            self.gui = __import__("gui").PyPLGUI(True)
+        
+        if not self.silent:
+            self.show()
 
     def truthtable(self):
         pvs = sorted(list(self.e.propvars()))
@@ -57,7 +64,7 @@ class Truthtable():
                     # binary connective
                     return " " + self.truthrow(e.phi, v) + \
                            " " + self.truthvalue(e.denot(s, v), mainconn) + " " + \
-                           self.truthrow(e.chi, v) + "  "
+                           self.truthrow(e.psi, v) + " "
                 else:
                     # unary connective
                     return self.truthvalue(e.denot(s, v), mainconn) + "" +\
@@ -75,7 +82,7 @@ class Truthtable():
                     # binary connective
                     return " & " + self.truthrow(e.phi, v) + \
                            " & " + self.truthvalue(e.denot(s, v), mainconn) + " & " + \
-                           self.truthrow(e.chi, v) + " & "
+                           self.truthrow(e.psi, v) + " & "
                 else:
                     # unary connective
                     return self.truthvalue(e.denot(s, v), mainconn) + " & " +\
@@ -136,8 +143,7 @@ class Truthtable():
                   "\n\n\\end{document}"
 
         # write and open output
-        write_output = __import__("gui").write_output
-        write_output(res, self.latex)
+        self.gui.write_output(res, self.latex)
 
 if __name__ == "__main__":
     pass
