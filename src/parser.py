@@ -116,6 +116,12 @@ class FmlParser:
         """
         # todo parse meta symbols
         # process tokens
+        if not tokens:
+            stacks = self.stacks
+            curr_stack = stacks[-1] if stacks else None
+            curr_stack.append(Empty())
+            self.stacks = stacks
+            self.update_stacks()
         for token in tokens:
             if debug:
                 input()
