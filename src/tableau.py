@@ -1851,18 +1851,20 @@ class Tableau(object):
             if self.mode["propositional"]:  # classical propositional logic
                 if not self.mode[
                     "modal"]:  # classical non-modal propositional logic
+                    # literals = all unnegated or negated propositional variables
+                    literals = [node.fml.p for node in branch if node.fml.atom()]
                     # atoms = all unnegated propositional variables
                     atoms = [node.fml.p for node in branch
                              if node.fml.atom()
                              and node.sign]
                     # todo add literals for other prop. log.s
-                    natoms = [node.fml.phi.p for node in branch if
-                              node.fml.literal() and not node.fml.atom()
-                              and node.sign]
+                    natoms = [node.fml.p for node in branch if
+                              node.fml.atom()
+                              and not node.sign]
                     # valuation = make all positive propositional variables
                     # true and all others false
                     v = {p: (True if p in atoms else False) for p in
-                         list(dict.fromkeys(atoms + natoms))}
+                         list(dict.fromkeys(literals))}
                     model = structure.PropStructure(s, v)
 
                 else:  # classical modal propositional logic
