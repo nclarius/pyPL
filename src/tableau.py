@@ -2757,6 +2757,7 @@ if __name__ == "__main__":
     #
     # fml = Nec(Falsum())
     # tab = Tableau(fml, propositional=True, modal=True, validity=False)
+    # todo comes out as unsatisfiable, but should have model with empty accessibility
     # 
     # fml = Conj(Poss(Prop("p")), Poss(Neg(Prop("p"))))
     # tab = Tableau(fml, modal=True)
