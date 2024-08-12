@@ -508,9 +508,9 @@ def compute_active():
         print("Example #9: predicate logic (logic for computer scientists lecture 07)")
         print()
 
-        d9a = {"s1", "s1"}
-        i9a = {"S": {("s1", )},
-               "R": {("s1", "s1"), ("s1", "s1")}}
+        d9a = {"m1", "m2"}
+        i9a = {"S": {("m1", )},
+               "R": {("m1", "m1"), ("m2", "m1")}}
         s1a = PredStructure("S9a", d9a, i9a)
 
         print(s1a)
