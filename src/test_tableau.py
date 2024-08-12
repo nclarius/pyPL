@@ -115,6 +115,13 @@ class TestTableau(unittest.TestCase):
         fml = Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))
         tab = Tableau(fml, premises=[fml1], classical=False, silent=True)
         assert tab.infinite()
+    
+    def test_strategy(self):
+        fml1 = Neg(Forall(Var("x"), Exists(Var("y"), Atm(Pred("P"), (Var("x"), Var("y"))))))
+        fml = Exists(Var("x"), Forall(Var("y"), Neg(Atm(Pred("P"), (Var("x"), Var("y"))))))
+        tab = Tableau(fml, premises=[fml1], silent=True)
+        assert tab.closed()
+        assert len(tab) == 9
 
 if __name__ == '__main__':
     unittest.main()
