@@ -10,23 +10,21 @@ from expr import *
 import os
 from itertools import product
 
-# todo plain text output
-
 class Truthtable():
 
-    def __init__(self, fml: Formula, premises=[], latex=True, silent=False, gui=None):
-        self.fml = fml
+    def __init__(self, conclusion: Formula, premises=[], latex=True, silent=False, gui=None):
+        self.concl = conclusion
         self.prems = premises
-        self.inf = Inf(self.fml, self.prems) if fml else Neg(Inf(self.fml, self.prems))
+        self.inf = Inf(self.concl, self.prems) if conclusion else Neg(Inf(self.concl, self.prems))
         self.latex = latex
         self.silent = silent
         self.gui = gui
         if not self.gui:
             self.gui = __import__("gui").PyPLGUI(True)
         
-        self.pvs = sorted(list((self.fml.propvars() if self.fml else set()).union(*[p.propvars() for p in self.prems])))
-        self.vprod = list(product([True, False], repeat=len(self.pvs)))
-        self.valuations = [{p: v for (p, v) in zip(self.pvs, valuation)} for valuation in self.vprod]
+        self.pvs = sorted(list((self.concl.propvars() if self.concl else set()).union(*[p.propvars() for p in self.prems])))
+        vprod = list(product([True, False], repeat=len(self.pvs)))
+        self.valuations = [{p: v for (p, v) in zip(self.pvs, valuation)} for valuation in vprod]
         
         if not self.silent:
             self.show()
@@ -37,31 +35,31 @@ class Truthtable():
             # heading
             tt += ((len(str(len(self.valuations))) + 2) * " ") + " ".join(self.pvs) + (" | " if self.prems else "")
             tt += " | ".join([str(p).replace("¬", "¬ ") for p in self.prems])
-            tt += " | " + str(self.inf) + (" | " if self.fml else " ")
-            tt += (str(self.fml).replace("¬", "¬ ") if self.fml else "") + "\n"
+            tt += " | " + str(self.inf) + (" | " if self.concl else " ")
+            tt += (str(self.concl).replace("¬", "¬ ") if self.concl else "") + "\n"
             # line
             tt += ((len(str(len(self.valuations))) + 2) * "-") + (2 * len(self.pvs)) * "-" + "|" + ("-" if self.prems else "")
             tt += "-|-".join([self.truthrowsep(p, True) for p in self.prems]) + ("-|" if self.prems else "")
             tt += self.truthrowsep(self.inf, True)
-            tt += ("|-" + self.truthrowsep(self.fml, True) if self.fml else "") + "\n"
+            tt += ("|-" + self.truthrowsep(self.concl, True) if self.concl else "") + "\n"
             # rows
             tt += "\n".join(["V" + str(i+1) + " "+ \
                              " ".join([self.truthvalue(b) for b in val.values()]) + (" | " if self.prems else "") + \
                             " | ".join([self.truthrow(p, val, True) for p in self.prems]) + \
-                            " | " + self.truthrow(self.inf, val, True) + (" | " if self.fml else "") + \
-                            (self.truthrow(self.fml, val, True) if self.fml else "")
+                            " | " + self.truthrow(self.inf, val, True) + (" | " if self.concl else "") + \
+                            (self.truthrow(self.concl, val, True) if self.concl else "")
                              for i, val in enumerate(self.valuations)])
         else:
             tt = ""
             tt += "\\begin{tabular}{c" + len(self.pvs) * "c" + "|"
             tt += "|".join([(len(f.tex().split(" ")) + len([c for c in f.tex() if c in ["(", ")"]])) * "c" for f in 
-                self.prems + [self.inf] + ([self.fml] if self.fml else [])]) + "}\n"
+                self.prems + [self.inf] + ([self.concl] if self.concl else [])]) + "}\n"
             # todo decrease spacing between parentheses columns
             # heading
             tt += " & " + " & ".join("$" + p + "$" for p in self.pvs) + " & " + \
                   (" & ".join(["$" + c + "$" for c in 
                     " ".join([f.tex() for f in 
-                        self.prems + [self.inf] + ([self.fml] if self.fml else [])])
+                        self.prems + [self.inf] + ([self.concl] if self.concl else [])])
                         .split(" ")]))\
                    .replace("(", "($ & $").replace(")", "$ & $)") + \
                   "\\\\ \\hline\n"
@@ -69,8 +67,8 @@ class Truthtable():
             tt += "\\\\\n".join(["$V_{" + str(i+1) + "}$ & " +
                                  " & ".join([self.truthvalue(b) for b in val.values()]) + " & " +
                                  " & ".join([self.truthrow(p, val, True) for p in self.prems]) + (" & " if self.prems else "") +
-                                 self.truthrow(self.inf, val, True) + (" & " if self.fml else "") +
-                                 (self.truthrow(self.fml, val, True) if self.fml else "")
+                                 self.truthrow(self.inf, val, True) + (" & " if self.concl else "") +
+                                 (self.truthrow(self.concl, val, True) if self.concl else "")
                                  for i, val in enumerate(self.valuations)])
             tt += "\\\\\n" + "\\end{tabular}"
         return tt
@@ -172,15 +170,15 @@ class Truthtable():
             heading = "Truth table for "
             heading += ", ".join([str(p) for p in self.prems])
             heading += " " + str(self.inf) + " "
-            heading += str(self.fml) + ":\n\n"
+            heading += str(self.concl) + ":\n\n"
         else:
             heading = "Truth table for $"
             heading += ", ".join([p.tex() for p in self.prems])
             heading += " " + self.inf.tex() + " "
-            heading += (self.fml.tex() if self.fml else "") + "$:\\\\ \\ \\\\ \n"
+            heading += (self.concl.tex() if self.concl else "") + "$:\\\\ \\ \\\\ \n"
         
         # result
-        subj = ("sentence" if not self.prems else ("inference" if self.fml else "theory"))
+        subj = ("sentence" if not self.prems else ("inference" if self.concl else "theory"))
         match subj:
             case "sentence":
                 prop = "valid" if self.valid() else "contingent" if self.satisfiable() else "unsatisfiable"
