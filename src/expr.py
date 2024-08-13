@@ -769,6 +769,36 @@ class Formula(Expr):
         """
         return self == other and sign
 
+    def cnf(self):
+        """
+        The conjunctive normal form of the formula.
+        """
+        pvs = sorted(self.propvars())
+        vprod = list(product([True, False], repeat=len(pvs)))
+        valuations = [{p: v for (p, v) in zip(pvs, valuation)} for valuation in vprod] if vprod else [{}]
+        countermodels = [val for val in valuations if not self.denot(PropStructure("S", val))]
+        return Conj(*[Disj(*[Neg(p) if valuation[p] else p for p in pvs]) for valuation in countermodels])
+
+    def dnf(self):
+        """
+        The disjunctive normal form of the formula.
+        """
+        pvs = sorted(self.propvars())
+        vprod = list(product([True, False], repeat=len(pvs)))
+        valuations = [{p: v for (p, v) in zip(pvs, valuation)} for valuation in vprod] if vprod else [{}]
+        models = [val for val in valuations if self.denot(PropStructure("S", val))]
+        return Disj(*[Conj(*[p if valuation[p] else Neg(p) for p in pvs]) for valuation in models])
+    
+    def clauses(self):
+        """
+        The set of clauses (conjunction of disjunction of literals) of the formula.
+        """
+        pvs = sorted(self.propvars())
+        vprod = list(product([True, False], repeat=len(pvs)))
+        valuations = [{p: v for (p, v) in zip(pvs, valuation)} for valuation in vprod] if vprod else [{}]
+        countermodels = [val for val in valuations if not self.denot(PropStructure("S", val))]
+        return [[(not valuation[p], p) for p in pvs] for valuation in countermodels]
+    
 
 class Prop(Formula):
     """
@@ -2804,3 +2834,20 @@ class Infinite(Pseudo):
 
     def tex(self):
         return "\\vdots"
+
+class Seuqent(Pseudo):
+    """
+    Special pseudo-formula representing a set of signed formulas in sequent notation.
+    """
+    def __init__(self, fmls):
+        self.fmls = fmls
+    
+    def __str__(self):
+        ", ".join([str(fml) for (sign, fml) in fmls if not sign]) +\
+        " ⊢ " +\
+        ", ".join([str(fml) for (sign, fml) in fmls if sign])
+
+    def tex(self):
+        ", ".join([str(fml) for (sign, fml) in fmls if not sign]) +\
+        "\\nvdash" +\
+        ", ".join([str(fml) for (sign, fml) in fmls if sign])
