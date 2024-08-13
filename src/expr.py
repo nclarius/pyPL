@@ -779,16 +779,6 @@ class Formula(Expr):
         """
         return Forall(*[Var(u) for u in sorted(self.freevars())], self)
 
-    def cnf(self):
-        """
-        The conjunctive normal form of the formula.
-        """
-        pvs = sorted(self.propvars())
-        vprod = list(product([True, False], repeat=len(pvs)))
-        valuations = [{p: v for (p, v) in zip(pvs, valuation)} for valuation in vprod] if vprod else [{}]
-        countermodels = [val for val in valuations if not self.denot(PropStructure("S", val))]
-        return Conj(*[Disj(*[Neg(p) if valuation[p] else p for p in pvs]) for valuation in countermodels])
-
     def dnf(self):
         """
         The disjunctive normal form of the formula.
@@ -798,6 +788,16 @@ class Formula(Expr):
         valuations = [{p: v for (p, v) in zip(pvs, valuation)} for valuation in vprod] if vprod else [{}]
         models = [val for val in valuations if self.denot(PropStructure("S", val))]
         return Disj(*[Conj(*[p if valuation[p] else Neg(p) for p in pvs]) for valuation in models])
+
+    def cnf(self):
+        """
+        The conjunctive normal form of the formula.
+        """
+        pvs = sorted(self.propvars())
+        vprod = list(product([True, False], repeat=len(pvs)))
+        valuations = [{p: v for (p, v) in zip(pvs, valuation)} for valuation in vprod] if vprod else [{}]
+        countermodels = [val for val in valuations if not self.denot(PropStructure("S", val))]
+        return Conj(*[Disj(*[Neg(p) if valuation[p] else p for p in pvs]) for valuation in countermodels])
     
     def clauses(self):
         """
