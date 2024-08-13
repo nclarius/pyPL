@@ -1251,6 +1251,12 @@ class Conj(Formula):
     """
 
     def __init__(self, *args: list[Formula]):
+        if len(args) == 0:
+            self.instantiate_with(Verum())
+            return
+        if len(args) == 1:
+            self.instantiate_with(args[0])
+            return
         self.phi = args[0]
         self.psi = Disj(*args[1:]) if len(args) > 2 else args[1]
 
