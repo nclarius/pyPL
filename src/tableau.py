@@ -469,7 +469,6 @@ class Tableau(object):
 
             # expand
             if debug:
-                pass
                 print("applicable:")
                 print("(prio, target, source, name, type, arguments, apps)")
                 print("\n".join([", ".join([
@@ -478,16 +477,14 @@ class Tableau(object):
                         for i, itm in enumerate(applicable)]))
             # get first applicable rule from prioritized list
             (target, source, rule_name, rule_type, fmls, args, insts) = \
-            applicable[0]
-            rule_type_func = getattr(self,
-                                     "rule_" + Tableau.rule_names[rule_type])
+                applicable[0]
             if debug:
                 pass
                 input()
                 print("expanding:")
                 print(str(source), " with ", rule_name, " on ", str(target))
             # apply the rule
-            new_children = rule_type_func(target, source, rule_name, fmls, args)
+            new_children = self.apply_rule(target, source, rule_type, rule_name, fmls, args)
 
             # # check properties of new children
             # for child in new_children:
@@ -971,6 +968,7 @@ class Tableau(object):
 
                         elif rule_type in ["ο", "u", "ω"]:
                             pass  # todo applicability for intuitionistic quantifier rules
+                            # todo args for combined quantifier and modal rules
 
 
         # if the only rules applicable to an unfinished branch are
@@ -1175,597 +1173,186 @@ class Tableau(object):
     #         elif rule_type in ["ξ", "χ", "ο", "u", "ω"]:
     #             pass  # not yet implemented
 
-    def rule_alpha(self, target, source, rule, fmls, args):
-        """
-        α
-        Branch unary.
-        """
+    def apply_rule(self, target, source, rule_type, rule, fmls, args):
+        unary = ["α", "γ", "δ", "η", "θ", "ε", "μ", "ν", "π", "κ", "λ", "ι", "υ", "ω"]
+        binary = ["β", "ξ", "χ", "ο", "u", "ω"]
+        nary = ["θ", "ε", "κ"]
+        quantificational = ["γ", "δ", "η", "θ", "ε", "ο", "υ", "ω"]
+        modal = ["μ", "ν", "π", "κ", "λ", "ι", "ο", "υ", "ω"]
+        new_constant = ["δ", "ε", "υ"]
+        existing_constant = ["γ", "η", "θ", "ο", "ω"]
+        arbitrary_constant = ["γ", "θ", "ο"]
+        new_signature = ["μ", "ξ", "υ"]
+        existing_signature = ["ν", "κ", "λ", "ι", "χ", "ο", "ω"]
+        previous_signature = ["π"]
+
         line = max([node.line for node in self.root.nodes() if node.line])
-        # sig = tuple([s for s in source.sig]) if source.sig else None
         world = source.world
-
-        # append (top) node
-        top = child = target.add_child(
-                (self, line := line + 1, world, *fmls[0], rule, source, None, 
-                len(fmls) > 1, target.context))
-
-        # append bottom node
-        if len(fmls) == 2:
-            bot = top.add_child(
-                    (self, line := line + 1, world, *fmls[1], rule, source, None,
-                    False, top.context + [top]))
-
-        if len(fmls) == 2 and bot:
-            return [top, bot]
-        else:
-            return [top]
-
-    def rule_beta(self, target, source, rule, fmls, args):
-        """
-        β
-        Branch binary.
-        """
-        line = max([node.line for node in self.root.nodes() if node.line])
-        # sig = tuple([s for s in source.sig]) if source.sig else None
-        world = source.world
-
-        # append (top) left node
-        topleft = child = target.add_child((self, line := line + 1, world,
-                                            *fmls[0], rule, source, None))
-
-        # append bottom left node
-        if len(fmls) == 4 and topleft:
-            botleft = topleft.add_child((
-                                        self, line := line + 1, world, *fmls[2],
-                                        rule, source, None))
-
-        # append (top) right node
-        topright = child = target.add_child((self, line := line + 1, world,
-                                             *fmls[1], rule, source,
-                                             None))
-
-        # append bottom right node
-        if len(fmls) == 4 and topright:
-            botright = topright.add_child((self, line := line + 1, world,
-                                           *fmls[3], rule, source, None))
-
-        self.num_branches += 1
-
-        if len(fmls) == 4 and topleft and topright:
-            return [topleft, botleft, topright, botright]
-        else:
-            return [topleft, topright]
-
-    def rule_gamma(self, target, source, rule, fmls, args):
-        """
-        γ
-        Branch unary with an arbitrary constant.
-        """
-        sign, phi, var = fmls[0]
-        universal, irrelevant, unneeded, new, indexed, used, occurring_local, \
-        occurring_global = args
-        line = max([node.line for node in self.root.nodes() if node.line])
-        # sig = tuple([s for s in source.sig]) if source.sig else None
-        world = source.world
-
-        # find a constant to substitute
-        # for modal predicate logic with varying domains: add signature
-        # subscript to constant
-        # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed
-        # else ""
-        subscript = "_" + str(source.world) if indexed else ""
-        usable = [c + (subscript if "_" not in c else "") for c in
-                  occurring_local]
-        usable += [c + subscript for c in Tableau.parameters if c not in
-                   [c if "_" not in c else c[:c.index("_")] for c in
-                    occurring_global]]
-        usable = list(dict.fromkeys(usable))
-        # choose first symbol from constants and parameters that has not
-        # already been used with this particular rule
-        # const_symbol = usable[least(range(len(usable)), lambda i: usable[i]
-        # not in used)]
-        const_symbol = usable[
-            (min([i for i in range(len(usable)) if usable[i] not in used]))]
-        # todo prevent arg is empty sequence error when running out of
-        #  symbols to use
-        const = Const(const_symbol)
-        new = True if const_symbol not in occurring_local else False
-
-        # compute formula
-        inst = (universal, new, str(var), str(const))
-        fml = phi.subst(var, const)
-
-        # add node
-        child = child = target.add_child(
-                (self, line + 1, world, sign, fml, rule, source, inst))
-
-        return [child]
-
-    def rule_delta(self, target, source, rule, fmls, args):
-        """
-        δ
-        Branch unary with a new constant.
-        """
-        sign, phi, var = fmls[0]
-        universal, irrelevant, unneeded, new, indexed, used, occurring_local, \
-        occurring_global = args
-        line = max([node.line for node in self.root.nodes() if node.line])
-        # sig = tuple([s for s in source.sig]) if source.sig else None
-        world = source.world
-
-        # find a constant to substitute
-        # for modal predicate logic with varying domains: add signature
-        # subscript to constant
-        # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed
-        # else ""
-        subscript = "_" + str(source.world) if indexed else ""
-        usable = [c + (subscript if "_" not in c else "") for c in
-                  Tableau.parameters if c not in
-                  [c if "_" not in c else c[:c.index("_")] for c in
-                   occurring_global]]
-        usable = list(dict.fromkeys(usable))
-        # choose first symbol from list of parameters that does not yet occur
-        # in this branch
-        const_symbol = usable[(min([i for i in range(len(usable)) if
-                                    usable[i] not in occurring_local]))]
-        const = Const(const_symbol)
-        new = True
-
-        # compute formula
-        inst = (universal, new, str(var), str(const))
-        fml = phi.subst(var, const)
-
-        # add node
-        child = target.add_child(
-                (self, line + 1, world, sign, fml, rule, source, inst))
-
-        return [child]
-
-    def rule_eta(self, target, source, rule, fmls, args):
-        """
-        η
-        Branch n-ary with an existing constant.
-        """
-        sign, phi, var = fmls[0]
-        universal, irrelevant, unneeded, new, indexed, used, occurring_local, \
-        occurring_global = args
-        line = max([node.line for node in self.root.nodes() if node.line])
-        # sig = tuple([s for s in source.sig]) if source.sig else None
-        world = source.world
-
-        # find a constant to substitute
-        # for modal predicate logic with varying domains: add signature
-        # subscript to constant
-        # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed
-        # else ""
-        subscript = "_" + str(source.world) if indexed else ""
-        used = [c if "_" not in c else c[:c.index("_")] for c in used]
-        usable = occurring_local
-        usable = list(dict.fromkeys(usable))
-        if not usable:
-            usable += [c for c in Tableau.parameters if
-                       c not in occurring_global]
-        # choose first symbol from occurring that has not already been used
-        # with this particular rule
-        const_symbol = usable[
-            (min([i for i in range(len(usable)) if usable[i] not in used]))]
-        const = Const(const_symbol)
-        new = True if const_symbol not in occurring_local else False
-
-        # compute formula
-        inst = (universal, new, str(var), const_symbol + subscript)
-        fml = phi.subst(var, const)
-
-        # add node
-        child = target.add_child(
-                (self, line + 1, world, sign, fml, rule, source, inst))
-
-        return [child]
-
-    def rule_theta(self, target, source, rule, fmls, args):
-        """
-        θ
-        Branch n-ay with an arbitrary constant.
-        """
-        sign, phi, var = fmls[0]
-        universal, irrelevant, unneeded, new, indexed, used, occurring_local, \
-        occurring_global = args
-        line = max([node.line for node in self.root.nodes() if node.line])
-        # sig = tuple([s for s in source.sig]) if source.sig else None
-        world = source.world
-
-        # find a constant to substitute
-        # for modal predicate logic varying domains: add signature subscript
-        # to constant
-        # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed
-        # else ""
-        subscript = "_" + str(source.world) if indexed else ""
-        used = [c if "_" not in c else c[:c.index("_")] for c in used]
-        usable = occurring_local + occurring_global + [c for c in
-                                                       Tableau.parameters if
-                                                       c not in
-                                                       occurring_global]
-        usable = list(dict.fromkeys(usable))
-        # choose first symbol from occurring and parameters that has not
-        # already been used with this particular rule
-        const_symbol = usable[
-            (min([i for i in range(len(usable)) if usable[i] not in used]))]
-        const = Const(const_symbol)
-        new = True if const_symbol not in occurring_local else False
-
-        # compute formula
-        inst = (universal, new, str(var), const_symbol + subscript)
-        fml = phi.subst(var, const)
-
-        # add pseudo-node to indicate branching
-        if not target.children:
-            pseudo = target.add_child(
-                    (self, None, None, None, Empty(), rule, source, None))
-
-        # add node
-        child = target.add_child(
-                (self, line + 1, world, sign, fml, rule, source, inst))
-
-        self.num_branches += 1 if len(target.children) > 2 else 0
-
-        return [child]
-
-    def rule_epsilon(self, target, source, rule, fmls, args):
-        """
-        θ
-        Branch n-ay with a new constant.
-        """
-        sign, phi, var = fmls[0]
-        universal, irrellevant, unneeded, new, indexed, used, occurring_local, \
-        occurring_global = args
-        line = max([node.line for node in self.root.nodes() if node.line])
-        # sig = tuple([s for s in source.sig]) if source.sig else None
-        world = source.world
-
-        # find a constant to substitute
-        # for modal predicate logic varying domains: add signature subscript
-        # to constant
-        # subscript = "_" + ".".join([str(s) for s in source.sig]) if indexed
-        # else ""
-        subscript = "_" + str(source.world) if indexed else ""
-        used = [c if "_" not in c else c[:c.index("_")] for c in used]
-        usable = [c + (subscript if "_" not in c else "") for c in
-                  Tableau.parameters if c not in
-                  [c if "_" not in c else c[:c.index("_")] for c in
-                   occurring_global]]
-        usable = list(dict.fromkeys(usable))
-        # choose first symbol from list of parameters that does not yet occur
-        # in this branch
-        const_symbol = usable[(min([i for i in range(len(usable)) if
-                                    usable[i] not in occurring_local]))]
-        const = Const(const_symbol)
-        new = True
-
-        # compute formula
-        inst = (universal, new, str(var), const_symbol + subscript)
-        fml = phi.subst(var, const)
-
-        # add pseudo-node to indicate branching
-        if not target.children:
-            pseudo = target.add_child(
-                    (self, None, None, None, Empty(), rule, source, None))
-
-        # add node
-        child = target.add_child(
-                (self, line + 1, world, sign, fml, rule, source, inst))
-
-        self.num_branches += 1 if len(target.children) > 2 else 0
-
-        return [child]
-
-    def rule_mu(self, target, source, rule, fmls, args):
-        """
-        μ
-        Branch unary with a new signature.
-        """
-        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
-            args
-        line = max([node.line for node in self.root.nodes() if node.line])
-
-        # choose a signature that does not already occur in this branch
-        # sig = None
-        # for i in range(1, 1000):
-        #     if (sig_ := tuple([s for s in source.sig]) + (i,)) not in
-        #     occurring:
-        #         sig = sig_
-        #         break
-        # inst = (source.sig, sig)
-        world = min([i for i in range(1, 1000) if i not in occurring])
-        new = True
-        inst = (universal, new, source.world, world)
-
-        # add (top) node
-        top = child = target.add_child(
-                (self, line := line + 1, world, *fmls[0], rule, source, inst))
-
-        # add bottom node
-        if len(fmls) == 2 and top:
-            bot = top.add_child((self, line := line + 1, world, *fmls[1], rule,
-                                 source, inst))
-
-        if len(fmls) == 2 and top:
-            return [top, bot]
-        else:
-            return [top]
-
-    def rule_nu(self, target, source, rule, fmls, args):
-        """
-        ν
-        Branch unary with an existing signature.
-        """
-        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
-            args
-        max_line = max([node.line for node in self.root.nodes() if node.line])
-        line = max_line
-
-        # choose the first signature that already occurs in this branch but
-        # has not already been used with this rule
-        # sig = None
-        # for i in range(1, 1000):
-        #     if (sig_ := tuple([s for s in source.sig]) + (i,
-        #     )) in extensions and sig_ not in used:
-        #         sig = sig_
-        #         break
-        # inst = (source.sig, sig)
-        world = min([i for i in extensions if i not in used])
-        # todo correct to use extensions rather than occurring?
-        new = True if world not in extensions else False
-        inst = (universal, new, source.world, world)
-
-        # add (top) node
-        top = child = target.add_child(
-                (self, line := line + 1, world, *fmls[0], rule, source, inst))
-
-        # add bottom node
-        if len(fmls) == 2 and top:
-            bot = top.add_child((self, line := line + 1, world, *fmls[1], rule,
-                                 source, inst))
-
-        if len(fmls) == 2 and top:
-            return [top, bot]
-        else:
-            return [top]
-
-    def rule_kappa(self, target, source, rule, fmls, args):
-        """
-        κ
-        Branch n-ay with an arbitrary signature.
-        """
-        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
-            args
-        line = max([node.line for node in self.root.nodes() if node.line])
-
-        # choose a signature that has not already been used with this rule
-        # sig = None
-        # for i in range(1, 1000):
-        #     if (sig_ := tuple([s for s in source.sig]) + (i,)) not in used:
-        #         sig = sig_
-        #         break
-        # inst = (source.sig, sig)
-        usable = extensions + [i for i in range(1, 100)]
-        world = usable[
-            min([i for i in range(len(usable)) if usable[i] not in used])]
-        new = True if world not in extensions else False
-        inst = (universal, new, source.world, world)
-
-        # add pseudo-node to indicate branching
-        if not target.children:
-            child = target.add_child(
-                    (self, None, None, None, Empty(), rule, source, None))
-
-        # add (top) node
-        top = child = target.add_child(
-                (self, line := line + 1, world, *fmls[0], rule, source, inst))
-
-        # add bottom node
-        if len(fmls) == 2 and top:
-            bot = top.add_child((self, line := line + 1, world, *fmls[1], rule,
-                                 source, inst))
-
-        self.num_branches += 1 if len(target.children) > 2 else 0
-
-        if len(fmls) == 2 and top:
-            return [top, bot]
-        else:
-            return [top]
-
-    def rule_lambda(self, target, source, rule, fmls, args):
-        """
-        λ
-        Branch unary with an existing signature.
-        """
-        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
-            args
-        max_line = max([node.line for node in self.root.nodes() if node.line])
-        line = max_line
-
-        # choose the first signature that already occurs in this branch but
-        # has not already been used with this rule
-        # sig = None
-        # for i in range(1, 1000):
-        #     if (sig_ := tuple([s for s in source.sig]) + (i,
-        #     )) in extensions and sig_ not in used:
-        #         sig = sig_
-        #         break
-        # inst = (source.sig, sig)
-        usable = extensions + [i for i in range(1, 100)][:self.num_models - 1]
-        world = usable[
-            min([i for i in range(len(usable)) if usable[i] not in used])]
-        new = True if world not in extensions else False
-        inst = (universal, new, source.world, world)
-
-        # add (top) node
-        top = child = target.add_child(
-                (self, line := line + 1, world, *fmls[0], rule, source, inst))
-
-        # add bottom node
-        if len(fmls) == 2 and top:
-            bot = top.add_child((self, line := line + 1, world, *fmls[1], rule,
-                                 source, inst))
-
-        if len(fmls) == 2 and top:
-            return [top, bot]
-        else:
-            return [top]
-
-    def rule_iota(self, target, source, rule, fmls, args):
-        """
-        ι
-        Branch unary with an existing signature.
-        """
-        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
-            args
-        max_line = max([node.line for node in self.root.nodes() if node.line])
-        line = max_line
-
-        # choose the first signature that already occurs in this branch but
-        # has not already been used with this rule
-        # sig = None
-        # for i in range(1, 1000):
-        #     if (sig_ := tuple([s for s in source.sig]) + (i,
-        #     )) in extensions and sig_ not in used:
-        #         sig = sig_
-        #         break
-        # inst = (source.sig, sig)
-        usable = extensions + [i for i in range(1, 100)][:self.num_models - 1]
-        world = usable[
-            min([i for i in range(len(usable)) if usable[i] not in used])]
-        new = True if world not in extensions else False
-        inst = (universal, new, source.world, world)
-
-        # add (top) node
-        top = child = target.add_child(
-                (self, line := line + 1, world, *fmls[0], rule, source, inst))
-
-        # add bottom node
-        if len(fmls) == 2 and top:
-            bot = top.add_child((self, line := line + 1, world, *fmls[1], rule,
-                                 source, inst))
-
-        if len(fmls) == 2 and top:
-            return [top, bot]
-        else:
-            return [top]
-
-    def rule_pi(self, target, source, rule, fmls, args):
-        """
-        π
-        Branch unary with a previous signature.
-        """
-        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
-            args
-        max_line = max([node.line for node in self.root.nodes() if node.line])
-        line = max_line
-
-        # reduce the signature
-        # sig = tuple([s for s in source.sig[:-1]])
-        # inst = (source.sig, sig)
-        world = min([i for i in occurring if str(i) in reductions])
-        new = False
-        inst = (universal, new, source.world, world)
-
-        # add (top) node
-        top = child = target.add_child(
-                (self, line := line + 1, world, *fmls[0], rule, source, inst))
-
-        # add bottom node
-        if len(fmls) == 2 and top:
-            bot = top.add_child((self, line := line + 1, world, *fmls[1], rule,
-                                 source, inst))
-
-        if len(fmls) == 2 and top:
-            return [top, bot]
-        else:
-            return [top]
-
-    def rule_xi(self, target, source, rule, fmls, args):
-        """
-        ξ
-        Branch binary with a new signature.
-        """
-        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
-            args
-        line = max([node.line for node in self.root.nodes() if node.line])
-
-        # find a signature that does not already occur in this branch
-        # sig = None
-        # for i in range(1, 1000):
-        #     if (sig_ := tuple([s for s in source.sig]) + (i,)) not in used:
-        #         sig = sig_
-        #         break
-        # inst = (source.sig, sig)
-        world = min([i for i in range(1, 1000) if str(i) not in occurring])
-        new = True
-        inst = (universal, new, source.world, world)
-
-        # add left node
-        left = target.add_child(
-                (self, line := line + 1, world, *fmls[0], rule, source, inst))
-
-        # add right node
-        right = target.add_child(
-                (self, line := line + 1, world, *fmls[1], rule, source, inst))
-
-        return [left, right]
-
-    def rule_chi(self, target, source, rule, fmls, args):
-        """
-        χ
-        Branch binary with an existing signature.
-        """
-        universal, irrellevant, unneeded, new, used, occurring, extensions, reductions =\
-            args
-        max_line = max([node.line for node in self.root.nodes() if node.line])
-        line = max_line
-
-        # choose the first signature that already occurs in this branch but
-        # has not already been used with this rule
-        # sig = None
-        # for i in range(1, 1000):
-        #     if (sig_ := tuple([s for s in source.sig]) + (i,
-        #     )) in extensions and sig_ not in used:
-        #         sig = sig_
-        #         break
-        # inst = (source.sig, sig)
-        world = min([i for i in extensions if i not in used])
-        new = False
-        inst = (universal, new, source.world, world)
-
-        # add left node
-        left = child = target.add_child(
-                (self, line := line + 1, world, *fmls[0], rule, source, inst))
-
-        # add right node
-        right = child = target.add_child(
-                (self, line := line + 1, world, *fmls[1], rule, source, inst))
-
-        return [left, right]
-
-    def rule_omicron(self, target, source, rule, fmls, args):
-        """
-        ο
-        Branch unary with an existing signature and an arbitrary constant.
-        """
-        pass
-
-    def rule_upsilon(self, target, source, rule, fmls, args):
-        """
-        υ
-        Branch unary with a new signature and a new constant.
-        """
-        pass
-
-    def rule_omega(self, target, source, rule, fmls, args):
-        """
-        ω
-        Branch unary with an existing signature and an existing constant.
-        """
-        pass
+        sign = None
+        inst = None
+
+        if rule_type in quantificational:
+            sign, phi, var = fmls[0]
+            universal, irrelevant, unneeded, new, indexed, used, occurring_local, occurring_global\
+                = args
+
+
+            # for modal predicate logic with varying domains: 
+            # add signature subscript to constant
+            subscript = "_" + str(source.world) if indexed else ""
+            def subscripted(c):
+                return c + (subscript if "_" not in c else "")  
+            def unsubscripted(c):
+                return c if "_" not in c else c[:c.index("_")]
+
+            # find a constant to substitute
+            usable = []
+            unusable = []
+            match rule_type:
+                case "δ" | "ε":  # new constant
+                    usable = [subscripted(c)
+                                for c in Tableau.parameters if c not in
+                                [unsubscripted(c) 
+                                    for c in occurring_global]]
+                    unusable = occurring_local
+                case "η":  # existing constant
+                    usable = [subscripted(c)
+                                for c in occurring_local]
+                    if not usable:
+                        usable += [subscripted(c)  
+                                    for c in Tableau.parameters if c not in 
+                                    [unsubscripted(c) 
+                                        for c in occurring_global]]
+                    unusable = used
+                case "γ":  # arbitrary constant
+                    usable = [subscripted(c)
+                                for c in occurring_local]
+                    usable += [subscripted(c) 
+                                for c in Tableau.parameters if c not in
+                                [unsubscripted(c)
+                                    for c in occurring_global]]
+                    unusable = used
+                case "θ":  # arbitrary constant
+                    usable = [subscripted(c) for c in occurring_local] +\
+                                [subscripted(c) for c in occurring_global] +\
+                                [subscripted(c)  
+                                    for c in Tableau.parameters if c not in
+                                    [unsubscripted(c) 
+                                        for c in occurring_global]]
+                    unusable = used
+                case "ο":  # arbitrary constant
+                    pass  # todo constant for omicron
+                case "υ":  # new constant
+                    pass  # todo constant for upsilon
+                case "ω":  # existing constant
+                    pass  # todo constant for omega
+            
+            usable = list(dict.fromkeys(usable))
+            const_symbol = usable[(min([i for i in range(len(usable)) 
+                if usable[i] not in [subscripted(c) for c in unusable]]))]
+            # todo prevent arg is empty sequence error when running out of
+            #  symbols to use
+            const = Const(const_symbol)
+            fmls[0] = (sign, phi.subst(var, const))
+            
+            new = (rule_type in new_constant) or \
+                (rule_type in existing_constant and const_symbol not in occurring_local)
+            inst = (universal, new, str(var), str(const))
+        
+        if rule_type in modal:
+            universal, irrellevant, unneeded, new, used, occurring, extensions, reductions\
+                = args
+
+            usable = []
+            unusable = []
+            match rule_type:
+                case "μ" | "ξ":  # new signature
+                    usable = [i for i in range(1, 1000)]
+                    unusable = occurring
+                case "ν" | "χ":  # existing signature
+                    # todo correct to use extensions rather than occurring?
+                    usable = extensions
+                    unusable = used
+                case "κ": # arbitrary (existing or new) signature
+                    usable = sorted(list(set(extensions + [i for i in range(1, 100)])))
+                    unusable = used
+                case "λ" | "ι":  # existing signature
+                    usable = sorted(list(set(extensions + [i for i in range(1, 100)][:self.num_models - 1])))
+                    unusable = used
+                case "π":  # previous signature
+                    usable = [i for i in occurring if str(i) in reductions]
+                    unusable = []
+                case "ο":  # existing signature
+                    pass # todo signature for omicron
+                case "υ":  # new signature
+                    pass # todo signature for upsilon
+                case "ω":  # existing signature
+                    pass # todo signature for omega
+            
+            world = usable[
+                        min([i for i in range(len(usable)) if usable[i] not in unusable])]
+
+            new = (rule_type in new_signature) or \
+                (rule_type in existing_signature and world not in extensions)
+            inst = (universal, new, source.world, world)
+
+        # append nodes
+        if rule_type in unary:
+        
+            # add pseudo-node to indicate branching
+            if rule_type in nary:
+                if not target.children:
+                    pseudo = target.add_child(
+                            (self, None, None, None, Empty(), rule, source, None))
+
+            # append (top) node
+            top = child = target.add_child(
+                    (self, line := line + 1, world, *fmls[0], rule, source, inst, 
+                    len(fmls) > 1, target.context))
+
+            # append bottom node
+            if len(fmls) == 2:
+                bot = top.add_child(
+                        (self, line := line + 1, world, *fmls[1], rule, source, inst,
+                        False, top.context + [top]))
+        
+            if rule_type in nary:
+                self.num_branches += 1 if len(target.children) > 2 else 0
+
+            if len(fmls) == 2 and bot:
+                return [top, bot]
+            else:
+                return [top]
+            
+        elif rule_type in binary:
+                # append (top) left node
+                topleft = child = target.add_child(
+                    (self, line := line + 1, world, *fmls[0], rule, source, inst, 
+                    len(fmls) > 2, target.context))
+
+                # append bottom left node
+                if len(fmls) == 4 and topleft:
+                    botleft = topleft.add_child((
+                        self, line := line + 1, world, *fmls[2], rule, source, inst, 
+                        False, topleft.context + [topleft]))
+
+                # append (top) right node
+                topright = child = target.add_child(
+                    (self, line := line + 1, world, *fmls[1], rule, source, inst, 
+                    len(fmls) > 2, target.context))
+
+                # append bottom right node
+                if len(fmls) == 4 and topright:
+                    botright = topright.add_child(
+                        (self, line := line + 1, world, *fmls[3], rule, source, inst, 
+                        False, topright.context + [topright]))
+
+                self.num_branches += 1
+
+                if len(fmls) == 4 and topleft and topright:
+                    return [topleft, botleft, topright, botright]
+                else:
+                    return [topleft, topright]
 
     def closed(self) -> bool:
         """
