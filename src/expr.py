@@ -25,6 +25,10 @@ class Expr:
     @method denot: denotation of the expression relative to a structure s and assignment v
     """
 
+    def instantiate_with(self, other):
+        for attr in [attr for attr in dir(self) if attr not in ["__weakref__"]]:
+            setattr(self, attr, getattr(other, attr))
+
     def __repr__(self):
         return str(self)
 
@@ -1116,8 +1120,8 @@ class Neg(Formula):
     @type phi: Formula
     """
 
-    def __init__(self, phi: Formula):
-        self.phi = phi
+    def __init__(self, arg: Formula):
+        self.phi = arg
 
     def __str__(self):
         if isinstance(self.phi, Eq): 
@@ -1209,9 +1213,9 @@ class Conj(Formula):
     @type psi: Formula
     """
 
-    def __init__(self, phi: Formula, psi: Formula):
-        self.phi = phi
-        self.psi = psi
+    def __init__(self, *args: list[Formula]):
+        self.phi = args[0]
+        self.psi = Disj(*args[1:]) if len(args) > 2 else args[1]
 
     def __str__(self):
         return "(" + str(self.phi) + " ∧ " + str(self.psi) + ")"
@@ -1278,9 +1282,15 @@ class Disj(Formula):
     @type psi: Formula
     """
 
-    def __init__(self, phi: Formula, psi: Formula):
-        self.phi = phi
-        self.psi = psi
+    def __init__(self, *args: list[Formula]):
+        if len(args) == 0:
+            self.instantiate_with(Falsum())
+            return
+        if len(args) == 1:
+            self.instantiate_with(args[0])
+            return
+        self.phi = args[0]
+        self.psi = Disj(*args[1:]) if len(args) > 2 else args[1]
 
     def __str__(self):
         return "(" + str(self.phi) + " ∨ " + str(self.psi) + ")"
@@ -1347,9 +1357,12 @@ class Imp(Formula):
     @type psi: Formula
     """
 
-    def __init__(self, phi: Formula, psi: Formula):
-        self.phi = phi
-        self.psi = psi
+    def __init__(self, *args: list[Formula]):
+        if len(args) == 1:
+            self.instantiate_with(args[0])
+            return
+        self.phi = args[0]
+        self.psi = Imp(*args[1:]) if len(args) > 2 else args[1]
 
     def __str__(self):
         return "(" + str(self.phi) + " → " + str(self.psi) + ")"
@@ -1433,9 +1446,9 @@ class Biimp(Formula):
     @type psi: Formula
     """
 
-    def __init__(self, phi: Formula, psi: Formula):
-        self.phi = phi
-        self.psi = psi
+    def __init__(self, *args: list[Formula]):
+        self.phi = args[0]
+        self.psi = Biimp(argis[1:]) if len(args) > 2 else args[1]
 
     def __str__(self):
         return "(" + str(self.phi) + " ↔ " + str(self.psi) + ")"
@@ -1523,9 +1536,9 @@ class Xor(Formula):
     @type psi: Formula
     """
 
-    def __init__(self, phi: Formula, psi: Formula):
-        self.phi = phi
-        self.psi = psi
+    def __init__(self, *args: list[Formula]):
+        self.phi = args[0]
+        self.psi = Xor(*args[1:]) if len(args) > 2 else args[1]
 
     def __str__(self):
         return "(" + str(self.phi) + " ⊕  " + str(self.psi) + ")"
@@ -1613,9 +1626,9 @@ class Exists(Formula):
     @type phi: Formula
     """
 
-    def __init__(self, u: Var, phi: Formula):
-        self.u = u
-        self.phi = phi
+    def __init__(self, *us: list[Var], phi: Formula):
+        self.u = us[0]
+        self.phi = Exists(*us[1:], phi) if len(us) > 2 else us[1]
 
     def __str__(self):
         return "∃" + str(self.u) + str(self.phi)
@@ -1737,9 +1750,9 @@ class Forall(Formula):
     @type phi: Formula
     """
 
-    def __init__(self, u: Var, phi: Formula):
-        self.u = u
-        self.phi = phi
+    def __init__(self, *us: list[Var], phi: Formula):
+        self.u = us[0]
+        self.phi = Forall(*us[1:], phi) if len(us) > 2 else us[1]
 
     def __str__(self):
         return "∀" + str(self.u) + str(self.phi)
