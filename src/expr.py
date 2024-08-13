@@ -1261,7 +1261,7 @@ class Conj(Formula):
             self.instantiate_with(args[0])
             return
         self.phi = args[0]
-        self.psi = Conj(*args[1:]) if len(args) > 2 else args[1]
+        self.psi = args[1] if len(args) == 2 else Conj(*args[1:])
 
     def __str__(self):
         return "(" + str(self.phi) + " ∧ " + str(self.psi) + ")"
@@ -1336,7 +1336,7 @@ class Disj(Formula):
             self.instantiate_with(args[0])
             return
         self.phi = args[0]
-        self.psi = Disj(*args[1:]) if len(args) > 2 else args[1]
+        self.psi = args[1] if len(args) == 2 else Disj(*args[1:])
 
     def __str__(self):
         return "(" + str(self.phi) + " ∨ " + str(self.psi) + ")"
@@ -1408,7 +1408,7 @@ class Imp(Formula):
             self.instantiate_with(args[0])
             return
         self.phi = args[0]
-        self.psi = Imp(*args[1:]) if len(args) > 2 else args[1]
+        self.psi = args[1] if len(args) == 2 else Imp(*args[1:])
 
     def __str__(self):
         return "(" + str(self.phi) + " → " + str(self.psi) + ")"
@@ -1494,7 +1494,7 @@ class Biimp(Formula):
 
     def __init__(self, *args: list[Formula]):
         self.phi = args[0]
-        self.psi = Biimp(argis[1:]) if len(args) > 2 else args[1]
+        self.psi = args[1] if len(args) == 2 else Biimp(*args[1:])
 
     def __str__(self):
         return "(" + str(self.phi) + " ↔ " + str(self.psi) + ")"
@@ -1584,7 +1584,7 @@ class Xor(Formula):
 
     def __init__(self, *args: list[Formula]):
         self.phi = args[0]
-        self.psi = Xor(*args[1:]) if len(args) > 2 else args[1]
+        self.psi = args[1] if len(args) == 2 else Xor(*args[1:])
 
     def __str__(self):
         return "(" + str(self.phi) + " ⊕  " + str(self.psi) + ")"
@@ -1674,7 +1674,7 @@ class Exists(Formula):
 
     def __init__(self, *args):
         self.u = args[0]
-        self.phi = Forall(*args[1:]) if len(args) > 2 else args[1]
+        self.phi = args[1] if len(args) == 2 else Exists(*args[1:])
 
     def __str__(self):
         return "∃" + str(self.u) + str(self.phi)
@@ -1798,7 +1798,7 @@ class Forall(Formula):
 
     def __init__(self, *args):
         self.u = args[0]
-        self.phi = Forall(*args[1:]) if len(args) > 2 else args[1]
+        self.phi = args[1] if len(args) == 2 else Forall(*args[1:])
 
     def __str__(self):
         return "∀" + str(self.u) + str(self.phi)
