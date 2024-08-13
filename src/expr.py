@@ -26,6 +26,9 @@ class Expr:
     """
 
     def instantiate_with(self, other):
+        """
+        Initialize an expression object by creating a different one.
+        """
         for attr in [attr for attr in dir(self) if attr not in ["__weakref__"]]:
             setattr(self, attr, getattr(other, attr))
 

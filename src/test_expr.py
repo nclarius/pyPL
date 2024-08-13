@@ -14,6 +14,12 @@ class TestExpr(unittest.TestCase):
         
         fml = Exists(Var("x"), Atm(Pred("P"), (Var("x"), Var("y"), Var("z"))))
         assert fml.univ_closure() == Forall(Var("y"), Forall(Var("z"), Exists(Var("x"), Atm(Pred("P"), (Var("x"), Var("y"), Var("z"))))))
+    
+    def test_edgeconstrs(self):
+        fml = Conj()
+        assert fml == Verum()
+        fml = Conj(Prop("p"))
+        assert fml == Prop("p")
 
 
 if __name__ == '__main__':
