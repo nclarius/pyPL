@@ -1261,7 +1261,7 @@ class Conj(Formula):
             self.instantiate_with(args[0])
             return
         self.phi = args[0]
-        self.psi = Disj(*args[1:]) if len(args) > 2 else args[1]
+        self.psi = Conj(*args[1:]) if len(args) > 2 else args[1]
 
     def __str__(self):
         return "(" + str(self.phi) + " ∧ " + str(self.psi) + ")"
