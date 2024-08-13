@@ -1656,9 +1656,9 @@ class Exists(Formula):
     @type phi: Formula
     """
 
-    def __init__(self, *us: list[Var], phi: Formula):
-        self.u = us[0]
-        self.phi = Exists(*us[1:], phi) if len(us) > 2 else us[1]
+    def __init__(self, u: Var, phi: Formula):
+        self.u = u
+        self.phi = phi
 
     def __str__(self):
         return "∃" + str(self.u) + str(self.phi)
@@ -1780,9 +1780,9 @@ class Forall(Formula):
     @type phi: Formula
     """
 
-    def __init__(self, *us: list[Var], phi: Formula):
-        self.u = us[0]
-        self.phi = Forall(*us[1:], phi) if len(us) > 2 else us[1]
+    def __init__(self, u: Var, phi: Formula):
+        self.u = u
+        self.phi = phi
 
     def __str__(self):
         return "∀" + str(self.u) + str(self.phi)
