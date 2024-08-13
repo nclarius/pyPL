@@ -768,6 +768,13 @@ class Formula(Expr):
         @rtype bool
         """
         return self == other and sign
+    
+    def univ_closure(self):
+        """
+        The universal closure of the formula,
+        with all free variables bound by a universal quantifier.
+        """
+        return Forall(*[Var(u) for u in sorted(self.freevars())], self)
 
     def cnf(self):
         """
@@ -1656,9 +1663,9 @@ class Exists(Formula):
     @type phi: Formula
     """
 
-    def __init__(self, u: Var, phi: Formula):
-        self.u = u
-        self.phi = phi
+    def __init__(self, *args):
+        self.u = args[0]
+        self.phi = Forall(*args[1:]) if len(args) > 2 else args[1]
 
     def __str__(self):
         return "∃" + str(self.u) + str(self.phi)
@@ -1780,9 +1787,9 @@ class Forall(Formula):
     @type phi: Formula
     """
 
-    def __init__(self, u: Var, phi: Formula):
-        self.u = u
-        self.phi = phi
+    def __init__(self, *args):
+        self.u = args[0]
+        self.phi = Forall(*args[1:]) if len(args) > 2 else args[1]
 
     def __str__(self):
         return "∀" + str(self.u) + str(self.phi)

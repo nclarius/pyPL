@@ -11,6 +11,9 @@ class TestExpr(unittest.TestCase):
         assert fml.clauses() == [[(False, "p"), (False, "q"), (False, "r")],
                                  [(False, "p"), (True, "q"), (False, "r")],
                                  [(True, "p"), (False, "q"), (False, "r")]]
+        
+        fml = Exists(Var("x"), Atm(Pred("P"), (Var("x"), Var("y"), Var("z"))))
+        assert fml.univ_closure() == Forall(Var("y"), Forall(Var("z"), Exists(Var("x"), Atm(Pred("P"), (Var("x"), Var("y"), Var("z"))))))
 
 
 if __name__ == '__main__':
