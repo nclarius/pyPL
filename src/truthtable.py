@@ -24,8 +24,8 @@ class Truthtable():
         
         self.pvs = sorted(list((self.concl.propvars() if self.concl else set()).union(*[p.propvars() for p in self.prems])))
         vprod = list(product([True, False], repeat=len(self.pvs)))
-        self.valuations = [{p: v for (p, v) in zip(self.pvs, valuation)} for valuation in vprod]
-        
+        self.valuations = [{p: v for (p, v) in zip(self.pvs, valuation)} for valuation in vprod] if vprod else [{}]
+
         if not self.silent:
             self.show()
 
@@ -33,17 +33,17 @@ class Truthtable():
         if not self.latex:
             tt = ""
             # heading
-            tt += ((len(str(len(self.valuations))) + 2) * " ") + " ".join(self.pvs) + (" | " if self.prems else "")
+            tt += (((len(str(len(self.valuations))) + 2) * " ") if self.pvs else "") + " ".join(self.pvs) + (" | " if self.prems else "")
             tt += " | ".join([str(p).replace("¬", "¬ ") for p in self.prems])
             tt += " | " + str(self.inf) + (" | " if self.concl else " ")
             tt += (str(self.concl).replace("¬", "¬ ") if self.concl else "") + "\n"
             # line
-            tt += ((len(str(len(self.valuations))) + 2) * "-") + (2 * len(self.pvs)) * "-" + "|" + ("-" if self.prems else "")
+            tt += (((len(str(len(self.valuations))) + 2) * "-") if self.pvs else "-") + (2 * len(self.pvs)) * "-" + "|" + ("-" if self.prems else "")
             tt += "-|-".join([self.truthrowsep(p, True) for p in self.prems]) + ("-|" if self.prems else "")
             tt += self.truthrowsep(self.inf, True)
             tt += ("|-" + self.truthrowsep(self.concl, True) if self.concl else "") + "\n"
             # rows
-            tt += "\n".join(["V" + str(i+1) + " "+ \
+            tt += "\n".join([(("V" + str(i+1) + " ") if self.pvs else "") + \
                              " ".join([self.truthvalue(b) for b in val.values()]) + (" | " if self.prems else "") + \
                             " | ".join([self.truthrow(p, val, True) for p in self.prems]) + \
                             " | " + self.truthrow(self.inf, val, True) + (" | " if self.concl else "") + \
@@ -221,13 +221,13 @@ if __name__ == "__main__":
     parse_f = __import__("parser").FmlParser().parse
 
     fml = parse_f("((p & q) | ~ r)")
-    tt = Truthtable(fml, latex=False)
+    tt = Truthtable(fml, latex=False, silent=True)
 
     fml1 = parse_f("p -> q")
     fml2 = parse_f("~ p")
     fml = parse_f("~ q")
-    tt = Truthtable(fml, premises=[fml1, fml2], latex=False)
+    tt = Truthtable(fml, premises=[fml1, fml2], latex=False, silent=True)
 
     fml1 = parse_f("p v q")
     fml2 = parse_f("~ (p & q)")
-    tt = Truthtable(None, premises=[fml1, fml2], latex=False)
+    tt = Truthtable(None, premises=[fml1, fml2], latex=False, silent=True)

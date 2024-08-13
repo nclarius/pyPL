@@ -28,6 +28,11 @@ class TestTruthtable(unittest.TestCase):
         fml2 = Neg(Conj(Prop("p"), Prop("q")))
         tt = Truthtable(None, premises=[fml1, fml2], silent=True)
         assert tt.satisfiable()
+
+    def test_edgecase(self):
+        fml = Verum()
+        tt = Truthtable(fml, silent=True)
+        assert tt.valid()
     
 if __name__ == '__main__':
     unittest.main()
