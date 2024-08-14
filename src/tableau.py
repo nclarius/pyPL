@@ -1043,48 +1043,49 @@ class Tableau(object):
 
         # sort the applicable rules by ...
         sort_v1 = lambda i: (  # for validity tableaus:
-                i[6],
                 # 1. number of times the rule has already been applied on
                 # this branch (prefer least used)
-                rank_unneeded[i[5][2]],
+                i[6],
                 # 2. whether the application would unnecessarily introduce a
                 # new constant or world (prefer not to)
+                rank_unneeded[i[5][2]],
+                # 3. rule type rank (prefer earlier in order)
                 rule_order[i[3]],
-                # 3. formula complexity (prefer getting to atoms faster)
+                # 4. formula complexity (prefer getting to atoms faster)
                 len(i[1].fml),
-                # 4. rule type rank (prefer earlier in order)
-                pos[i[1]],
                 # 5. position of the source node in the tree (prefer leftmost
                 # highest)
-                pos[i[0]]
+                pos[i[1]],
                 # 6. position of the target node in the tree (prefer leftmost
                 # highest)
+                pos[i[0]]
         )
         sort_v2 = lambda i: (  # for satisfiability tableaus:
-                i[6],
                 # 1. number of times the rule has already been applied on
                 # this branch (prefer least used)
-                rank_univ_irrel[(i[5][0], i[5][1])],
+                i[6],
                 # 2. whether the formula comes from a relevant axiom (prefer
                 # yes)
+                rank_univ_irrel[(i[5][0], i[5][1])],
+                # 3. whether the rule branches (prefer non-branching)
                 branching[i[3]],
-                # 4. whether the rules branches (prefer non-branching)
-                rank_unneeded[i[5][2]],
-                # 3. whether the application would unnecessarily introduce a
+                # 4. whether the application would unnecessarily introduce a
                 # new constant or world (prefer not to)
-                rank_new[i[5][3]],
-                # 3. whether to introduce a new constant or world (prefer not
+                rank_unneeded[i[5][2]],
+                # 5. whether to introduce a new constant or world (prefer not
                 # to)
-                operator[i[3]],
-                # 5. what type of operator the rule belongs to (connective >
+                rank_new[i[5][3]],
+                # 6. what type of operator the rule belongs to (connective >
                 # quant., modal > int.)
+                operator[i[3]],
+                # 7. remaining rule type rank (prefer earlier in order)
                 rule_order[i[3]],
-                # 6. remaining rule type rank (prefer earlier in order)
-                pos_by_type[i[3]][i[1]],
-                # 7. position of the source node in the tree
+                # 9. position of the source node in the tree
                 # (prefer leftmost lowest for sat. quant. and mod. rules,
                 # leftmost highest for others)
-                pos[i[0]],  # 8. position of the target node in the tree
+                pos_by_type[i[3]][i[1]],
+                # 9. position of the target node in the tree
+                pos[i[0]]
         )
         # sort_v2 = lambda i: (  # for satisfiability tableaus:
         #     i[6],              # 1. number of times the rule has already
