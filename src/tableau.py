@@ -1219,34 +1219,35 @@ class Tableau(object):
             match rule_type:
                 case "δ" | "ε":  # new constant
                     usable = [subscripted(c)
-                                for c in Tableau.parameters if c not in
-                                [unsubscripted(c) 
+                                for c in Tableau.parameters
+                                if c not in [unsubscripted(c) 
                                     for c in occurring_global]]
                     unusable = occurring_local
-                case "η":  # existing constant
+                case "η":  # existing or, if not possible, new constant
                     usable = [subscripted(c)
                                 for c in occurring_local]
                     if not usable:
                         usable += [subscripted(c)  
-                                    for c in Tableau.parameters if c not in 
-                                    [unsubscripted(c) 
+                                    for c in Tableau.parameters
+                                    if c not in [unsubscripted(c) 
                                         for c in occurring_global]]
                     unusable = used
-                case "γ":  # arbitrary constant
+                case "γ":  # arbitrary (preferably existing, otherwise new) constant
                     usable = [subscripted(c)
                                 for c in occurring_local]
                     usable += [subscripted(c) 
-                                for c in Tableau.parameters if c not in
-                                [unsubscripted(c)
+                                for c in Tableau.parameters
+                                if c not in [unsubscripted(c)
                                     for c in occurring_global]]
                     unusable = used
-                case "θ":  # arbitrary constant
-                    usable = [subscripted(c) for c in occurring_local] +\
-                                [subscripted(c) for c in occurring_global] +\
-                                [subscripted(c)  
-                                    for c in Tableau.parameters if c not in
-                                    [unsubscripted(c) 
-                                        for c in occurring_global]]
+                case "θ":  # arbitrary (preferably existing, otherwise new) constant
+                    usable = [subscripted(c) 
+                                for c in [unsubscripted(c)
+                                    for c in occurring_local + occurring_global]] +\
+                             [subscripted(c) 
+                                for c in Tableau.parameters
+                                if c not in [unsubscripted(c) 
+                                    for c in occurring_global]]
                     unusable = used
                 case "ο":  # arbitrary constant
                     pass  # todo constant for omicron
@@ -1260,12 +1261,12 @@ class Tableau(object):
                 if usable[i] not in [subscripted(c) for c in unusable]]))]
             # todo prevent arg is empty sequence error when running out of
             #  symbols to use
-            const = Const(const_symbol)
+            const = Const(unsubscripted(const_symbol))
             fmls[0] = (sign, phi.subst(var, const))
             
             new = (rule_type in new_constant) or \
                 (rule_type in existing_constant and const_symbol not in occurring_local)
-            inst = (universal, new, str(var), str(const))
+            inst = (universal, new, str(var), const_symbol)
         
         if rule_type in modal:
             universal, irrellevant, unneeded, new, used, occurring, extensions, reductions\
