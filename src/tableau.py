@@ -1089,6 +1089,7 @@ class Tableau(object):
                 # so that already further developed existential branches are continued first,
                 # leftmost highest for others)
                 pos_by_type[i[3]][i[1]] * min(1, i[6]),
+                pos[i[1]],
                 # 10. position of the target node in the tree
                 pos[i[0]]
         )
