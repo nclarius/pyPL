@@ -422,86 +422,6 @@ class Tableau(object):
                   "ξ": "xi", "χ": "chi", "ο": "omicron", "u": "ypsilon",
                   "ω": "omega"  # intuitionistic rules
                   }
-
-    def expand(self):
-        """
-        Recursively expand all nodes in the tableau.
-        """
-        if debug:
-            print()
-            print(self.root.treestr())
-            print("--------")
-            print()
-        while applicable := self.applicable():
-            # todo stop search when only contradictions found after all new
-            #  instantiations
-
-            # todo bad order of application for sequent calculus?
-
-            # check whether to continue expansion
-            len_assumptions = sum(
-                    [len(str(node.fml)) for node in self.root.nodes()
-                     if node.rule == "A"])
-            num_nodes = len(self.root.nodes(True))
-
-            # the tree gets too big; stop execution
-            # todo when size limit factor is not high enough and no model is
-            #  found,
-            #  result should be "pot. inf." rather than closed
-            # todo more models often just creates isomorphisms, rather than
-            #  increasing the domain size
-            if num_nodes > self.size_limit_factor * len_assumptions * \
-                    self.num_models:
-                # mark abandoned branches
-                for leaf in self.root.leaves(True):
-                    leaf.add_child(
-                            (self, None, None, None, Infinite(), None, None, None))
-                return
-
-            # enough models have been found; stop the execution
-            if not self.mode["validity"] and len(
-                    self.models) >= self.num_models:
-                # mark abandoned branches
-                for leaf in self.root.leaves(True):
-                    leaf.add_child(
-                            (self, None, None, None, Infinite(), None, None, None))
-                return
-
-            # expand
-            if debug:
-                print("applicable:")
-                print("(prio, target, source, name, type, arguments, apps)")
-                print("\n".join([", ".join([
-                        str(i), str(itm[0].line), str(itm[1].line), itm[2],
-                        str(itm[3]), str(itm[5]), str(itm[6])])
-                        for i, itm in enumerate(applicable)]))
-            # get first applicable rule from prioritized list
-            (target, source, rule_name, rule_type, fmls, args, insts) = \
-                applicable[0]
-            if debug:
-                pass
-                input()
-                print("expanding:")
-                print(str(source), " with ", rule_name, " on ", str(target))
-            # apply the rule
-            new_children = self.apply_rule(target, source, rule_type, rule_name, fmls, args)
-
-            # # check properties of new children
-            # for child in new_children:
-            #     # todo yields open branch if only first child is contradictory
-            #     if not isinstance(child.fml, Pseudo):
-            #         child.branch_closed()
-            #         child.branch_infinite()
-            if debug:
-                print()
-                print(self.root.treestr())
-                print("--------")
-                print()
-            if self.stepwise:
-                self.steps.append(
-                    self.root.treestr() if not self.latex else
-                    self.root.treetex())
-
     parameters = list("abcdefghijklmnopqrst") + ["c" + str(i) for i in
                                                  range(1, 1000)]
 
@@ -1173,6 +1093,87 @@ class Tableau(object):
     #         # intuitionistic rules
     #         elif rule_type in ["ξ", "χ", "ο", "u", "ω"]:
     #             pass  # not yet implemented
+
+    def expand(self):
+        """
+        Recursively expand all nodes in the tableau.
+        """
+        if debug:
+            print()
+            print(self.root.treestr())
+            print(len(self))
+            print("--------")
+            print()
+        while applicable := self.applicable():
+            # todo stop search when only contradictions found after all new
+            #  instantiations
+
+            # todo bad order of application for sequent calculus?
+
+            # check whether to continue expansion
+            len_assumptions = sum(
+                    [len(str(node.fml)) for node in self.root.nodes()
+                     if node.rule == "A"])
+            num_nodes = len(self.root.nodes(True))
+
+            # the tree gets too big; stop execution
+            # todo when size limit factor is not high enough and no model is
+            #  found,
+            #  result should be "pot. inf." rather than closed
+            # todo more models often just creates isomorphisms, rather than
+            #  increasing the domain size
+            if num_nodes > self.size_limit_factor * len_assumptions * \
+                    self.num_models:
+                # mark abandoned branches
+                for leaf in self.root.leaves(True):
+                    leaf.add_child(
+                            (self, None, None, None, Infinite(), None, None, None))
+                return
+
+            # enough models have been found; stop the execution
+            if not self.mode["validity"] and len(
+                    self.models) >= self.num_models:
+                # mark abandoned branches
+                for leaf in self.root.leaves(True):
+                    leaf.add_child(
+                            (self, None, None, None, Infinite(), None, None, None))
+                return
+
+            # expand
+            if debug:
+                print("applicable:")
+                print("(prio, target, source, name, type, arguments, apps)")
+                print("\n".join([", ".join([
+                        str(i), str(itm[0].line), str(itm[1].line), itm[2],
+                        str(itm[3]), str(itm[5]), str(itm[6])])
+                        for i, itm in enumerate(applicable)]))
+            # get first applicable rule from prioritized list
+            (target, source, rule_name, rule_type, fmls, args, insts) = \
+                applicable[0]
+            if debug:
+                pass
+                input()
+                print("expanding:")
+                print(str(source), " with ", rule_name, " on ", str(target))
+            # apply the rule
+            new_children = self.apply_rule(target, source, rule_type, rule_name, fmls, args)
+
+            # # check properties of new children
+            # for child in new_children:
+            #     # todo yields open branch if only first child is contradictory
+            #     if not isinstance(child.fml, Pseudo):
+            #         child.branch_closed()
+            #         child.branch_infinite()
+            if debug:
+                print()
+                print(self.root.treestr())
+                print(len(self))
+                print("--------")
+                print()
+            if self.stepwise:
+                self.steps.append(
+                    self.root.treestr() if not self.latex else
+                    self.root.treetex())
 
     def apply_rule(self, target, source, rule_type, rule, fmls, args):
         unary = ["α", "γ", "δ", "η", "θ", "ε", "μ", "ν", "π", "κ", "λ", "ι", "υ", "ω"]
