@@ -1841,19 +1841,18 @@ class Node(object):
             str_line = "\\underline{" + str_line + "}"
         
         label_w = "w" if self.tableau.mode["classical"] else "k"
-        str_world = ("$" + label_w + "_" + "{" + str(
-            self.world) + "}" + "$") if self.world is not None else ""
-        str_sign = "$\\Vdash$" if self.sign else "$\\nVdash$" \
+        str_world = (label_w + "_" + "{" + str(
+            self.world) + "} ") if self.world is not None else ""
+        str_sign = "\\Vdash " if self.sign else "\\nVdash " \
             if self.sign is not None and not self.tableau.sequent_style else ""
-        str_fml = "$" + self.fml.tex()\
-            .replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }") + "$"
+        str_fml = "" + self.fml.tex()\
+            .replace(",", "{,}\\ \\!").replace("=", "{\\ =\\ }")
+        str_signed_indexed_fml = "$" + str_world + str_sign + str_fml + "$"
         if self.tableau.underline_open and \
                     not self.tableau.mode["validity"] and \
                     any([self in branch for branch in open_branches]) and \
                     (isinstance(self.fml, Prop) or isinstance(self.fml, Atm)):
-            str_world = "\\underline{" + str_world + "}"
-            str_sign = "\\underline{" + str_sign + "}"
-            str_fml = "\\underline{" + str_fml + "}"
+                    str_signed_indexed_fml = "\\underline{" + str_signed_indexed_fml + "}"
         str_cite = ""
         if isinstance(self.fml, Open) or isinstance(self.fml, Infinite):
             str_cite = ""
@@ -1886,10 +1885,7 @@ class Node(object):
                 str_inst = ""
             str_cite = "($" + str_rule + str_comma + str_source + str_inst + \
                     "$)"
-        return " & ".join([str_line, str_world, str_sign, str_fml, str_cite]) \
-            if not self.tableau.mode["classical"] or self.tableau.mode[
-            "modal"] \
-            else " & ".join([str_line, str_sign, str_fml, str_cite])
+        return " & ".join([str_line, str_signed_indexed_fml, str_cite])
 
     def treestr(self, indent="", binary=False, last=True) -> str:
         """
@@ -1990,10 +1986,8 @@ class Node(object):
         if self.tableau.hide_nonopen and not self.tableau.mode["validity"] and \
                 not any([self in branch for branch in open_branches]):
             return ""
-        colspec = ("{R{4.5em}L{1em}cL{4.5em}}" if self.tableau.mode[
-            "propositional"] else "{R{7.5em}L{1em}cL{7.5em}}") \
-            if not (self.tableau.mode["modal"] or not self.tableau.mode[
-            "classical"]) else "{R{5.4em}L{1.6em}L{1em}cL{12em}}"
+        colspec = ("{R{4.5em}cL{4.5em}}" if self.tableau.mode[
+            "propositional"] else "{R{7.5em}cL{7.5em}}")
         ssep = ("-4em" if self.tableau.mode["propositional"] else "-7em") if \
             not \
         self.tableau.mode["modal"] else \
