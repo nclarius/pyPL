@@ -906,22 +906,6 @@ class Tableau(object):
                     applicable = [appl for appl in applicable if
                                   appl[0] not in leaf.branch]
 
-        # if all nodes have been applied and every theta/kappa formula has
-        # been inst. with a new constant/world,
-        # as in a validity tableau, and the branch is still contradictory,
-        # then the sequent is unsatisfiable, and the appplicable rules of the
-        # entire tree are cleared
-        # todo correct implementation
-        # for leaf in [node for node in self.root.leaves() if isinstance(
-        # node.fml, Closed)]:
-        #     appl_on_branch = [appl for appl in applicable if appl[0] in
-        #     leaf.branch]
-        #     nary_on_branch = [node for node in leaf.branch if node.rule in
-        #     ["∃", "¬∀", "◇", "¬◻"]]
-        #     if all([appl[6] for appl in appl_on_branch]) and all([
-        #     node.inst[2] for node in nary_on_branch]):
-        #         applicable = []
-
         # decide which boolean values are good and bad
         rank_univ_irrel = {(True, True): 0, (False, False): 1, (True, False): 2}
         rank_new = {True: 1, False: 0}
@@ -1030,74 +1014,6 @@ class Tableau(object):
                                                                                "validity"] else sort_v2))]))
         self.appl = appl_sorted
         return appl_sorted
-
-    # def update_applicable(self, node):
-    #     """
-    #     Inherit applicable rules from the parent and add applicable rules
-    #     of the new node.
-    #     """
-    #     parent = node.branch[-2]
-    #     rules = node.rules()
-    #
-    #     appl_parent = [a for a in self.applicable_ if a[0] == parent]
-    #     for (target, source, rule_name, rule_type, insts, num_appls) in
-    #     appl_parent:
-    #
-    #         # connective rules:
-    #         # inherit the rule, provided the node is not itself an
-    #         application of that rule
-    #         if rule_type in ["α", "β"]:
-    #
-    #             if node.source != parent:
-    #                 self.applicable_.append((node, source, rule_name,
-    #                 rule_type, insts, num_appls))
-    #             self.applicable_.remove((parent, source, rule_name,
-    #             rule_type, insts, num_appls))
-    #
-    #         # quantifier rules
-    #         elif rule_type in ["γ", "δ", "η", "θ"]:
-    #             # todo add instantiations to applied
-    #
-    #             # validity tableau quant. rules:
-    #             # inherit applicability
-    #             if rule_type in ["γ", "δ"]:
-    #                 self.applicable_.append((node, source, rule_name,
-    #                 rule_type, insts, num_appls))
-    #                 self.applicable_.remove((parent, source, rule_name,
-    #                 rule_type, insts, num_appls))
-    #
-    #             # satisfiability tableau quant. rules:
-    #             # inherit if unapplied, else leave unchanged
-    #             elif rule_type in ["η", "θ"]:
-    #                 if node.soure != parent:
-    #                     self.applicable_.append((node, source, rule_name,
-    #                     rule_type, insts, num_appls))
-    #                     self.applicable_.remove((parent, source, rule_name,
-    #                     rule_type, insts, num_appls))
-    #
-    #         # modal rules
-    #         elif rule_type in ["μ", "ν", "π", "κ", "λ"]:
-    #
-    #             # validity tableau modal rules:
-    #             # inherit applicability
-    #             if rule_type in ["μ", "ν", "π"]:
-    #                 self.applicable_.append((node, source, rule_name,
-    #                 rule_type, insts, num_appls))
-    #                 self.applicable_.remove((parent, source, rule_name,
-    #                 rule_type, insts, num_appls))
-    #
-    #             # validity tableau modal rules:
-    #             # inherit if unapplied, else leave unchanged
-    #             elif rule_type in ["κ", "λ"]:
-    #                 if node.soure != parent:
-    #                     self.applicable_.append((node, source, rule_name,
-    #                     rule_type, insts, num_appls))
-    #                     self.applicable_.remove((parent, source, rule_name,
-    #                     rule_type, insts, num_appls))
-    #
-    #         # intuitionistic rules
-    #         elif rule_type in ["ξ", "χ", "ο", "u", "ω"]:
-    #             pass  # not yet implemented
 
     def expand(self):
         """
