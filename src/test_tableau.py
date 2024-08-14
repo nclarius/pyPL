@@ -20,7 +20,7 @@ class TestTableau(unittest.TestCase):
 
     def test_pl_satisfiability(self):
         fml = Conj(Imp(Prop("p"), Prop("q")), Prop("r"))
-        tab = Tableau(fml, validity=True, propositional=True, silent=True)
+        tab = Tableau(fml, validity=False, propositional=True, silent=True)
         assert tab.open()
         assert len(tab.models) == 2
         assert len(tab.models[1].v) == 2

@@ -604,13 +604,6 @@ class Formula(Expr):
     assignment)
     """
 
-    def atom(self):
-        return isinstance(self, Verum) or isinstance(self, Falsum) or \
-               isinstance(self, Prop) or isinstance(self, Eq) or isinstance(self, Atm)
-
-    def literal(self):
-        return self.atom() or isinstance(self, Neg) and self.phi.atom()
-
     def subst(self, u, t):
         """
         @rtype: Formula

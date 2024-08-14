@@ -1436,7 +1436,8 @@ class Tableau(object):
                         [node.world for node in branch if node.world]))
                 worlds_ = list(dict.fromkeys(
                         [node.world for node in branch if node.world and
-                         node.fml.literal()]))
+                         (isinstance(node.fml, Prop) or isinstance(node.fml, Atm) or 
+                          isinstance(node.fml, Eq))]))
                 w = {"w" + str(w) for w in worlds}
                 r_ = list(dict.fromkeys([node.inst[2:] for node in branch if
                                          node.inst and len(
@@ -1448,14 +1449,14 @@ class Tableau(object):
                 if not self.mode[
                     "modal"]:  # classical non-modal propositional logic
                     # literals = all unnegated or negated propositional variables
-                    literals = [node.fml.p for node in branch if node.fml.atom()]
+                    literals = [node.fml.p for node in branch if isinstance(node.fml, Prop)]
                     # atoms = all unnegated propositional variables
                     atoms = [node.fml.p for node in branch
-                             if node.fml.atom()
+                             if isinstance(node.fml, Prop)
                              and node.sign]
                     # todo add literals for other prop. log.s
-                    natoms = [node.fml.p for node in branch if
-                              node.fml.atom()
+                    natoms = [node.fml.p for node in branch
+                              if isinstance(node.fml, Prop)
                               and not node.sign]
                     # valuation = make all positive propositional variables
                     # true and all others false
@@ -1478,8 +1479,8 @@ class Tableau(object):
                     #     for sig in sigs_}
                     # atoms = all unnegated propositional variables
                     atoms = {
-                            w: [node.fml.p for node in branch if
-                                node.fml.atom() and node.world == w
+                            w: [node.fml.p for node in branch
+                                if isinstance(node.fml, Prop) and node.world == w
                                 and node.sign]
                             for w in worlds}
                     # valuation = make all positive propositional variables
@@ -1509,8 +1510,7 @@ class Tableau(object):
                     "modal"]:  # classical non-modal predicate logic
                     # atoms = all unnegated atomic predications
                     atoms = [(node.fml.pred, node.fml.terms) for node in branch
-                             if
-                             node.fml.atom() and not isinstance(node.fml, Eq)
+                             if isinstance(node.fml, Atm)
                              and node.sign]
                     # domain = all const.s occurring in formulas
                     d = set(list(
@@ -1538,8 +1538,7 @@ class Tableau(object):
                     #      for sig in sigs}
                     atoms = {w: [(node.fml.pred, node.fml.terms) for node in
                                  branch
-                                 if node.fml.atom() and not isinstance(node.fml,
-                                                                       Eq)
+                                 if isinstance(node.fml, Atm)
                                  and node.world == w
                                  and node.sign]
                              for w in worlds}
@@ -1586,7 +1585,9 @@ class Tableau(object):
             # r = {(states[sig1], states[sig2]) for (sig1, sig2) in r_}
             states = list(dict.fromkeys([node.world for node in branch]))
             states_ = list(dict.fromkeys(
-                    [node.world for node in branch if node.fml.literal()]))
+                    [node.world for node in branch if
+                    (isinstance(node.fml, Prop) or isinstance(node.fml, Atm) or 
+                     isinstance(node.fml, Eq))]))
             k = {"k" + str(w) for w in states}
             r_ = list(dict.fromkeys([node.inst[2:] for node in branch if
                                      node.inst and len(
@@ -1606,8 +1607,7 @@ class Tableau(object):
                 #      for sig in sigs}
                 # atoms = all unnegated propositional variables
                 atoms = {k: [node.fml.p for node in branch
-                             if node.fml.atom() and not isinstance(node.fml,
-                                                                   Eq) and
+                             if isinstance(node.fml, Prop) and
                              node.world == k
                              and node.sign]
                          for k in states}
@@ -1749,7 +1749,8 @@ class Node(object):
         if self.tableau.underline_open and not self.tableau.file and \
                 not self.tableau.mode["validity"] and \
                 any([self in branch for branch in
-                     open_branches]) and self.fml.atom():
+                     open_branches]) and \
+                     (isinstance(self.fml, Prop) or isinstance(self.fml, Atm)):
             # todo not properly center aligned; to little padding
             str_world = (len(str_world) * " ") + "\033[4m" + str_world + "\033[0m" + \
                   (len(str_world) * " ")
@@ -1849,7 +1850,7 @@ class Node(object):
         if self.tableau.underline_open and \
                     not self.tableau.mode["validity"] and \
                     any([self in branch for branch in open_branches]) and \
-                    self.fml.atom():
+                    (isinstance(self.fml, Prop) or isinstance(self.fml, Atm)):
             str_world = "\\underline{" + str_world + "}"
             str_sign = "\\underline{" + str_sign + "}"
             str_fml = "\\underline{" + str_fml + "}"
@@ -2116,7 +2117,8 @@ class Node(object):
                         len(node.branch) >= 2] and
                     not entry[1] == child.source] + \
                 # literals
-                [node for node in self.branch if node.fml.atom()] + \
+                [node for node in self.branch if 
+                    isinstance(node.fml, Prop) or isinstance(node.fml, Atm)] + \
                 # sibling nodes of alpha rules collapsed into the same node
                 [node for node in self.branch if node.source == child.source]
                 ))
