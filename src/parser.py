@@ -7,7 +7,7 @@ Parse a formula given as string into an Expr object.
 
 import re
 
-debug = False
+debug = True
 
 
 class FmlParser:
@@ -125,11 +125,8 @@ class FmlParser:
         for token in tokens:
             if debug:
                 input()
-                print(token)
             self.add_symbol(token)
             self.update_stacks()
-            if debug:
-                prin(self.stacks)
         self.update_stacks(True)
         return self.stacks[0][0]
 
@@ -147,15 +144,16 @@ class FmlParser:
 
         # opening bracket: start new stack if begin of complex formula rather than fixed-length tuple
         if t in ["Lbrack"]:
+            stacks.append([s])
             if bot not in ["Atm", "FuncTerm", "Most", "More"]:
                 new_stack = []
                 stacks.append(new_stack)
                 self.stacks = stacks
                 return
 
-        # closing bracket: add closure symbol to current stack
+        # closing bracket: add to current stack
         if t in ["Rbrack"]:
-            curr_stack.append("#")
+            curr_stack.append(s)
             self.stacks = stacks
             return
 
@@ -210,7 +208,8 @@ class FmlParser:
 
         # infix operator: prepend to current stack
         if t in ["Eq", "Conj", "Disj", "Imp", "Biimp", "Xor"]:
-            curr_stack.insert(0, t)
+            start = 0 if curr_stack[0] != "(" else 1
+            curr_stack.insert(start, t)
             return self.stacks
 
     def update_stacks(self, final=False):
@@ -225,6 +224,8 @@ class FmlParser:
         expr = __import__("expr")
         if debug:
             print("stacks before: ", stacks)
+        
+        open_stack = False
 
         for i, stack in enumerate(stacks[::-1]):
             i = len(stacks) - 1
@@ -243,19 +244,19 @@ class FmlParser:
                     curr_stack = stacks[i]
 
             prev_stack = stacks[i - 1]
-            bot = curr_stack[0]
+            bot = curr_stack[0] if len(curr_stack) > 0 else None
             mid = curr_stack[1] if len(curr_stack) > 1 else None
-            top = curr_stack[-1]
+            top = curr_stack[-1] if len(curr_stack) > 0 else None
 
             # function, predicate or gen. quant. expression: close if closure symbol is on top
-            if bot in ["Atm", "FuncTerm"] and top == "#":
+            if bot in ["Atm", "FuncTerm"] and top == ")":
                 o = curr_stack[1]
                 c = getattr(expr, bot)
                 e = c(o, curr_stack[2:-1])
                 prev_stack.append(e)
                 stacks = stacks[:-1]
                 continue
-            elif bot in ["Most", "More"] and top == "#":
+            elif bot in ["Most", "More"] and top == ")":
                 o = curr_stack[1]
                 c = getattr(expr, bot)
                 e = c(o, *curr_stack[2:-1])
@@ -302,12 +303,31 @@ class FmlParser:
                         stacks[i] = curr_stack
 
                 # subformula finished
-                elif len(curr_stack) == 4 and top == "#" or final:
+                elif len(curr_stack) == 4 and top == ")" or final:
+                    # close current stack
+                    print("close current", curr_stack)
+                    print("previous:", prev_stack)
+                    if prev_stack[0] == ["("]:
+                        print("reached start of open stack")
+                        open_stack = False
+                        prev_stack = prev_stack[1:]
+                        print("new prev:", prev_stack)
                     c = getattr(expr, bot)
                     e = c(curr_stack[1], curr_stack[2])
                     prev_stack.append(e)
+                    print("new prev:", prev_stack)
+                    #  close preceding stacks after opening bracket
+                    if prev_stack[0] != ["("]:
+                        print("close previous")
+                        prev_stack.append(")")
+                        print("new prev:", prev_stack)
                     stacks = stacks[:-1]
-                    continue
+            
+            if bot == "(" and top == ")":
+                open_stack = False
+                prev_stack.append(curr_stack[1])
+                stacks = stacks[:-1]
+                continue
 
             # variable binding operator: close if appropriate number of args is given
             if bot in ["Exists", "Forall", "Abstr"] and len(curr_stack) == 3:
@@ -316,7 +336,7 @@ class FmlParser:
                 prev_stack.append(e)
                 stacks = stacks[:-1]
                 continue
-
+        
         self.stacks = stacks
         if debug:
             print("stacks after: ", stacks)
@@ -382,3 +402,5 @@ class StructParser:
 if __name__ == "__main__":
     parse_f = FmlParser().parse
     parse_s = StructParser.parse
+
+    f = parse_f("(p -> q v r) ^ s")
