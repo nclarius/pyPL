@@ -1000,10 +1000,11 @@ class Tableau(object):
                 operator[i[3]],
                 # 7. remaining rule type rank (prefer earlier in order)
                 rule_order[i[3]],
-                # 9. position of the source node in the tree
-                # (prefer leftmost lowest for sat. quant. and mod. rules,
+                # 8. position of the source node in the tree
+                # (prefer leftmost lowest for used sat. quant. and mod. rules
+                # so that already further developed existential branches are continued first,
                 # leftmost highest for others)
-                pos_by_type[i[3]][i[1]],
+                pos_by_type[i[3]][i[1]] * min(1, i[6]),
                 # 9. position of the target node in the tree
                 pos[i[0]]
         )
