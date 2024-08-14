@@ -1051,12 +1051,14 @@ class Tableau(object):
                 rank_unneeded[i[5][2]],
                 # 3. rule type rank (prefer earlier in order)
                 rule_order[i[3]],
-                # 4. formula complexity (prefer getting to atoms faster)
+                # 4. rule type rank (prefer earlier in order)
                 len(i[1].fml),
-                # 5. position of the source node in the tree (prefer leftmost
+                # 5. formula complexity (prefer getting to atoms faster)
+                pos[i[1]],
+                # 6. position of the source node in the tree (prefer leftmost
                 # highest)
                 pos[i[1]],
-                # 6. position of the target node in the tree (prefer leftmost
+                # 7. position of the target node in the tree (prefer leftmost
                 # highest)
                 pos[i[0]]
         )
@@ -1080,12 +1082,14 @@ class Tableau(object):
                 operator[i[3]],
                 # 7. remaining rule type rank (prefer earlier in order)
                 rule_order[i[3]],
-                # 8. position of the source node in the tree
+                # 8. formula complexity (prefer getting to atoms faster)
+                len(i[1].fml),
+                # 9. position of the source node in the tree
                 # (prefer leftmost lowest for used sat. quant. and mod. rules
                 # so that already further developed existential branches are continued first,
                 # leftmost highest for others)
                 pos_by_type[i[3]][i[1]] * min(1, i[6]),
-                # 9. position of the target node in the tree
+                # 10. position of the target node in the tree
                 pos[i[0]]
         )
         # sort_v2 = lambda i: (  # for satisfiability tableaus:
