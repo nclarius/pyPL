@@ -1784,9 +1784,11 @@ class Node(object):
                             self.inst[2]) + "," + label_w + str(self.inst[3]) + \
                                "⟩" \
                                + ("*" if self.inst[1] else "")
+            elif self.inst and len(self.inst) == 1:
+                str_inst = ", " + str(self.inst[0])
             else:
                 str_inst = ""
-            str_cite = "(" + str_rule + str_comma + str_source + str_inst + ")"
+            str_cite = "(" + str_source + str_comma + str_rule + str_inst + ")"
 
         # compute str
         return str_line + str_world + str_sign + str_fml + str_cite
@@ -1810,8 +1812,11 @@ class Node(object):
                 "∀":  "\\forall",
                 "◇":  "\\Diamond",
                 "◻":  "\\Box",
+                "=":  "{=}",
+                "≠":  "\\neq",
                 "+":  "\\Vdash",
-                "-":  "\\nVdash"
+                "-":  "\\nVdash",
+                "±":  "\\times"
         }
 
         if self.tableau.sequent_style:
@@ -1881,9 +1886,11 @@ class Node(object):
                             self.inst[2]) + "}" + "{,}" + label_w + "_" + "{" + str(
                             self.inst[3]) + "}" + "}" \
                             + (" *" if self.inst[1] else "")
+            elif self.inst and len(self.inst) == 1:
+                str_inst = "{,}\\ " + str(self.inst[0])
             else:
                 str_inst = ""
-            str_cite = "($" + str_rule + str_comma + str_source + str_inst + \
+            str_cite = "($" + str_source + str_comma + str_rule + str_inst + \
                     "$)"
         return " & ".join([str_line, str_signed_indexed_fml, str_cite])
 
@@ -1986,8 +1993,8 @@ class Node(object):
         if self.tableau.hide_nonopen and not self.tableau.mode["validity"] and \
                 not any([self in branch for branch in open_branches]):
             return ""
-        colspec = ("{R{4.5em}cL{4.5em}}" if self.tableau.mode[
-            "propositional"] else "{R{7.5em}cL{7.5em}}")
+        colspec = ("{R{4.5em}cL{4.75em}}" if self.tableau.mode[
+            "propositional"] else "{R{7.5em}cL{7.75em}}")
         ssep = ("-4em" if self.tableau.mode["propositional"] else "-7em") if \
             not \
         self.tableau.mode["modal"] else \
@@ -2152,11 +2159,13 @@ class Node(object):
                     (not self.sign and self.fml.tableau_contradiction_neg(
                             node.fml, node.sign))
             ):
-                rule = str(node.line) if node != self else ""
+                rule = "±" if not isinstance(self.fml, Eq) else \
+                    ("=" if node.sign else "≠")
+                inst = (node.line,) if not isinstance(self.fml, Eq) else None
                 source = self
                 self.add_child((
                                self.tableau, None, None, None, Closed(), rule, source,
-                               None))
+                               inst))
                 return True
         return False
 
