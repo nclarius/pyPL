@@ -100,11 +100,11 @@ class FmlParser:
         # detect mode
         # todo process
         mode = dict()
-        mode["classical"] = True if "!Int" not in [t[0] for t in tokens] else False
-        mode["validity"] = True if "Noninf" not in [t[0] for t in tokens] else False
-        mode["propositional"] = True if any([t[0] in ["Prop"] for t in tokens]) else False
-        mode["modal"] = True if any([t[0] in ["Poss", "Nec", "Int", "Ext"] for t in tokens]) else False
-        mode["vardomains"] = False if "!VD" not in [t[0] for t in tokens] else False
+        mode["classical"] = "!Int" not in [t[0] for t in tokens]
+        mode["validity"] = "Noninf" not in [t[0] for t in tokens]
+        mode["propositional"] = any([t[0] in ["Prop"] for t in tokens])
+        mode["modal"] = any([t[0] in ["Poss", "Nec", "Int", "Ext"] for t in tokens])
+        mode["vardomains"] = "!VD" in [t[0] for t in tokens]
         mode["threeval"] = False
         mode["weakval"] = True
 
@@ -348,10 +348,10 @@ class StructParser:
 
         s = {eval(comp.split(" = ")[0]): eval(comp.split(" = ")[1]) for comp in inp.split("\n") if comp.strip()}
         s["S"] = "S"
-        modal = True if "W" in s or "K" in s else False
-        propositional = True if "D" not in s else False
-        intuitionistic = True if "K" in s else False
-        vardomains = True if "D" in s and isinstance(s["D"], dict) else False
+        modal = "W" in s or "K" in s
+        propositional = "D" not in s
+        intuitionistic = "K" in s
+        vardomains = "D" in s and isinstance(s["D"], dict)
         if not propositional and "V" not in s:
             s["V"] = {}
 

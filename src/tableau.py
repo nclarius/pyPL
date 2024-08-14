@@ -455,8 +455,7 @@ class Tableau(object):
 
                 # whether or not the source is a subformula of a universal
                 # statement
-                universal = True if source.inst and source.inst[
-                    0] or rule_name == "∀" else False
+                universal = source.inst and source.inst[0] or rule_name == "∀"
 
                 # connective rules
                 if rule_type in ["α", "β"]:
@@ -1460,7 +1459,7 @@ class Tableau(object):
                               and not node.sign]
                     # valuation = make all positive propositional variables
                     # true and all others false
-                    v = {p: (True if p in atoms else False) for p in
+                    v = {p: (p in atoms) for p in
                          list(dict.fromkeys(literals))}
                     model = structure.PropStructure(s, v)
 
@@ -1485,7 +1484,7 @@ class Tableau(object):
                             for w in worlds}
                     # valuation = make all positive propositional variables
                     # true and all others false
-                    v = {p: {"w" + str(w): (True if p in atoms[w] else False)
+                    v = {p: {"w" + str(w): (p in atoms[w])
                              for w in worlds}
                          for p in self.root.fml.propvars()}
                     model = structure.PropModalStructure(s, w, r, v)
@@ -1613,7 +1612,7 @@ class Tableau(object):
                          for k in states}
                 # valuation = make all positive propositional variables true
                 # and all others false
-                v = {p: {"k" + str(k): (True if p in atoms[k] else False)
+                v = {p: {"k" + str(k): (p in atoms[k])
                          for k in states}
                      for p in self.root.fml.propvars()}
                 model = structure.KripkePropStructure(s, k, r, v)

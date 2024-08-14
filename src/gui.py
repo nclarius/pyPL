@@ -1184,7 +1184,7 @@ class PyPLGUI(ttk.Frame):
 
         cbs = []
 
-        enabled = True if self.inst.action != "mc" else False
+        enabled = self.inst.action != "mc"
         output = tk.StringVar(None, self.inst.output)
         outputs1 = [("LaTeX PDF", "tex"), ("plain text", "txt")]
         rbs = []
@@ -1208,7 +1208,7 @@ class PyPLGUI(ttk.Frame):
         m += 1
 
         stepwise = tk.BooleanVar(None, self.inst.stepwise)
-        # enabled = True if self.inst.action == "mc" else False
+        # enabled = self.inst.action == "mc"
         cb = tk.Checkbutton(tab,
                             bg=white,
                             fg=black,
@@ -1263,7 +1263,7 @@ class PyPLGUI(ttk.Frame):
         lbl_deductions.pack(in_=mids[m])
         m += 1
 
-        enabled = True if self.inst.action in ["tp"] else False
+        enabled = self.inst.action in ["tp"]
         deduction = tk.StringVar(None, self.inst.deduction_system)
         deductions = [("analytic tableaus", "tableau"), ("sequent calculus", "sequent")]
         self.rbs_deduction = []
@@ -1288,7 +1288,7 @@ class PyPLGUI(ttk.Frame):
         # todo update availability of output format and logic for sequent calc
 
         # mathematical vs linguistic mode
-        enabled = True if self.inst.action in ["tt", "mg", "cmg"] else False
+        enabled = self.inst.action in ["tt", "mg", "cmg"]
         generation = tk.StringVar(None, self.inst.generation_mode)
         lbl_output = ttk.Label(tab,
                               style="Label.TLabel",
@@ -1347,7 +1347,7 @@ class PyPLGUI(ttk.Frame):
         m += 1
 
         # size limit factor
-        enabled = True if self.inst.action != "mc" else False
+        enabled = self.inst.action != "mc"
         size_limit = tk.StringVar(None, self.inst.size_limit_factor)
         lbl_size_limit = ttk.Label(tab,
                                   style="Label.TLabel",
@@ -1444,8 +1444,8 @@ class PyPLGUI(ttk.Frame):
             # # win_output.destroy()
 
         elif self.inst.action != "tt":
-            validity = True if self.inst.action == "tp" else False
-            satisfiability = True if self.inst.action == "mg" else False
+            validity = self.inst.action == "tp"
+            satisfiability = self.inst.action == "mg"
 
             tableau.Tableau(concl, premises=premises, axioms=axioms,
                             validity=validity, satisfiability=satisfiability, linguistic=linguistic,
