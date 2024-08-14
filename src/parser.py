@@ -7,7 +7,7 @@ Parse a formula given as string into an Expr object.
 
 import re
 
-debug = False
+debug = True
 
 
 class FmlParser:
@@ -307,11 +307,18 @@ class FmlParser:
                     continue
 
             # variable binding operator: close if appropriate number of args is given
-            if bot in ["Exists", "Forall", "Abstr"] and len(curr_stack) == 3:
-                c = getattr(expr, bot)
-                e = c(mid, top)
-                prev_stack.append(e)
-                stacks = stacks[:-1]
+            if bot in ["Exists", "Forall", "Abstr"] and len(curr_stack) > 2:
+                print("close var binding", curr_stack)
+                print("top", top)
+                if isinstance(curr_stack[2], Var):  # nested bining: repeat operator in new stack
+                    new_stack = [bot, curr_stack[2]]
+                    stacks.append(new_stack)
+                    curr_stack = [bot, curr_stack[1]]
+                else:  # close binding
+                    c = getattr(expr, bot)
+                    e = c(mid, top)
+                    prev_stack.append(e)
+                    stacks = stacks[:-1]
                 continue
 
         self.stacks = stacks
@@ -379,3 +386,5 @@ class StructParser:
 if __name__ == "__main__":
     parse_f = FmlParser().parse
     parse_s = StructParser.parse
+
+    print(parse_f("\exi x y P(x)"))
