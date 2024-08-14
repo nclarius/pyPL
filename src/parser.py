@@ -281,18 +281,17 @@ class FmlParser:
             if bot in ["Eq", "Conj", "Disj", "Imp", "Biimp", "Xor"]:
 
                 # operator ambiguity
-                # todo associativity not right with Eq
                 # operator clash: resolve ambigutiy
                 if mid and mid in ["Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall", "Most", "More",
                                    "Neg", "Poss", "Nec", "Int", "Ext", "Abstr", "Eq"]:
                     # first op has precedence over second op: take current stack as subformula. to second op
-                    # ops have equal precedence: apply left-associativity
-                    if prec[mid] < prec[bot] or prec[mid] == prec[bot]:
+                    if prec[mid] < prec[bot]:
                         c = getattr(expr, mid)
                         e = c(*curr_stack[2:])
                         curr_stack = [bot, e]
                         stacks[i] = curr_stack
                     # second op has precedence over first op: move to new stack
+                    # ops have equal precedence: apply right-associativity
                     else:
                         new_stack = [bot, curr_stack[3]]
                         stacks.append(new_stack)
