@@ -495,6 +495,7 @@ class Tableau(object):
             if debug:
                 print()
                 print(self.root.treestr())
+                print(len(self))
                 print("--------")
                 print()
             if self.stepwise:
@@ -639,6 +640,10 @@ class Tableau(object):
                                            node.inst and
                                            len(node.inst) > 3 and isinstance(
                                                    node.inst[3], str)]
+                        occurring_leaves = [node.inst[3] for node in self.root.leaves() if
+                                           node.inst and
+                                           len(node.inst) > 3 and isinstance(
+                                                   node.inst[3], str)]
                         occurring_global = list(
                             dict.fromkeys(occurring_ass + occurring_insts))
                         if indexed:
@@ -663,13 +668,13 @@ class Tableau(object):
                         # and whether this is not required by the rule type
                         if rule_type in ["γ", "θ"]:
                             new = len(used) >= len(occurring_local)
-                            unneeded = new
+                            unneeded = new and len(occurring_leaves) > 0
                         elif rule_type in ["δ", "ε"]:
                             new = True
                             unneeded = False
                         elif rule_type in ["η"]:
                             new = len(occurring_local) == 0
-                            unneeded = False
+                            unneeded = new
 
                         # count instantiations
                         insts = len(used)
@@ -1066,29 +1071,29 @@ class Tableau(object):
                 # 1. number of times the rule has already been applied on
                 # this branch (prefer least used)
                 i[6],
-                # 2. whether the formula comes from a relevant axiom (prefer
-                # yes)
-                rank_univ_irrel[(i[5][0], i[5][1])],
-                # 3. whether the rule branches (prefer non-branching)
-                branching[i[3]],
                 # 4. whether the application would unnecessarily introduce a
                 # new constant or world (prefer not to)
                 rank_unneeded[i[5][2]],
+                # 3. whether the rule branches (prefer non-branching)
+                branching[i[3]],
                 # 5. whether to introduce a new constant or world (prefer not
                 # to)
                 rank_new[i[5][3]],
+                # 2. whether the formula comes from a relevant axiom (prefer
+                # yes)
+                rank_univ_irrel[(i[5][0], i[5][1])],
                 # 6. what type of operator the rule belongs to (connective >
                 # quant., modal > int.)
                 operator[i[3]],
                 # 7. remaining rule type rank (prefer earlier in order)
                 rule_order[i[3]],
-                # 8. formula complexity (prefer getting to atoms faster)
-                len(i[1].fml),
                 # 9. position of the source node in the tree
                 # (prefer leftmost lowest for used sat. quant. and mod. rules
                 # so that already further developed existential branches are continued first,
                 # leftmost highest for others)
                 pos_by_type[i[3]][i[1]] * min(1, i[6]),
+                # 8. formula complexity (prefer getting to atoms faster)
+                len(i[1].fml),
                 pos[i[1]],
                 # 10. position of the target node in the tree
                 pos[i[0]]
@@ -2443,26 +2448,26 @@ if __name__ == "__main__":
     # tab = Tableau(fml1, premises=[fml2])
     # tab = Tableau(fml1, premises=[fml2, fml3], validity=False, satisfiability=False)
     #
-    # ax1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)), Neg(Atm(Pred("lid"), (Var("x"),)))))
-    # ax2 = Forall(Var("x"), Imp(Atm(Pred("lid"), (Var("x"),)), Neg(Atm(Pred("tupperbox"), (Var("x"),)))))
-    # ax3 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)), Forall(Var("y"), Imp(Atm(Pred("lid"), (Var("y"),)), Neg(Eq(Var("x"), Var("y")))))))
-    # fml1 = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
-    #                               Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
-    #                                                    Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    # fml2 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
-    #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
-    #                                                   Atm(Pred("fit"), (Var("x"), Var("y")))))))
-    # fml3 = Exists(Var("x"), Atm(Pred("tupperbox"), (Var("x"),)))
-    # fml4 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
-    #                             Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
-    #                                                   Conj(Atm(Pred("fit"), (Var("x"), Var("y"))),
-    #                                                        Neg(Eq(Var("x"), Var("y"))))))))
+    ax1 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)), Neg(Atm(Pred("lid"), (Var("x"),)))))
+    ax2 = Forall(Var("x"), Imp(Atm(Pred("lid"), (Var("x"),)), Neg(Atm(Pred("tupperbox"), (Var("x"),)))))
+    ax3 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)), Forall(Var("y"), Imp(Atm(Pred("lid"), (Var("y"),)), Neg(Eq(Var("x"), Var("y")))))))
+    fml1 = Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+                                  Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+                                                       Atm(Pred("fit"), (Var("x"), Var("y")))))))
+    fml2 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+                                Exists(Var("y"), Conj(Atm(Pred("lid"), (Var("y"),)),
+                                                      Atm(Pred("fit"), (Var("x"), Var("y")))))))
+    fml3 = Exists(Var("x"), Atm(Pred("tupperbox"), (Var("x"),)))
+    fml4 = Forall(Var("x"), Imp(Atm(Pred("tupperbox"), (Var("x"),)),
+                                Exists(Var("y"), Conj(Neg(Eq(Var("x"), Var("y"))),
+                                                      Conj(Atm(Pred("lid"), (Var("y"),)),
+                                                           Atm(Pred("fit"), (Var("x"), Var("y"))))))))
     # tab = Tableau(fml2, premises=[fml1])
     # tab = Tableau(fml1, premises=[fml2])
     # tab = Tableau(fml1, premises=[fml2, fml3], validity=False, satisfiability=False)
     # tab = Tableau(fml1, premises=[fml2, fml3], axioms=[ax1], validity=False, satisfiability=False)
     # tab = Tableau(fml1, premises=[fml2, fml3], axioms=[ax1, ax2], validity=False, satisfiability=False)
-    # tab = Tableau(fml1, premises=[fml3, fml4], axioms=[ax1, ax2], validity=False, satisfiability=False, size_limit_factor=4)
+    tab = Tableau(fml1, premises=[fml3, fml4], axioms=[ax3], validity=False, satisfiability=False, size_limit_factor=5)
 
     #####################
     # function symbols and equality
