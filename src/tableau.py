@@ -2145,7 +2145,8 @@ class Node(object):
         """
         if isinstance(self.fml, Pseudo):
             return
-        for node in self.branch[::-1]:
+        for node in (self.branch[::-1] 
+            if not self.tableau.mode["sequent"] else self.context):
             if self.fml and self.world == node.world and (
                     (self.sign and self.fml.tableau_contradiction_pos(node.fml,
                                                                       node.sign)) or
@@ -2516,14 +2517,14 @@ if __name__ == "__main__":
     ###############
     # sequent calculus
     ###############
-    # prms = []
-    # fml = Prop("s")
-    # prms.append(Disj(Prop("p"), Prop("q")))
-    # prms.append(Imp(Prop("q"), Conj(Prop("r"), Prop("s"))))
-    # prms.append(Neg(Prop("p")))
-    # fml = Imp(Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r"))), Imp(Conj(Prop("p"), Prop("q")), Prop("r")))
-    # fml = Disj(Prop("p"), Neg(Prop("p")))
-    # tab = Tableau(fml, premises=prms, sequent_style=True)
+    prms = []
+    fml = Prop("s")
+    prms.append(Disj(Prop("p"), Prop("q")))
+    prms.append(Imp(Prop("q"), Conj(Prop("r"), Prop("s"))))
+    prms.append(Neg(Prop("p")))
+    fml = Imp(Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r"))), Imp(Conj(Prop("p"), Prop("q")), Prop("r")))
+    fml = Disj(Prop("p"), Neg(Prop("p")))
+    tab = Tableau(fml, premises=prms, sequent_style=True)
 
 
     ####################
