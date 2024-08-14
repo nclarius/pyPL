@@ -125,8 +125,11 @@ class FmlParser:
         for token in tokens:
             if debug:
                 input()
+                print(token)
             self.add_symbol(token)
             self.update_stacks()
+            if debug:
+                prin(self.stacks)
         self.update_stacks(True)
         return self.stacks[0][0]
 
