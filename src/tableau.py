@@ -1612,7 +1612,7 @@ class Tableau(object):
                          for k in states}
                 # valuation = make all positive propositional variables true
                 # and all others false
-                v = {p: {"k" + str(k): (p in atoms[k])
+                v = {p: {"k" + str(k): (p in atoms[k] False)
                          for k in states}
                      for p in self.root.fml.propvars()}
                 model = structure.KripkePropStructure(s, k, r, v)
