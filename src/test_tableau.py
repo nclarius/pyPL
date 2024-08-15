@@ -144,5 +144,11 @@ class TestTableau(unittest.TestCase):
         assert tab.closed()
         assert len(tab) == 9
 
+        fml = Conj(Exists(Var("x"), Atm(Pred("P"), (Var("x"),))),
+                   Forall(Var("x"), Neg(Atm(Pred("P"), (Var("x"),)))))
+        tab = Tableau(fml, validity=False, satisfiability=True, silent=True)
+        assert tab.closed()
+        assert len(tab) == 9
+
 if __name__ == '__main__':
     unittest.main()

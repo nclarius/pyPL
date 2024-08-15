@@ -906,6 +906,16 @@ class Tableau(object):
                     applicable = [appl for appl in applicable if
                                   appl[0] not in leaf.branch]
 
+        # in satisfiability tableaus,
+        # if the only applicable rules left are theta/kappa rules
+        # all of which have already been inst. with a new constant/world,
+        # as in a validity tableau, then the theory is unsatisfiable, 
+        # and the appplicable rules of the entire tree can be cleared
+        if not self.mode["validity"] and all([appl[3] in ["θ", "κ"] for appl in applicable]) and \
+            all([any([node.source == appl[1] and node.inst and node.inst[1] for node in self.root.nodes()]) 
+                for appl in applicable]):
+                    applicable = []
+
         # decide which boolean values are good and bad
         rank_univ_irrel = {(True, True): 0, (False, False): 1, (True, False): 2}
         rank_new = {True: 1, False: 0}
