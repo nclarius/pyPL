@@ -906,21 +906,15 @@ class Tableau(object):
                     applicable = [appl for appl in applicable if
                                   appl[0] not in leaf.branch]
 
-        # if all nodes have been applied and every theta/kappa formula has
-        # been inst. with a new constant/world,
-        # as in a validity tableau, and the branch is still contradictory,
-        # then the sequent is unsatisfiable, and the appplicable rules of the
-        # entire tree are cleared
-        # todo correct implementation
-        # for leaf in [node for node in self.root.leaves() if isinstance(
-        # node.fml, Closed)]:
-        #     appl_on_branch = [appl for appl in applicable if appl[0] in
-        #     leaf.branch]
-        #     nary_on_branch = [node for node in leaf.branch if node.rule in
-        #     ["∃", "¬∀", "◇", "¬◻"]]
-        #     if all([appl[6] for appl in appl_on_branch]) and all([
-        #     node.inst[2] for node in nary_on_branch]):
-        #         applicable = []
+        # in satisfiability tableaus,
+        # if the only applicable rules left are theta/kappa rules
+        # all of which have already been inst. with a new constant/world,
+        # as in a validity tableau, then the theory is unsatisfiable, 
+        # and the appplicable rules of the entire tree can be cleared
+        if not self.mode["validity"] and all([appl[3] in ["θ", "κ"] for appl in applicable]) and \
+            all([any([node.source == appl[1] and node.inst and node.inst[1] for node in self.root.nodes()]) 
+                for appl in applicable]):
+                    applicable = []
 
         # decide which boolean values are good and bad
         rank_univ_irrel = {(True, True): 0, (False, False): 1, (True, False): 2}
