@@ -528,6 +528,15 @@ class Tableau(object):
                                 # finished
                                 targets.append(leaf)
                                 instantiations[leaf] = []
+                        
+                        # the rule already has been applied with a new constant 
+                        # and the branch is still closed: no point  in trying again
+                        if all([(node.inst[1] 
+                                if node.source == source and node.inst and len(node.inst) >= 1 
+                                else True)
+                            and all([isinstance(leaf.fml, Closed) for leaf in node.leaves()]) 
+                            for node in self.root.leaves()]):
+                                continue
 
                     for target in targets:
                         branch = [node for node in target.branch if
@@ -660,6 +669,15 @@ class Tableau(object):
                                 # finished
                                 targets.append(leaf)
                                 instantiations[leaf] = []
+                        
+                        # the rule already has been applied with a new constant 
+                        # and the branch is still closed: no point  in trying again
+                        if all([(node.inst[1] 
+                                if node.source == source and node.inst and len(node.inst) >= 1 
+                                else True)
+                            and all([isinstance(leaf.fml, Closed) for leaf in node.leaves()]) 
+                            for node in self.root.leaves()]):
+                                continue
 
                     for target in targets:
                         branch = [node for node in target.branch if
@@ -957,14 +975,18 @@ class Tableau(object):
                                   appl[0] not in leaf.branch]
 
         # in satisfiability tableaus,
-        # if the only applicable rules left are theta/kappa rules
-        # all of which have already been inst. with a new constant/world,
-        # as in a validity tableau, then the theory is unsatisfiable, 
-        # and the appplicable rules of the entire tree can be cleared
-        if not self.mode["validity"] and all([appl[3] in ["θ", "κ"] for appl in applicable]) and \
-            all([any([node.source == appl[1] and node.inst and node.inst[1] for node in self.root.nodes()]) 
-                for appl in applicable]):
-                    applicable = []
+        # if a theta/kappa rule (positive existence/possibility)
+        # has already been instantiated with a new constant/world,
+        # as in a validity tableau, and its branches are still closed,
+        # then the theory is unsatisfiable, 
+        # and the rule can be cleared
+        if not self.mode["validity"]:
+            for (i, appl) in enumerate(applicable):
+                if appl[3] in ["θ", "κ"] and \
+                all([any([node.source == appl[1] and node.inst and node.inst[1] and 
+                all([isinstance(leaf.fml, Closed) for leaf in node.leaves()])]) 
+                for node in self.root.nodes()]):
+                    applicable = [a for a in applicable if a != appl]
 
         # decide which boolean values are good and bad
         rank_univ_irrel = {(True, True): 0, (False, False): 1, (True, False): 2}

@@ -161,7 +161,7 @@ class TestTableau(unittest.TestCase):
 
         fml = Conj(Exists(Var("x"), Atm(Pred("P"), (Var("x"),))),
                    Forall(Var("x"), Neg(Atm(Pred("P"), (Var("x"),)))))
-        tab = Tableau(fml, validity=False, satisfiability=True, silent=True)
+        tab = Tableau(fml, validity=False, satisfiability=True, silent=False)
         assert tab.closed()
         assert len(tab) == 9
 
