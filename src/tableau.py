@@ -151,10 +151,6 @@ class Tableau(object):
         for node in [self.root] + self.premises + self.axioms:
             node.context = [self.root] + self.premises + self.axioms
         self.steps = []  # stepwise representation
-        if self.stepwise:
-            # todo treat contradiction check as separate step
-            self.steps.append(
-                self.root.treestr() if not self.latex else self.root.treetex())
 
         self.gui = gui
         if not self.gui:
@@ -1044,6 +1040,11 @@ class Tableau(object):
             print("--------")
             print()
         while applicable := self.applicable():
+            if self.stepwise:
+                self.steps.append(
+                    self.root.treestr() if not self.latex else
+                    self.root.treetex())
+
             # todo stop search when only contradictions found after all new
             #  instantiations
 
@@ -1109,11 +1110,13 @@ class Tableau(object):
                 print(len(self))
                 print("--------")
                 print()
-            if self.stepwise:
-                self.active = [source] + new_children
-                self.steps.append(
-                    self.root.treestr() if not self.latex else
-                    self.root.treetex())
+            self.active = [source] + new_children
+        
+        if self.stepwise:
+            self.steps.append(
+                self.root.treestr() if not self.latex else
+                self.root.treetex())
+            self.active = []
 
     def apply_rule(self, target, source, rule_type, rule, fmls, args):
         unary = ["α", "γ", "δ", "η", "θ", "ε", "μ", "ν", "π", "κ", "λ", "ι", "υ", "ω"]
@@ -1771,7 +1774,9 @@ class Node(object):
                 "$"
             return fml
 
-        str_line = str(self.line) + "." if self.line else ""
+        str_line = ("$\\sq\\ $" if self in [a[1] for a in self.tableau.appl] else ""
+            if self.tableau.stepwise else "")
+        str_line += str(self.line) + "." if self.line else ""
         # underline lines/atoms of open branches in MG
         if self.tableau.underline_open and \
                     not self.tableau.hide_nonopen and \
@@ -1930,8 +1935,8 @@ class Node(object):
         if self.tableau.hide_nonopen and not self.tableau.mode["validity"] and \
                 not any([self in branch for branch in open_branches]):
             return ""
-        colspec = ("{R{4.5em}cL{4.75em}}" if self.tableau.mode[
-            "propositional"] else "{R{7.5em}cL{7.75em}}")
+        colspec = ("{R{8em}cL{4.75em}}" if self.tableau.mode[
+            "propositional"] else "{R{8em}cL{7.75em}}")
         ssep = ("-4em" if self.tableau.mode["propositional"] else "-7em") if \
             not \
         self.tableau.mode["modal"] else \
