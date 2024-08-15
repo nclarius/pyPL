@@ -94,6 +94,7 @@ class Tableau(object):
         self.num_branches = 1
 
         self.appl = []  # list of applicable rules
+        self.active = []  # list of active (used in the last step) formulas
         self.models = []  # generated models
 
         # append initial nodes
@@ -1109,9 +1110,10 @@ class Tableau(object):
                 print("--------")
                 print()
             if self.stepwise:
+                self.active = [source] + new_children
                 self.steps.append(
                     self.root.treestr() if not self.latex else
-                    self.root.treetex(highlight=[source]+new_children))
+                    self.root.treetex())
 
     def apply_rule(self, target, source, rule_type, rule, fmls, args):
         unary = ["α", "γ", "δ", "η", "θ", "ε", "μ", "ν", "π", "κ", "λ", "ι", "υ", "ω"]
@@ -1725,7 +1727,7 @@ class Node(object):
         # compute str
         return str_line + str_world + str_sign + str_fml + str_cite
 
-    def tex(self, highlight):
+    def tex(self):
         """
         LaTeX representation of this line.
         """
@@ -1790,7 +1792,7 @@ class Node(object):
                     any([self in branch for branch in open_branches]) and \
                     (isinstance(self.fml, Prop) or isinstance(self.fml, Atm)):
                     str_signed_indexed_fml = "\\underline{" + str_signed_indexed_fml + "}"
-        if highlight:
+        if self in self.tableau.active:
             str_signed_indexed_fml = "\\fbox{" + str_signed_indexed_fml + "}"
 
         str_cite = ""
@@ -1865,7 +1867,7 @@ class Node(object):
             res += indent + "\n"
         return res
 
-    def treetex(self, indent="", first=True, root=True, highlight=[]) -> str:
+    def treetex(self, indent="", first=True, root=True) -> str:
 
         if self.tableau.sequent_style:
             res = ""
@@ -1898,7 +1900,7 @@ class Node(object):
 
             if self.contextual:
                 # context alrady represented in another node: skip
-                res += self.children[0].treetex(indent + "    ", first=True, root=False, highlight=highlight)
+                res += self.children[0].treetex(indent + "    ", first=True, root=False)
             elif len(self.children) == 0:
                 res += indent + "\\AxiomC{" + self.tex() + "}\n"
             elif len(self.children) == 1:
@@ -1909,13 +1911,13 @@ class Node(object):
                 elif isinstance(self.children[0].fml, Pseudo):  # open assumption
                     res += indent + "\\AxiomC{" + self.tex() + "}\n"
                 else:
-                    res += self.children[0].treetex(indent + "    ", first=True, root=False, highlight=highlight)
+                    res += self.children[0].treetex(indent + "    ", first=True, root=False)
                     res += indent + "\\RightLabel{($" + str_rule + \
                         "$)}\n"
                     res += indent + "\\UnaryInfC{" + self.tex() + "}\n"
             elif len(self.children) == 2:
-                res += self.children[0].treetex(indent + "    ", first=True, root=False, highlight=highlight)
-                res += self.children[1].treetex(indent + "    ", first=True, root=False, highlight=highlight)
+                res += self.children[0].treetex(indent + "    ", first=True, root=False)
+                res += self.children[1].treetex(indent + "    ", first=True, root=False)
                 res += indent + "\\RightLabel{($" + str_rule + "$)}\n"
                 res += indent + "\\BinaryInfC{" + self.tex() + "}\n"
             if root:
@@ -1950,11 +1952,11 @@ class Node(object):
             res += indent + "[\n"
         if first:
             res += indent + "\\begin{tabular}" + colspec + "\n"
-        res += indent + self.tex(highlight=(self in highlight))
+        res += indent + self.tex()
         if self.children:
             if len(self.children) == 1:  # no branching
                 res += "\\\\\n"
-                res += self.children[0].treetex(indent, first=False, root=False, highlight=highlight)
+                res += self.children[0].treetex(indent, first=False, root=False)
             else:  # branching
                 res += "\n" + indent + "\\end{tabular}\n"
                 for child in self.children:
@@ -1966,7 +1968,7 @@ class Node(object):
                                       open_branches])):
                         indent += "    "
                         res += indent + "[\n"
-                        res += child.treetex(indent, first=True, root=False, highlight=highlight)
+                        res += child.treetex(indent, first=True, root=False)
                         res += indent + "]\n"
                         indent = indent[:-4]
         else:  # leaf
@@ -2230,7 +2232,7 @@ if __name__ == "__main__":
     # fml = Conj(Exists(Var("x"), Atm(Pred("P"), (Var("x"),))), Neg(Forall(
     # Var("x"), Atm(Pred("P"), (Var("x"),)))))
     # tab = Tableau(fml, validity=True)
-    # tab = Tableau(fml, validity=False, satisfiability=True)
+    # tab = Tableau(fml, validity=False, satisfiability=True, stepwise=True)
     # tab = Tableau(fml, validity=False, satisfiability=False)
     # 
     # fml = Biimp(Forall(Var("x"), Atm(Pred("P"), (Var("x"),))),
