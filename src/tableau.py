@@ -95,11 +95,6 @@ class Tableau(object):
 
         self.appl = []  # list of applicable rules
         self.models = []  # generated models
-        self.steps = []  # stepwise representation
-        if self.stepwise:
-            # todo treat contradiction check as separate step
-            self.steps.append(
-                self.root.treestr() if not self.latex else self.root.treetex())
 
         # append initial nodes
         line = 1
@@ -154,6 +149,11 @@ class Tableau(object):
 
         for node in [self.root] + self.premises + self.axioms:
             node.context = [self.root] + self.premises + self.axioms
+        self.steps = []  # stepwise representation
+        if self.stepwise:
+            # todo treat contradiction check as separate step
+            self.steps.append(
+                self.root.treestr() if not self.latex else self.root.treetex())
 
         self.gui = gui
         if not self.gui:
@@ -185,10 +185,17 @@ class Tableau(object):
         res = ""
         # create preamble
         if self.latex:
+            if self.stepwise:
+                # todo make page size dynamic (standalone class ignores pagebreaks)
+                preamble = "\\documentclass{article}\n"
+                preamble += "\\usepackage[a4paper, landscape, margin=1cm]{geometry}\n\n"
+            else:
+                # dynamic page size, capped to 2 * DIN A0 width
+                 preamble = "\\documentclass[varwidth=1682mm, varheight, border=1cm]{standalone}\n\n"
             path_preamble = os.path.join(os.path.dirname(__file__),
                                          "preamble.tex")
             with open(path_preamble) as f:
-                preamble = f.read()
+                preamble += f.read()
                 # for s in list(dict.fromkeys(chain([chain(node.fml.nonlogs())
                 #                             for node in self.axioms +
                 #                             self.premises + [
@@ -2456,7 +2463,6 @@ if __name__ == "__main__":
     # prms.append(Imp(Prop("q"), Conj(Prop("r"), Prop("s"))))
     # prms.append(Neg(Prop("p")))
     # fml = Imp(Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r"))), Imp(Conj(Prop("p"), Prop("q")), Prop("r")))
-    # fml = Disj(Prop("p"), Neg(Prop("p")))
     # tab = Tableau(fml, premises=prms, sequent_style=True)
 
 
