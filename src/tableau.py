@@ -93,14 +93,6 @@ class Tableau(object):
             stepwise, hide_nonopen, underline_open  # todo support sequent style in gui
         self.num_branches = 1
 
-        self.appl = []  # list of applicable rules
-        self.models = []  # generated models
-        self.steps = []  # stepwise representation
-        if self.stepwise:
-            # todo treat contradiction check as separate step
-            self.steps.append(
-                self.root.treestr() if not self.latex else self.root.treetex())
-
         # append initial nodes
         line = 1
         # sig = (1,) if modal or not classical else None
@@ -155,6 +147,14 @@ class Tableau(object):
         for node in [self.root] + self.premises + self.axioms:
             node.context = [self.root] + self.premises + self.axioms
 
+        self.appl = []  # list of applicable rules
+        self.models = []  # generated models
+        self.steps = []  # stepwise representation
+        if self.stepwise:
+            # todo treat contradiction check as separate step
+            self.steps.append(
+                self.root.treestr() if not self.latex else self.root.treetex())
+
         self.gui = gui
         if not self.gui:
             self.gui = __import__("gui").PyPLGUI(True)
@@ -185,10 +185,16 @@ class Tableau(object):
         res = ""
         # create preamble
         if self.latex:
+            if self.stepwise:
+                preamble = "\\documentclass[a4paper]{article}\n"
+                preamble += "\\usepackage[a4paper, landscape, margin=1cm]{geometry}\n\n"
+            else:
+                # dynamic page size, capped to 2 * DIN A0 width
+                 preamble = "\\documentclass[varwidth=1682mm, varheight, border=1cm]{standalone}\n\n"
             path_preamble = os.path.join(os.path.dirname(__file__),
                                          "preamble.tex")
             with open(path_preamble) as f:
-                preamble = f.read()
+                preamble += f.read()
                 # for s in list(dict.fromkeys(chain([chain(node.fml.nonlogs())
                 #                             for node in self.axioms +
                 #                             self.premises + [
@@ -2456,7 +2462,6 @@ if __name__ == "__main__":
     # prms.append(Imp(Prop("q"), Conj(Prop("r"), Prop("s"))))
     # prms.append(Neg(Prop("p")))
     # fml = Imp(Disj(Imp(Prop("p"), Prop("r")), Imp(Prop("q"), Prop("r"))), Imp(Conj(Prop("p"), Prop("q")), Prop("r")))
-    # fml = Disj(Prop("p"), Neg(Prop("p")))
     # tab = Tableau(fml, premises=prms, sequent_style=True)
 
 
