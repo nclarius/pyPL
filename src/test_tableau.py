@@ -76,9 +76,17 @@ class TestTableau(unittest.TestCase):
     def test_fol_eq(self):
         fml = Conj(Eq(Const("a"), Const("b")), Atm(Pred("P"), (Const("b"),)))
         tab = Tableau(fml, validity=False, satisfiability=True, silent=True)
+        assert tab.open()
+        assert len(tab) == 4
+        assert len(tab.models) == 1
+        assert len(tab.models[0].d) == 2
         
         fml = Exists(Var("x"), Conj(Eq(Var("x"), Const("b")), Atm(Pred("P"), (Var("x"),))))
         tab = Tableau(fml, validity=False, satisfiability=True, silent=True)
+        assert tab.open()
+        assert len(tab) == 4
+        assert len(tab.models) == 1
+        assert len(tab.models[0].d) == 1
     
     def test_ml_pl_validity(self):
         fml = Biimp(Nec(Prop("p")), Neg(Poss(Neg(Prop("p")))))
