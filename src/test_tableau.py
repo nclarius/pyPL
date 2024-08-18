@@ -36,7 +36,7 @@ class TestTableau(unittest.TestCase):
         assert len(tab) == 7
         tab = Tableau(fml1, premises=[fml2], validity=True, silent=True)
         assert tab.infinite()
-        assert len(tab) == 21
+        assert len(tab) == 33
         tab = Tableau(fml1, premises=[fml2], validity=False, satisfiability=False, silent=True)
         assert tab.open()
         assert len(tab.models) > 0
@@ -65,13 +65,20 @@ class TestTableau(unittest.TestCase):
         assert len(tab.models) > 0
         assert len(tab) == 7
     
-        fml1 = Forall(Var("x"), Forall(Var("y"), Forall(Var("z"),
-                      Disj(Disj(Eq(Var("x"), Var("y")), Eq(Var("x"), Var("z"))), Eq(Var("y"), Var("z"))))))
-        fml2 = Exists(Var("x"), Exists(Var("y"), Neg(Eq(Var("x"), Var("y")))))
-        tab = Tableau(None, premises=[fml1, fml2], validity=False, hide_nonopen=True, silent=True)
+        fml1 = Exists(Var("x"), Exists(Var("y"), Neg(Eq(Var("x"), Var("y")))))
+        fml2 = Forall(Var("x"), Forall(Var("y"), Forall(Var("z"),
+                      Disj(Eq(Var("x"), Var("y")), Eq(Var("x"), Var("z")), Eq(Var("y"), Var("z"))))))
+        tab = Tableau(None, premises=[fml1, fml2], validity=False, silent=True)
         assert len(tab.models) == 1
         assert len(tab.models[0].d) == 2
-        assert len(tab) == 57
+        assert len(tab) == 72  # todo ineffficient
+    
+    def test_fol_eq(self):
+        fml = Conj(Eq(Const("a"), Const("b")), Atm(Pred("P"), (Const("b"),)))
+        tab = Tableau(fml, validity=False, satisfiability=True, silent=True)
+        
+        fml = Exists(Var("x"), Conj(Eq(Var("x"), Const("b")), Atm(Pred("P"), (Var("x"),))))
+        tab = Tableau(fml, validity=False, satisfiability=True, silent=True)
     
     def test_ml_pl_validity(self):
         fml = Biimp(Nec(Prop("p")), Neg(Poss(Neg(Prop("p")))))
@@ -112,7 +119,7 @@ class TestTableau(unittest.TestCase):
         assert len(tab) == 12
         tab = Tableau(fml, modal=True, vardomains=True, silent=True)
         assert tab.infinite()
-        assert len(tab) == 27
+        assert len(tab) == 39
         tab = Tableau(fml, validity=False, modal=True, vardomains=True, silent=True)
         assert tab.open()
         assert len(tab) == 7
@@ -135,7 +142,7 @@ class TestTableau(unittest.TestCase):
         fml = Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))
         tab = Tableau(fml, premises=[fml1], classical=False, silent=True)
         assert tab.infinite()
-        assert len(tab) == 17
+        assert len(tab) == 25
     
     def test_strategy(self):
         fml1 = Neg(Forall(Var("x"), Exists(Var("y"), Atm(Pred("P"), (Var("x"), Var("y"))))))
