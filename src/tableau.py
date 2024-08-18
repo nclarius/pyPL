@@ -555,7 +555,7 @@ class Tableau(object):
                         # the constants associated with this world
                         occurring_ass = list(chain(*[[str(c)
                                                       for c in
-                                                      node.fml.nonlogs()[0]]
+                                                      node.fml.consts()]
                                                      for node in branch
                                                      if node.rule == "A"]))
                         occurring_insts = [node.inst[3] for node in branch if
@@ -892,7 +892,53 @@ class Tableau(object):
                         elif rule_type in ["ο", "u", "ω"]:
                             pass  # todo applicability for intuitionistic quantifier rules
                             # todo args for combined quantifier and modal rules
+                
+                # equality rule
+                elif rule_type in ["ζ"]:
+                    tau, rho = fmls[0]
+                    if tau == rho:
+                        continue
+                    universal, irrelevant, unneeded, new = False, False, False, False
 
+                    for target in targets:
+                        branch = [node for node in target.branch if
+                                  not isinstance(node.fml, Pseudo)]
+
+                        # collect the formulas this rule has already been instantiated with 
+                        # in this direction in the branch/level
+                        used_ltr = list(dict.fromkeys(
+                                [node.inst[0] for node in branch if 
+                                    applied(node) and node.inst[1] == tau and node.inst[2] == rho]))
+                        used_rtl = list(dict.fromkeys(
+                                [node.inst[0] for node in branch if 
+                                    applied(node) and node.inst[1] == rho and node.inst[2] == tau]))
+                        insts = len(used_ltr) + len(used_rtl)
+
+                        # collect the atoms that contain either term
+                        # and the equality can be applied on
+                        occurring_ltr = [node for node in target.branch 
+                            if isinstance(node.fml, Atm) and not node.source == source and
+                            str(tau) in list(node.fml.freevars()) + list(node.fml.consts())]
+                        occurring_rtl = [node for node in target.branch
+                            if isinstance(node.fml, Atm) and not node.source == source and 
+                            str(rho) in list(node.fml.freevars()) + list(node.fml.consts())]
+
+                        usable_ltr = [node for node in occurring_ltr if node not in used_ltr]
+                        usable_rtl = [node for node in occurring_rtl if node not in used_rtl]
+                    
+                        for node in usable_ltr:
+                            fmls = [(node.sign, node.fml)]
+                            args = (node, tau, rho)
+                            args = universal, irrelevant, unneeded, new, used_ltr, \
+                                node, tau, rho
+                            applicable.append((target, source, rule_name,
+                                               rule_type, fmls, args, insts))
+                        for node in usable_rtl:
+                            fmls = [(node.sign, node.fml)]
+                            args = universal, irrelevant, unneeded, new, used_rtl, \
+                                node, rho, tau
+                            applicable.append((target, source, rule_name,
+                                               rule_type, fmls, args, insts))
 
         # if the only rules applicable to an unfinished branch are
         # δ, θ, ε or κ rules that have already been applied on this branch,
@@ -926,21 +972,23 @@ class Tableau(object):
         rank_unneeded = {True: 1, False: 0}
         # define a preference order for rule types
         rule_order = {r: i for (i, r) in enumerate(
-                ["ι", "η", "λ", "α", "β", "γ", "δ", "θ", "ε", "π", "μ", "ν",
+                ["ι", "η", "λ", "ζ", "α", "β", "γ", "δ", "θ", "ε", "π", "μ", "ν",
                  "κ", "ξ", "χ", "ο", "u", "ω"])}
         branching = {  # rank by branching
                 "ι": 0,  # forcing rules
                 "α": 0, "β": 1,  # connective rules
                 "γ": 0, "δ": 0, "η": 0, "θ": 1, "ε": 1,  # quantifier rules
                 "μ": 0, "ν": 0, "π": 0, "κ": 1, "λ": 0,  # modal rules
-                "ξ": 1, "χ": 1, "ο": 0, "u": 0, "ω": 0  # intuitionistic rules
+                "ξ": 1, "χ": 1, "ο": 0, "u": 0, "ω": 0,  # intuitionistic rules
+                "ζ": 0 # equality rule
         }
         operator = {  # rank by operator type
                 "ι": 0,  # forcing rules
                 "α": 1, "β": 1,  # connective rules
                 "γ": 2, "δ": 2, "η": 2, "θ": 2, "ε": 2,  # quantifier rules
                 "μ": 2, "ν": 2, "π": 2, "κ": 2, "λ": 2,  # modal rules
-                "ξ": 2, "χ": 2, "ο": 3, "u": 3, "ω": 3  # intuitionistic rules
+                "ξ": 2, "χ": 2, "ο": 3, "u": 3, "ω": 3, # intuitionistic rules
+                "ζ": 2 # equality rule
         }
         # enumerate the nodes level-order so nodes can be prioritized by
         # position in the tree
@@ -954,8 +1002,9 @@ class Tableau(object):
                 # quantifier rules
                 "μ": pos, "ν": pos, "π": pos, "κ": pos_rev, "λ": pos_rev,
                 # modal rules
-                "ξ": pos, "χ": pos, "ο": pos, "u": pos, "ω": pos
+                "ξ": pos, "χ": pos, "ο": pos, "u": pos, "ω": pos,
                 # intuitionistic rules
+                "ζ": pos  # equality rule
         }
 
         # sort the applicable rules by ...
@@ -1119,11 +1168,12 @@ class Tableau(object):
             self.active = []
 
     def apply_rule(self, target, source, rule_type, rule, fmls, args):
-        unary = ["α", "γ", "δ", "η", "θ", "ε", "μ", "ν", "π", "κ", "λ", "ι", "υ", "ω"]
+        unary = ["α", "γ", "δ", "η", "θ", "ε", "μ", "ν", "π", "κ", "λ", "ι", "υ", "ω", "ζ"]
         binary = ["β", "ξ", "χ", "ο", "u", "ω"]
         nary = ["θ", "ε", "κ"]
         quantificational = ["γ", "δ", "η", "θ", "ε", "ο", "υ", "ω"]
         modal = ["μ", "ν", "π", "κ", "λ", "ι", "ο", "υ", "ω"]
+        equality = ["ζ"]
         new_constant = ["δ", "ε", "υ"]
         existing_constant = ["γ", "η", "θ", "ο", "ω"]
         arbitrary_constant = ["γ", "θ", "ο"]
@@ -1241,6 +1291,12 @@ class Tableau(object):
             new = (rule_type in new_signature) or \
                 (rule_type in existing_signature and world not in extensions)
             inst = (universal, new, source.world, world)
+        
+        if rule_type in equality:
+            sign, phi = fmls[0]
+            universal, irrelevant, unneeded, new, used, src, tau, rho = args
+            fmls = [(sign, phi.subst(tau, rho))]
+            inst = (src, tau, rho)
 
         # append nodes
         if rule_type in unary:
@@ -1430,17 +1486,17 @@ class Tableau(object):
             else:  # classical predicate logic
                 # predicates = all predicates occurring in the conclusion and
                 # premises
-                constants = set(chain(self.root.fml.nonlogs()[0],
-                                      *[ass.fml.nonlogs()[0] for ass in
+                constants = set(chain(self.root.fml.consts(),
+                                      *[ass.fml.consts() for ass in
                                         [self.root] + self.premises]))
                 # todo show constants in interpret.?
-                funcsymbs = set(chain(self.root.fml.nonlogs()[1],
-                                      *[ass.fml.nonlogs()[1] for ass in
+                funcsymbs = set(chain(self.root.fml.funcs(),
+                                      *[ass.fml.funcs() for ass in
                                         [self.root] + self.premises]))
                 # todo take care of function symbols in domain and
                 #  interpretation
-                predicates = set(chain(self.root.fml.nonlogs()[2],
-                                       *[ass.fml.nonlogs()[2] for ass in
+                predicates = set(chain(self.root.fml.preds(),
+                                       *[ass.fml.preds() for ass in
                                          [self.root] + self.premises]))
 
                 if not self.mode[
@@ -1451,8 +1507,8 @@ class Tableau(object):
                              and node.sign]
                     # domain = all const.s occurring in formulas
                     d = set(list(
-                        chain(*[[remove_sig(t) for t in node.fml.nonlogs()[0]]
-                                for node in branch if node.fml.nonlogs()])))
+                        chain(*[[remove_sig(t) for t in node.fml.consts()]
+                                for node in branch if node.fml.consts()])))
                     # interpretation = make all unnegated predications true
                     # and all others false
                     i = {p: {tuple([remove_sig(str(t)) for t in a[1]]) for a in
@@ -1490,18 +1546,18 @@ class Tableau(object):
                         "vardomains"]:  # classical modal predicate logic
                         # with constant domains
                         d = set(chain(
-                            *[[remove_sig(t) for t in node.fml.nonlogs()[0]] for
+                            *[[remove_sig(t) for t in node.fml.consts()] for
                               node in branch]))
                         model = structure.ConstModalStructure(s, w, r, d, i)
 
                     else:  # classical modal predicate logic with varying
                         # domains
-                        # d = {worlds[sig]: set(chain(*[node.fml.nonlogs()[0]
+                        # d = {worlds[sig]: set(chain(*[node.fml.consts()
                         # for node in branch
                         #                       if node.sig == sig]))
                         #      for sig in sigs}
                         d_ = set(list(
-                            chain(*[[c + "_0" for c in node.fml.nonlogs()[0]]
+                            chain(*[[c + "_0" for c in node.fml.consts()]
                                     for node in branch if node.rule == "A"])) +
                                  [node.inst[3] for node in branch
                                   if node.inst and len(
@@ -1558,14 +1614,14 @@ class Tableau(object):
             else:  # intuitionistic predicate logic
                 # predicates = all predicates occurring in the conclusion and
                 # premises
-                constants = set(chain(self.root.fml.nonlogs()[0],
-                                      *[ass.fml.nonlogs()[0] for ass in
+                constants = set(chain(self.root.fml.consts(),
+                                      *[ass.fml.consts() for ass in
                                         [self.root] + self.premises]))
-                funcsymbs = set(chain(self.root.fml.nonlogs()[1],
-                                      *[ass.fml.nonlogs()[1] for ass in
+                funcsymbs = set(chain(self.root.fml.funcs(),
+                                      *[ass.fml.funcs() for ass in
                                         [self.root] + self.premises]))
-                predicates = set(chain(self.root.fml.nonlogs()[2],
-                                       *[ass.fml.nonlogs()[2] for ass in
+                predicates = set(chain(self.root.fml.preds(),
+                                       *[ass.fml.preds() for ass in
                                          [self.root] + self.premises]))
                 # # atoms = all unnegated atomic predications
                 # atoms = {sig: [(node.fml.pred, node.fml.terms) for node in
@@ -1573,7 +1629,7 @@ class Tableau(object):
                 #                if isinstance(node.fml, Atm) and node.sig ==
                 #                sig]
                 #          for sig in sigs}
-                # d = {states[sig]: set(chain(*[node.fml.nonlogs()[0] for
+                # d = {states[sig]: set(chain(*[node.fml.consts() for
                 # node in branch
                 #                               if node.sig == sig]))
                 #      for sig in sigs}
@@ -1588,7 +1644,7 @@ class Tableau(object):
                              and node.sign]
                          for k in states}
                 d = {"k" + str(k): set(chain(
-                    *[[remove_sig(t) for t in node.fml.nonlogs()[0]] for node in
+                    *[[remove_sig(t) for t in node.fml.consts()] for node in
                       branch
                       if node.world == k]))
                      for k in states}
@@ -1721,6 +1777,10 @@ class Node(object):
                             self.inst[2]) + "," + label_w + str(self.inst[3]) + \
                                "⟩" \
                                + ("*" if self.inst[1] else "")
+            elif self.inst and len(self.inst) == 3:
+                if isinstance(self.inst[0], Node) and isinstance(self.inst[1], Term) and isinstance(self.inst[2], Term):
+                    str_inst = ", "+ str(self.inst[0].line) +\
+                         ", " + "[" + str(self.inst[1]) + "/" + str(self.inst[2]) + "]"
             elif self.inst and len(self.inst) == 1:
                 str_inst = ", " + str(self.inst[0])
             else:
@@ -1774,8 +1834,8 @@ class Node(object):
                 "$"
             return fml
 
-        str_line = ("$\\sq\\ $" if self in [a[1] for a in self.tableau.appl] else ""
-            if self.tableau.stepwise else "")
+        str_line = "$\\sq\\ $" \
+            if self.tableau.stepwise and self in [a[1] for a in self.tableau.appl] else ""
         str_line += str(self.line) + "." if self.line else ""
         # underline lines/atoms of open branches in MG
         if self.tableau.underline_open and \
@@ -1797,7 +1857,7 @@ class Node(object):
                     any([self in branch for branch in open_branches]) and \
                     (isinstance(self.fml, Prop) or isinstance(self.fml, Atm)):
                     str_signed_indexed_fml = "\\underline{" + str_signed_indexed_fml + "}"
-        if self in self.tableau.active:
+        if self.tableau.stepwise and self in self.tableau.active:
             str_signed_indexed_fml = "\\fbox{" + str_signed_indexed_fml + "}"
 
         str_cite = ""
@@ -1828,6 +1888,10 @@ class Node(object):
                             self.inst[2]) + "}" + "{,}" + label_w + "_" + "{" + str(
                             self.inst[3]) + "}" + "}" \
                             + (" *" if self.inst[1] else "")
+            elif self.inst and len(self.inst) == 3:
+                if isinstance(self.inst[0], Node) and isinstance(self.inst[1], Term) and isinstance(self.inst[2], Term):
+                    str_inst = "{,}\\ " + str(self.inst[0].line) +\
+                        "{,}\\ " + "\\lbrack" + self.inst[1].tex() + "/" + self.inst[2].tex() + "\\rbrack"
             elif self.inst and len(self.inst) == 1:
                 str_inst = "{,}\\ " + str(self.inst[0])
             else:
@@ -2153,7 +2217,7 @@ class Node(object):
             self.branch[-2].add_child(
                     (self.tableau, None, None, None, Infinite(), None, None, None))
             return True
-        # num_consts_vertical = len(dict.fromkeys(chain(*[node.fml.nonlogs()[0]
+        # num_consts_vertical = len(dict.fromkeys(chain(*[node.fml.consts()
         #                                                 for node in
         #                                                 self.branch
         #                                                 if not isinstance(

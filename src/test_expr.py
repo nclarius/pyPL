@@ -4,6 +4,13 @@ from expr import *
 
 
 class TestExpr(unittest.TestCase):
+    def test_props(self):
+        fml = Exists(Var("x"), Conj(Atm(Pred("P"), (Var("x"),)), Atm(Pred("R"), (Var("x"), Var("y"), Const("c")))))
+        assert len(fml) == 11
+        assert fml.freevars() == {"y"}
+        assert fml.boundvars() == {"x"}
+        assert fml.consts() == {"c"}
+
     def test_normalforms(self):
         fml = Imp(Disj(Prop("p"), Prop("q")), Neg(Prop("r")))
         dnf = Disj(Conj(Prop("p"), Prop("q"), Neg(Prop("r"))),

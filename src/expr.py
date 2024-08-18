@@ -31,6 +31,19 @@ class Expr:
         """
         for attr in [attr for attr in dir(self) if attr not in ["__weakref__"]]:
             setattr(self, attr, getattr(other, attr))
+    
+    def __eq__(self, other):
+        """
+        Whether the expression is equal to another expression.
+
+        @param other: the other expression
+        @type other: Expr
+        @return: True iff self is equal to other
+        @rtype: bool
+        """
+        return type(self) == type(other) and \
+            all([getattr(self, attr) == getattr(other, attr) for attr in vars(self).keys()
+                 if not attr.startswith("__") and not callable(getattr(self, attr))])
 
     def __repr__(self):
         return str(self)
@@ -50,7 +63,7 @@ class Expr:
         @return the length of the expression
         @rtype int
         """
-        return 1 + sum(len(subexpr) for subexpr in vars(self) if isinstance(subexpr, Expr))
+        return len(self.subexprs())  # todo remove overrides
 
     def imm_subexprs(self):
         """
@@ -59,7 +72,25 @@ class Expr:
         @return the immediate subexpressions of the expression
         @rtype list[Expr]
         """
-        return [field for field in vars(self) if isinstance(field, Expr)]
+        res = []
+        for subsubexpr in vars(self).values():
+            if isinstance(subsubexpr, Expr):
+                res.append(subsubexpr)
+            elif isinstance(subsubexpr, list) or isinstance(subsubexpr, tuple):
+                res += [subsubexpr for subsubexpr in subsubexpr if isinstance(subsubexpr, Expr)]
+        return res
+
+    def proper_subexprs(self):
+        """
+        The proper subexpressions of the expression.
+
+        @return the proper subexpressions of the expression
+        @rtype list[Expr]
+        """
+        res = self.imm_subexprs()
+        for subexpr in self.imm_subexprs():
+            res += subexpr.proper_subexprs()
+        return res
 
     def subexprs(self):
         """
@@ -68,10 +99,18 @@ class Expr:
         @return the subexpressions of the expression
         @rtype list[Expr]
         """
-        res = [self] + self.imm_subexprs()
-        for subexpr in self.imm_subexprs():
-            res += subexpr.subexprs()
-        return res
+        return [self] + self.proper_subexprs()
+    
+    def __contains__(self, other):
+        """
+        Whether the expression contains another expression.
+
+        @param other: the other expression
+        @type other: Expr
+        @return: True iff other occurs in the subexprs of self
+        @rtype: bool
+        """
+        return other in self.subexprs()
 
     def propvars(self) -> set[str]:
         """
@@ -80,7 +119,7 @@ class Expr:
         @return: the set of propositional variables in the expression
         @rtype: set[str]
         """
-        return {pv for subexpr in self.subexprs() for pv in subexpr.propvars()}
+        return {pv for subexpr in self.proper_subexprs() for pv in subexpr.propvars()}
 
     def freevars(self) -> set[str]:
         """
@@ -89,7 +128,7 @@ class Expr:
         @return: the set of free variables in the expression
         @rtype: set[str]
         """
-        return {fv for subexpr in self.subexprs() for fv in subexpr.freevars()}
+        return {fv for subexpr in self.proper_subexprs() for fv in subexpr.freevars()}
 
     def boundvars(self) -> set[str]:
         """
@@ -98,16 +137,34 @@ class Expr:
         @return: the set of bound variables in the expression
         @rtype: set[str]
         """
-        return {fv for subexpr in self.subexprs() for fv in subexpr.boundvars()}
+        return {fv for subexpr in self.proper_subexprs() for fv in subexpr.boundvars()}
+    
+    def consts(self):
+        """
+        The set of constants in the expression.
 
-    def nonlogs(self):
+        @return: the set of constants in the expression
+        @rtype: set[str]
         """
-        The set of non-logical symbols in the expression.
-        
-        @return the set of non-logical symbols in the expression: (constants, functions, predicates)
-        @rtype: tuple[set[str]]
+        return {c for subexpr in self.proper_subexprs() for c in subexpr.consts()}
+    
+    def funcs(self):
         """
-        pass
+        The set of function symbols in the expression.
+
+        @return: the set of function symbols in the expression
+        @rtype: set[str]
+        """
+        return {f for subexpr in self.proper_subexprs() for f in subexpr.funcs()}
+    
+    def preds(self):
+        """
+        The set of predicates in the expression.
+
+        @return: the set of predicates in the expression
+        @rtype: set[str]
+        """
+        return {p for subexpr in self.proper_subexprs() for p in subexpr.preds()}
 
     def redex(self):
         """
@@ -127,18 +184,18 @@ class Expr:
         """
         return [r for subexpr in self.subexprs() for r in subexpr.redexes()]
 
-    def subst(self, u, t):
+    def subst(self, tau, rho):
         """
-        Substitute all occurrences of the variable u for the term t in self.
+        Substitute all occurrences of the term tau for the term rho in self.
 
-        @param u: the variable to be substituted
-        @type u: Union[IIVar, LIVar]
-        @param t: the term to substitute
+        @param tau: the term to be substituted
+        @type tau: Union[Term, LIVar]
+        @param rho: the term to substitute
         @type t: Union[Term, LIVar]
-        @return: the result of substituting all occurrences of the variable v for the term t in self
+        @return: the result of substituting all occurrences of the term tau for the term rho in self
         @rtype Expr
         """
-        return type(self)(*[subexpr.subst(u, t) for subexpr in self.subexprs()])
+        return type(self)(*[subexpr.subst(tau, rho) for subexpr in self.subexprs()])  # todo remove overrides
 
     def denot(self, s, v: dict[str, str] = {}, w: str = ""):
         """
@@ -221,13 +278,13 @@ class Expr:
         """
         if self == other:
             return True
-        bounaterms_self = [subexpr for subexpr in self.subexprs()
+        boundterms_self = [subexpr for subexpr in self.subexprs()
                             if any([isinstance(subexpr, LIVar) or isinstance(subexpr, Var)])]
         bounavars_other = [subexpr.u for subexpr in other.subexprs()
                             if any([isinstance(subexpr, LIVar) or isinstance(subexpr, Var)])]
-        print(bounaterms_self, bounavars_other)
-        if len(bounaterms_self) == len(bounavars_other):
-            conversions = product(bounaterms_self, bounavars_other)
+        print(boundterms_self, bounavars_other)
+        if len(boundterms_self) == len(bounavars_other):
+            conversions = product(boundterms_self, bounavars_other)
             print(conversions)
             for convex, u in conversions:
                 conv = self.alpha_conv(convex, u)
@@ -284,10 +341,10 @@ class Expr:
 class Term(Expr):
     """
     Term (constant, variable).
-    t1, t2, ...
+    tau, rho, ...
     """
 
-    def subst(self, u, t):
+    def subst(self, tau, rho):
         """
         @rtype: Term
         """
@@ -329,27 +386,12 @@ class Var(Term):
     def tex(self):
         return self.u
 
-    def __eq__(self, other):
-        return isinstance(other, Var) and self.u == other.u
-
-    def __len__(self):
-        return 1
-
-    def propvars(self):
-        return set()
-
     def freevars(self):
         return {self.u}
 
-    def boundvars(self):
-        return set()
-
-    def nonlogs(self):
-        return set(), set(), set()
-
-    def subst(self, u, t):
-        if u.u == self.u:
-            return t
+    def subst(self, tau, rho):
+        if isinstance(tau, Var) and tau.u == self.u:
+            return rho
         else:
             return self
 
@@ -381,26 +423,14 @@ class Const(Term):
     def tex(self):
         return "\\mathit{" + self.c + "}"
 
-    def __eq__(self, other):
-        return isinstance(other, Const) and self.c == other.c
+    def consts(self):
+        return {self.c}
 
-    def __len__(self):
-        return 1
-
-    def propvars(self):
-        return set()
-
-    def freevars(self):
-        return set()
-
-    def boundvars(self):
-        return set()
-
-    def nonlogs(self):
-        return {self.c}, set(), set()
-
-    def subst(self, u, t):
-        return self
+    def subst(self, tau, rho):
+        if isinstance(tau, Const) and tau.c == self.c:
+            return rho
+        else:
+            return self
 
     def denot(self, s, v = {}, w = ""):
         """
@@ -431,24 +461,9 @@ class Func(Expr):
     def tex(self):
         return "\\mathit{" + self.f + "}"
 
-    def __eq__(self, other):
-        return isinstance(other, Func) and self.f == other.f
-
-    def __len__(self):
-        return 1
-
-    def propvars(self):
-        return set()
-
-    def freevars(self):
-        return set()
-
-    def boundvars(self):
-        return set()
-
-    def nonlogs(self):
-        return set(), {self.f}, set()
-
+    def funcs(self):
+        return {self.f}
+    
     def subst(self, u, t):
         return self
 
@@ -475,11 +490,11 @@ class FuncTerm(Term):
     f(s), h(x,t), ...
 
     Note that 1-place function applications have to be specified as
-    Atm('f', (t1, ))
+    Atm('f', (tau, ))
     rather than
     Atm('f', (t))
     or
-    Atm('f', t1).
+    Atm('f', tau).
 
     @attr f: the function symbol
     @type f: Func
@@ -497,25 +512,11 @@ class FuncTerm(Term):
     def tex(self):
         return self.f.tex() + "(" + ",".join([t.tex() for t in self.terms]) + ")"
 
-    def __eq__(self, other):
-        return isinstance(other, FuncTerm) and self.f == other.f and self.terms == other.terms
-
-    def __len__(self):
-        return len(self.f) + sum([len(t) for t in self.terms])
-
-    def propvars(self):
-        return set()
-
     def freevars(self):
         return set().union(*[t.freevars() for t in self.terms])
 
     def boundvars(self):
         return set().union(*[t.boundvars() for t in self.terms])
-
-    def nonlogs(self):
-        return set().union(*[t.nonlogs()[0] for t in self.terms]), \
-               set().union(*[t.nonlogs()[1] for t in self.terms]) | {self.f}, \
-               set()
 
     def subst(self, u, t):
         return FuncTerm(self.f, tuple([term.subst(u, t) for term in self.terms]))
@@ -550,23 +551,8 @@ class Pred(Expr):
     def tex(self):
         return "\\mathit{" + self.p + "}"
 
-    def __eq__(self, other):
-        return isinstance(other, Pred) and self.p == other.p
-
-    def __len__(self):
-        return 1
-
-    def propvars(self):
-        return set()
-
-    def freevars(self):
-        return set()
-
-    def boundvars(self):
-        return set()
-
-    def nonlogs(self):
-        return set(), set(), {self.p}
+    def preds(self):
+        return {self.p}
 
     def subst(self, u, t):
         return self
@@ -821,23 +807,8 @@ class Prop(Formula):
     def tex(self):
         return self.p
 
-    def __eq__(self, other):
-        return isinstance(other, Prop) and self.p == other.p
-
-    def __len__(self):
-        return 1
-
     def propvars(self):
         return {self.p}
-
-    def freevars(self):
-        return set()
-
-    def boundvars(self):
-        return set()
-
-    def nonlogs(self):
-        return set(), set(), set()
 
     def subst(self, u, t):
         return self
@@ -876,14 +847,14 @@ class Prop(Formula):
 class Atm(Formula):
     """
     Atomic formula (predicate symbol applied to a number of terms).
-    P(t1, ..., tn)
+    P(tau, ..., tn)
 
     Note that 1-place predications have to be specified as
-    Atm('P', (t1, ))
+    Atm('P', (tau, ))
     rather than
     Atm('P', (t))
     or
-    Atm('P', t1).
+    Atm('P', tau).
 
     @attr pred: the predicate symbol
     @type pred: Pred
@@ -901,32 +872,18 @@ class Atm(Formula):
     def tex(self):
         return self.pred.tex() + "(" + ",".join([t.tex() for t in self.terms]) + ")"
 
-    def __eq__(self, other):
-        return isinstance(other, Atm) and self.pred == other.pred and self.terms == other.terms
-
-    def __len__(self):
-        return len(self.pred) + sum([len(t) for t in self.terms])
-
-    def propvars(self):
-        return set()
-
     def freevars(self):
         return set().union(*[t.freevars() for t in self.terms])
 
     def boundvars(self):
         return set().union(*[t.boundvars() for t in self.terms])
 
-    def nonlogs(self):
-        return set().union(*[t.nonlogs()[0] for t in self.terms]), \
-               set().union(*[t.nonlogs()[1] for t in self.terms]), \
-               {self.pred.p}
-
     def subst(self, u, t):
         return Atm(self.pred, tuple([term.subst(u, t) for term in self.terms]))
 
     def denot(self, s, v = {}, w = ""):
         """
-        The denotation of an atomic predication P(t1, ..., tn) is true iff the tuple of the denotation of the terms is
+        The denotation of an atomic predication P(tau, ..., tn) is true iff the tuple of the denotation of the terms is
         an element of the interpretation of the predicate.
         """
         if "classical" in s.mode():
@@ -955,71 +912,49 @@ class Atm(Formula):
 class Eq(Formula):
     """
     Equality between terms.
-    t1 = t2
+    τ = ρ
 
-    @attr t1: the left equality term
-    @type t1: Term
-    @attr t2: the right equality term
-    @type t2: Term
+    @attr tau: the left equality term
+    @type tau: Term
+    @attr rho: the right equality term
+    @type rho: Term
     """
 
-    def __init__(self, t1: Term, t2: Term):
-        self.t1 = t1
-        self.t2 = t2
+    def __init__(self, tau: Term, rho: Term):
+        self.tau = tau
+        self.rho = rho
 
     def __str__(self):
-        return "(" + str(self.t1) + " = " + str(self.t2) + ")"
+        return "(" + str(self.tau) + " = " + str(self.rho) + ")"
 
     def tex(self):
-        return "(" + self.t1.tex() + " = " + self.t2.tex() + ")"
-
-    def __eq__(self, other):
-        return isinstance(other, Eq) and self.t1 == other.t1 and self.t2 == other.t2
-
-    def __len__(self):
-        return 1 + len(self.t1) + len(self.t2)
-
-    def propvars(self):
-        return set()
-
-    def freevars(self):
-        return self.t1.freevars() | self.t2.freevars()
-
-    def boundvars(self):
-        return self.t1.boundvars() | self.t2.boundvars()
-
-    def nonlogs(self):
-        return self.t1.nonlogs()[0] | self.t2.nonlogs()[0], \
-               self.t1.nonlogs()[1] | self.t2.nonlogs()[1], \
-               set()
+        return "(" + self.tau.tex() + " = " + self.rho.tex() + ")"
 
     def subst(self, u, t):
-        return Eq(self.t1.subst(u, t), self.t2.subst(u, t))
+        return Eq(self.tau.subst(u, t), self.rho.subst(u, t))
 
     def denot(self, s, v = {}, w = ""):
         """
-        The denotation of a term equality t1 = t2 is true iff t1 and t2 denote the same individual.
+        The denotation of a term equality tau = rho is true iff tau and rho denote the same individual.
         """
-        return self.t1.denot(s, v, w) == self.t2.denot(s, v, w)
+        return self.tau.denot(s, v, w) == self.rho.denot(s, v, w)
 
     def tableau_pos(self, mode):
-        return dict()
+        """
+        φ[τ]
+        τ = ρ
+        φ[τ/ρ]
+        """
+        return {"+=": ("ζ", [(self.tau, self.rho)])}
 
     def tableau_neg(self, mode):
         return dict()
-
-    def tableau_contradiction_pos(self, other, _):
-        """
-        t1 = t2
-        """
-        # todo wrong
-        return str(self.t1) != str(self.t2)  # todo IL
 
     def tableau_contradiction_neg(self, other, _):
         """
         t ≠ t
         """
-        return str(self.t1) == str(self.t2)  # todo IL
+        return str(self.tau) == str(self.rho)  # todo IL
 
 
 class Verum(Formula):
@@ -1036,24 +971,6 @@ class Verum(Formula):
 
     def tex(self):
         return "\\top"
-
-    def __eq__(self, other):
-        return isinstance(other, Verum)
-
-    def __len__(self):
-        return 1
-
-    def propvars(self):
-        return set()
-
-    def freevars(self):
-        return set()
-
-    def boundvars(self):
-        return set()
-
-    def nonlogs(self):
-        return set(), set(), set()
 
     def subst(self, u, t):
         return self
@@ -1098,24 +1015,6 @@ class Falsum(Formula):
     def tex(self):
         return "\\bot"
 
-    def __eq__(self, other):
-        return isinstance(other, Falsum)
-
-    def __len__(self):
-        return 1
-
-    def propvars(self):
-        return set()
-
-    def freevars(self):
-        return set()
-
-    def boundvars(self):
-        return set()
-
-    def nonlogs(self):
-        return set(), set(), set()
-
     def subst(self, u, t):
         return self
 
@@ -1158,7 +1057,7 @@ class Neg(Formula):
 
     def __str__(self):
         if isinstance(self.phi, Eq): 
-            return "(" + str(self.phi.t1) + "≠" + str(self.phi.t2) + ")"
+            return "(" + str(self.phi.tau) + "≠" + str(self.phi.rho) + ")"
         elif isinstance(self.phi, Neg) and isinstance(self.phi,phi, Eq):
             return "¬¬" + str(self.phi.phi)
         if isinstance(self.phi, Inf): # double negated equality
@@ -1167,32 +1066,12 @@ class Neg(Formula):
 
     def tex(self):
         if isinstance(self.phi, Eq):
-            return "(" + self.phi.t1.tex() + " \\neq " + self.phi.t2.tex() + ")"
+            return "(" + self.phi.tau.tex() + " \\neq " + self.phi.rho.tex() + ")"
         elif isinstance(self.phi, Neg) and isinstance(self.phi,phi, Eq):
             return "\\neg \\neg" + self.phi.phi.tex()
         if isinstance(self.phi, Inf):
             return "\\nvdash"
         return "\\neg " + self.phi.tex()
-
-    def __eq__(self, other):
-        return isinstance(other, Neg) and self.phi == other.phi
-
-    def __len__(self):
-        return 1 + len(self.phi)
-
-    def propvars(self):
-        return self.phi.propvars()
-
-    def freevars(self):
-        return self.phi.freevars()
-
-    def boundvars(self):
-        return self.phi.boundvars()
-
-    def nonlogs(self):
-        return self.phi.nonlogs()[0], \
-               self.phi.nonlogs()[1], \
-               self.phi.nonlogs()[2]
 
     def subst(self, u, t):
         return Neg(self.phi.subst(u, t))
@@ -1262,26 +1141,6 @@ class Conj(Formula):
     def tex(self):
         return "(" + self.phi.tex() + " \\wedge " + self.psi.tex() + ")"
 
-    def __eq__(self, other):
-        return isinstance(other, Conj) and self.phi == other.phi and self.psi == other.psi
-
-    def __len__(self):
-        return 1 + len(self.phi) + len(self.psi)
-
-    def propvars(self):
-        return self.phi.propvars() | self.psi.propvars()
-
-    def freevars(self):
-        return self.phi.freevars() | self.psi.freevars()
-
-    def boundvars(self):
-        return self.phi.boundvars() | self.psi.boundvars()
-
-    def nonlogs(self):
-        return self.phi.nonlogs()[0] | self.psi.nonlogs()[0], \
-               self.phi.nonlogs()[1] | self.psi.nonlogs()[1], \
-               self.phi.nonlogs()[2] | self.psi.nonlogs()[2]
-
     def subst(self, u, t):
         return Conj(self.phi.subst(u, t), self.psi.subst(u, t))
 
@@ -1337,26 +1196,6 @@ class Disj(Formula):
     def tex(self):
         return "(" + self.phi.tex() + " \\vee " + self.psi.tex() + ")"
 
-    def __eq__(self, other):
-        return isinstance(other, Disj) and self.phi == other.phi and self.psi == other.psi
-
-    def __len__(self):
-        return 1 + len(self.phi) + len(self.psi)
-
-    def propvars(self):
-        return self.phi.propvars() | self.psi.propvars()
-
-    def freevars(self):
-        return self.phi.freevars() | self.psi.freevars()
-
-    def boundvars(self):
-        return self.phi.boundvars() | self.psi.boundvars()
-
-    def nonlogs(self):
-        return self.phi.nonlogs()[0] | self.psi.nonlogs()[0], \
-               self.phi.nonlogs()[1] | self.psi.nonlogs()[1], \
-               self.phi.nonlogs()[2] | self.psi.nonlogs()[2]
-
     def subst(self, u, t):
         return Disj(self.phi.subst(u, t), self.psi.subst(u, t))
 
@@ -1408,26 +1247,6 @@ class Imp(Formula):
 
     def tex(self):
         return "(" + self.phi.tex() + " \\rightarrow " + self.psi.tex() + ")"
-
-    def __eq__(self, other):
-        return isinstance(other, Imp) and self.phi == other.phi and self.psi == other.psi
-
-    def __len__(self):
-        return 1 + len(self.phi) + len(self.psi)
-
-    def propvars(self):
-        return self.phi.propvars() | self.psi.propvars()
-
-    def freevars(self):
-        return self.phi.freevars() | self.psi.freevars()
-
-    def boundvars(self):
-        return self.phi.boundvars() | self.psi.boundvars()
-
-    def nonlogs(self):
-        return self.phi.nonlogs()[0] | self.psi.nonlogs()[0], \
-               self.phi.nonlogs()[1] | self.psi.nonlogs()[1], \
-               self.phi.nonlogs()[2] | self.psi.nonlogs()[2]
 
     def subst(self, u, t):
         return Imp(self.phi.subst(u, t), self.psi.subst(u, t))
@@ -1494,26 +1313,6 @@ class Biimp(Formula):
 
     def tex(self):
         return "(" + self.phi.tex() + " \\leftrightarrow " + self.psi.tex() + ")"
-
-    def __eq__(self, other):
-        return isinstance(other, Biimp) and self.phi == other.phi and self.psi == other.psi
-
-    def __len__(self):
-        return 1 + len(self.phi) + len(self.psi)
-
-    def propvars(self):
-        return self.phi.propvars() | self.psi.propvars()
-
-    def freevars(self):
-        return self.phi.freevars() | self.psi.freevars()
-
-    def boundvars(self):
-        return self.phi.boundvars() | self.psi.boundvars()
-
-    def nonlogs(self):
-        return self.phi.nonlogs()[0] | self.psi.nonlogs()[0], \
-               self.phi.nonlogs()[1] | self.psi.nonlogs()[1], \
-               self.phi.nonlogs()[2] | self.psi.nonlogs()[2]
 
     def subst(self, u, t):
         return Biimp(self.phi.subst(u, t), self.psi.subst(u, t))
@@ -1585,26 +1384,6 @@ class Xor(Formula):
     def tex(self):
         return "(" + self.phi.tex() + " \\oplus " + self.psi.tex() + ")"
 
-    def __eq__(self, other):
-        return isinstance(other, Xor) and self.phi == other.phi and self.psi == other.psi
-
-    def __len__(self):
-        return 1 + len(self.phi) + len(self.psi)
-
-    def propvars(self):
-        return self.phi.propvars() | self.psi.propvars()
-
-    def freevars(self):
-        return self.phi.freevars() | self.psi.freevars()
-
-    def boundvars(self):
-        return self.phi.boundvars() | self.psi.boundvars()
-
-    def nonlogs(self):
-        return self.phi.nonlogs()[0] | self.psi.nonlogs()[0], \
-               self.phi.nonlogs()[1] | self.psi.nonlogs()[1], \
-               self.phi.nonlogs()[2] | self.psi.nonlogs()[2]
-
     def subst(self, u, t):
         return Biimp(self.phi.subst(u, t), self.psi.subst(u, t))
 
@@ -1675,23 +1454,11 @@ class Exists(Formula):
     def tex(self):
         return "\\exists " + self.u.tex() + " " + self.phi.tex()
 
-    def __eq__(self, other):
-        return isinstance(other, Exists) and self.u == other.u and self.phi == other.phi
-
-    def __len__(self):
-        return 1 + len(self.phi)
-
-    def propvars(self):
-        return set()
-
     def freevars(self):
         return self.phi.freevars() - {self.u.u}
 
     def boundvars(self):
         return self.phi.boundvars() | {self.u.u}
-
-    def nonlogs(self):
-        return self.phi.nonlogs()
 
     def subst(self, u, t):
         if u.u == self.u.u:
@@ -1799,23 +1566,11 @@ class Forall(Formula):
     def tex(self):
         return "\\forall " + self.u.tex() + " " + self.phi.tex()
 
-    def __eq__(self, other):
-        return isinstance(other, Forall) and self.u == other.u and self.phi == other.phi
-
-    def __len__(self):
-        return 1 + len(self.phi)
-
-    def propvars(self):
-        return set()
-
     def freevars(self):
         return self.phi.freevars() - {self.u.u}
 
     def boundvars(self):
         return self.phi.boundvars() | {self.u.u}
-
-    def nonlogs(self):
-        return self.phi.nonlogs()
 
     def subst(self, u, t):
         if u.u == self.u.u:
@@ -1983,24 +1738,11 @@ class Most(Formula):
     def tex(self):
         return "\\mathrm{most}\ " + self.u.tex() + "(" + ",".join([self.phi.tex(), self.chi.tex()]) + ")"
 
-    def __eq__(self, other):
-        return isinstance(other, Most) and self.u == other.u and \
-               self.phi == other.phi and self.chi == other.chi
-
-    def __len__(self):
-        return 1 + len(self.phi) + len(self.chi)
-
-    def propvars(self):
-        return set()
-
     def freevars(self):
         return self.phi.freevars() | self.chi.freevars() - {self.u.u}
 
     def boundvars(self):
         return self.phi.boundvars() | self.chi.boundvars() | {self.u.u}
-
-    def nonlogs(self):
-        return tuple([self.phi.nonlogs()[i] | self.chi.nonlogs()[i] for i in range(3)])
 
     def subst(self, u, t):
         if u.u == self.u.u:
@@ -2052,24 +1794,11 @@ class More(Formula):
         return "\\mathrm{more}\ " + self.u.tex() + "(" + ",".join(
                 [self.phi.tex(), self.psi.tex(), self.chi.tex()]) + ")"
 
-    def __eq__(self, other):
-        return isinstance(other, More) and self.u == other.u and \
-               self.phi == other.phi and self.psi == other.psi and self.chi == other.chi
-
-    def __len__(self):
-        return 1 + len(self.phi) + len(self.psi) + len(self.chi)
-
-    def propvars(self):
-        return set()
-
     def freevars(self):
         return self.phi.freevars() | self.psi.freevars() | self.chi.freevars() - {self.u.u}
 
     def boundvars(self):
         return self.phi.boundvars() | self.psi.boundvars() | self.chi.boundvars() | {self.u.u}
-
-    def nonlogs(self):
-        return tuple([self.phi.nonlogs()[i] | self.psi.nonlogs()[i] | self.chi.nonlogs()[i] for i in range(3)])
 
     def subst(self, u, t):
         if u.u == self.u.u:
@@ -2111,24 +1840,6 @@ class Poss(Formula):
 
     def tex(self):
         return "\\Diamond " + " " + self.phi.tex()
-
-    def __eq__(self, other):
-        return isinstance(other, Poss) and self.phi == other.phi
-
-    def __len__(self):
-        return 1 + len(self.phi)
-
-    def propvars(self):
-        return self.phi.propvars()
-
-    def freevars(self):
-        return self.phi.freevars()
-
-    def boundvars(self):
-        return self.phi.boundvars()
-
-    def nonlogs(self):
-        return self.phi.nonlogs()
 
     def subst(self, u, t):
         return Poss(self.phi.subst(u, t))
@@ -2240,24 +1951,6 @@ class Nec(Formula):
     def tex(self):
         return "\\Box " + " " + self.phi.tex()
 
-    def __eq__(self, other):
-        return isinstance(other, Nec) and self.phi == other.phi
-
-    def __len__(self):
-        return 1 + len(self.phi)
-
-    def propvars(self):
-        return self.phi.propvars()
-
-    def freevars(self):
-        return self.phi.freevars()
-
-    def boundvars(self):
-        return self.phi.boundvars()
-
-    def nonlogs(self):
-        return self.phi.nonlogs()
-
     def subst(self, u, t):
         return Nec(self.phi.subst(u, t))
 
@@ -2367,24 +2060,6 @@ class Int(Expr):
     def tex(self):
         return "{}^{\\wedge} " + " " + self.phi.tex()
 
-    def __eq__(self, other):
-        return isinstance(other, Nec) and self.phi == other.phi
-
-    def __len__(self):
-        return 1 + len(self.phi)
-
-    def propvars(self):
-        return self.phi.propvars()
-
-    def freevars(self):
-        return self.phi.freevars()
-
-    def boundvars(self):
-        return self.phi.boundvars()
-
-    def nonlogs(self):
-        return self.phi.nonlogs()
-
     def subst(self, u, t):
         return Int(self.phi.subst(u, t))
 
@@ -2420,24 +2095,6 @@ class Ext(Expr):
 
     def tex(self):
         return "{}^{\\vee} " + " " + self.phi.tex()
-
-    def __eq__(self, other):
-        return isinstance(other, Nec) and self.phi == other.phi
-
-    def __len__(self):
-        return 1 + len(self.phi)
-
-    def propvars(self):
-        return self.phi.propvars()
-
-    def freevars(self):
-        return self.phi.freevars()
-
-    def boundvars(self):
-        return self.phi.boundvars()
-
-    def nonlogs(self):
-        return self.phi.nonlogs()
 
     def subst(self, u, t):
         return Int(self.phi.subst(u, t))
@@ -2482,9 +2139,6 @@ class LIVar(Lexpr):
     def tex(self):
         return self.u
 
-    def __eq__(self, other):
-        return isinstance(other, LIVar) and self.u == other.u
-
     def subst(self, u, t):
         if u.u == self.u:
             return t
@@ -2515,9 +2169,6 @@ class LConst(Lexpr):
 
     def tex(self):
         return "\\mathit{" + self.c + "}"
-
-    def __eq__(self, other):
-        return isinstance(other, Const) and self.c == other.c
 
     def subst(self, u, t):
         return self
@@ -2553,9 +2204,6 @@ class Appl(Lexpr):
 
     def tex(self):
         return "(" + self.phi.tex() + self.psi.tex() + ")"
-
-    def __eq__(self, other):
-        return isinstance(other, Appl) and self.phi == other.phi and self.psi == other.psi
 
     def redex(self):
         """
@@ -2600,9 +2248,6 @@ class Abstr(Lexpr):
     def tex(self):
         return "(" + "\\lambda " + self.u.tex() + "." + self.phi.tex() + ")"
 
-    def __eq__(self, other):
-        return isinstance(other, Abstr) and self.u == other.u and self.phi == other.phi
-
     def freevars(self):
         return self.phi.freevars() - {self.u}
 
@@ -2644,26 +2289,6 @@ class AllWorlds(Formula):
 
     def tex(self):
         return self.phi.tex()
-
-    def __eq__(self, other):
-        return isinstance(other, AllWorlds) and self.phi == other.phi
-
-    def __len__(self):
-        return 1 + len(self.phi)
-
-    def propvars(self):
-        return self.phi.propvars()
-
-    def freevars(self):
-        return self.phi.freevars()
-
-    def boundvars(self):
-        return self.phi.boundvars()
-
-    def nonlogs(self):
-        return self.phi.nonlogs()[0], \
-               self.phi.nonlogs()[1], \
-               self.phi.nonlogs()[2]
 
     def subst(self, u, t):
         return Neg(self.phi.subst(u, t))
@@ -2709,26 +2334,6 @@ class NotAllWorlds(Formula):
 
     def tex(self):
         return "\\neg " + self.phi.tex()
-
-    def __eq__(self, other):
-        return isinstance(other, NotAllWorlds) and self.phi == other.phi
-
-    def __len__(self):
-        return 1 + len(self.phi)
-
-    def propvars(self):
-        return self.phi.propvars()
-
-    def freevars(self):
-        return self.phi.freevars()
-
-    def boundvars(self):
-        return self.phi.boundvars()
-
-    def nonlogs(self):
-        return self.phi.nonlogs()[0], \
-               self.phi.nonlogs()[1], \
-               self.phi.nonlogs()[2]
 
     def subst(self, u, t):
         return Neg(self.phi.subst(u, t))
