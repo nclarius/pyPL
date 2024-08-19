@@ -486,15 +486,29 @@ class Tableau(object):
                                                                 branch]))
                             new = False
                             unneeded = False
+                            inst = None
                             # compose arguments
                             args = universal, irrelevant, unneeded, new
                             insts = 0
                             applicable.append((target, source, rule_name,
-                                               rule_type, fmls, args, insts))
+                                               rule_type, fmls, inst, args, insts))
 
                 # quantifier rules
                 elif rule_type in ["γ", "δ", "η", "θ", "ε"]:
-                    irrelevant = False
+                    sign, phi, var = fmls[0]
+
+                    # check if indexed constants are required (for modal
+                    # PL with var. domains and IL)
+                    indexed = (self.mode["modal"] and self.mode[
+                        "vardomains"] or not self.mode["classical"]) and \
+                                not self.mode["propositional"]
+                    subscript = "_" + str(source.world) if indexed else ""
+                    def subscripted(c):
+                        return c + (subscript if "_" not in c else "")  
+                    def unsubscripted(c):
+                        return c if "_" not in c else c[:c.index("_")]
+                    
+                    inst_with_new = any([node.inst[1] for node in source.nodes() if applied(node)])
 
                     if rule_type in [
                             "θ"]:  # special treatement of targets for theta
@@ -528,25 +542,10 @@ class Tableau(object):
                                 # finished
                                 targets.append(leaf)
                                 instantiations[leaf] = []
-                        
-                        # the rule already has been applied with a new constant 
-                        # and the branch is still closed: no point  in trying again
-                        if all([(node.inst[1] 
-                                if node.source == source and node.inst and len(node.inst) >= 1 
-                                else True)
-                            and all([isinstance(leaf.fml, Closed) for leaf in node.leaves()]) 
-                            for node in self.root.leaves()]):
-                                continue
 
                     for target in targets:
                         branch = [node for node in target.branch if
                                   not isinstance(node.fml, Pseudo)]
-
-                        # check if indexed constants are required (for modal
-                        # PL with var. domains and IL)
-                        indexed = (self.mode["modal"] and self.mode[
-                            "vardomains"] or not self.mode["classical"]) and \
-                                  not self.mode["propositional"]
 
                         # collect the constants this rule has been
                         # instantiated with in the branch/level
@@ -589,7 +588,55 @@ class Tableau(object):
                                                     for c in occurring_global]
                         else:
                             occurring_local = occurring_global
+                        
+                        # collect usable and unusable constants
+                        usable = []
+                        unusable = []
+                        fresh = [subscripted(c)
+                                        for c in Tableau.parameters
+                                        if c not in [unsubscripted(c) 
+                                            for c in occurring_global]]
+                        if rule_type in ["δ", "ε"]:  # new constant
+                            usable = fresh
+                            unusable = occurring_local
+                        elif rule_type in ["η"]:  # existing or, if not possible, new constant
+                            usable = [subscripted(c)
+                                        for c in occurring_local]
+                            if not usable and not inst_with_new:
+                                usable += fresh
+                            unusable = used
+                        elif rule_type in ["γ"]:  # arbitrary (preferably existing, otherwise new) constant
+                            usable = [subscripted(c)
+                                        for c in occurring_local]
+                            usable += fresh
+                            unusable = used
+                        elif rule_type in ["θ"]:  # arbitrary (preferably existing, otherwise new) constant
+                            usable = [subscripted(c) 
+                                        for c in [unsubscripted(c)
+                                            for c in occurring_local + occurring_global]]
+                            if not inst_with_new:
+                                usable += fresh
+                            unusable = used
+                        elif rule_type in ["ο"]:  # arbitrary constant
+                            pass  # todo constant for omicron
+                        elif rule_type in ["υ"]:  # new constant
+                            pass  # todo constant for upsilon
+                        elif rule_type in ["ω"]:  # existing constant
+                            pass  # todo constant for omega
+                        
+                        # find a constant to substitute
+                        usable = list(dict.fromkeys(usable))
+                        unusable = list(dict.fromkeys(unusable))
+                        candidates = [c for c in usable if c not in unusable]
+                        if not candidates:
+                            continue
+                        const_symbol = candidates[0]
+                        const = Const(unsubscripted(const_symbol))
+                        # compose the formula
+                        fmls = [(sign, phi.subst(var, const))]
 
+                        # set remaining args
+                        irrelevant = False
                         # check if the rule requires a new constant to be
                         # instantiated,
                         # and whether this is not required by the rule type
@@ -602,17 +649,16 @@ class Tableau(object):
                         elif rule_type in ["η"]:
                             new = len(occurring_local) == 0
                             unneeded = False
-
                         # count instantiations
                         insts = len(used)
                         # compose the arguments
-                        args = universal, irrelevant, unneeded, new, indexed, used, \
-                               occurring_local, occurring_global
+                        inst = (universal, new, str(var), const_symbol)
+                        args = universal, irrelevant, unneeded, new
 
                         if rule_type in ["γ", "δ", "θ", "ε"]:
                             # the rule is applied with some constant
                             applicable.append((target, source, rule_name,
-                                               rule_type, fmls, args, insts))
+                                               rule_type, fmls, inst, args, insts))
 
                         elif rule_type in ["η"]:
                             # the rule can only be applied to nodes and
@@ -629,13 +675,15 @@ class Tableau(object):
                                     occurring_local]) or \
                                     not occurring_local:
                                 applicable.append((target, source, rule_name,
-                                                   rule_type, fmls, args,
+                                                   rule_type, fmls, inst, args,
                                                    insts))
 
                 # modal rules
                 elif rule_type in ["μ", "ν", "π", "κ", "λ", "ι"]:
                     irrelevant = False
                     unneeded = False # todo check for unnnecessary new world introductions
+                    
+                    inst_with_new = any([node.inst[1] for node in source.nodes() if applied(node)])
 
                     if rule_type in [
                             "κ"]:  # special treatement of targets for kappa
@@ -669,15 +717,6 @@ class Tableau(object):
                                 # finished
                                 targets.append(leaf)
                                 instantiations[leaf] = []
-                        
-                        # the rule already has been applied with a new constant 
-                        # and the branch is still closed: no point  in trying again
-                        if all([(node.inst[1] 
-                                if node.source == source and node.inst and len(node.inst) >= 1 
-                                else True)
-                            and all([isinstance(leaf.fml, Closed) for leaf in node.leaves()]) 
-                            for node in self.root.leaves()]):
-                                continue
 
                     for target in targets:
                         branch = [node for node in target.branch if
@@ -745,6 +784,33 @@ class Tableau(object):
                             dict.fromkeys([node.inst[2] for node in branch
                                            if node.inst and len(node.inst) > 3
                                            and node.inst[3] == source.world]))
+                        
+                        # collect usable and unusable signatures
+                        usable = []
+                        unusable = []
+                        fresh = [i for i in range(1, 100)]
+                        if rule_type in ["μ", "ξ"]:  # new signature
+                            usable = fresh
+                            unusable = occurring
+                        elif rule_type in ["ν", "χ"]:  # existing signature
+                            # todo correct to use extensions rather than occurring?
+                            usable = extensions
+                            unusable = used
+                        elif rule_type in ["κ"]: # arbitrary (existing or new) signature
+                            usable = sorted(list(set(extensions + fresh)))
+                            unusable = used
+                        elif rule_type in ["λ", "ι"]:  # existing signature
+                            usable = sorted(list(set(extensions + fresh[:self.num_models - 1])))
+                            unusable = used
+                        elif rule_type in ["π"]:  # previous signature
+                            usable = [i for i in occurring if str(i) in reductions]
+                            unusable = []
+                        elif rule_type in ["ο"]:  # existing signature
+                            pass # todo signature for omicron
+                        elif rule_type in ["υ"]:  # new signature
+                            pass # todo signature for upsilon
+                        elif rule_type in ["ω"]:  # existing signature
+                            pass # todo signature for omega
 
                         # check if the rule requires a new world or
                         # accessibility to be instantiated
@@ -757,12 +823,17 @@ class Tableau(object):
                                 extensions) or rule_name == "A"
                         elif rule_type in ["λ"]:
                             new = len(extensions) == 0
+                        
+                        # find a world to use
+                        candidates = [w for w in usable if w not in unusable]
+                        if not candidates:
+                            continue
+                        world = candidates[0]
 
-                        # count instantiations
-                        insts = len(used)
                         # compose the arguments
-                        args = universal, irrelevant, unneeded, new, used, \
-                               occurring_global, extensions, reductions
+                        inst = (universal, new, source.world, world)
+                        args = universal, irrelevant, unneeded, new
+                        insts = len(used)
 
                         # todo not correctly reusing already introduced
                         #  accessible worlds
@@ -773,20 +844,20 @@ class Tableau(object):
                             # and for satisfiability only if it has not already been used
                             if self.mode["validity"] or not used:
                                 applicable.append((target, source, rule_name,
-                                               rule_type, fmls, args, insts))
+                                               rule_type, fmls, inst, args, insts))
 
                         if rule_type in ["κ"]:
                             # the rules can be applied with any new signature
                             # extension,
                             applicable.append((target, source, rule_name,
-                                           rule_type, fmls, args, insts))
+                                           rule_type, fmls, inst, args, insts))
 
                         elif rule_type in ["ν"]:
                             # the rule can only be applied if there are sig.
                             # ext.s in the branch yet to be instantiated
                             if any([s not in used for s in extensions]):
                                 applicable.append((target, source, rule_name,
-                                                   rule_type, fmls, args,
+                                                   rule_type, fmls, inst, args,
                                                    insts))
 
                         elif rule_type in ["π"]:
@@ -794,7 +865,7 @@ class Tableau(object):
                             # has a predecessor
                             if len(source.sig) > 1:
                                 applicable.append((target, source, rule_name,
-                                                   rule_type, fmls, args,
+                                                   rule_type, fmls, inst, args,
                                                    insts))
 
                         elif rule_type in ["λ"]:
@@ -809,7 +880,7 @@ class Tableau(object):
                                     for w in
                                     extensions + fresh[:self.num_models - 1]]):
                                 applicable.append((target, source, rule_name,
-                                                   rule_type, fmls, args,
+                                                   rule_type, fmls, inst, args,
                                                    insts))
 
                         elif rule_type in ["ι"]:
@@ -825,11 +896,12 @@ class Tableau(object):
                                              applied(node)])
                                     for w in occurring_global]):
                                 applicable.append((target, source, rule_name,
-                                                   rule_type, fmls, args,
+                                                   rule_type, fmls, inst, args,
                                                    insts))
 
                 # intuitionistic rules
                 elif rule_type in ["ξ", "χ", "ο", "u", "ω"]:
+                    # todo adapt to new rule application style
 
                     irrelevant = False
                     unneeded = False # todo check for unnnecessary new state introductions
@@ -946,17 +1018,16 @@ class Tableau(object):
                     
                         for node in usable_ltr:
                             fmls = [(node.sign, node.fml)]
-                            args = (node, tau, rho)
-                            args = universal, irrelevant, unneeded, new, used_ltr, \
-                                node, tau, rho
+                            inst = (source, tau, rho)
+                            args = universal, irrelevant, unneeded, new
                             applicable.append((target, source, rule_name,
-                                               rule_type, fmls, args, insts))
+                                               rule_type, fmls, inst, args, insts))
                         for node in usable_rtl:
                             fmls = [(node.sign, node.fml)]
-                            args = universal, irrelevant, unneeded, new, used_rtl, \
-                                node, rho, tau
+                            inst = (source, rho, tau)
+                            args = universal, irrelevant, unneeded, new, used_rtl
                             applicable.append((target, source, rule_name,
-                                               rule_type, fmls, args, insts))
+                                               rule_type, fmls, inst, args, insts))
 
         # if the only rules applicable to an unfinished branch are
         # δ, θ, ε or κ rules that have already been applied on this branch,
@@ -1189,7 +1260,7 @@ class Tableau(object):
                 self.root.treetex())
             self.active = []
 
-    def apply_rule(self, target, source, rule_type, rule, fmls, args):
+    def apply_rule(self, target, source, rule_type, rule, fmls, inst):
         unary = ["α", "γ", "δ", "η", "θ", "ε", "μ", "ν", "π", "κ", "λ", "ι", "υ", "ω", "ζ"]
         binary = ["β", "ξ", "χ", "ο", "u", "ω"]
         nary = ["θ", "ε", "κ"]
@@ -1206,120 +1277,7 @@ class Tableau(object):
         line = max([node.line for node in self.root.nodes() if node.line])
         world = source.world
         sign = None
-        inst = None
-
-        if rule_type in quantificational:
-            sign, phi, var = fmls[0]
-            universal, irrelevant, unneeded, new, indexed, used, occurring_local, occurring_global\
-                = args
-
-
-            # for modal predicate logic with varying domains: 
-            # add signature subscript to constant
-            subscript = "_" + str(source.world) if indexed else ""
-            def subscripted(c):
-                return c + (subscript if "_" not in c else "")  
-            def unsubscripted(c):
-                return c if "_" not in c else c[:c.index("_")]
-
-            # find a constant to substitute
-            usable = []
-            unusable = []
-            match rule_type:
-                case "δ" | "ε":  # new constant
-                    usable = [subscripted(c)
-                                for c in Tableau.parameters
-                                if c not in [unsubscripted(c) 
-                                    for c in occurring_global]]
-                    unusable = occurring_local
-                case "η":  # existing or, if not possible, new constant
-                    usable = [subscripted(c)
-                                for c in occurring_local]
-                    if not usable:
-                        usable += [subscripted(c)  
-                                    for c in Tableau.parameters
-                                    if c not in [unsubscripted(c) 
-                                        for c in occurring_global]]
-                    unusable = used
-                case "γ":  # arbitrary (preferably existing, otherwise new) constant
-                    usable = [subscripted(c)
-                                for c in occurring_local]
-                    usable += [subscripted(c) 
-                                for c in Tableau.parameters
-                                if c not in [unsubscripted(c)
-                                    for c in occurring_global]]
-                    unusable = used
-                case "θ":  # arbitrary (preferably existing, otherwise new) constant
-                    usable = [subscripted(c) 
-                                for c in [unsubscripted(c)
-                                    for c in occurring_local + occurring_global]] +\
-                             [subscripted(c) 
-                                for c in Tableau.parameters
-                                if c not in [unsubscripted(c) 
-                                    for c in occurring_global]]
-                    unusable = used
-                case "ο":  # arbitrary constant
-                    pass  # todo constant for omicron
-                case "υ":  # new constant
-                    pass  # todo constant for upsilon
-                case "ω":  # existing constant
-                    pass  # todo constant for omega
-            
-            usable = list(dict.fromkeys(usable))
-            const_symbol = usable[(min([i for i in range(len(usable)) 
-                if usable[i] not in [subscripted(c) for c in unusable]]))]
-            # todo prevent arg is empty sequence error when running out of
-            #  symbols to use
-            const = Const(unsubscripted(const_symbol))
-            fmls[0] = (sign, phi.subst(var, const))
-            
-            new = (rule_type in new_constant) or \
-                (rule_type in existing_constant and const_symbol not in occurring_local)
-            inst = (universal, new, str(var), const_symbol)
         
-        if rule_type in modal:
-            universal, irrellevant, unneeded, new, used, occurring, extensions, reductions\
-                = args
-
-            usable = []
-            unusable = []
-            match rule_type:
-                case "μ" | "ξ":  # new signature
-                    usable = [i for i in range(1, 1000)]
-                    unusable = occurring
-                case "ν" | "χ":  # existing signature
-                    # todo correct to use extensions rather than occurring?
-                    usable = extensions
-                    unusable = used
-                case "κ": # arbitrary (existing or new) signature
-                    usable = sorted(list(set(extensions + [i for i in range(1, 100)])))
-                    unusable = used
-                case "λ" | "ι":  # existing signature
-                    usable = sorted(list(set(extensions + [i for i in range(1, 100)][:self.num_models - 1])))
-                    unusable = used
-                case "π":  # previous signature
-                    usable = [i for i in occurring if str(i) in reductions]
-                    unusable = []
-                case "ο":  # existing signature
-                    pass # todo signature for omicron
-                case "υ":  # new signature
-                    pass # todo signature for upsilon
-                case "ω":  # existing signature
-                    pass # todo signature for omega
-            
-            world = usable[
-                        min([i for i in range(len(usable)) if usable[i] not in unusable])]
-
-            new = (rule_type in new_signature) or \
-                (rule_type in existing_signature and world not in extensions)
-            inst = (universal, new, source.world, world)
-        
-        if rule_type in equality:
-            sign, phi = fmls[0]
-            universal, irrelevant, unneeded, new, used, src, tau, rho = args
-            fmls = [(sign, phi.subst(tau, rho))]
-            inst = (src, tau, rho)
-
         # append nodes
         if rule_type in unary:
         
