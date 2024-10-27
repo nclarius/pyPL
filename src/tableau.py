@@ -787,6 +787,7 @@ class Tableau(object):
                             # yet to be instantiated
                             if any([not any([node.inst[3] == w
                                              for node in branch if
+                                              node.inst and len(node.inst) > 3 and
                                              applied(node)])
                                     for w in
                                     extensions + fresh[:self.num_models - 1]]):
@@ -804,6 +805,7 @@ class Tableau(object):
                             # branch at all and the rule is an assumption
                             if any([not any([node.inst[3] == w
                                              for node in branch if
+                                             node.inst and len(node.inst) > 3 and
                                              applied(node)])
                                     for w in occurring_global]):
                                 applicable.append((target, source, rule_name,
@@ -826,6 +828,7 @@ class Tableau(object):
                         # with in the branch/on this level
                         used = list(dict.fromkeys(
                                 [node.inst[3] for node in branch if
+                                node.inst and len(node.inst) > 3 and
                                  applied(node)]))
 
                         # collect the worlds occurring in the branch
