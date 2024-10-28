@@ -1450,20 +1450,10 @@ class Tableau(object):
             if self.mode["propositional"]:  # classical propositional logic
                 if not self.mode[
                     "modal"]:  # classical non-modal propositional logic
-                    # literals = all unnegated or negated propositional variables
-                    literals = [node.fml.p for node in branch if isinstance(node.fml, Prop)]
-                    # atoms = all unnegated propositional variables
-                    atoms = [node.fml.p for node in branch
-                             if isinstance(node.fml, Prop)
-                             and node.sign]
-                    # todo add literals for other prop. log.s
-                    natoms = [node.fml.p for node in branch
-                              if isinstance(node.fml, Prop)
-                              and not node.sign]
                     # valuation = make all positive propositional variables
-                    # true and all others false
-                    v = {p: (p in atoms) for p in
-                         list(dict.fromkeys(literals))}
+                    # true and all negative ones false
+                    v = {node.fml.p: node.sign for node in branch
+                             if isinstance(node.fml, Prop)}
                     model = structure.PropStructure(s, v)
 
                 else:  # classical modal propositional logic
@@ -1480,16 +1470,13 @@ class Tableau(object):
                     #     False) for p in self.root.fml.propvars()}
                     #     for sig in sigs_}
                     # atoms = all unnegated propositional variables
-                    atoms = {
-                            w: [node.fml.p for node in branch
-                                if isinstance(node.fml, Prop) and node.world == w
-                                and node.sign]
-                            for w in worlds}
                     # valuation = make all positive propositional variables
                     # true and all others false
-                    v = {p: {"w" + str(w): (p in atoms[w])
-                             for w in worlds}
-                         for p in self.root.fml.propvars()}
+                    literals = list(dict.fromkeys([
+                        node.fml.p for node in branch if isinstance(node.fml, Prop)]))
+                    v = {p: {"w" + str(node.world): node.sign 
+                            for node in branch if isinstance(node.fml, Prop) and node.fml.p == p} 
+                        for p in literals}
                     model = structure.PropModalStructure(s, w, r, v)
 
             else:  # classical predicate logic
@@ -1598,26 +1585,11 @@ class Tableau(object):
             r = {("k" + str(tpl[0]), "k" + str(tpl[1])) for tpl in r_}
 
             if self.mode["propositional"]:  # intuitionstic propositional logic
-                # # atoms = all unnegated propositional variables
-                # atoms = {sig: [node.fml.p for node in branch if isinstance(
-                # node.fml, Prop) and node.sig == sig]
-                #          for sig in sigs}
-                # # valuation = make all positive propositional variables
-                # true and all others false
-                # v = {states[sig]: {p: (True if p in atoms[sig] else False)
-                # for p in self.root.fml.propvars()}
-                #      for sig in sigs}
-                # atoms = all unnegated propositional variables
-                atoms = {k: [node.fml.p for node in branch
-                             if isinstance(node.fml, Prop) and
-                             node.world == k
-                             and node.sign]
-                         for k in states}
-                # valuation = make all positive propositional variables true
-                # and all others false
-                v = {p: {"k" + str(k): (p in atoms[k])
-                         for k in states}
-                     for p in self.root.fml.propvars()}
+                literals = list(dict.fromkeys([
+                    node.fml.p for node in branch if isinstance(node.fml, Prop)]))
+                v = {p: {"k" + str(node.world): node.sign 
+                        for node in branch if isinstance(node.fml, Prop) and node.fml.p == p} 
+                    for p in literals}
                 model = structure.KripkePropStructure(s, k, r, v)
 
             else:  # intuitionistic predicate logic
