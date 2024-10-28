@@ -826,10 +826,15 @@ class Tableau(object):
 
                         # collect the worlds this rule has been instantiated
                         # with in the branch/on this level
-                        used = list(dict.fromkeys(
-                                [node.inst[3] for node in branch if
-                                node.inst and len(node.inst) > 3 and
-                                 applied(node)]))
+                        if rule_type in ["ξ"]:
+                            used = list(dict.fromkeys(
+                                    [node.inst[3] for node in branch if
+                                    node.inst and len(node.inst) > 3 and
+                                    applied(node)]))
+                        elif rule_type in ["χ"]:
+                            used = list(dict.fromkeys(
+                                    [node.source.world for node in branch if
+                                    applied(node)]))
 
                         # collect the worlds occurring in the branch
                         occurring_global = list(dict.fromkeys(
@@ -2432,11 +2437,16 @@ if __name__ == "__main__":
     # tab5 = Tableau(premises=[fml5, fml6], modal=True, validity=False, vardomains=True)
 
     #################
-    # intuitinistic logic
+    # intuitionistic logic
     #################
     # fml = Disj(Prop("p"), Neg(Prop("p")))
     # tab = Tableau(fml, propositional=True, classical=False)
     # tab = Tableau(fml, propositional=True, classical=False, validity=False)
+
+    # fml = Imp(Imp(Prop("p"), Prop("q")), Disj(Neg(Prop("p")), Prop("q")))
+    # tab = Tableau(fml, propositional=True, classical=False)
+    # todo no counter model found
+    # {{k0, k1, k2}, {(k0, k1), (k1, k2), {k1: {p: False, q: False}, k2: {p: True, q: False}}}
 
     # fml = Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))
     # fml1 = Neg(Forall(Var("x"), Neg(Atm(Pred("P"), (Var("x"),)))))
