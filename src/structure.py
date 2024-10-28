@@ -567,18 +567,6 @@ class KripkePropStructure(KripkeStructure):
         self.r = r
         self.v = v
 
-        # compute the relfexive and transitive closure of R
-        closure = set(self.r)
-        closure = closure | set((k, k) for k in self.k)  # add reflexive closure
-        # add transitive closure
-        while True:
-            new_relations = set((x, z) for x, y1 in closure for y2, z in closure if y1 == y2)
-            closure_until_now = closure | new_relations
-            if closure_until_now == closure:
-                break
-            closure = closure_until_now
-        self.r = closure
-
     # def future(self, k):
     #     """
     #     Compute subsequent states k' >= k of k.
@@ -721,18 +709,6 @@ class KripkePredStructure(KripkeStructure):
         self.r = r
         self.d = d
         self.i = i
-
-        # compute the relfexive and transitive closure of R
-        closure = set(self.r)
-        closure = closure | set((k, k) for k in self.k)  # add reflexive closure
-        # add transitive closure
-        while True:
-            new_relations = set((x, z) for x, y1 in closure for y2, z in closure if y1 == y2)
-            closure_until_now = closure | new_relations
-            if closure_until_now == closure:
-                break
-            closure = closure_until_now
-        self.r = closure
 
     # def future(self, k):
     #     """
