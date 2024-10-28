@@ -893,10 +893,6 @@ class Tableau(object):
                             # the rule can only be applied with existing extensions,
                             # and for satisfiability only if it has not already been used
                             # with this world
-                            print("extensions:", extensions)
-                            print("used:", used)
-                            print(self.mode["validity"])
-                            print([w for w in extensions if w not in used])
                             if [w for w in extensions if w not in used] and \
                                (not self.mode["validity"] or not used):
                                 applicable.append((target, source, rule_name,
@@ -2012,8 +2008,10 @@ class Node(object):
         if self.tableau.hide_nonopen and not self.tableau.mode["validity"] and \
                 not any([self in branch for branch in open_branches]):
             return ""
-        colspec = ("{R{8em}cL{4.75em}}" if self.tableau.mode[
-            "propositional"] else "{R{8em}cL{7.75em}}")
+        colspec = "{R{4em}cL{4em}}" \
+            if self.tableau.mode["propositional"] and \
+            not self.tableau.mode["modal"] and self.tableau.mode["classical"] \
+            else "{R{8em}cL{9em}}"
         ssep = ("-4em" if self.tableau.mode["propositional"] else "-7em") if \
             not \
         self.tableau.mode["modal"] else \
