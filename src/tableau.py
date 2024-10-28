@@ -833,7 +833,7 @@ class Tableau(object):
                                     applied(node)]))
                         elif rule_type in ["χ"]:
                             used = list(dict.fromkeys(
-                                    [node.source.world for node in branch if
+                                    [node.world for node in branch if
                                     applied(node)]))
 
                         # collect the worlds occurring in the branch
@@ -857,7 +857,7 @@ class Tableau(object):
                         extensions = find_extensions(source.world)
                         for w in extensions:
                             if not found_extensions:
-                                extensions += find_extensions(w)
+                                extensions = list(dict.fromkeys(extensions + find_extensions(w)))
                                 found_extensions.append(w)
 
                         # collect the signatures occurring in the target's
@@ -885,7 +885,7 @@ class Tableau(object):
                         if rule_type in ["ξ"]:
                             # the rules can only be applied with new extensions,
                             # and for satisfiability only if it has not already been used
-                            if self.mode["validity"] or not used:
+                            if not (self.mode["validity"] or not used):
                                 applicable.append((target, source, rule_name,
                                                rule_type, fmls, args, insts))
 
@@ -893,7 +893,12 @@ class Tableau(object):
                             # the rule can only be applied with existing extensions,
                             # and for satisfiability only if it has not already been used
                             # with this world
-                            if [w for w in extensions if w not in used]:
+                            print("extensions:", extensions)
+                            print("used:", used)
+                            print(self.mode["validity"])
+                            print([w for w in extensions if w not in used])
+                            if [w for w in extensions if w not in used] and \
+                               (not self.mode["validity"] or not used):
                                 applicable.append((target, source, rule_name,
                                                    rule_type, fmls, args, insts))
 
@@ -1180,7 +1185,7 @@ class Tableau(object):
         binary = ["β", "ξ", "χ", "ο", "u", "ω"]
         nary = ["θ", "ε", "κ"]
         quantificational = ["γ", "δ", "η", "θ", "ε", "ο", "υ", "ω"]
-        modal = ["μ", "ν", "π", "κ", "λ", "ι", "ο", "υ", "ω"]
+        modal = ["μ", "ν", "π", "κ", "λ", "χ", "ι", "ο", "υ", "ω"]
         equality = ["ζ"]
         new_constant = ["δ", "ε", "υ"]
         existing_constant = ["γ", "η", "θ", "ο", "ω"]
@@ -2444,7 +2449,7 @@ if __name__ == "__main__":
     # tab = Tableau(fml, propositional=True, classical=False, validity=False)
 
     # fml = Imp(Imp(Prop("p"), Prop("q")), Disj(Neg(Prop("p")), Prop("q")))
-    # tab = Tableau(fml, propositional=True, classical=False)
+    # tab = Tableau(fml, propositional=True, classical=False, validity=False, satisfiability=False)
     # todo no counter model found
     # {{k0, k1, k2}, {(k0, k1), (k1, k2), {k1: {p: False, q: False}, k2: {p: True, q: False}}}
 
