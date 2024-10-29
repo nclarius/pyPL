@@ -708,6 +708,8 @@ class Tableau(object):
                             extensions = occurring_global
                         if rule_type == "ι":
                             extensions = occurring_global
+                        if rule_type == "ν":
+                            extensions = [w for w in extensions if not (w == source.world and fmls[0] == (source.sign, source.fml))]
                         # # for model finding, add at least one world
                         # if not self.mode["validity"] and not extensions:
                         #     extensions = occurring[:1]
@@ -1260,10 +1262,12 @@ class Tableau(object):
             unusable = []
             match rule_type:
                 case "μ" | "ξ":  # new signature
-                    # todo for satisfiability, allow existing signature for more minimal models
-                    # ex. (¬p → (q ∨ r)) ⊬ ((¬p → q) ∨ (¬p → r)) in IL, k4 not needed
-                    usable = [i for i in range(1, 1000)]
-                    unusable = occurring
+                    if not self.mode["validity"]:
+                        usable = [w for w in extensions + [i for i in range(1, 100)] if w not in occurring]
+                        ununusable = used
+                    else:
+                        usable = [i for i in range(1, 1000)]
+                        unusable = occurring
                 case "ν" | "χ":  # existing signature
                     # todo correct to use extensions rather than occurring?
                     usable = extensions
