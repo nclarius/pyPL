@@ -2412,8 +2412,6 @@ if __name__ == "__main__":
 
     # fml = Imp(Imp(Prop("p"), Prop("q")), Disj(Neg(Prop("p")), Prop("q")))
     # tab = Tableau(fml, propositional=True, classical=False, validity=False, satisfiability=False)
-    # todo no counter model found
-    # {{k0, k1, k2}, {(k0, k1), (k1, k2), {k1: {p: False, q: False}, k2: {p: True, q: False}}}
 
     # fml = Exists(Var("x"), Atm(Pred("P"), (Var("x"),)))
     # fml1 = Neg(Forall(Var("x"), Neg(Atm(Pred("P"), (Var("x"),)))))
