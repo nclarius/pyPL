@@ -116,5 +116,21 @@ class TestDenotation(unittest.TestCase):
         e = Neg(Neg(e))
         assert e.denotVW(s) == True
 
+        k = {"k0", "k1", "k2", "k3"}
+        r = {("k0", "k1"), ("k0", "k2"), ("k1", "k3"), ("k2", "k3")}
+        v = {"p": {"k0": False, "k1": True, "k2": True, "k3": True}, 
+             "q": {"k0": False, "k1": True, "k2": True, "k3": True}}
+        s = KripkePropStructure("S", k, r, v)
+        e = Imp(Imp(Prop("p"), Prop("q")), Disj(Neg(Prop("p")), Prop("q")))
+        assert e.denotVW(s) == False
+
+        k = {"k0", "k1", "k2"}
+        r = {("k0", "k1"), ("k1", "k2")}
+        v = {"p": {"k0": False, "k1": False, "k2": True}, 
+             "q": {"k0": False, "k1": False, "k2": True}}
+        s = KripkePropStructure("S", k, r, v)
+        e = Imp(Imp(Prop("p"), Prop("q")), Disj(Neg(Prop("p")), Prop("q")))
+        assert e.denotVW(s) == False
+
 if __name__ == '__main__':
     unittest.main()
