@@ -19,6 +19,13 @@
 % sequent trees
 \usepackage{bussproofs}
 
+% structure graphs
+\usetikzlibrary{matrix,positioning}
+\tikzset{auto,
+world/.style={circle, node distance=2cm, draw},
+access/.style={->,line width=0.5pt},
+every label/.style={shape=rectangle, draw=none, fill=none}}
+
 % custom commands
 \newcommand{\set}[1]{\{ #1 \}}
 \newcommand{\tpl}[1]{\langle #1 \rangle}

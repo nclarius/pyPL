@@ -74,7 +74,7 @@ class PropStructure(Structure):
         return "Structure $" + s + " = \\tpl{" + ", ".join([v]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AA}\n" + \
                v + " : & " + \
-                   ", ".join([str(p) + " \\mapsto " + str(tv).replace("True", "1").replace("False", "0")
+                   ", ".join([str(p) + " \\mapsto " + str(tv)
                               for p, tv in sorted(self.v.items())]) + "\\\\\n" + \
                "\\end{tabular}" \
                    .replace("\\set{}", "\\emptyset{}")
@@ -192,7 +192,17 @@ class ModalStructure(Structure):
     @attr r: an accessibility relation on r
     @type r: set[tuple[str,str]]
     """
-    pass
+    
+    def epochs(self):
+        generations = {w_: None for w_ in self.w}
+        parents = {w_: None for w_ in self.w}
+        for w_l, w_r in sorted(self.r):
+            if not parents[w_l]:
+                generations[w_l] = 0
+            if w_r != w_l:
+                parents[w_r] = w_l
+                generations[w_r] = generations[w_l] + 1
+        return {d: sorted([w_ for w_ in self.w if generations[w_] == d]) for d in set(generations.values())}
 
 
 class PropModalStructure(ModalStructure):
@@ -248,16 +258,30 @@ class PropModalStructure(ModalStructure):
                     for (p, vp) in sorted(self.v.items())])
 
     def tex(self):
+        graph = "\\begin{figure}[H]\n"
+        graph += "\\begin{tikzpicture}\n"
+        epochs = self.epochs()
+        for epoch in sorted(epochs):
+            for i, w_ in enumerate(epochs[epoch]):
+                v_ = [p for p in sorted(self.v) if w_ in self.v[p] and self.v[p][w_]]
+                label_v = ", label={[below,align=left]\\ \\\\[1.75em]$" + ", ".join(v_) + "$}" if v_ else ""
+                pos = "" if epoch == 0 else (", right of=" + epochs[epoch - 1][0] if i == 0 else ", below of=" + epochs[epoch][i - 1])
+                graph += "\\node[world" + pos + label_v + "] (" + w_ + ") {$"+ re.sub("w(\d+)", "w_\\1", str(w_)) + "$};\n"
+        for w_l, w_r in sorted(self.r):
+            graph += "\\path (" + w_l + ") edge[access]" + ("[loop]" if w_l == w_r else "") + " (" + w_r + ");\n"
+        graph += "\\end{tikzpicture}\n"
+        graph += "\\end{figure}\n"
+
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
         s, w, r, v = re.sub("S(\d*)", r"\\mathcal{S}_{\1}", self.s), "\\mathcal{W}" + suffix, "\\mathcal{R}" + suffix, \
                      "\\mathcal{V}" + suffix
-        return "Structure $" + s + " = \\tpl{" + ", ".join([w, r, v]) + "}$ with \\\\\n" + \
+        structure = "Structure $" + s + " = \\tpl{" + ", ".join([w, r, v]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAAA}\n" +\
                w + " = & " + \
                    "\\multicolumn{5}{A}{\\set{" + ", ".join([re.sub("w(\d+)", "w_\\1", str(w)) for w in sorted(self.w)]) + "}}\\\\\n" +\
                r + " = &" + \
                    "\\multicolumn{5}{A}{\\set{" + ", ".join(
-                        ["\\tpl{" + str(r[0]) + ", " + str(r[1]) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
+                        ["\\tpl{" + re.sub("w(\d+)", "w_\\1", str(r[0])) + ", " + re.sub("w(\d+)", "w_\\1", str(r[1])) + "}" for r in sorted(self.r)]) + "}}\\\\\n" + \
                v + " : & " + \
                    "\\\\\n    & ".join([str(p) + " & \\mapsto &" +
                         ", \\\\\n &&& ".join([re.sub("w(\d+)", "w_\\1", str(w))+ " & \\mapsto &" + self.text(tv)
@@ -265,6 +289,9 @@ class PropModalStructure(ModalStructure):
                     for (p, vp) in sorted(self.v.items())]) + "\\\\\n" + \
                "\\end{tabular}" \
                 .replace("\\set{}", "\\emptyset{}")
+
+        return "\\begin{minipage}[T]{7cm}\n" + structure + "\n\\end{minipage}\n\\hspace{.75cm}\n" + \
+            "\\begin{minipage}[T]{10cm}\n\\vspace{1em}\n" + graph + "\\end{minipage}\n"
 
 
 class ConstModalStructure(ModalStructure):
@@ -337,10 +364,26 @@ class ConstModalStructure(ModalStructure):
                     "\n    " for (p, ip) in sorted(self.i.items(), key=sort_i_w)]).replace("\n    \n", "\n")
 
     def tex(self):
+        graph = "\\begin{figure}[H]\n"
+        graph += "\\begin{tikzpicture}\n"
+        epochs = self.epochs()
+        for epoch in sorted(epochs):
+            for i, w_ in enumerate(epochs[epoch]):
+                i_ = [["\mathit{" + str(p) + "}" + "(" + ", ".join(tpl) + ")" for tpl in sorted(self.i[p][w_])]
+                    for p in sorted(self.i) if w_ in self.i[p] and not isinstance(self.i[p][w_], dict)]
+                i_ = [tpl for pv in i_ for tpl in pv]
+                label_i = ", label={[below,align=left]\\ \\\\[1.75em]$" + ", ".join(i_) + "$}" if i_ else ""
+                pos = "" if epoch == 0 else (", right of=" + epochs[epoch - 1][0] if i == 0 else ", below of=" + epochs[epoch][i - 1])
+                graph += "\\node[world" + pos + label_i + "] (" + w_ + ") {$"+ re.sub("w(\d+)", "w_\\1", str(w_)) + "$};\n"
+        for w_l, w_r in sorted(self.r):
+            graph += "\\path (" + w_l + ") edge[access]" + ("[loop]" if w_l == w_r else "") + " (" + w_r + ");\n"
+        graph += "\\end{tikzpicture}\n"
+        graph += "\\end{figure}\n"
+
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
         s, w, r, d, i = re.sub("S(\d*)", r"\\mathcal{S}_{\1}", self.s), "\\mathcal{W}" + suffix, "\\mathcal{R}" + suffix, \
                         "\\mathcal{D}" + suffix, "\\mathcal{I}" + suffix
-        return "Structure $" + s + " = \\tpl{" + ", ".join([w, r, d, i]) + "}$ with \\\\\n" + \
+        structure = "Structure $" + s + " = \\tpl{" + ", ".join([w, r, d, i]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAAA}\n" +\
                w + " = & " \
                    "\\multicolumn{5}{A}{\\set{" + ", ".join([re.sub("w(\d+)", "w_\\1", str(w))
@@ -371,6 +414,9 @@ class ConstModalStructure(ModalStructure):
                         for (p, ip) in sorted(self.i.items(), key=sort_i_w)]) + "\\\\\n" + \
                "\\end{tabular}" \
                .replace("\\set{}", "\\emptyset{}")
+
+        return "\\begin{minipage}[T]{7cm}\n" + structure + "\n\\end{minipage}\n\\hspace{.75cm}\n" + \
+            "\\begin{minipage}[T]{10cm}\n\\vspace{1em}\n" + graph + "\\end{minipage}\n"
 
 
 class VarModalStructure(ModalStructure):
@@ -454,10 +500,28 @@ class VarModalStructure(ModalStructure):
                     for (p, ip) in sorted(self.i.items(), key=sort_i_w)]).replace("\n    \n",  "\n") + "\n"
 
     def tex(self):
+        graph = "\\begin{figure}[H]\n"
+        graph += "\\begin{tikzpicture}\n"
+        epochs = self.epochs()
+        for epoch in sorted(epochs):
+            for i, w_ in enumerate(epochs[epoch]):
+                d_ = sorted([self.text(o) for o in self.d[w_]]) if w_ in self.d else []
+                label_d = ", label={[above,align=left]$" + ", ".join(d_) + "$}" if d_ else ""
+                i_ = [["\mathit{" + str(p) + "}" + "(" + ", ".join(tpl) + ")" for tpl in sorted(self.i[p][w_])]
+                    for p in sorted(self.i) if w_ in self.i[p] and not isinstance(self.i[p][w_], dict)]
+                i_ = [tpl for pv in i_ for tpl in pv]
+                label_i = ", label={[below,align=left]\\ \\\\[1.75em]$" + ", ".join(i_) + "$}" if i_ else ""
+                pos = "" if epoch == 0 else (", right of=" + epochs[epoch - 1][0] if i == 0 else ", below of=" + epochs[epoch][i - 1])
+                graph += "\\node[world" + pos + label_d + label_i + "] (" + w_ + ") {$"+ re.sub("w(\d+)", "w_\\1", str(w_)) + "$};\n"
+        for w_l, w_r in sorted(self.r):
+            graph += "\\path (" + w_l + ") edge[access]" + ("[loop]" if w_l == w_r else "") + " (" + w_r + ");\n"
+        graph += "\\end{tikzpicture}\n"
+        graph += "\\end{figure}\n"
+
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
         s, w, r, d, i = re.sub("S(\d*)", r"\\mathcal{S}_{\1}", self.s), "\\mathcal{W}" + suffix, "\\mathcal{R}" + suffix, \
                         "\\mathcal{D}" + suffix, "\\mathcal{I}" + suffix
-        return "Structure $" + s + " = \\tpl{" + ", ".join([w, r, d, i]) + "}$ with \\\\\n" + \
+        structure = "Structure $" + s + " = \\tpl{" + ", ".join([w, r, d, i]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAAA}\n" +\
                w + " = & " \
                    "\\multicolumn{5}{A}{\\set{" + ", ".join([re.sub("w(\d+)", "w_\\1", str(w))
@@ -490,6 +554,9 @@ class VarModalStructure(ModalStructure):
                         for (p, ip) in sorted(self.i.items(), key=sort_i_w)]) + "\\\\\n" + \
                "\\end{tabular}" \
                 .replace("\\set{}", "\\emptyset{}")
+
+        return "\\begin{minipage}[T]{7cm}\n" + structure + "\n\\end{minipage}\n\\hspace{.75cm}\n" + \
+            "\\begin{minipage}[T]{10cm}\n\\vspace{1em}\n" + graph + "\\end{minipage}\n"
 
 
 class KripkeStructure(Structure):
@@ -524,6 +591,17 @@ class KripkeStructure(Structure):
         @rtrype: set[str]
         """
         return {k_ for k_ in self.k if (k_, k) in self.r}
+    
+    def epochs(self):
+        generations = {k_: None for k_ in self.k}
+        parents = {k_: None for k_ in self.k}
+        for k_l, k_r in sorted(self.r):
+            if not parents[k_l]:
+                generations[k_l] = 0
+            if k_r != k_l:
+                parents[k_r] = k_l
+                generations[k_r] = generations[k_l] + 1
+        return {d: sorted([k_ for k_ in self.k if generations[k_] == d]) for d in set(generations.values())}
 
 
 class KripkePropStructure(KripkeStructure):
@@ -600,10 +678,24 @@ class KripkePropStructure(KripkeStructure):
                     for (p, vp) in sorted(self.v.items())]).replace("\n    \n", "\n")
 
     def tex(self):
+        graph = "\\begin{figure}[H]\n"
+        graph += "\\begin{tikzpicture}\n"
+        epochs = self.epochs()
+        for epoch in sorted(epochs):
+            for i, k_ in enumerate(epochs[epoch]):
+                v_ = [p for p in sorted(self.v) if k_ in self.v[p] and self.v[p][k_]]
+                label_v = ", label={[below,align=left]\\ \\\\[1.75em]$" + ", ".join(v_) + "$}" if v_ else ""
+                pos = "" if epoch == 0 else (", right of=" + epochs[epoch - 1][0] if i == 0 else ", below of=" + epochs[epoch][i - 1])
+                graph += "\\node[world" + pos + label_v + "] (" + k_ + ") {$"+ re.sub("k(\d+)", "k_\\1", str(k_)) + "$};\n"
+        for k_l, k_r in sorted(self.r):
+            graph += "" if k_l == k_r else "\\path (" + k_l + ") edge[access] (" + k_r + ");\n"
+        graph += "\\end{tikzpicture}\n"
+        graph += "\\end{figure}\n"
+
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
         s, k, r, v = re.sub("S(\d*)", r"\\mathcal{S}_{\1}", self.s), "\\mathcal{K}" + suffix, "\\mathcal{R}" + suffix, \
                         "\\mathcal{V}" + suffix
-        return "Structure $" + s + " = \\tpl{" + ", ".join([k, r, v]) + "}$ with \\\\\n" + \
+        structure = "Structure $" + s + " = \\tpl{" + ", ".join([k, r, v]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAAA}\n" + \
                k + " = & " \
                    "\\multicolumn{5}{A}{\\set{" + ", ".join([re.sub("k(\d+)", "k_\\1", str(k)) for k in sorted(self.k)]) + "}}\\\\\n" + \
@@ -619,6 +711,9 @@ class KripkePropStructure(KripkeStructure):
                         for (p, vp) in sorted(self.v.items())]) + "\\\\\n" + \
                "\\end{tabular}" \
                .replace("\\set{}", "\\emptyset{}")
+
+        return "\\begin{minipage}[T]{7cm}\n" + structure + "\n\\end{minipage}\n\\hspace{.75cm}\n" + \
+            "\\begin{minipage}[T]{10cm}\n\\vspace{1em}\n" + graph + "\\end{minipage}\n"
 
 
 class KripkePredStructure(KripkeStructure):
@@ -753,10 +848,28 @@ class KripkePredStructure(KripkeStructure):
                     for (p, ip) in sorted(self.i.items(), key=sort_i_w)]).replace("\n    \n", "\n")
 
     def tex(self):
+        graph = "\\begin{figure}[H]\n"
+        graph += "\\begin{tikzpicture}\n"
+        epochs = self.epochs()
+        for epoch in sorted(epochs):
+            for i, k_ in enumerate(epochs[epoch]):
+                d_ = sorted([self.text(o) for o in self.d[k_]]) if k_ in self.d else []
+                label_d = ", label={[above,align=left]$" + ", ".join(d_) + "$}" if d_ else ""
+                i_ = [["\mathit{" + str(p) + "}" + "(" + ", ".join(tpl) + ")" for tpl in sorted(self.i[p][k_])]
+                    for p in sorted(self.i) if k_ in self.i[p] and not isinstance(self.i[p][k_], dict)]
+                i_ = [tpl for pv in i_ for tpl in pv]
+                label_i = ", label={[below,align=left]\\ \\\\[1.75em]$" + ", ".join(i_) + "$}" if i_ else ""
+                pos = "" if epoch == 0 else (", right of=" + epochs[epoch - 1][0] if i == 0 else ", below of=" + epochs[epoch][i - 1])
+                graph += "\\node[world" + pos + label_d + label_i + "] (" + k_ + ") {$"+ re.sub("w(\d+)", "k_\\1", str(k_)) + "$};\n"
+        for k_l, k_r in sorted(self.r):
+            graph += "" if k_l == k_r else "\\path (" + k_l + ") edge[access] (" + k_r + ");\n"
+        graph += "\\end{tikzpicture}\n"
+        graph += "\\end{figure}\n"
+
         suffix = "_" + "{" + self.s.removeprefix("S") + "}" if self.s[-1].isdigit() else ""
         s, k, r, d, i = re.sub("S(\d*)", r"\\mathcal{S}_{\1}", self.s), "\\mathcal{K}" + suffix, "\\mathcal{R}" + suffix, \
                         "\\mathcal{D}" + suffix, "\\mathcal{I}" + suffix
-        return "Structure $" + s + " = \\tpl{" + ", ".join([k, r, d, i]) + "}$ with \\\\\n" + \
+        structure = "Structure $" + s + " = \\tpl{" + ", ".join([k, r, d, i]) + "}$ with \\\\\n" + \
                "\\begin{tabular}{AAAAAA}\n" +\
                k + " = & " \
                    "\\multicolumn{5}{A}{\\set{" + ", ".join([re.sub("k(\d+)", "k_\\1", str(k)) for k in sorted(self.k)]) + "}}\\\\\n" + \
@@ -787,3 +900,6 @@ class KripkePredStructure(KripkeStructure):
                         for (p, ip) in sorted(self.i.items(), key=sort_i_w)]) + "\\\\\n" + \
                "\\end{tabular}" \
                 .replace("\\set{}", "\\emptyset{}")
+
+        return "\\begin{minipage}[T]{7cm}\n" + structure + "\n\\end{minipage}\n\\hspace{.75cm}\n" + \
+            "\\begin{minipage}[T]{10cm}\n\\vspace{1em}\n" + graph + "\\end{minipage}\n"
