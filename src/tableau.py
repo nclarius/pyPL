@@ -945,6 +945,7 @@ class Tableau(object):
             if all([(appl[6] and appl[3] in ["δ", "θ", "ε", "κ", "μ"])
                     or (appl[6] and appl[3] in ["η", "λ"] and appl[5][2])
                     for appl in applicable if appl[0] in leaf.branch]):
+                        # todo move mu and lambda conditions to block below?
                 if not isinstance(leaf.fml, Pseudo):
                     leaf.branch_open()
                     self.models.append(self.model(leaf))
@@ -1259,6 +1260,8 @@ class Tableau(object):
             unusable = []
             match rule_type:
                 case "μ" | "ξ":  # new signature
+                    # todo for satisfiability, allow existing signature for more minimal models
+                    # ex. (¬p → (q ∨ r)) ⊬ ((¬p → q) ∨ (¬p → r)) in IL, k4 not needed
                     usable = [i for i in range(1, 1000)]
                     unusable = occurring
                 case "ν" | "χ":  # existing signature
@@ -2419,7 +2422,6 @@ if __name__ == "__main__":
     # fml = Disj(Imp(Neg(Prop("p")), Prop("q")), Imp(Neg(Prop("p")), Prop("r")))
     # fml1 = Imp(Neg(Prop("p")), Disj(Prop("q"), Prop("r")))
     # tab = Tableau(fml, premises=[fml1], classical=False, propositional=True, validity=False, satisfiability=False)
-    # counter model: {(k0, k1), (k0, k2), (k0, k3)}, {p: {k1}, q: {k2}, r: {k3}}
 
     #################
     # quantifier commutativity
