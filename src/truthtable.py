@@ -220,14 +220,14 @@ if __name__ == "__main__":
     pass
     parse_f = __import__("parser").FmlParser().parse
 
-    fml = parse_f("((p & q) | ~ r)")
-    tt = Truthtable(fml, latex=False, silent=True)
-
-    fml1 = parse_f("p -> q")
-    fml2 = parse_f("~ p")
-    fml = parse_f("~ q")
-    tt = Truthtable(fml, premises=[fml1, fml2], latex=False, silent=True)
-
-    fml1 = parse_f("p v q")
-    fml2 = parse_f("~ (p & q)")
-    tt = Truthtable(None, premises=[fml1, fml2], latex=False, silent=True)
+#     fml = parse_f("((p & q) | ~ r)")
+#     tt = Truthtable(fml, latex=False, silent=True)
+# 
+#     fml1 = parse_f("p -> q")
+#     fml2 = parse_f("~ p")
+#     fml = parse_f("~ q")
+#     tt = Truthtable(fml, premises=[fml1, fml2], latex=False, silent=True)
+# 
+#     fml1 = parse_f("p v q")
+#     fml2 = parse_f("~ (p & q)")
+#     tt = Truthtable(None, premises=[fml1, fml2], latex=False, silent=True)
