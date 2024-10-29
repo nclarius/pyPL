@@ -26,7 +26,7 @@ class Denotation:
             path_preamble = os.path.join(os.path.dirname(__file__), "preamble.tex")
             with open(path_preamble) as f:
                 preamble = f.read()
-                preamble += "\n\n\setlength\\tabcolsep{3pt}\n"
+                preamble += "\n\n\\setlength\\tabcolsep{3pt}\n"
             res += preamble + "\n\n\\begin{document}\n\n"
 
         # print structure
@@ -40,7 +40,7 @@ class Denotation:
             if not latex:
                 res += "[[" + str(fml) + "]]" + s.s + ("," + v if v else "") + ("," + w if w else "") + "\n= "
             else:
-                res += "$[\![" + fml.tex() + "]\!]^" + "{" + \
+                res += "$[\\![" + fml.tex() + "]\\!]^" + "{" + \
                        "\\mathcal{" + s.s[0] + ("_{" + s.s[1:] + "}" if len(s.s) > 1 else "") + "}" + \
                        ("," + v if v else "") + \
                        ("," + w if w else "") + \

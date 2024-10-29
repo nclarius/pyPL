@@ -1736,7 +1736,7 @@ class Most(Formula):
         return "most " + str(self.u) + "(" + ",".join([str(self.phi), str(self.chi)]) + ")"
 
     def tex(self):
-        return "\\mathrm{most}\ " + self.u.tex() + "(" + ",".join([self.phi.tex(), self.chi.tex()]) + ")"
+        return "\\mathrm{most}\\ " + self.u.tex() + "(" + ",".join([self.phi.tex(), self.chi.tex()]) + ")"
 
     def freevars(self):
         return self.phi.freevars() | self.chi.freevars() - {self.u.u}
@@ -1791,7 +1791,7 @@ class More(Formula):
         return "more " + str(self.u) + "(" + ",".join([str(self.phi), str(self.psi), str(self.chi)]) + ")"
 
     def tex(self):
-        return "\\mathrm{more}\ " + self.u.tex() + "(" + ",".join(
+        return "\\mathrm{more}\\ " + self.u.tex() + "(" + ",".join(
                 [self.phi.tex(), self.psi.tex(), self.chi.tex()]) + ")"
 
     def freevars(self):
