@@ -661,26 +661,6 @@ class KripkePropStructure(KripkeStructure):
         self.r = r
         self.v = v
 
-    # def future(self, k):
-    #     """
-    #     Compute subsequent states k' >= k of k.
-    #     @param k: the state to compute the future of
-    #     @type k: str
-    #     @return: the set of states k' s.t. k' >= k
-    #     @rtrype: set[str]
-    #     """
-    #     return {k_ for k_ in self.k if (k, k_) in self.r}
-    #
-    # def past(self, k):
-    #     """
-    #     Compute preceding states k' <= k of k.
-    #     @param k: the state to compute the future of
-    #     @type k: str
-    #     @return: the set of states k' s.t. k' <= k
-    #     @rtrype: set[str]
-    #     """
-    #     return {k_ for k_ in self.k if (k_, k) in self.r}
-
     def __str__(self):
         suffix = self.s.removeprefix("S") if self.s[-1].isdigit() else ""
         s, k, r, v = self.s, "K" + suffix, "R" + suffix, "V" + suffix
@@ -820,26 +800,6 @@ class KripkePredStructure(KripkeStructure):
         self.r = r
         self.d = d
         self.i = i
-
-    # def future(self, k):
-    #     """
-    #     Compute subsequent states k' >= k of k.
-    #     @param k: the state to compute the future of
-    #     @type k: str
-    #     @return: the set of states k' s.t. k' >= k
-    #     @rtrype: set[str]
-    #     """
-    #     return {k_ for k_ in self.k if (k, k_) in self.r}
-    #
-    # def past(self, k):
-    #     """
-    #     Compute preceding states k' <= k of k.
-    #     @param k: the state to compute the future of
-    #     @type k: str
-    #     @return: the set of states k' s.t. k' <= k
-    #     @rtrype: set[str]
-    #     """
-    #     return {k_ for k_ in self.k if (k_, k) in self.r}
 
     def __str__(self):
         suffix = self.s.removeprefix("S") if self.s[-1].isdigit() else ""
