@@ -572,6 +572,22 @@ class KripkeStructure(Structure):
     @type r: set[tuple[str,str]]
     """
 
+    """
+    The reflexive and transitive closure of the accessibility relation R.
+    """
+    def closure(self):
+        closure = set(self.r)
+        # add reflexive closure
+        closure = closure | set((k, k) for k in self.k)
+        # add transitive closure
+        while True:
+            next_step = set((x, z) for x, y1 in closure for y2, z in closure if y1 == y2)
+            next_closure = closure | next_step
+            if next_closure == closure:
+                break
+            closure = next_closure
+        return closure
+
     def future(self, k):
         """
         Compute subsequent states k' >= k of k.
@@ -580,7 +596,7 @@ class KripkeStructure(Structure):
         @return: the set of states k' s.t. k' >= k
         @rtrype: set[str]
         """
-        return {k_ for k_ in self.k if (k, k_) in self.r}
+        return {k_ for k_ in self.k if (k, k_) in self.closure()}
 
     def past(self, k):
         """
@@ -590,7 +606,7 @@ class KripkeStructure(Structure):
         @return: the set of states k' s.t. k' <= k
         @rtrype: set[str]
         """
-        return {k_ for k_ in self.k if (k_, k) in self.r}
+        return {k_ for k_ in self.k if (k_, k) in self.closure()}
     
     def epochs(self):
         generations = {k_: None for k_ in self.k}
