@@ -269,7 +269,6 @@ class FmlParser:
             #     continue
 
             # unary operator: close if appropriate number of args is given
-            # todo can't parse double negation
             if bot in ["Neg", "Poss", "Nec", "Int", "Ext"] and len(curr_stack) == 2:
                 c = getattr(expr, bot)
                 e = c(top)
