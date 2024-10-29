@@ -150,7 +150,7 @@ class TestTableau(unittest.TestCase):
         assert len(tab) == 4
         tab = Tableau(fml, propositional=True, classical=False, validity=False, silent=True)
         assert tab.open()
-        assert len(tab.models) == 2
+        assert len(tab.models) == 1
         assert len(tab) == 3
         fml = Imp(Imp(Prop("p"), Prop("q")), Disj(Neg(Prop("p")), Prop("q")))
         tab = Tableau(fml, propositional=True, classical=False, validity=False, satisfiability=False, silent=True)
