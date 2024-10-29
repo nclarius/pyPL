@@ -146,8 +146,8 @@ class TestTableau(unittest.TestCase):
     def test_il_pl(self):
         fml = Disj(Prop("p"), Neg(Prop("p")))
         tab = Tableau(fml, propositional=True, classical=False, silent=True)
-        assert tab.infinite()
-        assert len(tab) == 9
+        assert tab.open()
+        assert len(tab) == 4
         tab = Tableau(fml, propositional=True, classical=False, validity=False, silent=True)
         assert tab.open()
         assert len(tab.models) == 2

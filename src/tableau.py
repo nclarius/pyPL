@@ -940,14 +940,14 @@ class Tableau(object):
                                                rule_type, fmls, args, insts))
 
         # if the only rules applicable to an unfinished branch are
-        # δ, θ, ε or κ rules that have already been applied on this branch,
+        # δ, θ, ε, κ or μ rules that have already been applied on this branch,
         # or η or λ rules that would unnecessarily introduce a new constant/world,
         # it is declared open and, in the case of validity tableaus,
         # its applicable rules cleared
         for leaf in [node for node in self.root.leaves() if
                      node and node.fml != None and not (
                      isinstance(node.fml, Pseudo))]:
-            if all([(appl[6] and appl[3] in ["δ", "θ", "ε", "κ"])
+            if all([(appl[6] and appl[3] in ["δ", "θ", "ε", "κ", "μ"])
                     or (appl[6] and appl[3] in ["η", "λ"] and appl[5][2])
                     for appl in applicable if appl[0] in leaf.branch]):
                 if not isinstance(leaf.fml, Pseudo):
