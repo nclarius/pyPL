@@ -1315,6 +1315,8 @@ class Tableau(object):
 
             # append bottom node
             if len(fmls) == 2:
+                if rule_type in quantificational or rule_type in modal:
+                    inst = (inst[0], False, *inst[2:len(inst)])  # don't indicate as new in second node
                 bot = top.add_child(
                         (self, line := line + 1, world, *fmls[1], rule, source, inst,
                         False, top.context + [top]))
