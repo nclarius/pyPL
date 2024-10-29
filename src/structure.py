@@ -265,7 +265,7 @@ class PropModalStructure(ModalStructure):
             for i, w_ in enumerate(epochs[epoch]):
                 v_ = [p for p in sorted(self.v) if w_ in self.v[p] and self.v[p][w_]]
                 label_v = ", label={[below,align=left]\\ \\\\[1.75em]$" + ", ".join(v_) + "$}" if v_ else ""
-                pos = "" if epoch == 0 else (", right of=" + epochs[epoch - 1][0] if i == 0 else ", below of=" + epochs[epoch][i - 1])
+                pos = "" if not epoch else (", right of=" + epochs[epoch - 1][0] if i == 0 else ", below of=" + epochs[epoch][i - 1])
                 graph += "\\node[world" + pos + label_v + "] (" + w_ + ") {$"+ re.sub("w(\d+)", "w_\\1", str(w_)) + "$};\n"
         for w_l, w_r in sorted(self.r):
             graph += "\\path (" + w_l + ") edge[access]" + ("[loop]" if w_l == w_r else "") + " (" + w_r + ");\n"
@@ -373,7 +373,7 @@ class ConstModalStructure(ModalStructure):
                     for p in sorted(self.i) if w_ in self.i[p] and not isinstance(self.i[p][w_], dict)]
                 i_ = [tpl for pv in i_ for tpl in pv]
                 label_i = ", label={[below,align=left]\\ \\\\[1.75em]$" + ", ".join(i_) + "$}" if i_ else ""
-                pos = "" if epoch == 0 else (", right of=" + epochs[epoch - 1][0] if i == 0 else ", below of=" + epochs[epoch][i - 1])
+                pos = "" if not epoch else (", right of=" + epochs[epoch - 1][0] if i == 0 else ", below of=" + epochs[epoch][i - 1])
                 graph += "\\node[world" + pos + label_i + "] (" + w_ + ") {$"+ re.sub("w(\d+)", "w_\\1", str(w_)) + "$};\n"
         for w_l, w_r in sorted(self.r):
             graph += "\\path (" + w_l + ") edge[access]" + ("[loop]" if w_l == w_r else "") + " (" + w_r + ");\n"
@@ -511,7 +511,7 @@ class VarModalStructure(ModalStructure):
                     for p in sorted(self.i) if w_ in self.i[p] and not isinstance(self.i[p][w_], dict)]
                 i_ = [tpl for pv in i_ for tpl in pv]
                 label_i = ", label={[below,align=left]\\ \\\\[1.75em]$" + ", ".join(i_) + "$}" if i_ else ""
-                pos = "" if epoch == 0 else (", right of=" + epochs[epoch - 1][0] if i == 0 else ", below of=" + epochs[epoch][i - 1])
+                pos = "" if not epoch else (", right of=" + epochs[epoch - 1][0] if i == 0 else ", below of=" + epochs[epoch][i - 1])
                 graph += "\\node[world" + pos + label_d + label_i + "] (" + w_ + ") {$"+ re.sub("w(\d+)", "w_\\1", str(w_)) + "$};\n"
         for w_l, w_r in sorted(self.r):
             graph += "\\path (" + w_l + ") edge[access]" + ("[loop]" if w_l == w_r else "") + " (" + w_r + ");\n"
@@ -685,7 +685,7 @@ class KripkePropStructure(KripkeStructure):
             for i, k_ in enumerate(epochs[epoch]):
                 v_ = [p for p in sorted(self.v) if k_ in self.v[p] and self.v[p][k_]]
                 label_v = ", label={[below,align=left]\\ \\\\[1.75em]$" + ", ".join(v_) + "$}" if v_ else ""
-                pos = "" if epoch == 0 else (", right of=" + epochs[epoch - 1][0] if i == 0 else ", below of=" + epochs[epoch][i - 1])
+                pos = "" if not epoch else (", right of=" + epochs[epoch - 1][0] if i == 0 else ", below of=" + epochs[epoch][i - 1])
                 graph += "\\node[world" + pos + label_v + "] (" + k_ + ") {$"+ re.sub("k(\d+)", "k_\\1", str(k_)) + "$};\n"
         for k_l, k_r in sorted(self.r):
             graph += "" if k_l == k_r else "\\path (" + k_l + ") edge[access] (" + k_r + ");\n"
@@ -859,7 +859,7 @@ class KripkePredStructure(KripkeStructure):
                     for p in sorted(self.i) if k_ in self.i[p] and not isinstance(self.i[p][k_], dict)]
                 i_ = [tpl for pv in i_ for tpl in pv]
                 label_i = ", label={[below,align=left]\\ \\\\[1.75em]$" + ", ".join(i_) + "$}" if i_ else ""
-                pos = "" if epoch == 0 else (", right of=" + epochs[epoch - 1][0] if i == 0 else ", below of=" + epochs[epoch][i - 1])
+                pos = "" if not epoch else (", right of=" + epochs[epoch - 1][0] if i == 0 else ", below of=" + epochs[epoch][i - 1])
                 graph += "\\node[world" + pos + label_d + label_i + "] (" + k_ + ") {$"+ re.sub("w(\d+)", "k_\\1", str(k_)) + "$};\n"
         for k_l, k_r in sorted(self.r):
             graph += "" if k_l == k_r else "\\path (" + k_l + ") edge[access] (" + k_r + ");\n"
