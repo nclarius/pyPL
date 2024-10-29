@@ -77,6 +77,8 @@ class Tableau(object):
         # settings
         # todo nicer specification of settings?
         # todo check consistency of settings
+        # validity = theorem proving vs model generation
+        # satisfiability = pro model genreation vs couter model generation
         self.mode = {
                 "validity":    validity, "satisfiability": satisfiability,
                 "linguistic":  linguistic,
@@ -569,29 +571,17 @@ class Tableau(object):
                                                c.endswith(
                                                    "_" + str(source.world))]
                             occurring_global = [c for c in occurring_global]
-                            if not self.mode["validity"]:
-                                occurring_local = [(c if "_" not in c else c[
-                                                                           :c.index(
-                                                                               "_")])
-                                                   for c in occurring_local]
-                                occurring_global = [(c if "_" not in c else c[
-                                                                            :c.index(
-                                                                                "_")])
-                                                    for c in occurring_global]
                         else:
                             occurring_local = occurring_global
 
                         # check if the rule requires a new constant to be
                         # instantiated,
                         # and whether this is not required by the rule type
-                        if rule_type in ["γ", "θ"]:
+                        if rule_type in ["γ", "θ", "η"]:
                             new = len(used) >= len(occurring_local)
                             unneeded = new
                         elif rule_type in ["δ", "ε"]:
                             new = True
-                            unneeded = False
-                        elif rule_type in ["η"]:
-                            new = len(occurring_local) == 0
                             unneeded = False
 
                         # count instantiations
@@ -951,12 +941,14 @@ class Tableau(object):
 
         # if the only rules applicable to an unfinished branch are
         # δ, θ, ε or κ rules that have already been applied on this branch,
+        # or η or λ rules that would unnecessarily introduce a new constant/world,
         # it is declared open and, in the case of validity tableaus,
         # its applicable rules cleared
         for leaf in [node for node in self.root.leaves() if
                      node and node.fml != None and not (
                      isinstance(node.fml, Pseudo))]:
-            if all([appl[6] and appl[3] in ["δ", "θ", "ε", "κ"]
+            if all([(appl[6] and appl[3] in ["δ", "θ", "ε", "κ"])
+                    or (appl[6] and appl[3] in ["η", "λ"] and appl[5][2])
                     for appl in applicable if appl[0] in leaf.branch]):
                 if not isinstance(leaf.fml, Pseudo):
                     leaf.branch_open()
@@ -1152,7 +1144,7 @@ class Tableau(object):
                 pass
                 input()
                 print("expanding:")
-                print(str(source), " with ", rule_name, " on ", str(target))
+                print(str(source), " with ", rule_name, "(" + rule_type + ")", " on ", str(target))
             # apply the rule
             new_children = self.apply_rule(target, source, rule_type, rule_name, fmls, args)
 
@@ -1222,7 +1214,7 @@ class Tableau(object):
                 case "η":  # existing or, if not possible, new constant
                     usable = [subscripted(c)
                                 for c in occurring_local]
-                    if not usable:
+                    if not usable or all ([c in used for c in usable]):
                         usable += [subscripted(c)  
                                     for c in Tableau.parameters
                                     if c not in [unsubscripted(c) 

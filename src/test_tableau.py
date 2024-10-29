@@ -118,6 +118,14 @@ class TestTableau(unittest.TestCase):
         assert len(tab.models) > 0
         assert tab.models[0].i == {"P": {"w1": {("a",)}, "w2": {("b",)}}}
         assert len(tab) == 13
+        fml1 = Poss(Exists(Var("x"), Atm(Pred("P"), (Var("x"),))))
+        fml2 = Neg(Exists(Var("x"), Poss(Atm(Pred("P"), (Var("x"),)))))
+        tab = Tableau(premises=[fml1, fml2], modal=True, vardomains=True, validity=False, satisfiability=True, silent=True)
+        assert tab.open()
+        assert len(tab.models) > 0
+        assert tab.models[0].d == {"w1": {"a"}, "w2": {"b"}}
+        assert tab.models[0].i == {"P": {"w1": set(), "w2": {("b",)}}}
+        assert len(tab) == 12
     
     def test_ml_fol_domains(self):
         fml = Imp(Exists(Var("x"), Forall(Var("y"), Nec(Atm(Pred("Q"), (Var("x"), Var("y")))))),
