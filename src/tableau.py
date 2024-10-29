@@ -874,17 +874,12 @@ class Tableau(object):
 
                         if rule_type in ["ξ"]:
                             # the rules can only be applied with new extensions,
-                            # and for satisfiability only if it has not already been used
-                            if not (self.mode["validity"] or not used):
-                                applicable.append((target, source, rule_name,
-                                               rule_type, fmls, args, insts))
+                            applicable.append((target, source, rule_name,
+                                            rule_type, fmls, args, insts))
 
                         elif rule_type in ["χ"]:
-                            # the rule can only be applied with existing extensions,
-                            # and for satisfiability only if it has not already been used
-                            # with this world
-                            if [w for w in extensions if w not in used] and \
-                               (not self.mode["validity"] or not used):
+                            # the rule can only be applied with existing extensions
+                            if [w for w in extensions if w not in used]:
                                 applicable.append((target, source, rule_name,
                                                    rule_type, fmls, args, insts))
 
@@ -2421,7 +2416,9 @@ if __name__ == "__main__":
     # tab = Tableau(fml, premises=[fml1], classical=False, validity=True, satisfiability=True)
     # todo no counter model found
 
-    # todo (¬p → (q ∨ r)) ⊢ ((¬p → q) ∨ (¬p → r)) incorrectly comes out as valid
+    # fml = Disj(Imp(Neg(Prop("p")), Prop("q")), Imp(Neg(Prop("p")), Prop("r")))
+    # fml1 = Imp(Neg(Prop("p")), Disj(Prop("q"), Prop("r")))
+    # tab = Tableau(fml, premises=[fml1], classical=False, propositional=True, validity=False, satisfiability=False)
     # counter model: {(k0, k1), (k0, k2), (k0, k3)}, {p: {k1}, q: {k2}, r: {k3}}
 
     #################
