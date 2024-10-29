@@ -1058,7 +1058,7 @@ class Neg(Formula):
     def __str__(self):
         if isinstance(self.phi, Eq): 
             return "(" + str(self.phi.tau) + "≠" + str(self.phi.rho) + ")"
-        elif isinstance(self.phi, Neg) and isinstance(self.phi,phi, Eq):
+        elif isinstance(self.phi, Neg) and isinstance(self.phi, Eq):
             return "¬¬" + str(self.phi.phi)
         if isinstance(self.phi, Inf): # double negated equality
             return "⊬"
@@ -1067,7 +1067,7 @@ class Neg(Formula):
     def tex(self):
         if isinstance(self.phi, Eq):
             return "(" + self.phi.tau.tex() + " \\neq " + self.phi.rho.tex() + ")"
-        elif isinstance(self.phi, Neg) and isinstance(self.phi,phi, Eq):
+        elif isinstance(self.phi, Neg) and isinstance(self.phi, Eq):
             return "\\neg \\neg" + self.phi.phi.tex()
         if isinstance(self.phi, Inf):
             return "\\nvdash"
