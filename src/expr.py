@@ -1086,7 +1086,7 @@ class Neg(Formula):
         if "classical" in s.mode():  # CL
             return not self.phi.denot(s, v, w)
         else:  # IL
-            return True not in [self.phi.denot(s, v, w_) for w_ in s.future(w)]
+            return all([not self.phi.denot(s, v, w_) for w_ in s.future(w)])
 
     def tableau_pos(self, mode):
         """
@@ -1261,7 +1261,7 @@ class Imp(Formula):
         if "classical" in s.mode():  # CL
             return not self.phi.denot(s, v, w) or self.psi.denot(s, v, w)
         else:  # IL
-            return False not in [(not self.phi.denot(s, v, w_) or self.psi.denot(s, v, w_)) for w_ in s.future(w)]
+            return all(not [(not self.phi.denot(s, v, w_) or self.psi.denot(s, v, w_)) for w_ in s.future(w)])
 
     def tableau_pos(self, mode):
         """
