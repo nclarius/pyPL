@@ -2419,6 +2419,9 @@ if __name__ == "__main__":
     # tab = Tableau(fml, premises=[fml1], classical=False, validity=True, satisfiability=True)
     # todo no counter model found
 
+    # todo (¬p → (q ∨ r)) ⊢ ((¬p → q) ∨ (¬p → r)) incorrectly comes out as valid
+    # counter model: {(k0, k1), (k0, k2), (k0, k3)}, {p: {k1}, q: {k2}, r: {k3}}
+
     #################
     # quantifier commutativity
     #################
@@ -2472,7 +2475,6 @@ if __name__ == "__main__":
     #                                                     Eq(Var("y"), Var("z"))))))
     # fml2 = Exists(Var("x"), Exists(Var("y"), Neg(Eq(Var("x"), Var("y")))))
     # tab = Tableau(None, premises=[fml1, fml2], validity=False, hide_nonopen=True)
-    # # todo inefficient (open branch has 193 nodes)
 
     #####################
     # linguistic examples
