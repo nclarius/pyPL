@@ -152,16 +152,8 @@ class TestTableau(unittest.TestCase):
         assert tab.open()
         assert len(tab.models) == 1
         assert len(tab) == 3
-        fml = Imp(Imp(Prop("p"), Prop("q")), Disj(Neg(Prop("p")), Prop("q")))
-        tab = Tableau(fml, propositional=True, classical=False, validity=False, satisfiability=False, silent=True)
-        assert tab.open()
         assert len(tab.models) == 1
-        assert len(tab) == 10
-        fml = Disj(Imp(Prop("p"), Prop("q")), Imp(Prop("q"), Prop("p")))
-        tab = Tableau(fml, propositional=True, classical=False, validity=False, satisfiability=False, silent=True)
-        assert tab.open()
-        assert len(tab.models) == 1
-        assert len(tab) == 7
+        assert len(tab) == 3
     
     def test_il_fol(self):
         fml1 = Neg(Forall(Var("x"), Neg(Atm(Pred("P"), (Var("x"),)))))

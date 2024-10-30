@@ -2425,6 +2425,14 @@ if __name__ == "__main__":
     # tab = Tableau(fml, premises=[fml1], classical=False, validity=True, satisfiability=True)
     # todo no counter model found
 
+    # fml = Imp(Imp(Prop("p"), Prop("q")), Disj(Neg(Prop("p")), Prop("q")))
+    # tab = Tableau(fml, propositional=True, classical=False, validity=False, satisfiability=False, silent=True)
+    # # todo no counter model found
+
+    # fml = Disj(Imp(Prop("p"), Prop("q")), Imp(Prop("q"), Prop("p")))
+    # tab = Tableau(fml, propositional=True, classical=False, validity=False, satisfiability=False, silent=True)
+    # todo no counter model found
+
     # fml = Disj(Imp(Neg(Prop("p")), Prop("q")), Imp(Neg(Prop("p")), Prop("r")))
     # fml1 = Imp(Neg(Prop("p")), Disj(Prop("q"), Prop("r")))
     # tab = Tableau(fml, premises=[fml1], classical=False, propositional=True, validity=False, satisfiability=False)
