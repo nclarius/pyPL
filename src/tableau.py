@@ -973,7 +973,7 @@ class Tableau(object):
         rank_unneeded = {True: 1, False: 0}
         # define a preference order for rule types
         rule_order = {r: i for (i, r) in enumerate(
-                ["ι", "η", "λ", "ζ", "α", "β", "γ", "δ", "θ", "ε", "π", "μ", "ν",
+                ["ι", "η", "λ", "ζ", "α", "β", "γ", "δ", "θ", "ε", "π", "ν", "μ",
                  "κ", "ξ", "χ", "ο", "u", "ω"])}
         branching = {  # rank by branching
                 "ι": 0,  # forcing rules
