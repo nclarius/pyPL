@@ -154,6 +154,10 @@ class TestTableau(unittest.TestCase):
         assert len(tab) == 3
         assert len(tab.models) == 1
         assert len(tab) == 3
+
+        fml = Neg(Neg(Disj(Prop("p"), Neg(Prop("p")))))
+        tab = Tableau(fml, propositional=True, classical=False, silent=True)
+        assert tab.closed()
     
     def test_il_fol(self):
         fml1 = Neg(Forall(Var("x"), Neg(Atm(Pred("P"), (Var("x"),)))))
