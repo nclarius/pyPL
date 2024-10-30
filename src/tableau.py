@@ -1264,12 +1264,8 @@ class Tableau(object):
             unusable = []
             match rule_type:
                 case "μ" | "ξ":  # new signature
-                    if not self.mode["validity"]:
-                        usable = [w for w in extensions + [i for i in range(1, 100)] if w not in occurring]
-                        ununusable = used
-                    else:
-                        usable = [i for i in range(1, 1000)]
-                        unusable = occurring
+                    usable = [i for i in range(1, 1000)]
+                    unusable = occurring
                 case "ν" | "χ":  # existing signature
                     # todo correct to use extensions rather than occurring?
                     usable = extensions
