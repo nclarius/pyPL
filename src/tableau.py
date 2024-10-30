@@ -725,7 +725,7 @@ class Tableau(object):
                         # check if the rule requires a new world or
                         # accessibility to be instantiated
                         if rule_type in ["μ"]:
-                            new = True
+                            new = source.world in used
                         elif rule_type in ["ν", "π", "ι"]:
                             new = False
                         elif rule_type in ["κ"]:
@@ -1293,7 +1293,7 @@ class Tableau(object):
             world = usable[
                         min([i for i in range(len(usable)) if usable[i] not in unusable])]
 
-            new = (rule_type in new_signature) or \
+            new = (rule_type in new_signature and world != source.world) or \
                 (rule_type in existing_signature and world not in extensions)
             inst = (universal, new, source.world, world)
         
@@ -2542,4 +2542,3 @@ if __name__ == "__main__":
     # print(test)
     # res = parser.parse(test)
     # print(res)
-
