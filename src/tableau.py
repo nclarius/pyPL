@@ -52,7 +52,7 @@ from subprocess import DEVNULL, STDOUT, check_call
 # todo tableaux for IL
 # todo formulas with free variables?
 
-debug = False
+debug = True
 
 def least(lst, cond):
     return min([x for x in lst if cond(x)])
@@ -446,6 +446,7 @@ class Tableau(object):
                        not isinstance(node.fml, Pseudo)]:
             for rule_name, rule in source.rules().items():
                 rule_type, fmls = rule
+                print(rule_name, rule_type, source.line, source.fml)
 
                 def applied(
                         node):  # nodes in the branch that this rule has
@@ -652,6 +653,7 @@ class Tableau(object):
                                 instantiations[leaf] = []
 
                     for target in targets:
+                        print("target:", target.line)
                         branch = [node for node in target.branch if
                                   not isinstance(node.fml, Pseudo)]
 
@@ -745,11 +747,9 @@ class Tableau(object):
 
                         if rule_type in ["μ"]:
                             # the rules can be applied with any new signature
-                            # extension,
-                            # and for satisfiability only if it has not already been used
-                            if self.mode["validity"] or not used:
-                                applicable.append((target, source, rule_name,
-                                               rule_type, fmls, args, insts))
+                            # extension
+                            applicable.append((target, source, rule_name,
+                                        rule_type, fmls, args, insts))
 
                         if rule_type in ["κ"]:
                             # the rules can be applied with any new signature
@@ -939,15 +939,13 @@ class Tableau(object):
                                                rule_type, fmls, args, insts))
 
         # if the only rules applicable to an unfinished branch are
-        # δ, θ, ε, κ or μ rules that have already been applied on this branch,
-        # or η or λ rules that would unnecessarily introduce a new constant/world,
+        # delta/eta/kappa rules that have already been applied on this branch,
         # it is declared open and, in the case of validity tableaus,
         # its applicable rules cleared
         for leaf in [node for node in self.root.leaves() if
                      node and node.fml != None and not (
                      isinstance(node.fml, Pseudo))]:
-            if all([(appl[6] and appl[3] in ["δ", "θ", "ε", "κ", "μ"])
-                    or (appl[6] and appl[3] in ["η", "λ"] and appl[5][2])
+            if all([(appl[6] and appl[3] in ["δ", "ε", "κ"])
                     for appl in applicable if appl[0] in leaf.branch]):
                         # todo move mu and lambda conditions to block below?
                 if not isinstance(leaf.fml, Pseudo):
@@ -958,12 +956,16 @@ class Tableau(object):
                                   appl[0] not in leaf.branch]
 
         # in satisfiability tableaus,
-        # if the only applicable rules left are theta/kappa rules
+        # if the only applicable rules left are theta/mu rules
         # all of which have already been inst. with a new constant/world,
-        # as in a validity tableau, then the theory is unsatisfiable, 
+        # as in a validity tableau, 
+        # or η or λ rules that would unnecessarily introduce a new constant/world,
+        # then the theory is unsatisfiable, 
         # and the appplicable rules of the entire tree can be cleared
-        if not self.mode["validity"] and all([appl[3] in ["θ", "κ"] for appl in applicable]) and \
-            all([any([node.source == appl[1] and node.inst and node.inst[1] for node in self.root.nodes()]) 
+        if not self.mode["validity"] and all([
+            (appl[3] in ["θ", "μ"] and any(
+                [node.source == appl[1] and node.inst and node.inst[1] for node in self.root.nodes()]))
+            or (appl[6] and appl[3] in ["η", "λ"] and appl[5][2])
                 for appl in applicable]):
                     applicable = []
 
@@ -2542,3 +2544,8 @@ if __name__ == "__main__":
     # print(test)
     # res = parser.parse(test)
     # print(res)
+
+    fml = Imp(Imp(Prop("p"), Prop("q")), Disj(Neg(Prop("p")), Prop("q")))
+    tab = Tableau(fml, propositional=True, classical=False, validity=False, satisfiability=False, silent=True)
+
+    # need to use κ instead of mu so it can be retried on closed branches?
