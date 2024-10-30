@@ -704,6 +704,8 @@ class Tableau(object):
                                            if
                                            node.inst and len(node.inst) > 3 and
                                            node.inst[2] == source.world]))
+                        if not self.mode["classical"]:
+                            extensions = list(dict.fromkeys(extensions + [source.world]))
                         if not extensions and rule_type in ["λ"]:
                             extensions = occurring_global
                         if rule_type == "ι":
@@ -2540,3 +2542,4 @@ if __name__ == "__main__":
     # print(test)
     # res = parser.parse(test)
     # print(res)
+
