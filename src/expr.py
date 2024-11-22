@@ -2465,3 +2465,25 @@ class Seuqent(Pseudo):
         ", ".join([str(fml) for (sign, fml) in fmls if not sign]) +\
         "\\nvdash" +\
         ", ".join([str(fml) for (sign, fml) in fmls if sign])
+
+class Bool(Formula):
+    """
+    Boolean type
+    """
+
+    def __str__(self):
+        return "Bool"
+    
+    def tex(self):
+        return "\\text{Bool}"
+
+class Unit(Formula):
+    """
+    Unit type
+    """
+
+    def __str__(self):
+        return "Unit"
+    
+    def tex(self):
+        return "\\text{Unit}"
