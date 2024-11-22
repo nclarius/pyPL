@@ -171,3 +171,36 @@ class Appl(Constr):
 
     def tex(self) -> str:
         return f'({self.phi.tex()} {self.phi.tex()})'
+
+class Cond(Constr):
+    def __init__(self, chi: Constr, phi: Constr, psi: Constr):
+        self.chi = chi
+        self.phi = phi
+        self.psi = psi
+    
+    def __str__(self):
+        return f'if {str(self.chi)} then {str(self.phi)} else {str(self.psi)}'
+    
+    def tex(self) -> str:
+        return '\\text{if} ' + self.chi.tex() + ' \\text{then} ' + self.phi.tex() + ' \\text{else} ' + self.psi.tex()
+
+class BTrue(Constr):
+    def __str__(self):
+        return 'true'
+
+    def tex(self) -> str:
+        return '\\text{true}'
+
+class BFalse(Constr):
+    def __str__(self):
+        return 'false'
+
+    def tex(self) -> str:
+        return '\\text{false}'
+
+class Unit(Constr):
+    def __str__(self):
+        return 'unit'
+
+    def tex(self) -> str:
+        return '\\text{unit}'
