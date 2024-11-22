@@ -2449,7 +2449,7 @@ class Infinite(Pseudo):
     def tex(self):
         return "\\vdots"
 
-class Seuqent(Pseudo):
+class Sequent(Pseudo):
     """
     Special pseudo-formula representing a set of signed formulas in sequent notation.
     """
@@ -2457,11 +2457,11 @@ class Seuqent(Pseudo):
         self.fmls = fmls
     
     def __str__(self):
-        ", ".join([str(fml) for (sign, fml) in fmls if not sign]) +\
+        return ", ".join([str(fml) for (sign, fml) in fmls if not sign]) +\
         " ⊢ " +\
         ", ".join([str(fml) for (sign, fml) in fmls if sign])
 
     def tex(self):
-        ", ".join([str(fml) for (sign, fml) in fmls if not sign]) +\
+        return ", ".join([str(fml) for (sign, fml) in fmls if not sign]) +\
         "\\nvdash" +\
         ", ".join([str(fml) for (sign, fml) in fmls if sign])
