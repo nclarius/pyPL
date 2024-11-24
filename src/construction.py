@@ -5,14 +5,10 @@
 Define proof construction programs (lambda mu terms) associated with formulas.
 """
 
-class ConstrScheme(Object):
-    def __init__(self, constrtype = None, phi = None, psi = None):
-        self.type = constrtype
-        self.phi = phi
-        self.psi = psi
+from expr import *
 
 class Constr(object):    
-    def __eq__(self, other: Constr) -> bool:
+    def __eq__(self, other) -> bool:
         """
         Whether the construction is equal to another construction.
 
@@ -34,7 +30,7 @@ class Constr(object):
         """
         return len(self.subconstrs())
     
-    def __contains__(self, other: Constr) -> bool:
+    def __contains__(self, other) -> bool:
         """
         Whether the construction contains another construction.
 
@@ -45,7 +41,7 @@ class Constr(object):
         """
         return other in self.subconstrs()
 
-    def imm_subconstrs(self) -> list[Constr]:
+    def imm_subconstrs(self):
         """
         The immediate subconstructions of the construction.
 
@@ -54,7 +50,7 @@ class Constr(object):
         """
         return vars(self).values()
 
-    def proper_subconstrs(self) -> list[Constr]:
+    def proper_subconstrs(self):
         """
         The proper subconstructions of the construction.
 
@@ -66,7 +62,7 @@ class Constr(object):
             res += subconstr.proper_subconstrs()
         return res
 
-    def subconstrs(self) -> list[Constr]:
+    def subconstrs(self):
         """
         The recursive subconstructions of the construction.
 
@@ -151,15 +147,15 @@ class Case(Constr):
         return "\\text{case} " + self.chi.tex() + " \\mid " + self.x.tex() + " : " + self.chi.tex() + " \\mid " + self.y.tex() + " : " + self.psi.tex()
     
 class Abstr(Constr):
-    def __init__(self, phi: Assmpt, psi: Constr):
+    def __init__(self, phi: Assmpt, t : Formula, psi: Constr):
         self.phi = phi
         self.psi = psi
 
     def __str__(self):
-        return f'(λ{str(self.phi)}.{str(self.psi)})'
+        return f'(λ{str(self.phi)} : {str(self.t)}.{str(self.psi)})'
 
     def tex(self) -> str:
-        return f'(\\lambda {self.phi.tex()}.{self.psi.tex()})'
+        return f'(\\lambda {self.phi.tex()} : {str(self.t)}.{self.psi.tex()})'
 
 class Appl(Constr):
     def __init__(self, phi: Constr, psi: Constr):
