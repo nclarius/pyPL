@@ -7,9 +7,6 @@ This software can compute
 - the denotation (truth value) of a given logical expression in a given structure,  
 - a tableau or sequent deduction tree with associated minimal (counter) models for a given inference or set of sentences.
 
-© Natalie Clarius <clarius@informatik.uni-tuebingen.de>  
-License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).   
-
 ![pyPL GUI -- start](doc/img/pyPL_1.png)
 ![pyPL GUI -- input](doc/img/pyPL_2.png)
 ![pyPL GUI -- output](doc/img/pyPL_3.png)
@@ -18,16 +15,15 @@ License: CC BY-NC-SA 4.0 (https://creativecommons.org/licenses/by-nc-sa/4.0/).
 
 ### Try it out
 You can try the model checking feature out [here](https://trinket.io/python3/757871dd18).  
-If you want to dive in deeper, I recommend downloading pyPL to your own computer.
+For full functionality, install pyPL on your own computer.
 
 ### Install and run
-To run this software locally on your machine:
 1. Install dependencies:
    - core functionality: [`Python`](https://www.python.org/downloads/) (version >= 3.9) + Python packages: `os`, `re`
    - for graphical interface: [`Tk`](https://tkdocs.com/tutorial/install.html)
    - for nicely formatted output: [`LaTeX`](https://www.latex-project.org/get/) with `pdflatex` + LaTeX packages: `geometry`, `array`, `forest`, `amssymb`, `amsmath`, `amstext`, `wasysym`, `mathtools`
 2. Download this repository.
-3. Execute `pyPL/main.py`.
+3. Execute `pyPL/gui.py`.
 
 ### Specify input and view output
 Documentation on how to enter formulas, structures and input files can be found in [`pyPL/doc/parser.md`](https://github.com/nclarius/pyPL/blob/master/doc/parser.md).  
@@ -52,10 +48,9 @@ Some background on the theory underlying the implementation can be found in [`py
 
 ### Logics
 - propositional logic
-- first-order logic with zero-place predicates, function symbols and term equality
+- first-order logic with zero-place predicates, function symbols and term equality (for function symbols, only model checking)
 - intensional logic with operators □, ◇, ^, ⱽ; propositional, constant and varying domains; frame K
-- intuitionistic logic with Kripke semantics (only model checking)
-- three-valued logic (not yet implemented)
+- intuitionistic logic with Kripke semantics (for first-order logic, only model checking)
 
 ### Deduction systems
 - analytic tableaux
@@ -80,7 +75,7 @@ Some background on the theory underlying the implementation can be found in [`py
 - in model checking, print out detailed derivation rather than just final result of evaluation
 - broader coverage:
   - lambda calculus and e-t type theory
-  - more frames for modal logic; temporal logic; model generation and modal logic for intuitionistic logic
+  - more frames for modal logic; temporal logic; first-oder and modal logic for intuitionistic logic;  three-valued logic
   - tableaus with free variables
   - other frameworks and calculi, e.g. DRT, ND
 
