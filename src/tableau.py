@@ -39,9 +39,11 @@ Tableau proofs and model extraction.
 
 from expr import *
 from parser import FmlParser
+from helpers import SleepInhibitor
 
 import itertools
 import os
+from time import time
 from datetime import datetime
 from itertools import chain
 from subprocess import DEVNULL, STDOUT, check_call
@@ -53,10 +55,6 @@ from subprocess import DEVNULL, STDOUT, check_call
 # todo formulas with free variables?
 
 debug = False
-
-def least(lst, cond):
-    return min([x for x in lst if cond(x)])
-
 
 class Tableau(object):
     """
@@ -160,14 +158,10 @@ class Tableau(object):
         
         # run the tableau
         print("Computing...")
-        try:
-            from timeit import default_timer as timer
-            self.start = timer()
+        with SleepInhibitor("computing a tableau"):
+            self.start = time()
             self.expand()
-            self.end = timer()
-        except ImportError as e:
-            self.start, self.end = None, None
-            self.expand()
+            self.end = time()
         if not self.silent:
             self.show()
 

@@ -6,8 +6,10 @@ Truth tables.
 """
 
 from expr import *
+from helpers import SleepInhibitor
 
 import os
+from time import time
 from itertools import product
 
 class Truthtable():
@@ -152,16 +154,12 @@ class Truthtable():
         # generate the tex file and open the compiled pdf
 
         # compute truth table
-        try:
-            from timeit import default_timer as timer
-            start = timer()
+        with SleepInhibitor("computing a truth table"):
+            self.start = time()
             tt = self.truthtable()
-            end = timer()
-        except ImportError as e:
-            start, end = None, None
-            tt = self.truthtable()
-        if start and end:
-            comptime = "This computation took " + str(round(end - start, 4)) + " seconds."
+            self.end = time()
+        if self.start and self.end:
+            comptime = "This computation took " + str(round(self.end - self.start, 4)) + " seconds."
         else:
             comptime = None
 
