@@ -2024,6 +2024,9 @@ class Node(object):
             indent = indent[:-4]
             res += "\\end{forest}\n"
         return res
+    
+    def __len__(self):
+        return len(self.nodes(True))
 
     def nodes(self, root=True, reverse=False, preorder=False):
         """
@@ -2546,4 +2549,3 @@ if __name__ == "__main__":
     # print(test)
     # res = parser.parse(test)
     # print(res)
-
