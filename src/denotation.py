@@ -17,8 +17,9 @@ from functools import reduce
 
 class Denotation:
 
-    def __init__(self, exprs, gui=None):
+    def __init__(self, exprs,silent=False, gui=None):
         self.exprs = exprs
+        self.silent = silent
         self.gui = gui
         if not self.gui:
             self.gui = __import__("gui").PyPLGUI(True)

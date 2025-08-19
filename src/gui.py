@@ -1423,11 +1423,11 @@ class PyPLGUI(ttk.Frame):
         self.update()
 
         if self.inst.action == "tc":
-            tt = truthtable.Truthtable(concl, [], latex, False, self)
+            tt = truthtable.Truthtable(concl, [], latex, True, self)
             tt.show()
 
         elif self.inst.action == "mc":
-            denot = denotation.Denotation([(fml, structure, v, w) for fml, v, w in formulas], self)
+            denot = denotation.Denotation([(fml, structure, v, w) for fml, v, w in formulas], True, self)
             denot.show(latex)
 
             # # todo make look nicer?
