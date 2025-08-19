@@ -6,8 +6,10 @@ Helper file for denotations.
 """
 
 from expr import *
+from helpers import SleepInhibitor
 
 import os
+from time import time
 import re
 
 from functools import reduce
@@ -50,25 +52,28 @@ class Denotation:
 
             # print denotation
             print(fml, v, w)
-            if "modal" not in s.mode() and "classical" in s.mode():  # classical non-modal logic
-                if not v:
-                    res += self.format(fml.denotV(s), latex)
-                else:
-                    res += self.format(fml.denot(s, s.v[v]), latex)
-            else:  # classical modal logic or intuitionistic logic
-                if not v:
-                    if not w:
-                        print("computing denotVW", fml)
-                        print(str(self.format(fml.denotVW(s), latex)))
-                        res += str(self.format(fml.denotVW(s), latex))
-                        print("done computing denotVW", fml)
+            with SleepInhibitor("computing a denotation"):
+                self.start = time()
+                if "modal" not in s.mode() and "classical" in s.mode():  # classical non-modal logic
+                    if not v:
+                        res += self.format(fml.denotV(s), latex)
                     else:
-                        res += self.format(fml.denotV(s, w), latex)
-                else:
-                    if not w:
-                        res += self.format(fml.denotW(s, s.v[v]), latex)
+                        res += self.format(fml.denot(s, s.v[v]), latex)
+                else:  # classical modal logic or intuitionistic logic
+                    if not v:
+                        if not w:
+                            print("computing denotVW", fml)
+                            print(str(self.format(fml.denotVW(s), latex)))
+                            res += str(self.format(fml.denotVW(s), latex))
+                            print("done computing denotVW", fml)
+                        else:
+                            res += self.format(fml.denotV(s, w), latex)
                     else:
-                        res += self.format(fml.denot(s, s.v[v], w), latex)
+                        if not w:
+                            res += self.format(fml.denotW(s, s.v[v]), latex)
+                        else:
+                            res += self.format(fml.denot(s, s.v[v], w), latex)
+                self.end = time()
             if not latex:
                 res += "\n\n"
             else:
