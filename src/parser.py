@@ -361,20 +361,20 @@ class StructParser:
                 if propositional:
                     return structure.PropStructure(s["S"], s["V"])
                 else:
-                    return structure.PredStructure(s["S"], s["D"], s["I"], s["V"])
+                    return structure.PredStructure(s["S"], s["D"], s["I"])
             else:
                 if propositional:
                     return structure.PropModalStructure(s["S"], s["W"], s["R"], s["V"])
                 else:
                     if not vardomains:
-                        return structure.ConstModalStructure(s["S"], s["W"], s["R"], s["D"], s["I"], s["V"])
+                        return structure.ConstModalStructure(s["S"], s["W"], s["R"], s["D"], s["I"])
                     else:
-                        return structure.VarModalStructure(s["S"], s["W"], s["R"], s["D"], s["I"], s["V"])
+                        return structure.VarModalStructure(s["S"], s["W"], s["R"], s["D"], s["I"])
         else:
             if propositional:
                 return structure.KripkePropStructure(s["S"], s["K"], s["R"], s["V"])
             else:
-                return structure.KripkePredStructure(s["S"], s["K"], s["R"], s["D"], s["I"], s["V"])
+                return structure.KripkePredStructure(s["S"], s["K"], s["R"], s["D"], s["I"])
 
 if __name__ == "__main__":
     parse_f = FmlParser().parse
