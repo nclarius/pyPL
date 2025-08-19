@@ -1659,12 +1659,6 @@ class Node(object):
         self.branch = (parent.branch if parent else []) + [self]
         self.children = []
 
-    def __repr__(self):
-        """
-        String representation of this line.
-        """
-        return str(self)
-
     def __str__(self):
         """
         String representation of this line.

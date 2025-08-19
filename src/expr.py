@@ -46,7 +46,9 @@ class Expr:
                  if not attr.startswith("__") and not callable(getattr(self, attr))])
 
     def __repr__(self):
-        return str(self)
+        components = [getattr(self, attr) for attr in vars(self).keys() 
+                        if not attr.startswith("__") and not callable(getattr(self, attr))]
+        return type(self).__name__ + "(" + ", ".join([repr(attr) for attr in components]) + ")"
 
     def tex(self) -> str:
         """
