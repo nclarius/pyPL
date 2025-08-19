@@ -119,7 +119,7 @@ class FmlParser:
         if not tokens:
             stacks = self.stacks
             curr_stack = stacks[-1] if stacks else None
-            curr_stack.append(Empty())
+            curr_stack.append(expr.Empty())
             self.stacks = stacks
             self.update_stacks()
         for token in tokens:
