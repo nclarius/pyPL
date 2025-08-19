@@ -17,8 +17,11 @@ from functools import reduce
 
 class Denotation:
 
-    def __init__(self, exprs):
+    def __init__(self, exprs, gui=None):
         self.exprs = exprs
+        self.gui = gui
+        if not self.gui:
+            self.gui = __import__("gui").PyPLGUI(True)
 
     def show(self, latex):
         res = ""
@@ -84,9 +87,8 @@ class Denotation:
             res += "\n\n\\end{document}"
 
         # write and open output
-        write_output = __import__("gui").write_output
         print("writing output")
-        write_output(res, latex)
+        self.gui.write_output(res, latex)
 
     def format(self, obj, latex):
         if isinstance(obj, str):

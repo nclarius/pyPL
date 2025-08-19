@@ -1423,11 +1423,11 @@ class PyPLGUI(ttk.Frame):
         self.update()
 
         if self.inst.action == "tc":
-            tt = truthtable.Truthtable(concl, latex)
+            tt = truthtable.Truthtable(concl, [], latex, False, self)
             tt.show()
 
         elif self.inst.action == "mc":
-            denot = denotation.Denotation([(fml, structure, v, w) for fml, v, w in formulas])
+            denot = denotation.Denotation([(fml, structure, v, w) for fml, v, w in formulas], self)
             denot.show(latex)
 
             # # todo make look nicer?
@@ -1466,7 +1466,7 @@ class PyPLGUI(ttk.Frame):
                                    silent=True, file=True, latex=latex, stepwise=stepwise,
                                    num_models=num_models, size_limit_factor=size_limit,
                                    underline_open=underline_open, hide_nonopen=hide_nonopen,
-                            gui=self)
+                                   gui=self)
             if tab1.closed():
                 # win_wait.destroy()
                 tab1.show()
@@ -1479,7 +1479,7 @@ class PyPLGUI(ttk.Frame):
                                        silent=True, file=True, latex=latex, stepwise=stepwise,
                                        num_models=num_models, size_limit_factor=size_limit,
                                        underline_open=underline_open, hide_nonopen=hide_nonopen,
-                            gui=self)
+                                       gui=self)
                 if tab2.open() or tab2.infinite():
                     # win_wait.destroy()
                     tab2.show()
