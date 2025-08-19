@@ -28,9 +28,10 @@ class Denotation:
 
         # print preamble
         if latex:
+            preamble = "\\documentclass[varwidth=1682mm, varheight, border=1cm]{standalone}\n\n"
             path_preamble = os.path.join(os.path.dirname(__file__), "preamble.tex")
             with open(path_preamble) as f:
-                preamble = f.read()
+                preamble += f.read()
                 preamble += "\n\n\\setlength\\tabcolsep{3pt}\n"
             res += preamble + "\n\n\\begin{document}\n\n"
 
