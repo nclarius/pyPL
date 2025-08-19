@@ -871,8 +871,15 @@ class PyPLGUI(ttk.Frame):
             for i in new_mids:
                 new_mids[i].pack(ipadx=5, ipady=5, padx=50)
             mids.update(new_mids)
-            cap_fml.pack(in_=mids[0], side=tk.LEFT, padx=15, pady=15)
+            cap_concl.pack(in_=mids[0], side=tk.LEFT, padx=15, pady=15)
             add_formula()
+            new_mids = {i: ttk.Frame(mid, style="Frame.TFrame") for i in range(len(mids)+1)}
+            for i in new_mids:
+                new_mids[i].pack(ipadx=5, ipady=5, padx=50)
+            mids.update(new_mids)
+            cap_prems.pack(in_=mids[2], side=tk.LEFT, pady=15)
+            btn_add_fml.pack(in_=mids[2], side=tk.LEFT, padx=15)
+            ents_fml[0].focus()
 
         elif self.inst.action == "mc":
             new_mids = {i: ttk.Frame(mid, style="Frame.TFrame") for i in range(len(mids), len(mids)+2)}
@@ -1423,7 +1430,7 @@ class PyPLGUI(ttk.Frame):
         self.update()
 
         if self.inst.action == "tc":
-            tt = truthtable.Truthtable(concl, [], latex, True, self)
+            tt = truthtable.Truthtable(concl, premises, latex, True, self)
             tt.show()
 
         elif self.inst.action == "mc":
