@@ -78,7 +78,7 @@ class Tableau(object):
         # todo nicer specification of settings?
         # todo check consistency of settings
         # validity = theorem proving vs model generation
-        # satisfiability = pro model genreation vs couter model generation
+        # satisfiability = model generation vs counter model generation
         self.mode = {
                 "validity":    validity, "satisfiability": satisfiability,
                 "linguistic":  linguistic,
