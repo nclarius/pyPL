@@ -6,6 +6,7 @@ Truth tables.
 """
 
 from expr import *
+from structure import *
 from helpers import SleepInhibitor
 
 import os
