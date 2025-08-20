@@ -114,3 +114,24 @@ class PerformanceHolder:
         # re-raise signal with default handler
         if signum:
             os.kill(os.getpid(), signum)
+
+class Timer:
+    def __init__(self):
+        pass
+
+    def __enter__(self):
+        try:
+            from time import time
+            self.start = time()
+        
+        except exception as e:
+            print("Failed to measure time:", e)
+        
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # stop timer
+        if self.start:
+            from time import time
+            self.end = time()
+            self.elapsed = self.end - self.start

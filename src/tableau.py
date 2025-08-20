@@ -39,11 +39,10 @@ Tableau proofs and model extraction.
 
 from expr import *
 from parser import FmlParser
-from helpers import SleepInhibitor, PerformanceHolder
+from exec_helpers import *
 
 import itertools
 import os
-from time import time
 from datetime import datetime
 from itertools import chain
 from subprocess import DEVNULL, STDOUT, check_call
@@ -160,9 +159,8 @@ class Tableau(object):
         print("Computing...")
         with SleepInhibitor("computing a tableau"):
             with PerformanceHolder("computing a tableau"):
-                self.start = time()
-                self.expand()
-                self.end = time()
+                with Timer() as self.timer:
+                    self.expand()
         if not self.silent:
             self.show()
 
@@ -389,12 +387,11 @@ class Tableau(object):
 
         # measures size and time
         # size = len(self)
-        if self.start and self.end:
-            elapsed = self.end - self.start
+        if self.timer:
             if self.latex:
                 res += "\\ \\\\\n"
             res += "This computation took " + str(
-                round(elapsed, 4)) + " seconds, " + \
+                round(self.timer.elapsed, 4)) + " seconds, " + \
                    str(self.num_branches) + " branch" + (
                        "es" if self.num_branches > 1 else "") + \
                    " and " + str(len(self)) + " nodes.\n\n"

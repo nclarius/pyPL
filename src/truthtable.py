@@ -7,10 +7,9 @@ Truth tables.
 
 from expr import *
 from structure import *
-from helpers import SleepInhibitor, PerformanceHolder
+from exec_helpers import *
 
 import os
-from time import time
 from itertools import product
 
 class Truthtable():
@@ -157,11 +156,10 @@ class Truthtable():
         # compute truth table
         with SleepInhibitor("computing a truth table"):
             with PerformanceHolder("computing a truth table"):
-                self.start = time()
-                tt = self.truthtable()
-                self.end = time()
-        if self.start and self.end:
-            comptime = "This computation took " + str(round(self.end - self.start, 4)) + " seconds."
+                with Timer as self.timer:
+                    tt = self.truthtable()
+        if self.timer.elapsed:
+            comptime = "This computation took " + str(round(self.timer.elapsed, 4)) + " seconds."
         else:
             comptime = None
 
