@@ -7,7 +7,7 @@ Parse a formula given as string into an Expr object.
 
 import re
 
-debug = True
+debug = False
 
 
 class FmlParser:
