@@ -2525,7 +2525,7 @@ if __name__ == "__main__":
     # p2 = parse_f("∀ x ∀ y ∀ z ((Leq(x,y) ∧ Leq(y,z)) → Leq(x,z))")
     # p3 = parse_f("∀ x ∀ y ∀ z ((∀ u((Leq(u,x) ∧ Leq(u,y)) → Leq(u,z)) ∧ ∀ u ((Leq(y,u) ∧ Leq(z,u)) → Leq(x,u))) → Leq(x,z))")
     # p4 = parse_f("∀ x ∀ y ∃ z ((Leq(x,z) ∧ Leq(y,z)) ∧ ∀ u ((Leq(x,u) ∧ Leq(y,u)) → Leq(z,u)))")
-    # c = parse_f("\\forall x1 \\forall x2 \\forall x3 (\\forall u (Leq(x1,u) ^ Leq(x2,u) -> Leq(x1,x2)) -> \\exists y1 \\exists y2 (((Leq(y1,x1) ^ Leq(y2,x2)) ^ (Leq(y1,x3) ^ Leq(y1,x3))) ^ \\forall u (Leq(y1,u) ^ Leq(y2,u) -> Leq(x3,u))))")
+    # c = parse_f("∀ x1 ∀ x2 ∀ x3 (∀ u (Leq(x1,u) ^ Leq(x2,u) -> Leq(x3,u)) -> ∃ y1 ∃ y2 (Leq(y1,x1) ^ Leq(y2,x2) ^ Leq(y1,x3) ^ Leq(y2,x3) ^ ∀ u (Leq(y1,u) ^ Leq(y2,u) -> Leq(x3,u))))")
     # tab = Tableau(c, premises=[p1, p2, p3, p4], validity=True, satisfiability=False)
 
     ###############
