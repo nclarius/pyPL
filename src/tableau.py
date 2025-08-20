@@ -2522,84 +2522,84 @@ if __name__ == "__main__":
     # example from ordering theory
     #####################
 
-    p1 = parse_f("∀ x Leq(x,x)")
-    # p1 = Forall(Var("x"), 
-    #             Atm(Pred("Leq"), (Var("x"), Var("x"))))
-    p2 = parse_f("∀ x ∀ y ∀ z ((Leq(x,y) ∧ Leq(y,z)) → Leq(x,z))")
-    # p2 = Forall(Var("x"), 
-    #             Forall(Var("y"), 
-    #                    Forall(Var("z"),
-    #                           Imp(Conj(Atm(Pred("Leq"), (Var("x"), Var("y"))),
-    #                                    Atm(Pred("Leq"), (Var("y"), Var("z")))
-    #                                   ),
-    #                               Atm(Pred("Leq"), (Var("x"), Var("z")))
-    #                              )
-    #     )))
-    p3 = parse_f("∀ x ∀ y ∀ z ((∀ u((Leq(u,x) ∧ Leq(u,y)) → Leq(u,z)) ∧ ∀ u ((Leq(y,u) ∧ Leq(z,u)) → Leq(x,u))) → Leq(x,z))")
-    # p3 = Forall(Var("x"), 
-    #             Forall(Var("y"), 
-    #                    Forall(Var("z"),
-    #                           Imp(Conj(Forall(Var("u"),
-    #                                           Imp(Conj(Atm(Pred("Leq"), (Var("u"), Var("x"))),
-    #                                                    Atm(Pred("Leq"), (Var("u"), Var("y")))
-    #                                                   ),
-    #                                               Atm(Pred("Leq"), (Var("u"), Var("z")))
-    #                                              )
-    #                                          ),
-    #                                     Forall(Var("u"),
-    #                                            Imp(Conj(Atm(Pred("Leq"), (Var("y"), Var("u"))),
-    #                                                     Atm(Pred("Leq"), (Var("z"), Var("u")))
-    #                                                    ),
-    #                                                Atm(Pred("Leq"), (Var("x"), Var("u")))
-    #                                               )
-    #                                           )
-    #                                   ),
-    #                                 Atm(Pred("Leq"), (Var("x"), Var("z")))
-    #                                 )
-    #                           
-    #     )))
-    p4 = parse_f("∀ x ∀ y ∃ z ((Leq(x,z) ∧ Leq(y,z)) ∧ ∀ u ((Leq(x,u) ∧ Leq(y,u)) → Leq(z,u)))")
-    # p4 = Forall(Var("x"), 
-    #             Forall(Var("y"), 
-    #                    Exists(Var("z"), 
-    #                           Conj(Conj(Atm(Pred("Leq"), (Var("x"), Var("z"))), 
-    #                                     Atm(Pred("Leq"), (Var("y"), Var("z")))),
-    #                                Forall(Var("u"), 
-    #                                       Imp(Conj(Atm(Pred("Leq"), (Var("x"), Var("u"))), 
-    #                                                Atm(Pred("Leq"), (Var("y"), Var("u")))),
-    #                                           Atm(Pred("Leq"), (Var("z"), Var("u")))
-    #      ))))))
-    c = parse_f("\\forall x1 \\forall x2 \\forall x3 (\\forall u (Leq(x1,u) ^ Leq(x2,u) -> Leq(x1,x2)) -> \\exists y1 \\exists y2 (((Leq(y1,x1) ^ Leq(y2,x2)) ^ (Leq(y1,x3) ^ Leq(y1,x3))) ^ \\forall u (Leq(y1,u) ^ Leq(y2,u) -> Leq(x3,u))))")
-    # c = Forall(Var("x1"),
-    #            Forall(Var("x2"),
-    #                   Forall(Var("x3"),
-    #                          Imp(Forall(Var("y1"),
-    #                                     Imp(Conj(Atm(Pred("Leq"), (Var("x1"), Var("y1"))),
-    #                                              Atm(Pred("Leq"), (Var("x2"), Var("y1")))
-    #                                             ),
-    #                                         Atm(Pred("Leq"), (Var("x3"), Var("y1"))) 
-    #                                         )
-    #                                    ),
-    #                              Exists(Var("y1"),
-    #                                     Exists(Var("y2"),
-    #                                            Conj(Conj(Conj(Conj(Atm(Pred("Leq"), (Var("y1"), Var("x1"))),
-    #                                                                Atm(Pred("Leq"), (Var("y2"), Var("x2")))
-    #                                                               ),
-    #                                                           Atm(Pred("Leq"), (Var("y1"), Var("x3")))
-    #                                                           ),
-    #                                                      Atm(Pred("Leq"), (Var("y2"), Var("x3")))
-    #                                                      ),
-    #                                                 Forall(Var("y1"),
-    #                                                        Imp(Conj(Atm(Pred("Leq"), (Var("y1"), Var("y1"))),
-    #                                                                 Atm(Pred("Leq"), (Var("y2"), Var("y1")))
-    #                                                                 ),
-    #                                                             Atm(Pred("Leq"), (Var("x3"), Var("y1")))
-    #                                                            )
-    #                                                        )
-    #                                                 )
-    #                                  ))
-    #                             ))))
-    tab = Tableau(c, premises=[p1, p2, p3, p4], validity=True, satisfiability=False)
+    # p1 = parse_f("∀ x Leq(x,x)")
+    # # p1 = Forall(Var("x"), 
+    # #             Atm(Pred("Leq"), (Var("x"), Var("x"))))
+    # p2 = parse_f("∀ x ∀ y ∀ z ((Leq(x,y) ∧ Leq(y,z)) → Leq(x,z))")
+    # # p2 = Forall(Var("x"), 
+    # #             Forall(Var("y"), 
+    # #                    Forall(Var("z"),
+    # #                           Imp(Conj(Atm(Pred("Leq"), (Var("x"), Var("y"))),
+    # #                                    Atm(Pred("Leq"), (Var("y"), Var("z")))
+    # #                                   ),
+    # #                               Atm(Pred("Leq"), (Var("x"), Var("z")))
+    # #                              )
+    # #     )))
+    # p3 = parse_f("∀ x ∀ y ∀ z ((∀ u((Leq(u,x) ∧ Leq(u,y)) → Leq(u,z)) ∧ ∀ u ((Leq(y,u) ∧ Leq(z,u)) → Leq(x,u))) → Leq(x,z))")
+    # # p3 = Forall(Var("x"), 
+    # #             Forall(Var("y"), 
+    # #                    Forall(Var("z"),
+    # #                           Imp(Conj(Forall(Var("u"),
+    # #                                           Imp(Conj(Atm(Pred("Leq"), (Var("u"), Var("x"))),
+    # #                                                    Atm(Pred("Leq"), (Var("u"), Var("y")))
+    # #                                                   ),
+    # #                                               Atm(Pred("Leq"), (Var("u"), Var("z")))
+    # #                                              )
+    # #                                          ),
+    # #                                     Forall(Var("u"),
+    # #                                            Imp(Conj(Atm(Pred("Leq"), (Var("y"), Var("u"))),
+    # #                                                     Atm(Pred("Leq"), (Var("z"), Var("u")))
+    # #                                                    ),
+    # #                                                Atm(Pred("Leq"), (Var("x"), Var("u")))
+    # #                                               )
+    # #                                           )
+    # #                                   ),
+    # #                                 Atm(Pred("Leq"), (Var("x"), Var("z")))
+    # #                                 )
+    # #                           
+    # #     )))
+    # p4 = parse_f("∀ x ∀ y ∃ z ((Leq(x,z) ∧ Leq(y,z)) ∧ ∀ u ((Leq(x,u) ∧ Leq(y,u)) → Leq(z,u)))")
+    # # p4 = Forall(Var("x"), 
+    # #             Forall(Var("y"), 
+    # #                    Exists(Var("z"), 
+    # #                           Conj(Conj(Atm(Pred("Leq"), (Var("x"), Var("z"))), 
+    # #                                     Atm(Pred("Leq"), (Var("y"), Var("z")))),
+    # #                                Forall(Var("u"), 
+    # #                                       Imp(Conj(Atm(Pred("Leq"), (Var("x"), Var("u"))), 
+    # #                                                Atm(Pred("Leq"), (Var("y"), Var("u")))),
+    # #                                           Atm(Pred("Leq"), (Var("z"), Var("u")))
+    # #      ))))))
+    # c = parse_f("\\forall x1 \\forall x2 \\forall x3 (\\forall u (Leq(x1,u) ^ Leq(x2,u) -> Leq(x1,x2)) -> \\exists y1 \\exists y2 (((Leq(y1,x1) ^ Leq(y2,x2)) ^ (Leq(y1,x3) ^ Leq(y1,x3))) ^ \\forall u (Leq(y1,u) ^ Leq(y2,u) -> Leq(x3,u))))")
+    # # c = Forall(Var("x1"),
+    # #            Forall(Var("x2"),
+    # #                   Forall(Var("x3"),
+    # #                          Imp(Forall(Var("y1"),
+    # #                                     Imp(Conj(Atm(Pred("Leq"), (Var("x1"), Var("y1"))),
+    # #                                              Atm(Pred("Leq"), (Var("x2"), Var("y1")))
+    # #                                             ),
+    # #                                         Atm(Pred("Leq"), (Var("x3"), Var("y1"))) 
+    # #                                         )
+    # #                                    ),
+    # #                              Exists(Var("y1"),
+    # #                                     Exists(Var("y2"),
+    # #                                            Conj(Conj(Conj(Conj(Atm(Pred("Leq"), (Var("y1"), Var("x1"))),
+    # #                                                                Atm(Pred("Leq"), (Var("y2"), Var("x2")))
+    # #                                                               ),
+    # #                                                           Atm(Pred("Leq"), (Var("y1"), Var("x3")))
+    # #                                                           ),
+    # #                                                      Atm(Pred("Leq"), (Var("y2"), Var("x3")))
+    # #                                                      ),
+    # #                                                 Forall(Var("y1"),
+    # #                                                        Imp(Conj(Atm(Pred("Leq"), (Var("y1"), Var("y1"))),
+    # #                                                                 Atm(Pred("Leq"), (Var("y2"), Var("y1")))
+    # #                                                                 ),
+    # #                                                             Atm(Pred("Leq"), (Var("x3"), Var("y1")))
+    # #                                                            )
+    # #                                                        )
+    # #                                                 )
+    # #                                  ))
+    # #                             ))))
+    # tab = Tableau(c, premises=[p1, p2, p3, p4], validity=True, satisfiability=False)
 
     ###############
     # sequent calculus
