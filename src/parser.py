@@ -7,7 +7,7 @@ Parse a formula given as string into an Expr object.
 
 import re
 
-debug = False
+debug = True
 
 
 class FmlParser:
@@ -46,11 +46,11 @@ class FmlParser:
             "Inf": r"(\|=||\\vDash|\\models|\\linf)",
             "Noninf": r"(\|/=||\\nvDash|\\nmodels|\\lninf)",
             # term symbols
-            "Var": r"(x|y|z)(_?\d+)?",
-            "Const": r"(([a-z]\w+)|(([a-e]|[i-o])(_?\d+)?))",
+            "Var": r"(x|y|z|u)(_?\d+)?",
+            "Const": r"(([a-z][a-z]+)|(([a-e]|[i-o])(_?\d+)?))",
             "Func": r"(f|g|h)(_?\d+)?",
             # atom symbols
-            "Prop": r"[p-u](_?\d+)?",
+            "Prop": r"[p-t](_?\d+)?",
             "Eq": r"(=|\\eq)",
             "Pred": r"[A-Z]\w*",
             # connectives

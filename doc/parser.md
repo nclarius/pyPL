@@ -25,11 +25,11 @@ Here is how to enter formulas, structures and input files.
 
 ### Individual variables
 
-Lowercase letters `x` - `z`, optionally followed by a number, optionally separated by an underscore.  
-Examples: `x`, `y`, `z5`, `x_23`.
+Lowercase letters `x` - `z` and `u`, optionally followed by a number, optionally separated by an underscore.  
+Examples: `x`, `y`, `z5`, `u_23`.
 
 ### Individual constants
-Lowercase letters `a` - `e` and `i` - `o`, optionally followed by a number, optionally separated by an underscore; <br/>or: a sequence of letters, numbers and underscore, with the first symbol a lowercase letter.      
+Lowercase letters `a` - `e` and `i` - `o`, optionally followed by a number, optionally separated by an underscore; <br/>or: a sequence of lowercase letters.      
 Examples: `a`, `m`, `c12`, `peter`; not: `p` , `Mary`.
 
 ### Functions
@@ -40,8 +40,8 @@ Examples: `f`, `g2`.
 ## Atomic symbols
 
 ### Propositional variables
-Lowercase letters `p` - `u`, optionally followed by a number, optionally separated by an underscore.  
-Examples: `p`, `q`, `p_1`, `u_23`.
+Lowercase letters `p` - `t`, optionally followed by a number, optionally separated by an underscore.  
+Examples: `p`, `q`, `p_1`, `t_23`.
 
 ### Predicates
 A sequence of letters, numbers and underscore, with the first symbol an uppercase letter.  
