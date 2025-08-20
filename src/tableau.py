@@ -2618,5 +2618,5 @@ if __name__ == "__main__":
     ####################
     # test = r"((\all x \nec P(x) v \exi y (P(y) ^ R(c,y))) -> \falsum)"
     # print(test)
-    # res = parser.parse(test)
+    # res = parse_f(test)
     # print(res)

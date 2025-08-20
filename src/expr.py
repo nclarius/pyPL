@@ -871,6 +871,10 @@ class Atm(Formula):
     def __str__(self):
         return str(self.pred) + "(" + ",".join([str(t) for t in self.terms]) + ")"
 
+    def __repr__(self):
+        return type(self).__name__ + "(" + repr(self.pred) + ", " + \
+            "(" + ", ".join([repr(term) for term in self.terms]) + ("," if len(self.terms) == 1 else "") + ")" + ")"
+
     def tex(self):
         return self.pred.tex() + "(" + ",".join([t.tex() for t in self.terms]) + ")"
 
