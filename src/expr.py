@@ -197,7 +197,8 @@ class Expr:
         @return: the result of substituting all occurrences of the term tau for the term rho in self
         @rtype Expr
         """
-        return type(self)(*[subexpr.subst(tau, rho) for subexpr in self.subexprs()])  # todo remove overrides
+        return type(self)(*[subexpr.subst(tau, rho) for subexpr in self.imm_subexprs()]) \
+                if self.imm_subexprs() else self
 
     def denot(self, s, v: dict[str, str] = {}, w: str = ""):
         """
@@ -556,9 +557,6 @@ class Pred(Expr):
     def preds(self):
         return {self.p}
 
-    def subst(self, u, t):
-        return self
-
     def denot(self, s, v = {}, w = "") -> set[tuple[str]]:
         """
         The denotation of a predicate is the set of ordered tuples of individuals that the interpretation function f
@@ -591,12 +589,6 @@ class Formula(Expr):
     @method denotV: the truth value of a formula relative to a structure s (without reference to a particular
     assignment)
     """
-
-    def subst(self, u, t):
-        """
-        @rtype: Formula
-        """
-        pass
 
     def denot(self, s, v = {}, w = "") -> bool:
         """
@@ -812,9 +804,6 @@ class Prop(Formula):
     def propvars(self):
         return {self.p}
 
-    def subst(self, u, t):
-        return self
-
     def denot(self, s, v = {}, w = ""):
         """
         The denotation of a propositional variable is the truth value the valuation function V assigns it.
@@ -936,9 +925,6 @@ class Eq(Formula):
     def tex(self):
         return "(" + self.tau.tex() + " = " + self.rho.tex() + ")"
 
-    def subst(self, u, t):
-        return Eq(self.tau.subst(u, t), self.rho.subst(u, t))
-
     def denot(self, s, v = {}, w = ""):
         """
         The denotation of a term equality tau = rho is true iff tau and rho denote the same individual.
@@ -977,9 +963,6 @@ class Verum(Formula):
 
     def tex(self):
         return "\\top"
-
-    def subst(self, u, t):
-        return self
 
     def denot(self, s, v = {}, w = ""):
         """
@@ -1020,9 +1003,6 @@ class Falsum(Formula):
 
     def tex(self):
         return "\\bot"
-
-    def subst(self, u, t):
-        return self
 
     def denot(self, s, v = {}, w = ""):
         """
@@ -1078,9 +1058,6 @@ class Neg(Formula):
         if isinstance(self.phi, Inf):
             return "\\nvdash"
         return "\\neg " + self.phi.tex()
-
-    def subst(self, u, t):
-        return Neg(self.phi.subst(u, t))
 
     def denot(self, s, v = {}, w = ""):
         """
@@ -1147,9 +1124,6 @@ class Conj(Formula):
     def tex(self):
         return "(" + self.phi.tex() + " \\wedge " + self.psi.tex() + ")"
 
-    def subst(self, u, t):
-        return Conj(self.phi.subst(u, t), self.psi.subst(u, t))
-
     def denot(self, s, v = {}, w = ""):
         """
         The denotation of a conjoined formula Con(phi,psi) is true iff phi is true and psi is true.
@@ -1202,9 +1176,6 @@ class Disj(Formula):
     def tex(self):
         return "(" + self.phi.tex() + " \\vee " + self.psi.tex() + ")"
 
-    def subst(self, u, t):
-        return Disj(self.phi.subst(u, t), self.psi.subst(u, t))
-
     def denot(self, s, v = {}, w = ""):
         """
         The denotation of a conjoined formula Disj(phi,psi) is true iff phi is true or psi is true.
@@ -1253,9 +1224,6 @@ class Imp(Formula):
 
     def tex(self):
         return "(" + self.phi.tex() + " \\rightarrow " + self.psi.tex() + ")"
-
-    def subst(self, u, t):
-        return Imp(self.phi.subst(u, t), self.psi.subst(u, t))
 
     def denot(self, s, v = {}, w = ""):
         """
@@ -1319,9 +1287,6 @@ class Biimp(Formula):
 
     def tex(self):
         return "(" + self.phi.tex() + " \\leftrightarrow " + self.psi.tex() + ")"
-
-    def subst(self, u, t):
-        return Biimp(self.phi.subst(u, t), self.psi.subst(u, t))
 
     def denot(self, s, v = {}, w = ""):
         """
@@ -1389,9 +1354,6 @@ class Xor(Formula):
 
     def tex(self):
         return "(" + self.phi.tex() + " \\oplus " + self.psi.tex() + ")"
-
-    def subst(self, u, t):
-        return Biimp(self.phi.subst(u, t), self.psi.subst(u, t))
 
     def denot(self, s, v = {}, w = ""):
         """
@@ -1847,9 +1809,6 @@ class Poss(Formula):
     def tex(self):
         return "\\Diamond " + " " + self.phi.tex()
 
-    def subst(self, u, t):
-        return Poss(self.phi.subst(u, t))
-
     def denot(self, s, v, w):
         """
         In CL, the denotation of a possiblity formula is true iff
@@ -1957,9 +1916,6 @@ class Nec(Formula):
     def tex(self):
         return "\\Box " + " " + self.phi.tex()
 
-    def subst(self, u, t):
-        return Nec(self.phi.subst(u, t))
-
     def denot(self, s, v, w):
         """
         In CL, the denotation of a necessity formula is true iff
@@ -2066,9 +2022,6 @@ class Int(Expr):
     def tex(self):
         return "{}^{\\wedge} " + " " + self.phi.tex()
 
-    def subst(self, u, t):
-        return Int(self.phi.subst(u, t))
-
     def denot(self, s, v = {}, w = ""):
         """
         The denotation of the intension of an expression is
@@ -2101,9 +2054,6 @@ class Ext(Expr):
 
     def tex(self):
         return "{}^{\\vee} " + " " + self.phi.tex()
-
-    def subst(self, u, t):
-        return Int(self.phi.subst(u, t))
 
     def denot(self, s, v = {}, w = ""):
         """
@@ -2296,9 +2246,6 @@ class AllWorlds(Formula):
     def tex(self):
         return self.phi.tex()
 
-    def subst(self, u, t):
-        return Neg(self.phi.subst(u, t))
-
     def denot(self, s, v = {}, w = ""):
         """
         A formula is true in the model if it is true in all worlds of the model.
@@ -2340,9 +2287,6 @@ class NotAllWorlds(Formula):
 
     def tex(self):
         return "\\neg " + self.phi.tex()
-
-    def subst(self, u, t):
-        return Neg(self.phi.subst(u, t))
 
     def denot(self, s, v = {}, w = ""):
         """
