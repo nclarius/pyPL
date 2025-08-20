@@ -192,6 +192,7 @@ class PyPLGUI(ttk.Frame):
         frm_run.pack(pady=10)
 
         # run button
+        # todo turn into cancel button once running
         btn_run = ttk.Button(frm_run,
                             text="Run!",
                             style="ActionButton.TButton",
