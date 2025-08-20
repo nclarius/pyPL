@@ -5,7 +5,7 @@ import dbus
 
 class SleepInhibitor:
     def __init__(self, reason):
-        self.what = "sleep"
+        self.what = "idle"
         self.who = "pyPL"
         self.why = reason
         self.mode = "block"

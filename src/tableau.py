@@ -1084,6 +1084,7 @@ class Tableau(object):
             print("--------")
             print()
         while applicable := self.applicable():
+            print(str(len(self.root)) + " nodes", end="\r")
             if self.stepwise:
                 self.steps.append(
                     self.root.treestr() if not self.latex else
