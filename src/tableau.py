@@ -39,7 +39,7 @@ Tableau proofs and model extraction.
 
 from expr import *
 from parser import FmlParser
-from helpers import SleepInhibitor
+from helpers import SleepInhibitor, PerformanceHolder
 
 import itertools
 import os
@@ -159,9 +159,10 @@ class Tableau(object):
         # run the tableau
         print("Computing...")
         with SleepInhibitor("computing a tableau"):
-            self.start = time()
-            self.expand()
-            self.end = time()
+            with PerformanceHolder("computing a tableau"):
+                self.start = time()
+                self.expand()
+                self.end = time()
         if not self.silent:
             self.show()
 
