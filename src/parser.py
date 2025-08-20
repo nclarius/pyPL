@@ -7,7 +7,7 @@ Parse a formula given as string into an Expr object.
 
 import re
 
-debug = False
+debug = True
 
 
 class FmlParser:
@@ -145,6 +145,8 @@ class FmlParser:
         # opening bracket: start new stack if begin of complex formula rather than fixed-length tuple
         if t in ["Lbrack"]:
             if bot not in ["Atm", "FuncTerm", "Most", "More"]:
+                if debug:
+                    print("opening new stack")
                 new_stack = []
                 stacks.append(new_stack)
                 self.stacks = stacks
@@ -231,8 +233,12 @@ class FmlParser:
 
             if len(stacks) == 1:
                 if len(stack) == 1:  # stacks are finished; return
+                    if debug:
+                        print("stacks finished")
                     break
                 else:  # outer brackets ommmited; move content to new stack
+                    if debug:
+                        print("starting new stack")
                     new_stack = [e for e in stack]
                     stacks.append(new_stack)
                     stacks[i] = []
@@ -246,6 +252,8 @@ class FmlParser:
 
             # function, predicate or gen. quant. expression: close if closure symbol is on top
             if bot in ["Atm", "FuncTerm"] and top == "#":
+                if debug:
+                    print("atom finished")
                 o = curr_stack[1]
                 c = getattr(expr, bot)
                 e = c(o, curr_stack[2:-1])
@@ -253,6 +261,8 @@ class FmlParser:
                 stacks = stacks[:-1]
                 continue
             elif bot in ["Most", "More"] and top == "#":
+                if debug:
+                    print("relative quantifier finished")
                 o = curr_stack[1]
                 c = getattr(expr, bot)
                 e = c(o, *curr_stack[2:-1])
@@ -270,6 +280,8 @@ class FmlParser:
 
             # unary operator: close if appropriate number of args is given
             if bot in ["Neg", "Poss", "Nec", "Int", "Ext"] and len(curr_stack) == 2:
+                if debug:
+                    print("unary op finished")
                 c = getattr(expr, bot)
                 e = c(top)
                 prev_stack.append(e)
@@ -284,8 +296,10 @@ class FmlParser:
                 # operator clash: resolve ambigutiy
                 if mid and mid in ["Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall", "Most", "More",
                                    "Neg", "Poss", "Nec", "Int", "Ext", "Abstr", "Eq"]:
-                    # first op has precedence over second op: take current stack as subformula. to second op
+                    # first op has precedence over second op: take current stack as subformula to second op
                     if prec[mid] < prec[bot]:
+                        if debug:
+                            print("subformula continued")
                         c = getattr(expr, mid)
                         e = c(*curr_stack[2:])
                         curr_stack = [bot, e]
@@ -293,6 +307,8 @@ class FmlParser:
                     # second op has precedence over first op: move to new stack
                     # ops have equal precedence: apply right-associativity
                     else:
+                        if debug:
+                            print("subformula opened")
                         new_stack = [bot, curr_stack[3]]
                         stacks.append(new_stack)
                         curr_stack = [mid, curr_stack[2]]
@@ -300,6 +316,8 @@ class FmlParser:
 
                 # subformula finished
                 elif len(curr_stack) == 4 and top == "#" or final:
+                    if debug:
+                        print("subformula finished")
                     c = getattr(expr, bot)
                     e = c(curr_stack[1], curr_stack[2])
                     prev_stack.append(e)
@@ -308,6 +326,8 @@ class FmlParser:
 
             # variable binding operator: close if appropriate number of args is given
             if bot in ["Exists", "Forall", "Abstr"] and len(curr_stack) == 3:
+                if debug:
+                    print("variable binding op finished")
                 c = getattr(expr, bot)
                 e = c(mid, top)
                 prev_stack.append(e)
