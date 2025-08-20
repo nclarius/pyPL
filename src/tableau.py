@@ -412,7 +412,7 @@ class Tableau(object):
             sep = 80 * "-"
             res += sep
 
-        __import__("gui").write_output(res, self.latex)
+        self.gui.write_output(res, self.latex)
 
     rule_names = {"α": "alpha", "β": "beta",  # connective rules
                   "γ": "gamma", "δ": "delta", "η": "eta", "θ": "theta",
