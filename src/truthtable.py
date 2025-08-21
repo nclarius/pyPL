@@ -154,10 +154,8 @@ class Truthtable():
         # generate the tex file and open the compiled pdf
 
         # compute truth table
-        with SleepInhibitor("computing a truth table"):
-            with PerformanceHolder("computing a truth table"):
-                with Timer as self.timer:
-                    tt = self.truthtable()
+        with SleepInhibitor("computing a tableau"), PerformanceHolder("computing a tableau"), Timer() as self.timer:
+            tt = self.truthtable()
         if self.timer.elapsed:
             comptime = "This computation took " + str(round(self.timer.elapsed, 4)) + " seconds."
         else:

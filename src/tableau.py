@@ -157,10 +157,8 @@ class Tableau(object):
         
         # run the tableau
         print("Computing...")
-        with SleepInhibitor("computing a tableau"):
-            with PerformanceHolder("computing a tableau"):
-                with Timer() as self.timer:
-                    self.expand()
+        with SleepInhibitor("computing a tableau"), PerformanceHolder("computing a tableau"), Timer() as self.timer:
+            self.expand()
         if not self.silent:
             self.show()
 
