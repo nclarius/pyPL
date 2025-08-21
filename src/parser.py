@@ -10,29 +10,78 @@ import re
 debug = False
 
 
-class FmlParser:
+class ExprParser:
     """
     Parse a formula given as string into an Expr object.
     """
 
     def __init__(self):
-        self.stacks = [[]]
+        self.stack_out = []
+        self.stack_oper = []
 
     def parse(self, inp):
-        self.stacks = [[]]
-        tokens, mode = self.lex(inp)
-        parsedstring = self.synt(tokens)
-        return parsedstring
+        outp = ""
+        tokens, mode = self.tokenize(inp)
+        expr = __import__("expr")
+
+        def eval_expr(token):
+            return getattr(expr, token[0])(token[1])
+
+        def push_oper(token):
+            stack_oper.append(eval_expr(token))
+        
+        def push_iden(token):
+            stack_out.append(eval_expr(token))
+
+        for token in tokens:
+            match token:
+                case "Lbrack":  # left bracket
+                    pass
+                case "Rbrack":  # right bracket
+                    pass
+                case "Comma" | "Semic" | "Dsemic" | "Period":  # auxiliary symbols
+                    pass
+                case "Inf" | "Noninf":  # meta symbols
+                    pass
+                case "Prop":  # atom symbols
+                    pass
+                case "Var" | "Const":  # term symbols
+                    push_iden(token)
+                case "Func":  # term symbols
+                    push_oper(token)
+                case "Pred":  # atom symbols
+                    push_oper(token)
+                case "Eq":  # binary opertors
+                    pass
+                case "Verum" | "Falsum":  # nullary connectives
+                    pass
+                case "Neg":  # unary conectives
+                    pass
+                case "Conj" | "Disj" | "Imp" | "Biimp" | "Xor":  # binary connectives
+                    pass
+                case "Exists" | "Forall":  # unary quantifiers
+                    pass
+                case "Most":  # binary quantifiers
+                    pass
+                case "More":  # ternary quantifiers
+                    pass
+                case "Poss" | "Nec" | "Int" | "Ext":  # unary modal operators
+                    pass
+                case "Abstr":  # lambda operator
+                    pass
+                case _:
+                    raise Exception("Token not recognized")
+
+        return outp
 
     def parse_(self, inp):
-        self.stacks = [[]]
-        tokens, mode = self.lex(inp)
-        parsedstring = self.synt(tokens)
-        return parsedstring, mode
+        tokens, mode = self.tokenize(inp)
+        expr = self.parse(tokens)
+        return expr, mode
 
-    def lex(self, inp):
+    def tokenize(self, inp):
         """
-        Lex an input string into a list of tokens.
+        Split an input string into a list of tokens.
         """
         token2regex = {
             # auxiliary symbols
@@ -110,234 +159,6 @@ class FmlParser:
 
         return tokens, mode
 
-    def synt(self, tokens):
-        """
-        Parse a list of tokens into an Expr object.
-        """
-        # todo parse meta symbols
-        # process tokens
-        if not tokens:
-            stacks = self.stacks
-            curr_stack = stacks[-1] if stacks else None
-            curr_stack.append(expr.Empty())
-            self.stacks = stacks
-            self.update_stacks()
-        for token in tokens:
-            if debug:
-                input()
-            self.add_symbol(token)
-            self.update_stacks()
-        self.update_stacks(True)
-        return self.stacks[0][0]
-
-    def add_symbol(self, token):
-        t, s = token
-        stacks = self.stacks
-        curr_stack = stacks[-1] if stacks else None
-        root_stack = stacks[0]
-        top = curr_stack[-1] if curr_stack else None
-        bot = curr_stack[0] if curr_stack else None
-        expr = __import__("expr")
-        if debug:
-            print()
-            print(t, s)
-
-        # opening bracket: start new stack if begin of complex formula rather than fixed-length tuple
-        if t in ["Lbrack"]:
-            if bot not in ["Atm", "FuncTerm", "Most", "More"]:
-                if debug:
-                    print("opening new stack")
-                new_stack = []
-                stacks.append(new_stack)
-                self.stacks = stacks
-                return
-
-        # closing bracket: add closure symbol to current stack
-        if t in ["Rbrack"]:
-            curr_stack.append("#")
-            self.stacks = stacks
-            return
-
-        # comma: continue
-        if t in [","]:
-            self.stacks = stacks
-            return
-
-        # flag: ignore
-        if t.startswith("!"):
-            self.stacks = stacks
-            return
-
-        # atomic expression: add to current stack
-        if t in ["Var", "Const", "Prop"]:
-            c = getattr(expr, t)
-            e = c(s)
-            curr_stack.append(e)
-            self.stacks = stacks
-            return
-
-        # function symbol: start new stack with functerm
-        if t in ["Func"]:
-            c = getattr(expr, t)
-            e = c(s)
-            stack_ = ["FuncTerm", e]
-            stacks.append(stack_)
-            self.stacks = stacks
-            return
-
-        # predicate symbol: start new stack with atm
-        if t in ["Pred"]:
-            c = getattr(expr, t)
-            e = c(s)
-            stack_ = ["Atm", e]
-            stacks.append(stack_)
-            self.stacks = stacks
-            return
-
-        # atomic formula: add to current stack
-        if t in ["Verum", "Falsum"]:
-            c = getattr(expr, t)
-            e = c()
-            curr_stack.append(e)
-            self.stacks = stacks
-            return
-
-        # prefix operator: start new stack
-        if t in ["Verum", "Falsum", "Neg", "Exists", "Forall", "Most", "More", "Poss", "Nec", "Int", "Ext", "Abstr"]:
-            stack_ = [t]
-            stacks.append(stack_)
-
-        # infix operator: prepend to current stack
-        if t in ["Eq", "Conj", "Disj", "Imp", "Biimp", "Xor"]:
-            curr_stack.insert(0, t)
-            return self.stacks
-
-    def update_stacks(self, final=False):
-        # todo check well-formedness of expressions
-        # todo lambda application
-        # operator precedence
-        prec = {"Eq": 1, "Abstr": 1, "Nec": 1, "Poss": 1, "Int": 1, "Ext": 1,
-                "More": 1, "Most": 1, "Exists": 1, "Forall": 1,
-                "Neg": 1, "Conj": 2, "Disj": 3, "Imp": 4, "Biimp": 5, "Xor": 6}
-
-        stacks = self.stacks
-        expr = __import__("expr")
-        if debug:
-            print("stacks before: ", stacks)
-
-        for i, stack in enumerate(stacks[::-1]):
-            i = len(stacks) - 1
-            curr_stack = stack
-            if not stack:  # skip empty stacks
-                continue
-
-            if len(stacks) == 1:
-                if len(stack) == 1:  # stacks are finished; return
-                    if debug:
-                        print("stacks finished")
-                    break
-                else:  # outer brackets ommmited; move content to new stack
-                    if debug:
-                        print("starting new stack")
-                    new_stack = [e for e in stack]
-                    stacks.append(new_stack)
-                    stacks[i] = []
-                    i += 1
-                    curr_stack = stacks[i]
-
-            prev_stack = stacks[i - 1]
-            bot = curr_stack[0]
-            mid = curr_stack[1] if len(curr_stack) > 1 else None
-            top = curr_stack[-1]
-
-            # function, predicate or gen. quant. expression: close if closure symbol is on top
-            if bot in ["Atm", "FuncTerm"] and top == "#":
-                if debug:
-                    print("atom finished")
-                o = curr_stack[1]
-                c = getattr(expr, bot)
-                e = c(o, curr_stack[2:-1])
-                prev_stack.append(e)
-                stacks = stacks[:-1]
-                continue
-            elif bot in ["Most", "More"] and top == "#":
-                if debug:
-                    print("relative quantifier finished")
-                o = curr_stack[1]
-                c = getattr(expr, bot)
-                e = c(o, *curr_stack[2:-1])
-                prev_stack.append(e)
-                stacks = stacks[:-1]
-                continue
-            # # lambda application: close if lower stack is lambda operator
-            # # todo doesn't work
-            # if isinstance(prev_stack[0], getattr(expr, "Abstr")):
-            #     c = getattr(expr, "Appl")
-            #     e = c(prev_stack[0], curr_stack[0])
-            #     prev_stack.append(e)
-            #     stacks = stacks[:-1]
-            #     continue
-
-            # unary operator: close if appropriate number of args is given
-            if bot in ["Neg", "Poss", "Nec", "Int", "Ext"] and len(curr_stack) == 2:
-                if debug:
-                    print("unary op finished")
-                c = getattr(expr, bot)
-                e = c(top)
-                prev_stack.append(e)
-                stacks = stacks[:-1]
-                continue
-
-            # binary operator: close if closure symbol is on top, else resolve ambiguity
-            # todo doesn't work correctly, e.g. "(p -> q v r) ^ s" = "p -> ((q v r) ^ s)" instead of "(p -> q v r) ^ s"
-            if bot in ["Eq", "Conj", "Disj", "Imp", "Biimp", "Xor"]:
-
-                # operator ambiguity
-                # operator clash: resolve ambigutiy
-                if mid and mid in ["Conj", "Disj", "Imp", "Biimp", "Xor", "Exists", "Forall", "Most", "More",
-                                   "Neg", "Poss", "Nec", "Int", "Ext", "Abstr", "Eq"]:
-                    # first op has precedence over second op: take current stack as subformula to second op
-                    if prec[mid] < prec[bot]:
-                        if debug:
-                            print("subformula continued")
-                        c = getattr(expr, mid)
-                        e = c(*curr_stack[2:])
-                        curr_stack = [bot, e]
-                        stacks[i] = curr_stack
-                    # second op has precedence over first op: move to new stack
-                    # ops have equal precedence: apply right-associativity
-                    else:
-                        if debug:
-                            print("subformula opened")
-                        new_stack = [bot, curr_stack[3]]
-                        stacks.append(new_stack)
-                        curr_stack = [mid, curr_stack[2]]
-                        stacks[i] = curr_stack
-
-                # subformula finished
-                elif len(curr_stack) == 4 and top == "#" or final:
-                    if debug:
-                        print("subformula finished")
-                    c = getattr(expr, bot)
-                    e = c(curr_stack[1], curr_stack[2])
-                    prev_stack.append(e)
-                    stacks = stacks[:-1]
-                    continue
-
-            # variable binding operator: close if appropriate number of args is given
-            if bot in ["Exists", "Forall", "Abstr"] and len(curr_stack) == 3:
-                if debug:
-                    print("variable binding op finished")
-                c = getattr(expr, bot)
-                e = c(mid, top)
-                prev_stack.append(e)
-                stacks = stacks[:-1]
-                continue
-
-        self.stacks = stacks
-        if debug:
-            print("stacks after: ", stacks)
-
 
 class StructParser:
     """
@@ -397,5 +218,5 @@ class StructParser:
                 return structure.KripkePredStructure(s["S"], s["K"], s["R"], s["D"], s["I"])
 
 if __name__ == "__main__":
-    parse_f = FmlParser().parse
+    parse_e = ExprParser.parse
     parse_s = StructParser.parse

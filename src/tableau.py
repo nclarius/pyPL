@@ -38,7 +38,7 @@ Tableau proofs and model extraction.
 
 
 from expr import *
-from parser import FmlParser
+from parser import ExprParser
 from exec_helpers import *
 
 import itertools
@@ -2226,7 +2226,7 @@ class Node(object):
 if __name__ == "__main__":
     pass
 
-    parse_f = FmlParser().parse
+    parse_e = ExprParser().parse
 
     #############
     # basic examples
@@ -2520,11 +2520,11 @@ if __name__ == "__main__":
     #####################
     # example from ordering theory
     #####################
-    # p1 = parse_f("∀ x Leq(x,x)")
-    # p2 = parse_f("∀ x ∀ y ∀ z ((Leq(x,y) ∧ Leq(y,z)) → Leq(x,z))")
-    # p3 = parse_f("∀ x ∀ y ∀ z ((∀ u((Leq(u,x) ∧ Leq(u,y)) → Leq(u,z)) ∧ ∀ u ((Leq(y,u) ∧ Leq(z,u)) → Leq(x,u))) → Leq(x,z))")
-    # p4 = parse_f("∀ x ∀ y ∃ z ((Leq(x,z) ∧ Leq(y,z)) ∧ ∀ u ((Leq(x,u) ∧ Leq(y,u)) → Leq(z,u)))")
-    # c = parse_f("∀ x1 ∀ x2 ∀ x3 (∀ u (Leq(x1,u) ^ Leq(x2,u) -> Leq(x3,u)) -> ∃ y1 ∃ y2 (Leq(y1,x1) ^ Leq(y2,x2) ^ Leq(y1,x3) ^ Leq(y2,x3) ^ ∀ u (Leq(y1,u) ^ Leq(y2,u) -> Leq(x3,u))))")
+    # p1 = parse_e("∀ x Leq(x,x)")
+    # p2 = parse_e("∀ x ∀ y ∀ z ((Leq(x,y) ∧ Leq(y,z)) → Leq(x,z))")
+    # p3 = parse_e("∀ x ∀ y ∀ z ((∀ u((Leq(u,x) ∧ Leq(u,y)) → Leq(u,z)) ∧ ∀ u ((Leq(y,u) ∧ Leq(z,u)) → Leq(x,u))) → Leq(x,z))")
+    # p4 = parse_e("∀ x ∀ y ∃ z ((Leq(x,z) ∧ Leq(y,z)) ∧ ∀ u ((Leq(x,u) ∧ Leq(y,u)) → Leq(z,u)))")
+    # c = parse_e("∀ x1 ∀ x2 ∀ x3 (∀ u (Leq(x1,u) ^ Leq(x2,u) -> Leq(x3,u)) -> ∃ y1 ∃ y2 (Leq(y1,x1) ^ Leq(y2,x2) ^ Leq(y1,x3) ^ Leq(y2,x3) ^ ∀ u (Leq(y1,u) ^ Leq(y2,u) -> Leq(x3,u))))")
     # tab = Tableau(c, premises=[p1, p2, p3, p4], validity=True, satisfiability=False)
 
     ###############
@@ -2544,5 +2544,5 @@ if __name__ == "__main__":
     ####################
     # test = r"((\all x \nec P(x) v \exi y (P(y) ^ R(c,y))) -> \falsum)"
     # print(test)
-    # res = parse_f(test)
+    # res = parse_e(test)
     # print(res)

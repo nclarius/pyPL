@@ -217,16 +217,16 @@ class Truthtable():
 
 if __name__ == "__main__":
     pass
-    parse_f = __import__("parser").FmlParser().parse
+    parse_e = __import__("parser").ExprParser().parse
 
-#     fml = parse_f("((p & q) | ~ r)")
+#     fml = parse_e("((p & q) | ~ r)")
 #     tt = Truthtable(fml, latex=False, silent=True)
 # 
-#     fml1 = parse_f("p -> q")
-#     fml2 = parse_f("~ p")
-#     fml = parse_f("~ q")
+#     fml1 = parse_e("p -> q")
+#     fml2 = parse_e("~ p")
+#     fml = parse_e("~ q")
 #     tt = Truthtable(fml, premises=[fml1, fml2], latex=False, silent=True)
 # 
-#     fml1 = parse_f("p v q")
-#     fml2 = parse_f("~ (p & q)")
+#     fml1 = parse_e("p v q")
+#     fml2 = parse_e("~ (p & q)")
 #     tt = Truthtable(None, premises=[fml1, fml2], latex=False, silent=True)
